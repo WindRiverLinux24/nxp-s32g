@@ -13,7 +13,6 @@ PFE_LOCAL_FIRMWARE_DIR_CLASS_BIN ?= "."
 PFE_LOCAL_FIRMWARE_DIR_UTIL_BIN ?= "."
 
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https \
-	file://0001-codedrop-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.4.patch \
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
 	file://0002-pfe-oal-modify-the-GFP-flag-to-GFP_ATOMIC-for-kzallo.patch \
 	file://0004-sw-change-kmalloc-flag-to-GFP_ATOMIC-to-fix-debug-ca.patch \
@@ -21,7 +20,7 @@ SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=
 	file://${PFE_LOCAL_FIRMWARE_DIR_CLASS_BIN} \
 	file://${PFE_LOCAL_FIRMWARE_DIR_UTIL_BIN} \
 	"
-SRCREV = "9ddaffd9a37d85e0fc3e08ecb440484212c66e58"
+SRCREV = "3a548033d5126c9354a8529903d0842769718b1e"
 
 PATCHTOOL = "git"
 
