@@ -1,0 +1,31 @@
+From 70bb132e39f35f46c2da7bfb5806aa6a81cca542 Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Tue, 18 May 2021 17:01:41 +0800
+Subject: [PATCH 13/13] arch: arm64: dts: keep i2c1 in disabled status
+
+i2c1 pins are conflict with llce feature, so keep it in
+disabled status.
+
+Upstream-Status: Pending
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/boot/dts/freescale/fsl-s32g274a-rdb.dtsi | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/fsl-s32g274a-rdb.dtsi b/arch/arm64/boot/dts/freescale/fsl-s32g274a-rdb.dtsi
+index e83bbeca1707..bc298845f925 100644
+--- a/arch/arm64/boot/dts/freescale/fsl-s32g274a-rdb.dtsi
++++ b/arch/arm64/boot/dts/freescale/fsl-s32g274a-rdb.dtsi
+@@ -83,7 +83,6 @@ &i2c0 {
+ &i2c1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl1_i2c1>;
+-	status = "okay";
+ };
+ 
+ &i2c2 {
+-- 
+2.25.1
+
