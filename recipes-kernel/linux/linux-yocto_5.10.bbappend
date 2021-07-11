@@ -20,4 +20,5 @@ SRC_URI_append_nxp-s32g2xx = " \
     file://0012-dt-bindings-s32g274a-pfe-PFE-controller-reset-suppor.patch \ 
     file://0013-arch-arm64-dts-keep-i2c1-in-disabled-status.patch \
     file://0014-drivers-phy-s32gen1-serdes-drop-the-redundant-phy-id.patch \
+    file://0015-drivers-qspi-replace-dev_info-with-dev_dbg-in-qspi_r.patch \
 "
