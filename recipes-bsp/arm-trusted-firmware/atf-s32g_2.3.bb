@@ -28,6 +28,10 @@ SRC_URI += " \
     file://bsp30/0005-s32g274a-Add-dts-fixup-as-part-of-LPDDR4-ERR050543.patch \
     file://bsp30/0006-s32g-Report-min-and-max-frequencies-for-clocks-over-.patch \
     file://bsp30/0007-s32g-Add-minimal-support-for-DFS.patch \
+    file://bsp30/0008-s32g-Add-OCOTP-driver-for-S32GEN1-platforms.patch \
+    file://bsp30/0009-dts-Add-OCOTP-nodes-for-S32G.patch \
+    file://bsp30/0010-s32g-Apply-VDD_CORE-adjustment.patch \
+    file://bsp30/0011-s32g-reset-GPR-and-A53-generic-timers-in-early-boot-.patch \
 "
 
 PLATFORM_nxp-s32g2xx = "s32g"
