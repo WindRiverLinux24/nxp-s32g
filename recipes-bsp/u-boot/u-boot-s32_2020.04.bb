@@ -38,6 +38,21 @@ SRC_URI += " \
     file://bsp30/0012-s32g274a-Add-driver-as-part-of-LPDDR4-ERR050543.patch \
     file://bsp30/0013-s32gen1-Fix-guarding-PCIE_S32GEN1-support.patch \
     file://bsp30/0014-e1000-Add-config-dependency-for-E1000-on-PCI.patch \
+    file://bsp30/0015-include-s32gen1-Add-recovery-pinmuxing-for-i2c.patch \
+    file://bsp30/0016-dts-s32gen1-Add-recovery-pinmuxing-for-i2c.patch \
+    file://bsp30/0017-i2c-mxc_i2c-Fix-pinmuxing-while-using-bus-recovery.patch \
+    file://bsp30/0018-s32-lockstep-reset-GPR-and-A53-generic-timers-in-ear.patch \
+    file://bsp30/0019-misc-Add-OCOTP-driver-for-S32GEN1-platforms.patch \
+    file://bsp30/0020-dts-Add-OCOTP-nodes-for-S32G-and-S32R45.patch \
+    file://bsp30/0021-misc-Implement-fuse-API-for-S32GEN1-platforms.patch \
+    file://bsp30/0022-s32-gen1-Apply-VDD_CORE-adjustment.patch \
+    file://bsp30/0023-s32-default-environment-fix-default-environment-when.patch \
+    file://bsp30/0024-Revert-s32gen1-pcie-Add-dma-coherent-to-Linux-dts.patch \
+    file://bsp30/0025-pci-s32-gen1-Use-hardware-defaults-for-PCIe-coherenc.patch \
+    file://bsp30/0026-s32gen1-pcie-Fix-display-of-PCIE-EP-devices.patch \
+    file://bsp30/0027-xen-update-xen-default-environment-variables-to-matc.patch \
+    file://bsp30/0028-s32-Add-macros-for-FAT-and-EXT-sdcard-partitions.patch \
+    file://bsp30/0029-s32-xen-Update-u-boot-env-to-use-generated-boot-scri.patch \
 "
 
 SRCREV = "61b2dc53d2b6655e5d629da16132ccd72907f83e"
