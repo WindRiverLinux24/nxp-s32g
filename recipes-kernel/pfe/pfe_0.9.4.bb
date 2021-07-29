@@ -19,6 +19,7 @@ SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=
 	file://0001-pfe-sw-add-mac-address-delete-operations-to-fix-kmem.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR_CLASS_BIN} \
 	file://${PFE_LOCAL_FIRMWARE_DIR_UTIL_BIN} \
+	file://0001-version-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.4_CD1_FORD.patch \
 	"
 SRCREV = "3a548033d5126c9354a8529903d0842769718b1e"
 
