@@ -20,7 +20,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 S = "${WORKDIR}/pkcs11-hse"
 
-COMPATIBLE_MACHINE_nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"
 
 do_compile() {
     sed -i 's/$(CROSS_COMPILE)gcc /$(CC) /' Makefile examples/Makefile
@@ -40,4 +40,4 @@ do_install() {
 }
 
 PACKAGES =+ "${PN}-examples "
-FILES_${PN}-examples += "${bindir}"
+FILES:${PN}-examples += "${bindir}"

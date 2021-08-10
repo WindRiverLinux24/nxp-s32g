@@ -1,11 +1,11 @@
 require linux-yocto-nxp-s32g2xx.inc
 
-KBRANCH_nxp-s32g2xx  = "v5.10/standard/nxp-sdk-5.10/nxp-s32g2xx"
+KBRANCH:nxp-s32g2xx  = "v5.10/standard/nxp-sdk-5.10/nxp-s32g2xx"
 
-LINUX_VERSION_nxp-s32g2xx ?= "5.10.x"
+LINUX_VERSION:nxp-s32g2xx ?= "5.10.x"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI_append_nxp-s32g2xx = " \
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append:nxp-s32g2xx = " \
     file://0001-arch-arm64-s32g-disable-virtio_block-dts-node-by-def.patch \ 
     file://0002-s32gen1-pcie-Remove-duplicate-interrupt-resource-req.patch \
     file://0003-driver-pci-pci-s32gen1-remove-the-__init-macro.patch \ 

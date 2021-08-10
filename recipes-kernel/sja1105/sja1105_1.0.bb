@@ -11,7 +11,7 @@ BRANCH ?= "release/bsp28.0"
 SRC_URI = "${URL};branch=${BRANCH}"
 SRCREV = "7ca70ccdd2717344a4f8433044920af719b4d0a3"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${BPN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
 SRC_URI += "\
     file://0001-sja1105-module-Makefile-didn-t-respect-install-dirs.patch \
@@ -23,8 +23,8 @@ S = "${WORKDIR}/git"
 DESTDIR = "${D}"
 MDIR = "${S}"
 INSTALL_DIR = "${D}/${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel/drivers/spi"
-EXTRA_OEMAKE_append = " INSTALL_DIR=${DESTDIR} KERNELDIR=${KBUILD_OUTPUT} MYCOMPILER=${CROSS_COMPILE}gcc "
-EXTRA_OEMAKE_append_nxp-s32g2xx = " MYPLATFORM=gplat "
+EXTRA_OEMAKE:append = " INSTALL_DIR=${DESTDIR} KERNELDIR=${KBUILD_OUTPUT} MYCOMPILER=${CROSS_COMPILE}gcc "
+EXTRA_OEMAKE:append:nxp-s32g2xx = " MYPLATFORM=gplat "
 
 SJA1105_MOD_NAME = "sja1105pqrs.ko"
 
@@ -34,13 +34,13 @@ module_do_install() {
 	install -D ${MDIR}/${SJA1105_MOD_NAME} ${INSTALL_DIR}/
 }
 
-FILES_${PN} += "${base_libdir}/*"
-FILES_${PN} += "${sysconfdir}/modules-load.d/*"
+FILES:${PN} += "${base_libdir}/*"
+FILES:${PN} += "${sysconfdir}/modules-load.d/*"
 
 PROVIDES += "kernel-module-sja1105pqrs"
-RPROVIDES_${PN} += "kernel-module-sja1105pqrs"
+RPROVIDES:${PN} += "kernel-module-sja1105pqrs"
 
 COMPATIBLE_MACHINE = "nxp-s32g2xx"
 INHIBIT_PACKAGE_STRIP = "1"
 
-DEPENDS_append = " coreutils-native"
+DEPENDS:append = " coreutils-native"

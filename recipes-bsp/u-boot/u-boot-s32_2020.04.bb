@@ -13,11 +13,11 @@ LIC_FILES_CHKSUM = " \
 "
 
 INHIBIT_DEFAULT_DEPS = "1"
-DEPENDS_append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-native"
+DEPENDS:append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-native"
 
 inherit nxp-u-boot-localversion
 
-SRC_URI_prepend = "git://source.codeaurora.org/external/autobsps32/u-boot;protocol=https;branch=release/bsp29.0-2020.04 "
+SRC_URI:prepend = "git://source.codeaurora.org/external/autobsps32/u-boot;protocol=https;branch=release/bsp29.0-2020.04 "
 
 SRC_URI += " \
     file://bsp30/0001-s32gen1-GICR-has-different-offset-on-emulator.patch \
@@ -88,7 +88,7 @@ SRC_URI += " \
 "
 
 # For now, only rdb2 boards support ATF, this function will be fixed when new ATF supported boards added.
-do_install_append() {
+do_install:append() {
 
     if [ -n "${ATF_S32G_ENABLE}" ]; then
         unset i j
@@ -120,7 +120,7 @@ do_install_append() {
 HSE_LOCAL_FIRMWARE_EVB_BIN ?= ""
 HSE_LOCAL_FIRMWARE_RDB2_BIN ?= ""
 
-do_compile_append() {
+do_compile:append() {
 
     unset i j
     for config in ${UBOOT_MACHINE}; do
@@ -152,4 +152,4 @@ do_compile_append() {
     unset i
 }
 
-COMPATIBLE_MACHINE_nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"

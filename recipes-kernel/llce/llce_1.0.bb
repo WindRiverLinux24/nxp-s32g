@@ -1,7 +1,7 @@
 DESCRIPTION = "NXP IPCF FIRMWARES"
 PROVIDES += "llce"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LIENCES.txt;md5=324d5bf9404f8bf2b01cfc66037447f6"
 
@@ -97,9 +97,9 @@ addtask do_deploy after do_install
 do_package_qa[noexec] = "1"
 do_package_qa_setscene[noexec] = "1"
 
-FILES_${PN} += "/lib/firmware/${FW_INSTALL_DTE_NAME}"
-FILES_${PN} += "/lib/firmware/${FW_INSTALL_FRPE_NAME}"
-FILES_${PN} += "/lib/firmware/${FW_INSTALL_PPE-TX_NAME}"
-FILES_${PN} += "/lib/firmware/${FW_INSTALL_PPE-RX_NAME}"
+FILES:${PN} += "/lib/firmware/${FW_INSTALL_DTE_NAME}"
+FILES:${PN} += "/lib/firmware/${FW_INSTALL_FRPE_NAME}"
+FILES:${PN} += "/lib/firmware/${FW_INSTALL_PPE-TX_NAME}"
+FILES:${PN} += "/lib/firmware/${FW_INSTALL_PPE-RX_NAME}"
 
-COMPATIBLE_MACHINE_nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"

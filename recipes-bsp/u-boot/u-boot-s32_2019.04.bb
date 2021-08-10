@@ -13,7 +13,7 @@ LIC_FILES_CHKSUM = " \
 "
 
 INHIBIT_DEFAULT_DEPS = "1"
-DEPENDS_append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-native"
+DEPENDS:append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-native"
 
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/u-boot;protocol=https;branch=alb-2019.04"
 
@@ -33,4 +33,4 @@ UBOOT_INITIAL_ENV = ""
 USRC ?= ""
 S = '${@oe.utils.conditional("USRC", "", "${WORKDIR}/git", "${USRC}", d)}'
 
-COMPATIBLE_MACHINE_nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"

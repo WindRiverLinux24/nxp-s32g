@@ -18,7 +18,7 @@ SRC_URI = "${URL};branch=${BRANCH}"
 SRCREV ?= "87dbb869d05399cef3ec596599c8080a090ba17c"
 SRC_URI[sha256sum] = "4ded53541fb0ac8840f5a1e23ecfa546a1ca15246a73a15707ff8c76f47f7729"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:" 
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
     file://0001-Fix-fiptool-build-error.patch \
     file://bsp30/0001-s32-Enable-workaround-for-ARM-errata-1530924.patch \
@@ -52,7 +52,7 @@ SRC_URI += " \
     file://bsp30/rc4/0018-arm64-A53-erratum-836870-should-be-applied-on-r0p4.patch \
 "
 
-PLATFORM_nxp-s32g2xx = "s32g2"
+PLATFORM:nxp-s32g2xx = "s32g2"
 BUILD_TYPE = "release"
 
 ATF_BINARIES = "${B}/${PLATFORM}/${BUILD_TYPE}"
@@ -93,4 +93,4 @@ addtask deploy after do_compile
 do_compile[depends] = "virtual/bootloader:do_install"
 
 COMPATIBLE_MACHINE = "nxp-s32g2xx"
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"

@@ -24,7 +24,7 @@ DESTDIR="${D}"
 IPCF_MDIR = "${S}"
 IPCF_SAMPLE_MDIR = "${S}/sample"
 INSTALL_DIR = "${D}/${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel/drivers/ipc-shm"
-EXTRA_OEMAKE_append = " -C ./sample INSTALL_DIR=${DESTDIR} KERNELDIR=${KBUILD_OUTPUT} "
+EXTRA_OEMAKE:append = " -C ./sample INSTALL_DIR=${DESTDIR} KERNELDIR=${KBUILD_OUTPUT} "
 MODULES_MODULE_SYMVERS_LOCATION = "."
 
 IPCF_MOD_DEV_NAME = "ipc-shm-dev.ko"
@@ -35,11 +35,11 @@ IPCF_M7_APP_BIN_DIR ?= "."
 IPCF_M7_APP_BIN_NAME ?= "IPCF_Example_S32G274.bin"
 
 PROVIDES += "kernel-module-ipc-shm-sample"
-RPROVIDES_${PN} += "kernel-module-ipc-shm-sample"
+RPROVIDES:${PN} += "kernel-module-ipc-shm-sample"
 PROVIDES += "kernel-module-ipc-shm-dev"
-RPROVIDES_${PN} += "kernel-module-ipc-shm-dev"
+RPROVIDES:${PN} += "kernel-module-ipc-shm-dev"
 PROVIDES += "kernel-module-ipc-shm-uio"
-RPROVIDES_${PN} += "kernel-module-ipc-shm-uio"
+RPROVIDES:${PN} += "kernel-module-ipc-shm-uio"
 
 # Prevent to load ipc-shm-uio at boot time
 KERNEL_MODULE_PROBECONF += "ipc-shm-uio"
@@ -64,6 +64,6 @@ do_deploy() {
 }
 addtask do_deploy after do_install
 
-FILES_${PN} += "${sysconfdir}/modprobe.d/*"
+FILES:${PN} += "${sysconfdir}/modprobe.d/*"
 
 COMPATIBLE_MACHINE = "nxp-s32g2xx"

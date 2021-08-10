@@ -40,7 +40,7 @@ FW_INSTALL_DIR = "${D}/lib/firmware"
 FW_INSTALL_CLASS_NAME ?= "s32g_pfe_class.fw"
 FW_INSTALL_UTIL_NAME ?= "s32g_pfe_util.fw"
 
-EXTRA_OEMAKE_append = " KERNELDIR=${STAGING_KERNEL_DIR} MDIR=${MDIR} -C ${MDIR} V=1 drv-build"
+EXTRA_OEMAKE:append = " KERNELDIR=${STAGING_KERNEL_DIR} MDIR=${MDIR} -C ${MDIR} V=1 drv-build"
 
 # Build PFE for both 1.1 and 2.0 SoC revision
 # The user can choose to build specific version only by overwriting this variable
@@ -113,11 +113,11 @@ addtask do_deploy after do_install
 do_package_qa[noexec] = "1"
 do_package_qa_setscene[noexec] = "1"
 
-FILES_${PN} += "/lib/firmware/${FW_INSTALL_CLASS_NAME} \
+FILES:${PN} += "/lib/firmware/${FW_INSTALL_CLASS_NAME} \
     /lib/firmware/${FW_INSTALL_UTIL_NAME} \
     ${sysconfdir}/modules-load.d/* \
 "
 
 
 COMPATIBLE_MACHINE = "^$"
-COMPATIBLE_MACHINE_nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"
