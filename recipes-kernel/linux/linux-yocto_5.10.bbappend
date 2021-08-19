@@ -24,4 +24,5 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://0014-drivers-phy-s32gen1-serdes-drop-the-redundant-phy-id.patch \
     file://0016-dts-s32g274a-rdb2-disable-ARQ107-phy-node-explicitly.patch \
     file://0017-drivers-pci-modify-the-config-judgement-to-fix-build.patch \
+    file://0001-drivers-llce-mailbox-delete-DO_ONCE-call-for-llce_ca.patch \
 "
