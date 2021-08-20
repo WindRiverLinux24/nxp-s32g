@@ -7,6 +7,7 @@ LINUX_VERSION:nxp-s32g2xx ?= "5.10.x"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g2xx = " \
     file://rc5/0001-Revert-hse-remove-uio-component-from-crypto-driver.patch \
+    file://rc6/0001-Revert-crypto-hse-remove-uio-implementation-artifact.patch \
     file://0001-arch-arm64-s32g-disable-virtio_block-dts-node-by-def.patch \ 
     file://0002-s32gen1-pcie-Remove-duplicate-interrupt-resource-req.patch \
     file://0003-driver-pci-pci-s32gen1-remove-the-__init-macro.patch \ 
@@ -21,7 +22,6 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://0012-dt-bindings-s32g274a-pfe-PFE-controller-reset-suppor.patch \ 
     file://0013-arch-arm64-dts-keep-i2c1-in-disabled-status.patch \
     file://0014-drivers-phy-s32gen1-serdes-drop-the-redundant-phy-id.patch \
-    file://0015-drivers-qspi-replace-dev_info-with-dev_dbg-in-qspi_r.patch \
     file://0016-dts-s32g274a-rdb2-disable-ARQ107-phy-node-explicitly.patch \
     file://0017-drivers-pci-modify-the-config-judgement-to-fix-build.patch \
 "
