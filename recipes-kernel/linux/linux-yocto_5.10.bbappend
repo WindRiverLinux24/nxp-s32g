@@ -25,4 +25,5 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://0016-dts-s32g274a-rdb2-disable-ARQ107-phy-node-explicitly.patch \
     file://0017-drivers-pci-modify-the-config-judgement-to-fix-build.patch \
     file://0001-drivers-llce-mailbox-delete-DO_ONCE-call-for-llce_ca.patch \
+    file://0002-drivers-llce_can-put-echo-skb-before-sending-message.patch \
 "
