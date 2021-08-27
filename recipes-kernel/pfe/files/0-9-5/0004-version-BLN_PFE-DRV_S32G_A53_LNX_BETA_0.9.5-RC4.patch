@@ -1,0 +1,2305 @@
+From e5747c79469580515871006c79719f506d828ebc Mon Sep 17 00:00:00 2001
+From: "jan.petrous" <jan.petrous@nxp.com>
+Date: Wed, 18 Aug 2021 08:45:00 +0200
+Subject: [PATCH 4/4] version BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.5 RC4
+
+libfci_cli licensing cleaned.
+
+Upstream-Status: Pending
+
+Signed-off-by: Jan Petrous <jan.petrous@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ LICENSE-BSD3.txt                              | 24 +++++++++++++
+ sw/libfci_cli/src/libfci_cli.c                | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_bd.c        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_bd.h        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_fp.c        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_fp.h        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_fwfeat.c    | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_fwfeat.h    | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_if.c        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_if.h        | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_qos.c       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_qos.h       | 35 +++++++++++++------
+ .../src/libfci_cli_cmds_route_and_cntk.c      | 35 +++++++++++++------
+ .../src/libfci_cli_cmds_route_and_cntk.h      | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_spd.c       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_cmds_spd.h       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_common.h         | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_cmds.c       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_cmds.h       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_help.c       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_help.h       | 35 +++++++++++++------
+ .../src/libfci_cli_def_optarg_keywords.c      | 35 +++++++++++++------
+ .../src/libfci_cli_def_optarg_keywords.h      | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_opts.c       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_def_opts.h       | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_parser.c         | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_parser.h         | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_print_helpers.c  | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_cli_print_helpers.h  | 35 +++++++++++++------
+ .../src/libfci_interface/fci_common.c         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_common.h         | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_ep.c   | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_ep.h   | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_fp.c   | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_fp.h   | 35 +++++++++++++------
+ .../src/libfci_interface/fci_fwfeat.c         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_fwfeat.h         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_l2_bd.c          | 35 +++++++++++++------
+ .../src/libfci_interface/fci_l2_bd.h          | 35 +++++++++++++------
+ .../src/libfci_interface/fci_log_if.c         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_log_if.h         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_phy_if.c         | 35 +++++++++++++------
+ .../src/libfci_interface/fci_phy_if.h         | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_qos.c  | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_qos.h  | 35 +++++++++++++------
+ .../src/libfci_interface/fci_rt_ct.c          | 35 +++++++++++++------
+ .../src/libfci_interface/fci_rt_ct.h          | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_spd.c  | 35 +++++++++++++------
+ sw/libfci_cli/src/libfci_interface/fci_spd.h  | 35 +++++++++++++------
+ 49 files changed, 1224 insertions(+), 480 deletions(-)
+ create mode 100644 LICENSE-BSD3.txt
+
+diff --git a/LICENSE-BSD3.txt b/LICENSE-BSD3.txt
+new file mode 100644
+index 0000000..60cc70a
+--- /dev/null
++++ b/LICENSE-BSD3.txt
+@@ -0,0 +1,24 @@
++Copyright (c) 2018-2020, NXP
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in the
++      documentation and/or other materials provided with the distribution.
++    * Neither the name of the <organization> nor the
++      names of its contributors may be used to endorse or promote products
++      derived from this software without specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
++ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
++DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+diff --git a/sw/libfci_cli/src/libfci_cli.c b/sw/libfci_cli/src/libfci_cli.c
+index 9152ac0..358b77d 100644
+--- a/sw/libfci_cli/src/libfci_cli.c
++++ b/sw/libfci_cli/src/libfci_cli.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2017-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_bd.c b/sw/libfci_cli/src/libfci_cli_cmds_bd.c
+index b17805c..e613661 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_bd.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_bd.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_bd.h b/sw/libfci_cli/src/libfci_cli_cmds_bd.h
+index 5849875..c52b6cf 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_bd.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_bd.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_BD_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_fp.c b/sw/libfci_cli/src/libfci_cli_cmds_fp.c
+index a1011a0..e4322f1 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_fp.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_fp.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_fp.h b/sw/libfci_cli/src/libfci_cli_cmds_fp.h
+index ee6bcf0..e7bb601 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_fp.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_fp.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_FP_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.c b/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.c
+index 3319c56..2241027 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.h b/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.h
+index 0ed9d6b..64e7538 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_fwfeat.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_SPD_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_if.c b/sw/libfci_cli/src/libfci_cli_cmds_if.c
+index 5c7d106..b341cff 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_if.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_if.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_if.h b/sw/libfci_cli/src/libfci_cli_cmds_if.h
+index d02ee13..3356288 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_if.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_if.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_IF_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_qos.c b/sw/libfci_cli/src/libfci_cli_cmds_qos.c
+index 289c968..91dd465 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_qos.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_qos.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_qos.h b/sw/libfci_cli/src/libfci_cli_cmds_qos.h
+index d18255c..550c138 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_qos.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_qos.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_QOS_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.c b/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.c
+index cc12d53..837047b 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.h b/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.h
+index 7a048e2..6d0f9f6 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_route_and_cntk.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_ROUTE_AND_CNTK_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_spd.c b/sw/libfci_cli/src/libfci_cli_cmds_spd.c
+index 82fd348..3e5eea8 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_spd.c
++++ b/sw/libfci_cli/src/libfci_cli_cmds_spd.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_spd.h b/sw/libfci_cli/src/libfci_cli_cmds_spd.h
+index d03c611..ebc7864 100644
+--- a/sw/libfci_cli/src/libfci_cli_cmds_spd.h
++++ b/sw/libfci_cli/src/libfci_cli_cmds_spd.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_CMDS_SPD_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_common.h b/sw/libfci_cli/src/libfci_cli_common.h
+index 78c1e49..1617061 100644
+--- a/sw/libfci_cli/src/libfci_cli_common.h
++++ b/sw/libfci_cli/src/libfci_cli_common.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_COMMON_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_def_cmds.c b/sw/libfci_cli/src/libfci_cli_def_cmds.c
+index f223d7c..96cdd49 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_cmds.c
++++ b/sw/libfci_cli/src/libfci_cli_def_cmds.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_def_cmds.h b/sw/libfci_cli/src/libfci_cli_def_cmds.h
+index abc485a..80b3bca 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_cmds.h
++++ b/sw/libfci_cli/src/libfci_cli_def_cmds.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_DEF_CMDS_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_def_help.c b/sw/libfci_cli/src/libfci_cli_def_help.c
+index ebd8b21..23dccb2 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_help.c
++++ b/sw/libfci_cli/src/libfci_cli_def_help.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <stdint.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_def_help.h b/sw/libfci_cli/src/libfci_cli_def_help.h
+index e70e7b4..6642345 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_help.h
++++ b/sw/libfci_cli/src/libfci_cli_def_help.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_DEF_HELP_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.c b/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.c
+index 081ed59..8486132 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.c
++++ b/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.h b/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.h
+index 53df85b..f712e89 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.h
++++ b/sw/libfci_cli/src/libfci_cli_def_optarg_keywords.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_DEF_OPTARG_KEYWORDS_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_def_opts.c b/sw/libfci_cli/src/libfci_cli_def_opts.c
+index 13acd64..9142e6d 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_opts.c
++++ b/sw/libfci_cli/src/libfci_cli_def_opts.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_def_opts.h b/sw/libfci_cli/src/libfci_cli_def_opts.h
+index 2c81178..0ba785a 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_opts.h
++++ b/sw/libfci_cli/src/libfci_cli_def_opts.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_DEF_OPTS_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_parser.c b/sw/libfci_cli/src/libfci_cli_parser.c
+index 86b2ac9..d53aeaa 100644
+--- a/sw/libfci_cli/src/libfci_cli_parser.c
++++ b/sw/libfci_cli/src/libfci_cli_parser.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_parser.h b/sw/libfci_cli/src/libfci_cli_parser.h
+index 88b1f0a..22d57b1 100644
+--- a/sw/libfci_cli/src/libfci_cli_parser.h
++++ b/sw/libfci_cli/src/libfci_cli_parser.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef LIBFCI_CLI_PARSER_H_
+diff --git a/sw/libfci_cli/src/libfci_cli_print_helpers.c b/sw/libfci_cli/src/libfci_cli_print_helpers.c
+index e1d52f0..47b32c0 100644
+--- a/sw/libfci_cli/src/libfci_cli_print_helpers.c
++++ b/sw/libfci_cli/src/libfci_cli_print_helpers.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #include <assert.h>
+diff --git a/sw/libfci_cli/src/libfci_cli_print_helpers.h b/sw/libfci_cli/src/libfci_cli_print_helpers.h
+index 0864959..60be915 100644
+--- a/sw/libfci_cli/src/libfci_cli_print_helpers.h
++++ b/sw/libfci_cli/src/libfci_cli_print_helpers.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef CLI_PRINT_HELPERS_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_common.c b/sw/libfci_cli/src/libfci_interface/fci_common.c
+index e515121..bc82a18 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_common.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_common.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_common.h b/sw/libfci_cli/src/libfci_interface/fci_common.h
+index 7fd221e..d34aff3 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_common.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_common.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_COMMON_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_ep.c b/sw/libfci_cli/src/libfci_interface/fci_ep.c
+index 6132efb..a7fbc61 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_ep.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_ep.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_ep.h b/sw/libfci_cli/src/libfci_interface/fci_ep.h
+index a6f70a3..4139024 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_ep.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_ep.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_EP_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_fp.c b/sw/libfci_cli/src/libfci_interface/fci_fp.c
+index 535efe3..7027acb 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_fp.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_fp.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_fp.h b/sw/libfci_cli/src/libfci_interface/fci_fp.h
+index 1882951..8fcf181 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_fp.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_fp.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_FP_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_fwfeat.c b/sw/libfci_cli/src/libfci_interface/fci_fwfeat.c
+index c1f68a5..a87d5b0 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_fwfeat.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_fwfeat.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_fwfeat.h b/sw/libfci_cli/src/libfci_interface/fci_fwfeat.h
+index 028ee53..c48076d 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_fwfeat.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_fwfeat.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_SPD_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_l2_bd.c b/sw/libfci_cli/src/libfci_interface/fci_l2_bd.c
+index 2224d28..a73c54a 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_l2_bd.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_l2_bd.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_l2_bd.h b/sw/libfci_cli/src/libfci_interface/fci_l2_bd.h
+index 4baf9b1..5a32016 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_l2_bd.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_l2_bd.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_L2_BD_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_log_if.c b/sw/libfci_cli/src/libfci_interface/fci_log_if.c
+index e13cf7a..78a470b 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_log_if.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_log_if.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_log_if.h b/sw/libfci_cli/src/libfci_interface/fci_log_if.h
+index 939689d..f31552c 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_log_if.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_log_if.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_LOG_IF_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_phy_if.c b/sw/libfci_cli/src/libfci_interface/fci_phy_if.c
+index 2a660b9..fa4b6bf 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_phy_if.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_phy_if.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_phy_if.h b/sw/libfci_cli/src/libfci_interface/fci_phy_if.h
+index f82be00..ffdf4f4 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_phy_if.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_phy_if.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_PHY_IF_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_qos.c b/sw/libfci_cli/src/libfci_interface/fci_qos.c
+index d3e02a5..c2c39de 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_qos.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_qos.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_qos.h b/sw/libfci_cli/src/libfci_interface/fci_qos.h
+index 53a87ac..0689434 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_qos.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_qos.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_SPD_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_rt_ct.c b/sw/libfci_cli/src/libfci_interface/fci_rt_ct.c
+index a3b4e6b..eeb195c 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_rt_ct.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_rt_ct.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_rt_ct.h b/sw/libfci_cli/src/libfci_interface/fci_rt_ct.h
+index f679ecf..1f40127 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_rt_ct.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_rt_ct.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_RT_CT_H_
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_spd.c b/sw/libfci_cli/src/libfci_interface/fci_spd.c
+index 72916bb..8223146 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_spd.c
++++ b/sw/libfci_cli/src/libfci_interface/fci_spd.c
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+  
+  
+diff --git a/sw/libfci_cli/src/libfci_interface/fci_spd.h b/sw/libfci_cli/src/libfci_interface/fci_spd.h
+index b9acf7d..796d4d6 100644
+--- a/sw/libfci_cli/src/libfci_interface/fci_spd.h
++++ b/sw/libfci_cli/src/libfci_interface/fci_spd.h
+@@ -1,16 +1,31 @@
+ /* =========================================================================
+- *  (c) Copyright 2006-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017, 2019-2021 NXP
++ *  Copyright 2020-2021 NXP
+  *
+- *  NXP Confidential. This software is owned or controlled by NXP and may only
+- *  be used strictly in accordance with the applicable license terms. By
+- *  expressly accepting such terms or by downloading, installing, activating
+- *  and/or otherwise using the software, you are agreeing that you have read,
+- *  and that you agree to comply with and are bound by, such license terms. If
+- *  you do not agree to be bound by the applicable license terms, then you may
+- *  not retain, install, activate or otherwise use the software.
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
+  *
+- *  This file contains sample code only. It is not part of the production code deliverables.
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * ========================================================================= */
+ 
+ #ifndef FCI_SPD_H_
+-- 
+2.17.1
+
