@@ -4,19 +4,18 @@ SUMMARY = "Add support for SJA1105 switch for S32V234EVB, BB Mini, S32G-PROCEVB-
 LICENSE = "GPLv2+ & MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d7810fab7487fb0aad327b76f1be7cd7"
 
-inherit module pythonnative
+inherit module python3native
 
 URL ?= "git://source.codeaurora.org/external/autobsps32/sja1105x;protocol=https"
-BRANCH ?= "release/bsp28.0"
+BRANCH ?= "hotfix/bsp29.0.hf1"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV = "7ca70ccdd2717344a4f8433044920af719b4d0a3"
+SRCREV = "2083f642759d039f0e107bc856a29cc127aa67ca"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
 SRC_URI += "\
     file://0001-sja1105-module-Makefile-didn-t-respect-install-dirs.patch \
     file://0001-sja-Update-sja-for-kernel-5.10.patch \
-    file://0001-sja1105-fix-build-error-of-kzfree.patch \
 "
 
 S = "${WORKDIR}/git"
