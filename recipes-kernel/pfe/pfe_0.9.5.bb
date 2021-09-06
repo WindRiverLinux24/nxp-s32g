@@ -13,16 +13,12 @@ PFE_LOCAL_FIRMWARE_DIR_CLASS_BIN ?= "."
 PFE_LOCAL_FIRMWARE_DIR_UTIL_BIN ?= "."
 
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https \
-        file://0-9-5/0001-version-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.5-RC1.patch \
-        file://0-9-5/0002-version-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.5-RC2.patch \
-        file://0-9-5/0003-version-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.5-RC3.patch \
-        file://0-9-5/0004-version-BLN_PFE-DRV_S32G_A53_LNX_BETA_0.9.5-RC4.patch \
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
 	file://0002-pfe-oal-modify-the-GFP-flag-to-GFP_ATOMIC-for-kzallo.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR_CLASS_BIN} \
 	file://${PFE_LOCAL_FIRMWARE_DIR_UTIL_BIN} \
 	"
-SRCREV = "3a548033d5126c9354a8529903d0842769718b1e"
+SRCREV = "919cef634c4300cad72d4f72785b352803b25e23"
 
 PATCHTOOL = "git"
 
