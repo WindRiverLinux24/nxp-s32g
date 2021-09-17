@@ -24,6 +24,11 @@ SRC_URI += " \
     file://0001-secboot-add-key-store-status-check-point-after-sys_i.patch \
     file://0001-Make-s32g274ardb2-and-s32g2xxaevb-support-ostree.patch \
     file://0001-scripts-mailmapper-python2-python3.patch \
+    file://bsp31/rc1/0001-s32v234hpcsom-add-initial-board-support.patch \
+    file://bsp31/rc1/0002-s32v234hpcsom-add-defconfig.patch \
+    file://bsp31/rc1/0003-s32v234hpcsom-add-ddr-config-for-hpc-som-board.patch \
+    file://bsp31/rc1/0004-clk-s32-gen1-Set-the-frequency-to-the-nearest-availa.patch \
+    file://bsp31/rc1/0005-s32r45-SoC-Print-SoC-revision-Major.Minor.patch \
 "
 
 SRCREV = "7eba18e1c0b994180e173e9343c7fe50819d9732"
