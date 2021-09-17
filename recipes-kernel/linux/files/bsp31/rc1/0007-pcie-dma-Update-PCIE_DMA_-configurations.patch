@@ -1,0 +1,147 @@
+From 45196916ad0889d8f856051a28ef5f8c4ffb0d22 Mon Sep 17 00:00:00 2001
+From: Bogdan-Gabriel Roman <bogdan-gabriel.roman@nxp.com>
+Date: Tue, 6 Apr 2021 09:29:04 +0300
+Subject: [PATCH 07/17] pcie: dma: Update PCIE_DMA_* configurations
+
+commit 45196916ad0889d8f856051a28ef5f8c4ffb0d22 from
+https://source.codeaurora.org/external/autobsps32/linux
+
+Get the number of read/write dma channels dynamically from the
+PCIE_DMA_CTRL register. Update the name of PCIE_DMA_MAX_SIZE to comply
+with the Kconfig file where it is defined.
+
+Upstream-Status: Pending
+
+Issue: ALB-5982
+Signed-off-by: Bogdan-Gabriel Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+
+read dma channels dynamically
+---
+ drivers/pci/controller/Kconfig           |  7 ------
+ drivers/pci/controller/dwc/pci-dma-s32.c | 27 ++++++++++++++++++------
+ drivers/pci/controller/dwc/pci-dma-s32.h | 10 ++++-----
+ 3 files changed, 25 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/pci/controller/Kconfig b/drivers/pci/controller/Kconfig
+index 2f1d7aa2001f..64e018675a7e 100644
+--- a/drivers/pci/controller/Kconfig
++++ b/drivers/pci/controller/Kconfig
+@@ -120,13 +120,6 @@ config PCI_DW_DMA
+ 	Internal DMA engine in PCIe mode, you want this enabled.
+ 	Otherwise you should set it to 'no'
+ 
+-config DMA_NR_CH
+-	depends on PCI_DW_DMA
+-	int
+-	default 1
+-	help
+-	  Freescale S32 PCIe DW DMA number of channels.
+-
+ config PCIE_DMA_MAX_SIZE
+ 	depends on PCI_DW_DMA
+ 	hex
+diff --git a/drivers/pci/controller/dwc/pci-dma-s32.c b/drivers/pci/controller/dwc/pci-dma-s32.c
+index 1c4998add34f..7f7b37e9630a 100644
+--- a/drivers/pci/controller/dwc/pci-dma-s32.c
++++ b/drivers/pci/controller/dwc/pci-dma-s32.c
+@@ -4,7 +4,7 @@
+  * PCIe host controller driver, customized
+  * for the NXP S32V PCIE driver
+  *
+- * Copyright 2017-2020 NXP
++ * Copyright 2017-2021 NXP
+  */
+ 
+ #include <linux/clk.h>
+@@ -434,15 +434,11 @@ int dw_pcie_dma_load_linked_list(struct dw_pcie *pci, struct dma_info *di,
+ int dw_pcie_dma_single_rw(struct dw_pcie *pci, struct dma_info *di,
+ 	struct dma_data_elem *dma_single_rw)
+ {
+-	u32 flags;
++	u32 flags, dma_nr_ch;
+ 	struct dma_ch_info *ptr_ch;
+ 
+-	/* Invalid channel number */
+-	if (dma_single_rw->ch_num > PCIE_DMA_NR_CH - 1)
+-		return -EINVAL;
+-
+ 	/* Invalid transfer size */
+-	if (dma_single_rw->size > PCIE_DMA_MAX_SIZE)
++	if (dma_single_rw->size > CONFIG_PCIE_DMA_MAX_SIZE)
+ 		return -EINVAL;
+ 
+ 	flags = dma_single_rw->flags;
+@@ -450,6 +446,15 @@ int dw_pcie_dma_single_rw(struct dw_pcie *pci, struct dma_info *di,
+ 		&di->wr_ch : &di->rd_ch;
+ 
+ 	if (flags & DMA_FLAG_WRITE_ELEM) {
++
++		dma_nr_ch = dw_pcie_readl_dbi(pci, PCIE_DMA_CTRL);
++		dma_nr_ch = (dma_nr_ch & NUM_DMA_RD_CHAN_MASK)
++					>> NUM_DMA_RD_CHAN_SHIFT;
++
++		/* Invalid channel number */
++		if (dma_single_rw->ch_num > dma_nr_ch - 1)
++			return -EINVAL;
++
+ 		if (di->wr_ch.status == DMA_CH_RUNNING)
+ 			return -EBUSY;
+ 
+@@ -459,6 +464,14 @@ int dw_pcie_dma_single_rw(struct dw_pcie *pci, struct dma_info *di,
+ 		dw_pcie_dma_set_viewport(pci, dma_single_rw->ch_num,
+ 			DMA_CH_WRITE);
+ 	} else {
++
++		dma_nr_ch = dw_pcie_readl_dbi(pci, PCIE_DMA_CTRL);
++		dma_nr_ch = (dma_nr_ch & NUM_DMA_WR_CHAN_MASK);
++
++		/* Invalid channel number */
++		if (dma_single_rw->ch_num > dma_nr_ch - 1)
++			return -EINVAL;
++
+ 		if (di->rd_ch.status == DMA_CH_RUNNING)
+ 			return -EBUSY;
+ 
+diff --git a/drivers/pci/controller/dwc/pci-dma-s32.h b/drivers/pci/controller/dwc/pci-dma-s32.h
+index f0ed3c5b07d0..150359a397f9 100644
+--- a/drivers/pci/controller/dwc/pci-dma-s32.h
++++ b/drivers/pci/controller/dwc/pci-dma-s32.h
+@@ -4,15 +4,13 @@
+  * PCIe host controller driver, customized
+  * for the NXP S32V PCIE driver
+  *
+- * Copyright 2017-2020 NXP
++ * Copyright 2017-2021 NXP
+  */
+ 
+ #ifndef PCIE_DMA_S32_H
+ #define PCIE_DMA_S32_H
+ 
+-#ifdef CONFIG_PCI_DW_DMA
+ #include "pcie-designware.h"
+-#endif
+ 
+ #define PCIE_DMA_BASE	0x970
+ 
+@@ -72,6 +70,10 @@
+ #define DMA_FLAG_EN_REMOTE_DONE_INT			BIT(7)
+ #define DMA_FLAG_EN_REMOTE_ABORT_INT		BIT(8)
+ 
++#define NUM_DMA_RD_CHAN_MASK	0xF0000
++#define NUM_DMA_RD_CHAN_SHIFT	16
++#define NUM_DMA_WR_CHAN_MASK	0xF
++
+ enum DMA_CH_FLAGS {
+ 	DMA_CH_STOPPED = 0,
+ 	DMA_CH_RUNNING,
+@@ -169,6 +171,4 @@ irqreturn_t dw_handle_dma_irq_read(struct dw_pcie *pci, struct dma_info *di,
+ 					u32 val_read);
+ irqreturn_t s32gen1_pcie_dma_handler(int irq, void *arg);
+ 
+-#endif /* CONFIG_PCI_DW_DMA */
+-
+ #endif  /* PCIE_DMA_S32_H */
+-- 
+2.17.1
+

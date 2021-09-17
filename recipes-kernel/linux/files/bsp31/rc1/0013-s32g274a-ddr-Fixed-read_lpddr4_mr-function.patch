@@ -1,0 +1,105 @@
+From f4944282d5774c2320f21f41b23c79ce28e2b962 Mon Sep 17 00:00:00 2001
+From: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Date: Thu, 9 Sep 2021 12:41:33 +0300
+Subject: [PATCH 13/17] s32g274a: ddr: Fixed read_lpddr4_mr function
+
+commit f4944282d5774c2320f21f41b23c79ce28e2b962 from
+https://source.codeaurora.org/external/autobsps32/linux
+
+The workaround for this errata should read only RANK 0
+and check both dies.
+
+Currently, the Linux driver only cleared rank0 bit, and reads MR from
+RANK 1 which is not an issue on dual rank devices such as S32G274A-EVB,
+but it is not correct on single rank devices, which do not have RANK 1.
+
+Upstream-Status: Pending
+
+Issue: ALB-7692
+Signed-off-by: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/ddr/s32-gen1/ddr.c |  9 +++++----
+ drivers/ddr/s32-gen1/ddr.h | 14 ++++++++++----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/ddr/s32-gen1/ddr.c b/drivers/ddr/s32-gen1/ddr.c
+index 054c137ecc5e..9ed97eaaf44c 100644
+--- a/drivers/ddr/s32-gen1/ddr.c
++++ b/drivers/ddr/s32-gen1/ddr.c
+@@ -50,7 +50,7 @@ static void cleanup_ddr_errata(struct ddr_priv *data)
+ }
+ 
+ /* Read lpddr4 mode register with given index */
+-uint32_t read_lpddr4_MR(uint16_t MR_index, void __iomem *ddrc_base,
++uint32_t read_lpddr4_mr(uint8_t MR_index, void __iomem *ddrc_base,
+ 		void __iomem *perf_base)
+ {
+ 	uint32_t reg;
+@@ -71,11 +71,12 @@ uint32_t read_lpddr4_MR(uint16_t MR_index, void __iomem *ddrc_base,
+ 	reg = readl(ddrc_base + OFFSET_DDRC_MRCTRL0);
+ 	reg |= DDRC_MRCTRL0_MR_TYPE_READ;
+ 	reg &= ~DDRC_MRCTRL0_MR_RANK_MASK;
+-	writel(reg, ddrc_base + OFFSET_DDRC_MRCTRL0);
++	writel(reg | DDRC_MRCTRL0_MR_RANK_OFF, ddrc_base + OFFSET_DDRC_MRCTRL0);
+ 
+ 	/* Configure MR address: MRCTRL1[8:15] */
+ 	reg = readl(ddrc_base + OFFSET_DDRC_MRCTRL1);
+-	writel(reg | (MR_index << DDRC_MRCTRL1_ADDR_SHIFT),
++	reg &= ~DDRC_MRCTRL1_MR_ADDR_MASK;
++	writel(reg | (MR_index << DDRC_MRCTRL1_MR_ADDR_SHIFT),
+ 			ddrc_base + OFFSET_DDRC_MRCTRL1);
+ 
+ 	/* Initiate MR transaction: MR_WR = 0x1 */
+@@ -101,7 +102,7 @@ uint8_t read_TUF(void __iomem *ddrc_base, void __iomem *perf_base)
+ 	uint32_t MR4_val;
+ 	uint8_t MR4_die_1, MR4_die_2;
+ 
+-	MR4_val = read_lpddr4_MR(MR4, ddrc_base, perf_base);
++	MR4_val = read_lpddr4_mr(MR4, ddrc_base, perf_base);
+ 	MR4_die_1 = MR4_val & 0x7;
+ 	MR4_die_2 = (MR4_val >> 16) & 0x7;
+ 
+diff --git a/drivers/ddr/s32-gen1/ddr.h b/drivers/ddr/s32-gen1/ddr.h
+index fded88fc6a9d..1905aeea6784 100644
+--- a/drivers/ddr/s32-gen1/ddr.h
++++ b/drivers/ddr/s32-gen1/ddr.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0+
+  *
+- * Copyright 2020 NXP
++ * Copyright 2020-2021 NXP
+  *
+  */
+ 
+@@ -31,10 +31,16 @@
+ #define DDRC_MRCTRL0_MR_TYPE_READ	0x1
+ #define DDRC_MRCTRL0_MR_RANK_SHIFT	4
+ #define DDRC_MRCTRL0_MR_WR_SHIFT	31
++#define DDRC_MRCTRL0_MR_WR_VAL		0x3
+ #define DDRC_MRCTRL0_MR_WR_MASK		BIT(DDRC_MRCTRL0_MR_WR_SHIFT)
+-#define DDRC_MRCTRL0_MR_RANK_MASK	BIT(DDRC_MRCTRL0_MR_RANK_SHIFT)
++#define DDRC_MRCTRL0_MR_RANK_OFF	BIT(DDRC_MRCTRL0_MR_RANK_SHIFT)
++#define DDRC_MRCTRL0_MR_RANK_MASK	(DDRC_MRCTRL0_MR_WR_VAL \
++		<< DDRC_MRCTRL0_MR_RANK_SHIFT)
+ #define OFFSET_DDRC_MRCTRL1		0x14
+-#define DDRC_MRCTRL1_ADDR_SHIFT	8
++#define DDRC_MRCTRL1_MR_VAL		0xff
++#define DDRC_MRCTRL1_MR_ADDR_SHIFT	8
++#define DDRC_MRCTRL1_MR_ADDR_MASK	(DDRC_MRCTRL1_MR_VAL \
++		<< DDRC_MRCTRL1_MR_ADDR_SHIFT)
+ 
+ /* Performance monitoring registers */
+ #define OFFSET_MRR_0_DATA_REG_ADDR	0x40
+@@ -44,7 +50,7 @@
+ #define SUCCESSIVE_READ	2
+ 
+ /* Read lpddr4 mode register with given index */
+-uint32_t read_lpddr4_MR(uint16_t MR_index,
++uint32_t read_lpddr4_mr(uint8_t MR_index,
+ 		void __iomem *ddrc_base, void __iomem *perf_base);
+ 
+ /*
+-- 
+2.17.1
+

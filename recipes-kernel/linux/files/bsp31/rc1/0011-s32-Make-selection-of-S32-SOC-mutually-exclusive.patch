@@ -1,0 +1,49 @@
+From 2ecb83a133572ae07bedd6e8794d8e5d7bdc1cc8 Mon Sep 17 00:00:00 2001
+From: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Date: Wed, 14 Apr 2021 20:30:24 +0300
+Subject: [PATCH 11/17] s32: Make selection of S32 SOC mutually-exclusive
+
+commit 2ecb83a133572ae07bedd6e8794d8e5d7bdc1cc8 from
+https://source.codeaurora.org/external/autobsps32/linux
+
+This will prevent selecting both S32V234 and S32GEN1 SoCs, and
+prevent many subtle issues deriving from this.
+
+Issue: ALB-5982
+
+Upstream-Status: Pending
+
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/Kconfig.platforms | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index 267599f94920..f019973ed581 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -11,7 +11,10 @@ config ARCH_S32
+ 
+ if ARCH_S32
+ 
+-menu "S32 SOC selection"
++choice
++	prompt "S32 SOC selection"
++	default SOC_S32GEN1
++
+ 	config SOC_S32V234
+ 		bool "S32V234 SOC"
+ 	config SOC_S32GEN1
+@@ -24,7 +27,7 @@ menu "S32 SOC selection"
+ 		select RESET_SCMI_SCMI
+ 		select GENERIC_PHY
+ 		select PHY_S32GEN1_SERDES
+-endmenu
++endchoice
+ 
+ menu "STM timer used as system timer"
+ 	config S32_STM_SYSTIMER
+-- 
+2.17.1
+

@@ -1,0 +1,35 @@
+From d8f96768d71f7dc966de99ab436793029c14d0a7 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@oss.nxp.com>
+Date: Wed, 1 Sep 2021 15:03:03 +0300
+Subject: [PATCH 02/17] net: can/llce: Correct the way the logger advertise its
+ link state
+
+commit d8f96768d71f7dc966de99ab436793029c14d0a7 from
+https://source.codeaurora.org/external/autobsps32/linux
+
+Upstream-Status: Pending
+
+Issue: ALB-7597
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@oss.nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/net/can/llce/llce_logger.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/can/llce/llce_logger.c b/drivers/net/can/llce/llce_logger.c
+index ca93e8ba2b3c..bffbcca464ca 100644
+--- a/drivers/net/can/llce/llce_logger.c
++++ b/drivers/net/can/llce/llce_logger.c
+@@ -43,6 +43,9 @@ static int llce_logger_open(struct net_device *dev)
+ 	if (ret)
+ 		netdev_err(dev, "Failed to enable interrupt\n");
+ 
++	if (!ret && !netif_carrier_ok(dev))
++		netif_carrier_on(dev);
++
+ disable_napi:
+ 	if (ret)
+ 		napi_disable(&llce_dev->napi);
+-- 
+2.17.1
+

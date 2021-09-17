@@ -7,8 +7,11 @@ As part of S32R45 SoC rev. 2.0 MIDR rev ID register major
 mask was updated to value 0001.
 We print this information in u-boot.
 
+Upstream-Status: Pending
+
 Issue: ALB-6111
 Signed-off-by: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
 ---
  arch/arm/cpu/armv8/s32/s32-gen1/soc.c | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
