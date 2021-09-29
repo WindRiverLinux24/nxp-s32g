@@ -1,0 +1,40 @@
+From ea70e2d040fe11814bbaf44a88ac60c554c7f10f Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Wed, 29 Sep 2021 19:32:05 +0800
+Subject: [PATCH] arm64: tlb: add required __TLBI_VADDR() operation to fix
+ issue caused by merge conflict
+
+For linux-yocto update to v5.10.69, there is a boot issue caused
+by merge conflict, this patch is to fix the issue. Or else, the
+S32G board can not boot due to the tlb flushed wrong address.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/include/asm/tlbflush.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/include/asm/tlbflush.h b/arch/arm64/include/asm/tlbflush.h
+index e614f157dfb5..40f993ddedb9 100644
+--- a/arch/arm64/include/asm/tlbflush.h
++++ b/arch/arm64/include/asm/tlbflush.h
+@@ -272,6 +272,7 @@ static inline void flush_tlb_page_nosync(struct vm_area_struct *vma,
+ 	unsigned long addr;
+ 
+ 	dsb(ishst);
++	addr = __TLBI_VADDR(uaddr, ASID(vma->vm_mm));
+ #if IS_ENABLED(CONFIG_NXP_S32GEN1_ERRATUM_ERR050481)
+ 	if (S32_IS_KERN_ADDR(addr)) {
+ 		__tlbi(vmalle1is);
+@@ -281,6 +282,7 @@ static inline void flush_tlb_page_nosync(struct vm_area_struct *vma,
+ 		__tlbi(vale1is, addr);
+ 		__tlbi_user(vale1is, addr);
+ 	}
++
+ }
+ 
+ static inline void flush_tlb_page(struct vm_area_struct *vma,
+-- 
+2.25.1
+

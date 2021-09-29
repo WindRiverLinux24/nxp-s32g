@@ -6,6 +6,7 @@ LINUX_VERSION:nxp-s32g2xx ?= "5.10.x"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g2xx = " \
+    file://0001-arm64-tlb-add-required-__TLBI_VADDR-operation-to-fix.patch \
     file://bsp30/rc5/0001-Revert-hse-remove-uio-component-from-crypto-driver.patch \
     file://bsp30/rc6/0001-Revert-crypto-hse-remove-uio-implementation-artifact.patch \
     file://bsp31/rc1/0002-net-can-llce-Correct-the-way-the-logger-advertise-it.patch \
