@@ -29,6 +29,25 @@ SRC_URI += " \
     file://bsp31/rc1/0003-s32v234hpcsom-add-ddr-config-for-hpc-som-board.patch \
     file://bsp31/rc1/0004-clk-s32-gen1-Set-the-frequency-to-the-nearest-availa.patch \
     file://bsp31/rc1/0005-s32r45-SoC-Print-SoC-revision-Major.Minor.patch \
+    file://bsp31/rc2/0001-misc-s32gen1-Enable-all-fuse-subcommands.patch \
+    file://bsp31/rc2/0002-s32-gen1-Make-s32gen1-config-nodes-subnodes-of-s32ge.patch \
+    file://bsp31/rc2/0003-clk-s32gen1-Remove-unnecessary-partition-blocks-for-.patch \
+    file://bsp31/rc2/0004-s32-Disable-ECC-region-exclusion-for-S32GEN1-emulato.patch \
+    file://bsp31/rc2/0005-s32g3-Correct-the-way-MC_ME.PRTN0_CORE-offset-is-cal.patch \
+    file://bsp31/rc2/0006-s32g3-Correct-the-calculation-of-MC_RGM.PRST1_0-fiel.patch \
+    file://bsp31/rc2/0007-s32g3-Add-initial-support-for-s32g3-evb-board.patch \
+    file://bsp31/rc2/0008-dt-bindings-clock-Run-DDR-at-800MHz-for-all-S32GEN1-.patch \
+    file://bsp31/rc2/0009-s32g2-Remove-Rev1-leftovers.patch \
+    file://bsp31/rc2/0010-s32g-Renamme-TARGET_S32G274AEVB-to-TARGET_S32G2XXAEV.patch \
+    file://bsp31/rc2/0011-s32g-Remove-MSCM-initialization.patch \
+    file://bsp31/rc2/0012-pcie-s32g-Fix-BARx_MASK-register-addresses.patch \
+    file://bsp31/rc2/0013-s32-pcie-Update-link-speed-info-for-S32G3-platform.patch \
+    file://bsp31/rc2/0014-sja1105-increase-clock-frequency-to-4MHz.patch \
+    file://bsp31/rc2/0015-sja1105-move-driver-to-the-misc-category.patch \
+    file://bsp31/rc2/0016-sja1105-add-dm-support.patch \
+    file://bsp31/rc2/0017-s32g274aevb-probe-sja1105-in-misc_init_r.patch \
+    file://bsp31/rc2/0018-s32r45-Reset-PHY-and-reapply-GMAC-clock-settings.patch \
+    file://bsp31/rc2/0019-s32g2evb-Rename-linux-dtb-to-fsl-s32g2xxa-evb.dtb.patch \
 "
 
 SRCREV = "7eba18e1c0b994180e173e9343c7fe50819d9732"
