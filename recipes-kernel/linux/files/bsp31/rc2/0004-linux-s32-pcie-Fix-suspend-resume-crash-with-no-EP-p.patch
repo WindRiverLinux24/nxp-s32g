@@ -1,0 +1,39 @@
+From 098454a8fbe16a5b3297c169c30c4a24d2447a94 Mon Sep 17 00:00:00 2001
+From: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 28 Sep 2021 10:30:01 +0300
+Subject: [PATCH 04/20] linux-s32: pcie: Fix suspend/resume crash with no EP
+ plugged
+
+Since we always probe the PCIe controller during Linux boot,
+we should allow the suspend/resume routines to be executed with
+no EP pluged, hence no linkup.
+Before this patch, in 'suspend' callback we checked if we had
+link-up, and in a negative case we exited the callback which lead
+to a Linux crash.
+
+Issue: ALB-7869
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/controller/dwc/pci-s32gen1.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pci-s32gen1.c b/drivers/pci/controller/dwc/pci-s32gen1.c
+index 23d14e0f2d33..3d781126a2f8 100644
+--- a/drivers/pci/controller/dwc/pci-s32gen1.c
++++ b/drivers/pci/controller/dwc/pci-s32gen1.c
+@@ -1504,9 +1504,6 @@ static int s32gen1_pcie_suspend(struct device *dev)
+ 
+ 	DEBUG_FID(s32_pp->id);
+ 
+-	if (!s32gen1_pcie_link_is_up(pcie))
+-		return 0;
+-
+ 	/* Save MSI interrupt vector */
+ 	s32_pp->msi_ctrl_int = dw_pcie_readl_dbi(pcie,
+ 					       PORT_MSI_CTRL_INT_0_EN_OFF);
+-- 
+2.17.1
+

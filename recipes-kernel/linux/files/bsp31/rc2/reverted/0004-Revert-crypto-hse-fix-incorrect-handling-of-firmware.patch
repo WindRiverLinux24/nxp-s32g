@@ -1,0 +1,171 @@
+From 07dc1a1df63830126f11628c505a8414fdafa571 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Tue, 12 Oct 2021 12:20:45 +0800
+Subject: [PATCH 4/4] Revert "crypto: hse: fix incorrect handling of firmware
+ state"
+
+This reverts commit 7b214d39529f48c17b143da6f91cb5315f6d3f06.
+
+This patch is to make the pkcs11-hse userspace demo work normally.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/crypto/hse/hse-core.c | 61 ++++++++++++-----------------------
+ 1 file changed, 20 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/crypto/hse/hse-core.c b/drivers/crypto/hse/hse-core.c
+index dcc2b3984ad6..0cf281d0bd77 100644
+--- a/drivers/crypto/hse/hse-core.c
++++ b/drivers/crypto/hse/hse-core.c
+@@ -19,18 +19,6 @@
+ #include "hse-core.h"
+ #include "hse-mu.h"
+ 
+-/**
+- * enum hse_fw_status - HSE firmware status
+- * @HSE_FW_SHUTDOWN: firmware not initialized or shut down due to fatal error
+- * @HSE_FW_RUNNING: firmware running
+- * @HSE_FW_STANDBY: firmware standby
+- */
+-enum hse_fw_status {
+-	HSE_FW_SHUTDOWN = 0u,
+-	HSE_FW_RUNNING = 1u,
+-	HSE_FW_STANDBY = 2u,
+-};
+-
+ /**
+  * struct hse_drvdata - HSE driver private data
+  * @srv_desc[n].ptr: service descriptor virtual address for channel n
+@@ -52,7 +40,8 @@ enum hse_fw_status {
+  * @hmac_key_ring: HMAC key slots currently available
+  * @aes_key_ring: AES key slots currently available
+  * @key_ring_lock: lock used for key slot acquisition
+- * @firmware_status: internally cached status of HSE firmware
++ * @firmware_dead: used to signal firmware fatal error
++ * @firmware_standby: firmware preparing for system stand-by
+  */
+ struct hse_drvdata {
+ 	struct {
+@@ -80,7 +69,8 @@ struct hse_drvdata {
+ 	struct list_head hmac_key_ring;
+ 	struct list_head aes_key_ring;
+ 	spinlock_t key_ring_lock; /* covers key slot acquisition */
+-	enum hse_fw_status firmware_status;
++	bool firmware_dead;
++	bool firmware_standby;
+ 	u32 rng_srv_id;
+ };
+ 
+@@ -499,8 +489,8 @@ int hse_channel_release(struct device *dev, u8 channel)
+  * must be set to HSE_CHANNEL_ANY unless obtained via hse_channel_acquire().
+  *
+  * Return: 0 on success, -EINVAL for invalid parameter, -ECHRNG for channel
+- *         index out of range, -EBUSY for channel busy, no channel available or
+- *         firmware on stand-by, -ENOTRECOVERABLE for firmware in shutdown state
++ *         index out of range, -ENOTRECOVERABLE for firmware stopped due to
++ *         internal fatal error, -EBUSY for channel busy or none available
+  */
+ int hse_srv_req_async(struct device *dev, u8 channel, void *srv_desc,
+ 		      void *ctx, void (*rx_cbk)(int err, void *ctx))
+@@ -514,16 +504,11 @@ int hse_srv_req_async(struct device *dev, u8 channel, void *srv_desc,
+ 	if (unlikely(channel != HSE_CHANNEL_ANY && channel >= HSE_NUM_CHANNELS))
+ 		return -ECHRNG;
+ 
+-	switch (drv->firmware_status) {
+-	case HSE_FW_STANDBY:
+-		if (unlikely(channel != HSE_CHANNEL_ADM))
+-			return -EBUSY;
+-		break;
+-	case HSE_FW_SHUTDOWN:
++	if (unlikely(drv->firmware_dead))
+ 		return -ENOTRECOVERABLE;
+-	default:
+-		break;
+-	}
++
++	if (unlikely(drv->firmware_standby))
++		return -EBUSY;
+ 
+ 	spin_lock(&drv->tx_lock);
+ 
+@@ -565,8 +550,8 @@ int hse_srv_req_async(struct device *dev, u8 channel, void *srv_desc,
+  * shall be set to HSE_CHANNEL_ANY unless obtained via hse_channel_acquire().
+  *
+  * Return: 0 on success, -EINVAL for invalid parameter, -ECHRNG for channel
+- *         index out of range, -EBUSY for channel busy, no channel available or
+- *         firmware on stand-by, -ENOTRECOVERABLE for firmware in shutdown state
++ *         index out of range, -ENOTRECOVERABLE for firmware stopped due to
++ *         internal fatal error, -EBUSY for channel busy or none available
+  */
+ int hse_srv_req_sync(struct device *dev, u8 channel, void *srv_desc)
+ {
+@@ -580,16 +565,11 @@ int hse_srv_req_sync(struct device *dev, u8 channel, void *srv_desc)
+ 	if (unlikely(channel != HSE_CHANNEL_ANY && channel >= HSE_NUM_CHANNELS))
+ 		return -ECHRNG;
+ 
+-	switch (drv->firmware_status) {
+-	case HSE_FW_STANDBY:
+-		if (unlikely(channel != HSE_CHANNEL_ADM))
+-			return -EBUSY;
+-		break;
+-	case HSE_FW_SHUTDOWN:
++	if (unlikely(drv->firmware_dead))
+ 		return -ENOTRECOVERABLE;
+-	default:
+-		break;
+-	}
++
++	if (unlikely(drv->firmware_standby))
++		return -EBUSY;
+ 
+ 	spin_lock(&drv->tx_lock);
+ 
+@@ -759,7 +739,7 @@ static irqreturn_t hse_event_dispatcher(int irq, void *dev)
+ 	}
+ 
+ 	/* stop any subsequent requests */
+-	drv->firmware_status = HSE_FW_SHUTDOWN;
++	drv->firmware_dead = true;
+ 
+ 	/* disable RX and event notifications */
+ 	hse_mu_irq_disable(drv->mu, HSE_INT_RESPONSE, HSE_CH_MASK_ALL);
+@@ -816,7 +796,8 @@ static int hse_probe(struct platform_device *pdev)
+ 		dev_err(dev, "firmware not found\n");
+ 		return -ENODEV;
+ 	}
+-	drv->firmware_status = HSE_FW_RUNNING;
++	drv->firmware_dead = false;
++	drv->firmware_standby = false;
+ 
+ 	/* manage channels and descriptor space */
+ 	hse_manage_channels(dev, desc_base_ptr, desc_base_dma);
+@@ -916,7 +897,7 @@ static int hse_pm_suspend(struct device *dev)
+ 	int err;
+ 
+ 	/* stop subsequent requests */
+-	drv->firmware_status = HSE_FW_STANDBY;
++	drv->firmware_standby = true;
+ 
+ 	/* disable RX notifications, except for HSE_CHANNEL_ADM */
+ 	hse_mu_irq_disable(drv->mu, HSE_INT_RESPONSE, HSE_CH_MASK_ALL);
+@@ -930,7 +911,6 @@ static int hse_pm_suspend(struct device *dev)
+ 	hse_srv_req_cancel_all(dev);
+ 
+ 	if (unlikely(err && err != -EPERM)) {
+-		drv->firmware_status = HSE_FW_RUNNING;
+ 		dev_err(dev, "%s: request failed: %d\n", __func__, err);
+ 		return err;
+ 	}
+@@ -957,7 +937,6 @@ static int hse_pm_resume(struct device *dev)
+ 	hse_mu_irq_enable(drv->mu, HSE_INT_SYS_EVENT, HSE_EVT_MASK_WARN);
+ 	hse_mu_irq_enable(drv->mu, HSE_INT_SYS_EVENT, HSE_EVT_MASK_ERR);
+ 
+-	drv->firmware_status = HSE_FW_RUNNING;
+ 	dev_info(dev, "device resumed, status 0x%04X\n", status);
+ 
+ 	return 0;
+-- 
+2.25.1
+

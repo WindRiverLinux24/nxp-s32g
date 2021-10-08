@@ -24,11 +24,28 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://bsp31/rc1/0015-gpio-siul-s32gen1-Share-eirq-regmap-among-siul2-inst.patch \
     file://bsp31/rc1/0016-s32gen1-usdhc-Perform-strobe-DLL-lock-at-200-MHz.patch \
     file://bsp31/rc1/0017-s32gen1-pcie-Probe-PCIe-host-controller-even-with-no.patch \
+    file://bsp31/rc2/0001-crypto-hse-fix-incorrect-handling-of-firmware-state.patch \
+    file://bsp31/rc2/0002-crypto-hse-wait-for-firmware-init-on-resume.patch \
+    file://bsp31/rc2/0003-s32-adc-Correctly-check-bus-clock-frequency-based-on.patch \
+    file://bsp31/rc2/0004-linux-s32-pcie-Fix-suspend-resume-crash-with-no-EP-p.patch \
+    file://bsp31/rc2/0005-xen-extend-xen_swiotlb_dma_ops-with-map_resource-and.patch \
+    file://bsp31/rc2/0006-uio-hse-standalone-user-space-driver-support.patch \
+    file://bsp31/rc2/0007-dt-bindings-crypto-hse-add-dt-bindings-documentation.patch \
+    file://bsp31/rc2/0013-dts-fsl-s32g274a-evb-add-sja1105-bindings.patch \
+    file://bsp31/rc2/0014-linux-s32-pcie-Add-hot-unplug-support.patch \
+    file://bsp31/rc2/0015-linux-s32-pcie-Fix-e1000e-crash-with-surprise-hot-un.patch \
+    file://bsp31/rc2/0016-linux-s32-pcie-Add-Hot-Plug-support.patch \
+    file://bsp31/rc2/0017-bindings-arm-nxp-Add-bindings-for-S32-boards.patch \
+    file://bsp31/rc2/0018-dts-freescale-Add-device-tree-for-s32g3xxx-evb-board.patch \
+    file://bsp31/rc2/0019-dts-fsl-s32-gen1-Add-nodes-STM-3-7.patch \
+    file://bsp31/rc2/0020-dts-fsl-s32-gen1-Add-nodes-STM-8-11.patch \
+    file://bsp31/rc2/reverted/0001-Revert-dt-bindings-crypto-hse-add-dt-bindings-docume.patch \
+    file://bsp31/rc2/reverted/0002-Revert-uio-hse-standalone-user-space-driver-support.patch \
+    file://bsp31/rc2/reverted/0003-Revert-crypto-hse-wait-for-firmware-init-on-resume.patch \
+    file://bsp31/rc2/reverted/0004-Revert-crypto-hse-fix-incorrect-handling-of-firmware.patch \
     file://0001-arch-arm64-s32g-disable-virtio_block-dts-node-by-def.patch \ 
     file://0002-s32gen1-pcie-Remove-duplicate-interrupt-resource-req.patch \
     file://0003-driver-pci-pci-s32gen1-remove-the-__init-macro.patch \ 
-    file://0004-drivers-pci-s32gen1-fix-s32gen1_pcie_msi_handler-def.patch \ 
-    file://0005-drivers-pci-s32gen1-fix-build-warning-of-unused-func.patch \ 
     file://0006-dts-s32g27a-pfe-move-reserve-memory-address-to-leave.patch \ 
     file://0007-drivers-mailbox-replace-mutex-with-spinlock-in-llce_.patch \ 
     file://0008-arch-arm64-s32g-add-skew-ps-property-for-ksz9031-phy.patch \ 
@@ -39,7 +56,6 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://0013-arch-arm64-dts-keep-i2c1-in-disabled-status.patch \
     file://0014-drivers-phy-s32gen1-serdes-drop-the-redundant-phy-id.patch \
     file://0016-dts-s32g274a-rdb2-disable-ARQ107-phy-node-explicitly.patch \
-    file://0017-drivers-pci-modify-the-config-judgement-to-fix-build.patch \
     file://0001-drivers-llce-mailbox-delete-DO_ONCE-call-for-llce_ca.patch \
     file://0002-drivers-llce_can-put-echo-skb-before-sending-message.patch \
     file://0001-drivers-llce-mailbox-change-GFP_KERNEL-to-GFP_ATOMIC.patch \

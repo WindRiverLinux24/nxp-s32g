@@ -1,0 +1,59 @@
+From 6ac78d9f9bf7e74f8c61f77a6f42e145f2b9e8ab Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 21 Sep 2021 11:52:09 +0300
+Subject: [PATCH 20/20] dts/fsl-s32-gen1: Add nodes STM 8-11
+
+Issue: ALB-7253
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../boot/dts/freescale/fsl-s32g398a.dtsi      | 31 +++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/fsl-s32g398a.dtsi b/arch/arm64/boot/dts/freescale/fsl-s32g398a.dtsi
+index 767b4b20faac..538326744418 100644
+--- a/arch/arm64/boot/dts/freescale/fsl-s32g398a.dtsi
++++ b/arch/arm64/boot/dts/freescale/fsl-s32g398a.dtsi
+@@ -62,6 +62,37 @@
+ 		status = "disabled";
+ 	};
+ 
++	stm8: stm@40520000 {
++		compatible = "fsl,s32gen1-stm-global";
++		reg = <0x0 0x40520000 0x0 0x3000>;
++		clocks = <&clks S32GEN1_SCMI_CLK_STM_MODULE>;
++		clock-names = "stm";
++		status = "disabled";
++	};
++
++	stm9: stm@40524000 {
++		compatible = "fsl,s32gen1-stm-global";
++		reg = <0x0 0x40524000 0x0 0x3000>;
++		clocks = <&clks S32GEN1_SCMI_CLK_STM_MODULE>;
++		clock-names = "stm";
++		status = "disabled";
++	};
++
++	stm10: stm@40528000 {
++		compatible = "fsl,s32gen1-stm-global";
++		reg = <0x0 0x40528000 0x0 0x3000>;
++		clocks = <&clks S32GEN1_SCMI_CLK_STM_MODULE>;
++		clock-names = "stm";
++		status = "disabled";
++	};
++
++	stm11: stm@4052C000 {
++		compatible = "fsl,s32gen1-stm-global";
++		reg = <0x0 0x4052C000 0x0 0x3000>;
++		clocks = <&clks S32GEN1_SCMI_CLK_STM_MODULE>;
++		clock-names = "stm";
++		status = "disabled";
++	};
+ };
+ 
+ &cpus {
+-- 
+2.17.1
+
