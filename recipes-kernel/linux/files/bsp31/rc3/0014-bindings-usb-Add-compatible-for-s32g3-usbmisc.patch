@@ -1,0 +1,31 @@
+From ce75373a5428b2c7bf89287833a4d592f0ac42fb Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 24 Sep 2021 12:07:16 +0300
+Subject: [PATCH 14/20] bindings/usb: Add compatible for s32g3-usbmisc
+
+Issue: ALB-7732
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Documentation/devicetree/bindings/usb/usbmisc-imx.txt | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/usbmisc-imx.txt b/Documentation/devicetree/bindings/usb/usbmisc-imx.txt
+index a8e81f70ce7e..4355e95dd433 100644
+--- a/Documentation/devicetree/bindings/usb/usbmisc-imx.txt
++++ b/Documentation/devicetree/bindings/usb/usbmisc-imx.txt
+@@ -8,7 +8,8 @@ Required properties:
+ 	"fsl,imx6sx-usbmisc" for imx6sx
+ 	"fsl,imx7d-usbmisc" for imx7d
+ 	"fsl,imx7ulp-usbmisc" for imx7ulp
+-	"fsl,s32g-usbmisc" for s32g
++	"fsl,s32g2-usbmisc" for s32g2
++	"fsl,s32g3-usbmisc" for s32g3
+ - reg: Should contain registers location and length
+ 
+ Examples:
+-- 
+2.17.1
+

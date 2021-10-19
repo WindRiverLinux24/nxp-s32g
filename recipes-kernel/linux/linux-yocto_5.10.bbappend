@@ -6,8 +6,6 @@ LINUX_VERSION:nxp-s32g2xx ?= "5.10.x"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g2xx = " \
-    file://bsp30/rc5/0001-Revert-hse-remove-uio-component-from-crypto-driver.patch \
-    file://bsp30/rc6/0001-Revert-crypto-hse-remove-uio-implementation-artifact.patch \
     file://bsp31/rc1/0002-net-can-llce-Correct-the-way-the-logger-advertise-it.patch \
     file://bsp31/rc1/0003-i2c-imx-support-slave-mode-for-imx-I2C-driver.patch \
     file://bsp31/rc1/0004-dts-s32v234-hpcsom-add-device-tree-for-hpc-som.patch \
@@ -39,10 +37,22 @@ SRC_URI:append:nxp-s32g2xx = " \
     file://bsp31/rc2/0018-dts-freescale-Add-device-tree-for-s32g3xxx-evb-board.patch \
     file://bsp31/rc2/0019-dts-fsl-s32-gen1-Add-nodes-STM-3-7.patch \
     file://bsp31/rc2/0020-dts-fsl-s32-gen1-Add-nodes-STM-8-11.patch \
-    file://bsp31/rc2/reverted/0001-Revert-dt-bindings-crypto-hse-add-dt-bindings-docume.patch \
-    file://bsp31/rc2/reverted/0002-Revert-uio-hse-standalone-user-space-driver-support.patch \
-    file://bsp31/rc2/reverted/0003-Revert-crypto-hse-wait-for-firmware-init-on-resume.patch \
-    file://bsp31/rc2/reverted/0004-Revert-crypto-hse-fix-incorrect-handling-of-firmware.patch \
+    file://bsp31/rc3/0001-bindings-reset-Add-documentation-for-S32G3-reset-con.patch \
+    file://bsp31/rc3/0002-reset-s32g3-Add-A53-and-M7-cores-to-SCMI-reset-layer.patch \
+    file://bsp31/rc3/0003-s32-gen1-pcie-Fix-STR-Linux-crash-when-PCIe-controll.patch \
+    file://bsp31/rc3/0004-s32-thermal-Remove-S32-GEN1-rev-1-support.patch \
+    file://bsp31/rc3/0005-s32-thermal-doc-Remove-dt-bindings-used-for-S32-GEN1.patch \
+    file://bsp31/rc3/0006-s32-gen1-dts-Remove-S32G-RDB-rev.-1-of-SoC.patch \
+    file://bsp31/rc3/0007-s32-gen1-pcie-Do-not-wait-for-link-multiple-times.patch \
+    file://bsp31/rc3/0008-dts-s32g398a-emu-Disable-LinFlex-DMA.patch \
+    file://bsp31/rc3/0013-arm64-Disable-ERR050481-workaround-for-S32G3.patch \
+    file://bsp31/rc3/0014-bindings-usb-Add-compatible-for-s32g3-usbmisc.patch \
+    file://bsp31/rc3/0015-dts-freescale-Add-USB-node-for-S32G3.patch \
+    file://bsp31/rc3/0016-usb-chipidea-s32g3-Disable-workaround-for-ERR050474.patch \
+    file://bsp31/rc3/0017-crypto-hse-minor-refactor-and-fix-iomem-deref.patch \
+    file://bsp31/rc3/0018-llce-s32g2-Fixed-message-to-userspace-when-deinitial.patch \
+    file://bsp31/rc3/0019-pcie-e1000-Fix-crash-with-surprise-hot-unplug-when-e.patch \
+    file://bsp31/rc3/0020-llce-s32g2-Fixed-bugs-about-link-setup-and-unavailab.patch \
     file://0001-arch-arm64-s32g-disable-virtio_block-dts-node-by-def.patch \ 
     file://0002-s32gen1-pcie-Remove-duplicate-interrupt-resource-req.patch \
     file://0003-driver-pci-pci-s32gen1-remove-the-__init-macro.patch \ 

@@ -1,0 +1,76 @@
+From 4ceba046a8f592b591dc5ab27712501d69dae1c3 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 21 Sep 2021 10:42:58 +0300
+Subject: [PATCH 01/20] bindings/reset: Add documentation for S32G3 reset
+ controller
+
+Issue: ALB-7721
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../bindings/reset/fsl,s32gen1-reset.yaml     |  1 +
+ include/dt-bindings/reset/s32g3-scmi-reset.h  | 24 +++++++++++++++++++
+ .../dt-bindings/reset/s32gen1-scmi-reset.h    |  2 +-
+ 3 files changed, 26 insertions(+), 1 deletion(-)
+ create mode 100644 include/dt-bindings/reset/s32g3-scmi-reset.h
+
+diff --git a/Documentation/devicetree/bindings/reset/fsl,s32gen1-reset.yaml b/Documentation/devicetree/bindings/reset/fsl,s32gen1-reset.yaml
+index 96e6311fd258..1047096b6b1b 100644
+--- a/Documentation/devicetree/bindings/reset/fsl,s32gen1-reset.yaml
++++ b/Documentation/devicetree/bindings/reset/fsl,s32gen1-reset.yaml
+@@ -15,6 +15,7 @@ properties:
+     contains:
+       enum:
+         - fsl,s32g2-reset # Reset Controller for S32G2 SoCs
++        - fsl,s32g3-reset # Reset Controller for S32G3 SoCs
+         - fsl,s32r45-reset # Reset Controller for S32R45 SoC
+ 
+   reg:
+diff --git a/include/dt-bindings/reset/s32g3-scmi-reset.h b/include/dt-bindings/reset/s32g3-scmi-reset.h
+new file mode 100644
+index 000000000000..fa302ffaffb0
+--- /dev/null
++++ b/include/dt-bindings/reset/s32g3-scmi-reset.h
+@@ -0,0 +1,24 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2021 NXP
++ */
++#ifndef __DT_BINDINGS_S32G3_SCMI_RESET_H
++#define __DT_BINDINGS_S32G3_SCMI_RESET_H
++
++#include <dt-bindings/reset/s32g-scmi-reset.h>
++
++#define S32G3_SCMI_RST(N)	((N) + S32G_SCMI_RST_MAX_ID)
++
++#define S32G3_SCMI_RST_CM7_3	S32G3_SCMI_RST(0)
++#define S32G3_SCMI_RST_A53_4	S32G3_SCMI_RST(1)
++#define S32G3_SCMI_RST_A53_5	S32G3_SCMI_RST(2)
++#define S32G3_SCMI_RST_A53_6	S32G3_SCMI_RST(3)
++#define S32G3_SCMI_RST_A53_7	S32G3_SCMI_RST(4)
++#define S32G3_SCMI_RST_MAX_ID	S32G3_SCMI_RST(5)
++
++#if S32GEN1_SCMI_RST_MAX_ID < S32G3_SCMI_RST_MAX_ID
++#error Please increase the value of S32GEN1_SCMI_RST_MAX_ID
++#endif
++
++#endif
++
+diff --git a/include/dt-bindings/reset/s32gen1-scmi-reset.h b/include/dt-bindings/reset/s32gen1-scmi-reset.h
+index 7112dacab2fb..1b24c2d5a93d 100644
+--- a/include/dt-bindings/reset/s32gen1-scmi-reset.h
++++ b/include/dt-bindings/reset/s32gen1-scmi-reset.h
+@@ -27,7 +27,7 @@
+ #define S32GEN1_SCMI_RST_A53_3		S32GEN1_SCMI_RST(15)
+ 
+ #define S32GEN1_SCMI_PLAT_RST_BASE_ID	S32GEN1_SCMI_RST(16)
+-#define S32GEN1_SCMI_RST_MAX_ID		S32GEN1_PLAT_SCMI_RST(2)
++#define S32GEN1_SCMI_RST_MAX_ID		S32GEN1_PLAT_SCMI_RST(7)
+ 
+ #endif
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,54 @@
+From d11e29cfe9d89bcc11447bb5e3faefd5bf92555d Mon Sep 17 00:00:00 2001
+From: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Date: Mon, 4 Oct 2021 10:20:51 +0300
+Subject: [PATCH 07/20] s32-gen1: pcie: Do not wait for link multiple times
+
+In 's32gen1_pcie_host_init' we wait for link_up three times,
+using the 'dw' framework, when we just need to wait for link up
+two times:
+1. First for GEN1 link up
+2. And second for GEN2 or GEN3 link up
+
+The third waiting for link up adds ~one second during boot, or STR,
+for nothing, when no EP is connected.
+
+Issue: ALB-7909
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/controller/dwc/pci-s32gen1.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pci-s32gen1.c b/drivers/pci/controller/dwc/pci-s32gen1.c
+index 3632bacd5cf2..9c12943ce36f 100644
+--- a/drivers/pci/controller/dwc/pci-s32gen1.c
++++ b/drivers/pci/controller/dwc/pci-s32gen1.c
+@@ -723,12 +723,12 @@ static int s32gen1_pcie_start_link(struct dw_pcie *pcie)
+ 		ret = -EINVAL;
+ 	}
+ 
+-out:
+ 	if (!ret) {
+ 		dev_info(pcie->dev, "Link up, Gen=%d\n",
+ 				s32gen1_pcie_get_link_speed(s32_pp));
+ 	}
+ 
++out:
+ 	dw_pcie_dbi_ro_wr_dis(pcie);
+ 	return ret;
+ }
+@@ -769,8 +769,7 @@ static int s32gen1_pcie_host_init(struct pcie_port *pp)
+ 
+ 	dw_pcie_setup_rc(pp);
+ 
+-	s32gen1_pcie_start_link(pcie);
+-	ret = dw_pcie_wait_for_link(pcie);
++	ret = s32gen1_pcie_start_link(pcie);
+ 	if (ret) {
+ 		if (!phy_validate(s32_pci->phy0, PHY_MODE_PCIE, 0, NULL)) {
+ 			dev_err(pcie->dev, "Failed to get link up with EP connected\n");
+-- 
+2.17.1
+

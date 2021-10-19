@@ -1,0 +1,38 @@
+From 560d499489495fd6dea687f4c2da81c17545f534 Mon Sep 17 00:00:00 2001
+From: Dorin Ionita <dorin.ionita@nxp.com>
+Date: Wed, 13 Oct 2021 15:57:53 +0300
+Subject: [PATCH 20/20] llce: s32g2: Fixed bugs about link setup and
+ unavailable phys for LLCE CAN.
+
+In case of unregistered channel, the printing function of received data
+function was trying to access a NULL pointer instead of the dev argument
+and this resulted in kernel panic. This fixes the issue by changing the
+dev argument.
+
+Issue: ALB-7896, ALB-7959
+Upstream-Status: Pending 
+
+Signed-off-by: Dorin Ionita <dorin.ionita@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/mailbox/llce-mailbox.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mailbox/llce-mailbox.c b/drivers/mailbox/llce-mailbox.c
+index f58ce5b55618..8d5075c8fdce 100644
+--- a/drivers/mailbox/llce-mailbox.c
++++ b/drivers/mailbox/llce-mailbox.c
+@@ -927,8 +927,9 @@ static void llce_mbox_chan_received_data(struct mbox_chan *chan, void *msg)
+ 	struct llce_chan_priv *priv = chan->con_priv;
+ 
+ 	if (!is_chan_registered(chan)) {
+-		dev_err(chan->cl->dev, "Received a message on an unregistered channel (type = %u, index = %u)\n",
++		dev_err(chan->mbox->dev, "Received a message on an unregistered channel (type = %u, index = %u)\n",
+ 		       priv->type, priv->index);
++		return;
+ 	}
+ 
+ 	mbox_chan_received_data(chan, msg);
+-- 
+2.17.1
+

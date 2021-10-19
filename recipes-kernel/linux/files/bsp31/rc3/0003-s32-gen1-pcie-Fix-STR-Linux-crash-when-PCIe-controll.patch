@@ -1,0 +1,100 @@
+From b4ae33214a08b0cbd12d11f28edfe307fb19b929 Mon Sep 17 00:00:00 2001
+From: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Date: Mon, 4 Oct 2021 12:39:32 +0300
+Subject: [PATCH 03/20] s32-gen1: pcie: Fix STR Linux crash when PCIe
+ controller is set as Endpoint
+
+Some initialization/de-initialization done in suspend/resume routines
+should be executed only when PCIe controller is in RC mode.
+
+Issue: ALB-7910
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Marian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/controller/dwc/pci-s32gen1.c | 52 +++++++++++++-----------
+ 1 file changed, 29 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pci-s32gen1.c b/drivers/pci/controller/dwc/pci-s32gen1.c
+index 2c79a3cd31e7..3632bacd5cf2 100644
+--- a/drivers/pci/controller/dwc/pci-s32gen1.c
++++ b/drivers/pci/controller/dwc/pci-s32gen1.c
+@@ -1741,15 +1741,17 @@ static int s32gen1_pcie_suspend(struct device *dev)
+ 	s32_pp->msi_ctrl_int = dw_pcie_readl_dbi(pcie,
+ 					       PORT_MSI_CTRL_INT_0_EN_OFF);
+ 
+-	/* Disable Hot-Unplug irq */
+-	s32gen1_pcie_disable_hot_unplug_irq(s32_pp);
+-	/* Disable Hot-Plug irq */
+-	s32gen1_pcie_disable_hot_plug_irq(pcie);
++	if (!s32_pp->is_endpoint) {
++		/* Disable Hot-Unplug irq */
++		s32gen1_pcie_disable_hot_unplug_irq(s32_pp);
++		/* Disable Hot-Plug irq */
++		s32gen1_pcie_disable_hot_plug_irq(pcie);
+ 
+-	s32gen1_pcie_downstream_dev_to_D0(s32_pp);
++		s32gen1_pcie_downstream_dev_to_D0(s32_pp);
+ 
+-	pci_stop_root_bus(pp->bridge->bus);
+-	pci_remove_root_bus(pp->bridge->bus);
++		pci_stop_root_bus(pp->bridge->bus);
++		pci_remove_root_bus(pp->bridge->bus);
++	}
+ 
+ 	s32gen1_pcie_pme_turnoff(s32_pp);
+ 
+@@ -1774,29 +1776,33 @@ static int s32gen1_pcie_resume(struct device *dev)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = s32gen1_pcie_host_init(pp);
+-	if (ret < 0) {
+-		dev_err(dev, "Failed to init host: %d\n", ret);
+-		goto fail_host_init;
+-	}
++	if (!s32_pp->is_endpoint) {
++		ret = s32gen1_pcie_host_init(pp);
++		if (ret < 0) {
++			dev_err(dev, "Failed to init host: %d\n", ret);
++			goto fail_host_init;
++		}
+ 
+-	ret = pci_host_probe(pp->bridge);
+-	if (ret)
+-		return ret;
++		ret = pci_host_probe(pp->bridge);
++		if (ret)
++			return ret;
++	}
+ 
+ 	/* Restore MSI interrupt vector */
+ 	dw_pcie_writel_dbi(pcie, PORT_MSI_CTRL_INT_0_EN_OFF,
+ 			   s32_pp->msi_ctrl_int);
+ 
+-	/* Enable Hot-Plug capability */
+-	ret = s32gen1_enable_hotplug_cap(pcie);
+-	if (ret) {
+-		dev_err(dev, "Failed to enable hotplug capability\n");
+-		goto fail_host_init;
+-	}
++	if (!s32_pp->is_endpoint) {
++		/* Enable Hot-Plug capability */
++		ret = s32gen1_enable_hotplug_cap(pcie);
++		if (ret) {
++			dev_err(dev, "Failed to enable hotplug capability\n");
++			goto fail_host_init;
++		}
+ 
+-	/* Enable Hot-Unplug irq */
+-	s32gen1_pcie_enable_hot_unplug_irq(s32_pp);
++		/* Enable Hot-Unplug irq */
++		s32gen1_pcie_enable_hot_unplug_irq(s32_pp);
++	}
+ 
+ 	return 0;
+ 
+-- 
+2.17.1
+
