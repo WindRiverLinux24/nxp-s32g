@@ -48,6 +48,20 @@ SRC_URI += " \
     file://bsp31/rc2/0017-s32g274aevb-probe-sja1105-in-misc_init_r.patch \
     file://bsp31/rc2/0018-s32r45-Reset-PHY-and-reapply-GMAC-clock-settings.patch \
     file://bsp31/rc2/0019-s32g2evb-Rename-linux-dtb-to-fsl-s32g2xxa-evb.dtb.patch \
+    file://bsp31/rc3/0001-s32v234hpcsom-Disable-pinctrl-for-UART1.patch \
+    file://bsp31/rc3/0002-dts-s32-gen1-Remove-s32g274a-rdb1-dts.patch \
+    file://bsp31/rc3/0003-s32g-defconfig-Remove-S32G-Rev-1-defconfig-files.patch \
+    file://bsp31/rc3/0004-s32g3-Correct-the-way-secondary-cores-are-kicked-off.patch \
+    file://bsp31/rc3/0005-s32g3-Initialize-DIRU1.patch \
+    file://bsp31/rc3/0006-s32-gen1-eth-Fix-compilation-warning.patch \
+    file://bsp31/rc3/0007-s32-flashmap-Increase-fdt-and-rootfs-offsets-to-allo.patch \
+    file://bsp31/rc3/0008-s32g2-Update-DDR-firmware-to-2020_06_SP2-Update-1.patch \
+    file://bsp31/rc3/0009-s32r45-Update-DDR-firmware-to-2020_06_SP2-Update-1.patch \
+    file://bsp31/rc3/0010-s32g3-Add-DDR-firmware-version-2020_06_SP2-Update-1.patch \
+    file://bsp31/rc3/0011-s32-env-Set-INITRD_HIGH-before-BL32-BL31-BL33-area.patch \
+    file://bsp31/rc3/0012-s32-gen1-Change-U-Boot-base-address.patch \
+    file://bsp31/rc3/0013-s32-gen1-Disable-CONFIG_PRAM-and-remove-unused-code.patch \
+    file://bsp31/rc3/0014-s32g-Copy-atf-resmem-node-from-U-Boot-DT-to-Linux-DT.patch \
 "
 
 SRCREV = "7eba18e1c0b994180e173e9343c7fe50819d9732"
