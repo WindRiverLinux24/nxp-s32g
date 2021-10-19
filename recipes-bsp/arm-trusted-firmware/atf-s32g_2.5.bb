@@ -292,6 +292,30 @@ SRC_URI += " \
     file://bsp31/rc2/0001-s32g2-Move-PMIC-watchdog-disablement-from-BL31-to-BL.patch \
     file://bsp31/rc2/0002-s32g-add-MMC-and-QSPI-offsets-as-makefile-parameters.patch \
     file://bsp31/rc2/0003-clk-s32g-Remove-unnecessary-partition-blocks-for-cor.patch \
+    file://bsp31/rc3/0001-nxp-s32g-Enable-workarounds-for-A53-r0p4-errata.patch \
+    file://bsp31/rc3/0002-nxp-s32g-Separated-platform_def.h-for-S32G2-and-S32G.patch \
+    file://bsp31/rc3/0003-nxp-s32g-Correct-MPIDR-serialization-for-S32G3.patch \
+    file://bsp31/rc3/0004-s32g3-Enable-enable-hotplug-for-CPUs-4-7.patch \
+    file://bsp31/rc3/0005-s32g3-Add-A53-and-M7-cores-to-SCMI-reset-layer.patch \
+    file://bsp31/rc3/0006-s32g-Move-BL32_BASE-to-avoid-overlapping-with-BL33.patch \
+    file://bsp31/rc3/0007-s32g-bl2-Add-static-checks-for-BL31-BL32-BL33-overla.patch \
+    file://bsp31/rc3/0008-s32g-clk-Continue-even-if-failed-to-set-one-of-defau.patch \
+    file://bsp31/rc3/0009-fdts-fsl-s32g274a-Append-missing-properties-instead-.patch \
+    file://bsp31/rc3/0010-s32-gen1-Remove-Rev-1-of-SoC-references.patch \
+    file://bsp31/rc3/0011-s32g-Correct-A53-kick-off.patch \
+    file://bsp31/rc3/0012-s32g3-Initialize-DIRU1.patch \
+    file://bsp31/rc3/0013-s32g-add-support-for-reading-FIP-from-a-defined-memo.patch \
+    file://bsp31/rc3/0014-s32g-add-check-for-NULL-pointer-to-fix-coverity-issu.patch \
+    file://bsp31/rc3/0015-s32g-Correct-A53-reset-procedure.patch \
+    file://bsp31/rc3/0016-s32g-Add-an-accessory-function-for-lockstep-check.patch \
+    file://bsp31/rc3/0017-s32g-Disable-half-of-the-cores-when-running-in-locks.patch \
+    file://bsp31/rc3/0018-s32g-Turn-off-all-M7-cores-during-platform-suspend.patch \
+    file://bsp31/rc3/0019-s32g2-Update-DDR-firmware-to-2020_06_SP2-Update-1.patch \
+    file://bsp31/rc3/0020-s32g2-Add-ERRATA_S32G2_050543-DDR-Derating-macro.patch \
+    file://bsp31/rc3/0021-s32g-Add-s32g3-DDR-code-and-separate-it-from-s32g2.patch \
+    file://bsp31/rc3/0022-s32g-xrdc-Remove-unused-code.patch \
+    file://bsp31/rc3/0023-s32g-Change-memory-areas-of-BL31-and-BL33.patch \
+    file://bsp31/rc3/0024-s32g-bl2-Inject-atf-reserved-memory-node.patch \
 "
 
 PATCHTOOL = "git"
