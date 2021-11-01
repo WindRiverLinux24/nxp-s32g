@@ -1,0 +1,110 @@
+From df33628a2d52692d93678b3f3120784bc553db67 Mon Sep 17 00:00:00 2001
+From: Vladimir Oltean <vladimir.oltean@nxp.com>
+Date: Fri, 15 Oct 2021 00:31:17 +0300
+Subject: [PATCH 1/3] arm64: dts: s32g: declare the GMAC clock frequency for
+ the IEEE 1588 module
+
+commit df33628a2d52692d93678b3f3120784bc553db67 from
+https://source.codeaurora.org/external/autobsps32/linux
+
+When attempting to discipline the GMAC's PTP clock on S32G274, one can
+see that the clockcheck mechanism complains that the PTP clock
+apparently runs slow. Below is the output of phc2sys, but the same can
+be seen with the servo loops of other programs like ptp4l:
+
+$ phc2sys -c /dev/ptp0 -s CLOCK_REALTIME -O 37 -m
+/dev/ptp0 sys offset -41144863165 s0 freq      +0 delay   1000
+/dev/ptp0 sys offset -41645131645 s1 freq -62500000 delay   1000
+/dev/ptp0 sys offset -468905565 s2 freq -62500000 delay   1000
+clockcheck: clock jumped backward or running slower than expected!
+/dev/ptp0 sys offset -937783605 s0 freq -62500000 delay   1000
+clockcheck: clock jumped backward or running slower than expected!
+/dev/ptp0 sys offset -1406687615 s0 freq -62500000 delay   1000
+clockcheck: clock jumped backward or running slower than expected!
+/dev/ptp0 sys offset -1765090675 s0 freq -62500000 delay   1000
+
+Indeed, if we monitor the PTP clock's rate:
+
+watch -n 1 phc_ctl /dev/ptp0 get
+
+we observe that the time appears to increase about half the expected
+rate (which should be by 1 second every second).
+
+The stmmac driver reads the timestamping counter and converts that to a
+nanosecond value according to the frequency at which the timestamping
+block is clocked at (clk_ptp_ref_i). That clock frequency is read from
+stmmac_probe_config_dt:
+
+	/* Fall-back to main clock in case of no PTP ref is passed */
+	plat->clk_ptp_ref = devm_clk_get(&pdev->dev, "ptp_ref");
+	if (IS_ERR(plat->clk_ptp_ref)) {
+		plat->clk_ptp_rate = clk_get_rate(plat->stmmac_clk);
+		plat->clk_ptp_ref = NULL;
+	} else {
+		plat->clk_ptp_rate = clk_get_rate(plat->clk_ptp_ref);
+	}
+
+Since the "fsl,s32cc-dwmac" device tree doesn't provide the "ptp_ref"
+clock, the stmmac driver falls back to use the "stmmaceth" reference
+clock as an approximation of the 1588 timer's frequency. Only that the
+approximation is wrong and leads to invalid time counter scaling.
+
+So we must provide a clk that is descriptive of the 1588 block's
+frequency, but on S32G2, that turns out to not be trivial.
+The clock IDs from include/dt-bindings/clock/s32gen1-scmi-clock.h
+don't give us one SCMI ID for the 1588 clock, they give us 4 IDs,
+one per interface type.
+
+However, confusingly enough, the 4 SCMI IDs:
+
+- S32GEN1_SCMI_CLK_GMAC0_TS_SGMII
+- S32GEN1_SCMI_CLK_GMAC0_TS_RGMII
+- S32GEN1_SCMI_CLK_GMAC0_TS_RMII
+- S32GEN1_SCMI_CLK_GMAC0_TS_MII
+
+all map in hardware to the same clock distribution tree. The fact that
+the SCP firmware (ATF) exposes them as different clocks seems to be a
+mistake, and that puts us in the position where we apparently need to
+select in the stmmac driver between clocks depending on phy-mode
+(when in reality we don't).
+
+So pick at random one SCMI ID (the one for RGMII) and put it as the 1588
+reference clock, so that the stmmac driver will pick it up and use the
+right frequency for scaling the 1588 time. To avoid confusion we'd have
+to introduce new SCMI clock names and IDs in order to remove the
+interface name from the timestamping clock. But that also adds avoidable
+compatibility complications, so just stop at fixing the issue.
+
+Issue: ALB-7467
+Upstream-Status: Pending 
+
+Signed-off-by: Vladimir Oltean <vladimir.oltean@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/boot/dts/freescale/fsl-s32-gen1.dtsi | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/fsl-s32-gen1.dtsi b/arch/arm64/boot/dts/freescale/fsl-s32-gen1.dtsi
+index bcf85552ec39..a9803c09fe6d 100644
+--- a/arch/arm64/boot/dts/freescale/fsl-s32-gen1.dtsi
++++ b/arch/arm64/boot/dts/freescale/fsl-s32-gen1.dtsi
+@@ -877,12 +877,14 @@
+ 			 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
+ 			 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RGMII>,
+ 			 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RMII>,
+-			 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_MII>;
++			 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_MII>,
++			 <&clks S32GEN1_SCMI_CLK_GMAC0_TS_RGMII>;
+ 		clock-names = "stmmaceth", "pclk",
+ 			      "tx_sgmii", "tx_rgmii",
+ 			      "tx_rmii", "tx_mii",
+ 			      "rx_sgmii", "rx_rgmii",
+-			      "rx_rmii", "rx_mii";
++			      "rx_rmii", "rx_mii",
++			      "ptp_ref";
+ 		gmac0_mdio: mdio0 {
+ 			compatible = "snps,dwmac-mdio";
+ 			#address-cells = <1>;
+-- 
+2.17.1
+
