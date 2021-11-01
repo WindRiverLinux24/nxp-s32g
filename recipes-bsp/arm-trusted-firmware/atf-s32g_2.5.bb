@@ -316,6 +316,22 @@ SRC_URI += " \
     file://bsp31/rc3/0022-s32g-xrdc-Remove-unused-code.patch \
     file://bsp31/rc3/0023-s32g-Change-memory-areas-of-BL31-and-BL33.patch \
     file://bsp31/rc3/0024-s32g-bl2-Inject-atf-reserved-memory-node.patch \
+    file://bsp31/rc4/0001-Move-S32G-support-in-S32-folder.patch \
+    file://bsp31/rc4/0002-s32g-ddr-fix-RETENTION_ADDR-value.patch \
+    file://bsp31/rc4/0003-s32g3-Initialize-SRAM-based-on-S32G2-SRAMC.patch \
+    file://bsp31/rc4/0004-s32g3-emu-Add-DDR-driver.patch \
+    file://bsp31/rc4/0005-s32g-emu-Skip-STR-related-features.patch \
+    file://bsp31/rc4/0006-s32g3-emu-Adapt-LinFlex.patch \
+    file://bsp31/rc4/0007-s32g-emu-Skip-image-loading-from-MMC.patch \
+    file://bsp31/rc4/0008-s32g-emu-Skip-MMU-enablement-during-BL2.patch \
+    file://bsp31/rc4/0009-s32g-emu-Skip-BL31-BL33-loading.patch \
+    file://bsp31/rc4/0010-drivers-s32g-fp-Improve-precision.patch \
+    file://bsp31/rc4/0011-s32g3-Correct-XBAR-clock-frequency.patch \
+    file://bsp31/rc4/0012-s32g3-emu-Correct-GIC-redistributor-address.patch \
+    file://bsp31/rc4/0013-s32g-emu-Skip-PMIC-OCOTP-WKPU-initialization.patch \
+    file://bsp31/rc4/0014-s32gen1-dts-remove-clock-rate-for-early-configured-c.patch \
+    file://bsp31/rc4/0015-s32gen1-select-A53-maximum-clock-frequency-based-on-.patch \
+    file://bsp31/rc4/0016-dt-bindings-s32gen1-remove-unused-clock-frequencies.patch \
 "
 
 PATCHTOOL = "git"
