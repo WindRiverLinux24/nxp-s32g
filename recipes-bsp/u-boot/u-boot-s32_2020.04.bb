@@ -62,6 +62,17 @@ SRC_URI += " \
     file://bsp31/rc3/0012-s32-gen1-Change-U-Boot-base-address.patch \
     file://bsp31/rc3/0013-s32-gen1-Disable-CONFIG_PRAM-and-remove-unused-code.patch \
     file://bsp31/rc3/0014-s32g-Copy-atf-resmem-node-from-U-Boot-DT-to-Linux-DT.patch \
+    file://bsp31/rc4/0001-s32-gen1-qspi-Use-correct-compatible-string-for-S32-.patch \
+    file://bsp31/rc4/0002-s32-gen1-emu-Adapt-base-addresses.patch \
+    file://bsp31/rc4/0003-s32gen1-dts-remove-clock-rate-for-early-configured-c.patch \
+    file://bsp31/rc4/0004-s32gen1-select-A53-maximum-clock-frequency-based-on-.patch \
+    file://bsp31/rc4/0005-dt-bindings-s32gen1-remove-unused-clock-frequencies.patch \
+    file://bsp31/rc4/0006-s32r-pcie-Enable-SerDes-PCIe1-for-S32R.patch \
+    file://bsp31/rc4/0007-s32gen1-dts-change-FIRC-clock-frequency.patch \
+    file://bsp31/rc4/0008-arch-s32-fix-cmu-fc-fm-units.patch \
+    file://bsp31/rc4/0009-s32r-pcie-Set-Device-ID-to-0x4002.patch \
+    file://bsp31/rc4/0010-s32-pcie-Document-device-tree-PCIe-bindings.patch \
+    file://bsp31/rc4/0011-s32gen1-serdes-Update-PLL-locking-conditions.patch \
 "
 
 SRCREV = "7eba18e1c0b994180e173e9343c7fe50819d9732"
