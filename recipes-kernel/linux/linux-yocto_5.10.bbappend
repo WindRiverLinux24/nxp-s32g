@@ -6,9 +6,6 @@ LINUX_VERSION:nxp-s32g2xx ?= "5.10.x"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g2xx = " \
-    file://bsp31/rc4/0001-arm64-dts-s32g-declare-the-GMAC-clock-frequency-for-.patch \
-    file://bsp31/rc4/0002-tmu-s32gen1-Fixed-bug-about-Kelvin-to-Celsius-conver.patch \
-    file://bsp31/rc4/0003-crypto-hse-update-firmware-interface-to-v1.0.0.patch \
     file://0001-arch-arm64-s32g-disable-virtio_block-dts-node-by-def.patch \ 
     file://0002-s32gen1-pcie-Remove-duplicate-interrupt-resource-req.patch \
     file://0003-driver-pci-pci-s32gen1-remove-the-__init-macro.patch \ 
