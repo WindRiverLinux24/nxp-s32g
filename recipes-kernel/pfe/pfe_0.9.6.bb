@@ -14,12 +14,11 @@ FW_INSTALL_DIR = "${D}/lib/firmware"
 FW_INSTALL_CLASS_NAME ?= "s32g_pfe_class.fw"
 FW_INSTALL_UTIL_NAME ?= "s32g_pfe_util.fw"
 
-SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https \
+SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https;branch=master \
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
-	file://0002-pfe-oal-modify-the-GFP-flag-to-GFP_ATOMIC-for-kzallo.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
-SRCREV = "919cef634c4300cad72d4f72785b352803b25e23"
+SRCREV = "84dabb46ecce1d8d1f8a8ddb50051a3719568727"
 
 PATCHTOOL = "git"
 
