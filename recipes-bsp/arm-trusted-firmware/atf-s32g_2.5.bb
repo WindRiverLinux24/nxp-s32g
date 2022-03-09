@@ -116,7 +116,7 @@ SRC_URI += " \
 "
 
 PATCHTOOL = "git"
-PLATFORM:nxp-s32g2xx = "s32g274ardb2"
+PLATFORM:nxp-s32g2xx = "s32g274ardb2 s32g399ardb3"
 BUILD_TYPE = "release"
 
 ATF_S32G_ENABLE = "1"
