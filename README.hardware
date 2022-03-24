@@ -42,6 +42,9 @@ This BSP supports the following boards:
 			   pre-released SDK v5.4.69_bsp29.0.
   - 2021/06 (LINUXPG-765): WindRiver CI/CD branch support. Standard support based on NXP
 			   SDK v5.4.69_bsp29.0.
+  - 2022/03 (LINUXPG-1034): WindRiver CI/CD branch support. Standard support based on NXP
+                           pre-released SDK bsp32.0-5.10.90-rt.
+
 3. BSP Features
 ===============
 
@@ -73,7 +76,6 @@ The following BSP features are validated and supported.
 	+ UART: NXP LINFLEX UART
 	+ eDMA: Enhanced Direct Memory Access
 	+ GPIO: On-Chip general purpose Input/Output
-	+ HSE: Hardware Security Engine (Only S32G274A-EVB)
 	+ Watchdog
 	+ RTC
 	+ LLCE CAN: NXP Low Latency Communication Engine CAN
@@ -85,6 +87,7 @@ The following features are not supported or validated same as SDK.
 
 	x USB OTG
 	x CPU Freq
+	x HSE: Hardware Security Engine
 
 4. BSP Notes
 ============
