@@ -64,7 +64,7 @@ do_deploy() {
 }
 
 
-pkg_postinst_ontarget_${PN} () {
+pkg_postinst_ontarget:${PN} () {
 
 bins="dte.bin frpe.bin ppe_tx.bin ppe_rx.bin"
 for bin in ${bins}; do
