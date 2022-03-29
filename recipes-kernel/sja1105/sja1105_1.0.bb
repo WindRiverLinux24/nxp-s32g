@@ -23,7 +23,7 @@ DESTDIR = "${D}"
 MDIR = "${S}"
 INSTALL_DIR = "${D}/${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel/drivers/spi"
 EXTRA_OEMAKE:append = " INSTALL_DIR=${DESTDIR} KERNELDIR=${KBUILD_OUTPUT} MYCOMPILER=${CROSS_COMPILE}gcc "
-EXTRA_OEMAKE:append:nxp-s32g2xx = " MYPLATFORM=gplat "
+EXTRA_OEMAKE:append:nxp-s32g = " MYPLATFORM=gplat "
 
 SJA1105_MOD_NAME = "sja1105pqrs.ko"
 
@@ -39,7 +39,7 @@ FILES:${PN} += "${sysconfdir}/modules-load.d/*"
 PROVIDES += "kernel-module-sja1105pqrs"
 RPROVIDES:${PN} += "kernel-module-sja1105pqrs"
 
-COMPATIBLE_MACHINE = "nxp-s32g2xx"
+COMPATIBLE_MACHINE = "nxp-s32g"
 INHIBIT_PACKAGE_STRIP = "1"
 
 DEPENDS:append = " coreutils-native"

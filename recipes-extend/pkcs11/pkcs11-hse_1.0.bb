@@ -55,4 +55,4 @@ do_install() {
 
 PACKAGES =+ "${PN}-examples "
 FILES:${PN}-examples += "${bindir}"
-COMPATIBLE_MACHINE:nxp-s32g2xx = "nxp-s32g2xx"
+COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"

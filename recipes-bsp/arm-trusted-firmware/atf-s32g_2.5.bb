@@ -161,5 +161,5 @@ addtask deploy after do_compile
 
 do_compile[depends] = "virtual/bootloader:do_install"
 
-COMPATIBLE_MACHINE = "nxp-s32g2xx"
+COMPATIBLE_MACHINE = "nxp-s32g"
 ALLOW_EMPTY:${PN} = "1"
