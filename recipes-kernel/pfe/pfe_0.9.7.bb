@@ -17,10 +17,9 @@ FW_INSTALL_UTIL_NAME ?= "s32g_pfe_util.fw"
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https;branch=master \
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
 	file://0001-fix-hwts-kmemleak.patch \
-	file://0002-fix-hardware-feature-kmemleak.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
-SRCREV = "84dabb46ecce1d8d1f8a8ddb50051a3719568727"
+SRCREV = "d6aac63e29e1dd06db925f200846937f78db327a"
 
 PATCHTOOL = "git"
 
