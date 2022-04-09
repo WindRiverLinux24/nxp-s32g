@@ -20,6 +20,7 @@ SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dd
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
     file://0001-Fix-fiptool-build-error.patch \
+    file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
 "
 
 PATCHTOOL = "git"
