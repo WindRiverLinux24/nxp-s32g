@@ -21,6 +21,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " \
     file://0001-Fix-fiptool-build-error.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
+    file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
 "
 
 PATCHTOOL = "git"
