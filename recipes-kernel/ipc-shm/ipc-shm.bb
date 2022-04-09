@@ -63,4 +63,5 @@ addtask do_deploy after do_install
 
 FILES:${PN} += "${sysconfdir}/modprobe.d/*"
 
+COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
