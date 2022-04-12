@@ -55,6 +55,14 @@ do_compile() {
 	done
 }
 
+do_install() {
+	install -d ${D}/boot
+	for plat in ${PLATFORM}; do
+		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+		cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+	done
+}
+
 do_deploy() {
 	install -d ${DEPLOY_DIR_IMAGE}
 	for plat in ${PLATFORM}; do
@@ -69,4 +77,4 @@ do_compile[depends] = "virtual/bootloader:do_install"
 
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
-ALLOW_EMPTY:${PN} = "1"
+FILES_${PN} += "/boot/*"
