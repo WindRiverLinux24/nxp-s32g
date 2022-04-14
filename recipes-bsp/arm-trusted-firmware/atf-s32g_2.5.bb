@@ -77,4 +77,4 @@ do_compile[depends] = "virtual/bootloader:do_install"
 
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
-FILES_${PN} += "/boot/*"
+FILES:${PN} += "/boot/*"
