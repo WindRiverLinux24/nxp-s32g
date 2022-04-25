@@ -1,0 +1,38 @@
+From 6d4b5314204fece6663dea8b60b4edcdcafdef37 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 09:32:56 +0200
+Subject: [PATCH 034/103] tools: Rename s32gen1image.c to s32ccimage.c
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ tools/Makefile                         | 2 +-
+ tools/{s32gen1image.c => s32ccimage.c} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename tools/{s32gen1image.c => s32ccimage.c} (100%)
+
+diff --git a/tools/Makefile b/tools/Makefile
+index 37b86c8d33..430aaeeaea 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -95,9 +95,9 @@ dumpimage-mkimage-objs := aisimage.o \
+ 			common/image.o \
+ 			imagetool.o \
+ 			imximage.o \
+-			s32gen1image.o \
+ 			imx8image.o \
+ 			imx8mimage.o \
++			s32ccimage.o \
+ 			kwbimage.o \
+ 			lib/md5.o \
+ 			lpc32xximage.o \
+diff --git a/tools/s32gen1image.c b/tools/s32ccimage.c
+similarity index 100%
+rename from tools/s32gen1image.c
+rename to tools/s32ccimage.c
+-- 
+2.25.1
+

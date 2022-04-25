@@ -1,0 +1,63 @@
+From a04c6293bb067f265451384bd3bd2ee7b6d78585 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 22 Mar 2022 15:22:52 +0200
+Subject: [PATCH 041/103] arch: arm/dts: Rename fsl,s32-gen1-siul2-pinctrl to
+ nxp,s32cc-siul2-pinctrl
+
+Issue: ALB-8574
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32g.dtsi  | 4 ++--
+ arch/arm/dts/fsl-s32r45.dts | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32g.dtsi b/arch/arm/dts/fsl-s32g.dtsi
+index 45ff5a13a2..11d25a38bb 100644
+--- a/arch/arm/dts/fsl-s32g.dtsi
++++ b/arch/arm/dts/fsl-s32g.dtsi
+@@ -133,7 +133,7 @@
+ 		u-boot,dm-pre-reloc;
+ 
+ 		pinctrl0: siul2-pinctrl0 {
+-			compatible = "fsl,s32-gen1-siul2-pinctrl";
++			compatible = "nxp,s32cc-siul2-pinctrl";
+ 			#pinctrl-cells = <2>;
+ 			/* MSCR range */
+ 			pins = <&pinctrl0 0 101>,
+@@ -164,7 +164,7 @@
+ 		u-boot,dm-pre-reloc;
+ 
+ 		pinctrl1: siul2-pinctrl1 {
+-			compatible = "fsl,s32-gen1-siul2-pinctrl";
++			compatible = "nxp,s32cc-siul2-pinctrl";
+ 			#pinctrl-cells = <2>;
+ 			/* MSCR range */
+ 			pins = <&pinctrl1 112 190>,
+diff --git a/arch/arm/dts/fsl-s32r45.dts b/arch/arm/dts/fsl-s32r45.dts
+index a7524333bf..4291d0879e 100644
+--- a/arch/arm/dts/fsl-s32r45.dts
++++ b/arch/arm/dts/fsl-s32r45.dts
+@@ -47,7 +47,7 @@
+ 		u-boot,dm-pre-reloc;
+ 
+ 		pinctrl0: siul2-pinctrl0 {
+-			compatible = "fsl,s32-gen1-siul2-pinctrl";
++			compatible = "nxp,s32cc-siul2-pinctrl";
+ 			#pinctrl-cells = <2>;
+ 			/* MSCR range */
+ 			pins = <&pinctrl0 0 101>,
+@@ -78,7 +78,7 @@
+ 		u-boot,dm-pre-reloc;
+ 
+ 		pinctrl1: siul2-pinctrl1 {
+-			compatible = "fsl,s32-gen1-siul2-pinctrl";
++			compatible = "nxp,s32cc-siul2-pinctrl";
+ 			#pinctrl-cells = <2>;
+ 			/* MSCR range */
+ 			pins = <&pinctrl1 102 133>,
+-- 
+2.25.1
+

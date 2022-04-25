@@ -1,0 +1,1672 @@
+From 40314d945a320f80c6581bc2b4322cfe59d0a0e3 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 16:45:55 +0200
+Subject: [PATCH 026/103] board: Create configuration for each S32 board
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Kconfig                                       |   2 +-
+ arch/arm/Kconfig                              |  18 +-
+ arch/arm/mach-s32/Kconfig                     |  63 ++++-
+ arch/arm/mach-s32/s32-cc/Kconfig              | 235 +++++++++---------
+ arch/arm/mach-s32/s32-cc/Makefile             |   6 +-
+ {board/nxp => arch/arm/mach-s32}/s32-cc/eth.c |   0
+ .../s32-cc/include}/s32gen1_gmac_utils.h      |   0
+ .../arm/mach-s32}/s32-cc/s32gen1.cfg          |   0
+ arch/arm/mach-s32/s32g2/Kconfig               |  61 +++++
+ arch/arm/mach-s32/s32g3/Kconfig               |  51 ++++
+ arch/arm/mach-s32/s32r45/Kconfig              |  27 ++
+ board/nxp/Kconfig                             |  72 ------
+ board/nxp/s32-cc/Kconfig                      | 107 --------
+ board/nxp/s32-cc/Makefile                     |  25 +-
+ board/nxp/s32-cc/{common.c => board_common.c} |   3 +-
+ board/nxp/s32-cc/{ => include}/board_common.h |   0
+ board/nxp/s32-cc/s32g/Kconfig                 |  12 +
+ board/nxp/s32-cc/s32g/Makefile                |  11 +
+ board/nxp/s32-cc/{ => s32g}/s32gxxxaevb.c     |   0
+ board/nxp/s32-cc/{ => s32g}/s32gxxxardb.c     |   0
+ board/nxp/s32g274abluebox3/Kconfig            |  18 ++
+ board/nxp/s32g274abluebox3/Makefile           |  10 +
+ .../s32g274abluebox3.c                        |   0
+ board/nxp/s32g274aemu/Kconfig                 |  15 ++
+ board/nxp/s32g274aemu/Makefile                |   7 +
+ board/nxp/s32g274ardb2/Kconfig                |  15 ++
+ board/nxp/s32g274ardb2/Makefile               |   7 +
+ board/nxp/s32g2xxaevb/Kconfig                 |  15 ++
+ board/nxp/s32g2xxaevb/Makefile                |   7 +
+ board/nxp/s32g399aemu/Kconfig                 |  15 ++
+ board/nxp/s32g399aemu/Makefile                |   7 +
+ board/nxp/s32g399ardb3/Kconfig                |  15 ++
+ board/nxp/s32g399ardb3/Makefile               |   7 +
+ board/nxp/s32g3xxaevb/Kconfig                 |  15 ++
+ board/nxp/s32g3xxaevb/Makefile                |   7 +
+ board/nxp/s32r45emu/Kconfig                   |  15 ++
+ board/nxp/s32r45emu/Makefile                  |   5 +
+ board/nxp/s32r45evb/Kconfig                   |  15 ++
+ board/nxp/s32r45evb/Makefile                  |   9 +
+ board/nxp/{s32-cc => s32r45evb}/s32r45evb.c   |   0
+ configs/s32g274a_emu_defconfig                |   2 +-
+ configs/s32g274abluebox3_defconfig            |   2 +-
+ configs/s32g274abluebox3_qspi_defconfig       |   2 +-
+ configs/s32g274ardb2_defconfig                |   2 +-
+ configs/s32g274ardb2_qspi_defconfig           |   2 +-
+ configs/s32g2xxaevb_defconfig                 |   2 +-
+ configs/s32g2xxaevb_qspi_defconfig            |   2 +-
+ configs/s32g399a_emu_defconfig                |   2 +-
+ configs/s32g399ardb3_defconfig                |   2 +-
+ configs/s32g399ardb3_qspi_defconfig           |   2 +-
+ configs/s32g3xxaevb_defconfig                 |   2 +-
+ configs/s32g3xxaevb_qspi_defconfig            |   2 +-
+ configs/s32r45_emu_defconfig                  |   3 +-
+ configs/s32r45evb_defconfig                   |   2 +-
+ configs/s32r45evb_qspi_defconfig              |   2 +-
+ drivers/net/Makefile                          |   5 +-
+ include/configs/s32.h                         |   3 +-
+ include/configs/s32g274abluebox3.h            |  10 +
+ include/configs/s32g274aemu.h                 |  10 +
+ include/configs/s32g274ardb2.h                |  10 +
+ include/configs/s32g2xxaevb.h                 |  10 +
+ include/configs/s32g399aemu.h                 |  10 +
+ include/configs/s32g399ardb3.h                |  10 +
+ include/configs/s32g3xxaevb.h                 |  10 +
+ include/configs/s32r45emu.h                   |  10 +
+ include/configs/s32r45evb.h                   |  10 +
+ 66 files changed, 668 insertions(+), 358 deletions(-)
+ rename {board/nxp => arch/arm/mach-s32}/s32-cc/eth.c (100%)
+ rename {board/nxp/s32-cc => arch/arm/mach-s32/s32-cc/include}/s32gen1_gmac_utils.h (100%)
+ rename {board/nxp => arch/arm/mach-s32}/s32-cc/s32gen1.cfg (100%)
+ create mode 100644 arch/arm/mach-s32/s32g2/Kconfig
+ create mode 100644 arch/arm/mach-s32/s32g3/Kconfig
+ create mode 100644 arch/arm/mach-s32/s32r45/Kconfig
+ delete mode 100644 board/nxp/Kconfig
+ delete mode 100644 board/nxp/s32-cc/Kconfig
+ rename board/nxp/s32-cc/{common.c => board_common.c} (96%)
+ rename board/nxp/s32-cc/{ => include}/board_common.h (100%)
+ create mode 100644 board/nxp/s32-cc/s32g/Kconfig
+ create mode 100644 board/nxp/s32-cc/s32g/Makefile
+ rename board/nxp/s32-cc/{ => s32g}/s32gxxxaevb.c (100%)
+ rename board/nxp/s32-cc/{ => s32g}/s32gxxxardb.c (100%)
+ create mode 100644 board/nxp/s32g274abluebox3/Kconfig
+ create mode 100644 board/nxp/s32g274abluebox3/Makefile
+ rename board/nxp/{s32-cc => s32g274abluebox3}/s32g274abluebox3.c (100%)
+ create mode 100644 board/nxp/s32g274aemu/Kconfig
+ create mode 100644 board/nxp/s32g274aemu/Makefile
+ create mode 100644 board/nxp/s32g274ardb2/Kconfig
+ create mode 100644 board/nxp/s32g274ardb2/Makefile
+ create mode 100644 board/nxp/s32g2xxaevb/Kconfig
+ create mode 100644 board/nxp/s32g2xxaevb/Makefile
+ create mode 100644 board/nxp/s32g399aemu/Kconfig
+ create mode 100644 board/nxp/s32g399aemu/Makefile
+ create mode 100644 board/nxp/s32g399ardb3/Kconfig
+ create mode 100644 board/nxp/s32g399ardb3/Makefile
+ create mode 100644 board/nxp/s32g3xxaevb/Kconfig
+ create mode 100644 board/nxp/s32g3xxaevb/Makefile
+ create mode 100644 board/nxp/s32r45emu/Kconfig
+ create mode 100644 board/nxp/s32r45emu/Makefile
+ create mode 100644 board/nxp/s32r45evb/Kconfig
+ create mode 100644 board/nxp/s32r45evb/Makefile
+ rename board/nxp/{s32-cc => s32r45evb}/s32r45evb.c (100%)
+ create mode 100644 include/configs/s32g274abluebox3.h
+ create mode 100644 include/configs/s32g274aemu.h
+ create mode 100644 include/configs/s32g274ardb2.h
+ create mode 100644 include/configs/s32g2xxaevb.h
+ create mode 100644 include/configs/s32g399aemu.h
+ create mode 100644 include/configs/s32g399ardb3.h
+ create mode 100644 include/configs/s32g3xxaevb.h
+ create mode 100644 include/configs/s32r45emu.h
+ create mode 100644 include/configs/s32r45evb.h
+
+diff --git a/Kconfig b/Kconfig
+index e6662f3f76..0534a891d5 100644
+--- a/Kconfig
++++ b/Kconfig
+@@ -152,7 +152,7 @@ config SYS_MALLOC_F_LEN
+ 	default 0x2000 if (ARCH_IMX8 || ARCH_IMX8M || ARCH_MX7 || \
+ 			   ARCH_MX7ULP || ARCH_MX6 || ARCH_MX5 || \
+ 			   ARCH_LS1012A || ARCH_LS1021A || ARCH_LS1043A || \
+-			   ARCH_LS1046A || MACH_S32)
++			   ARCH_LS1046A)
+ 	default 0x400
+ 	help
+ 	  Before relocation, memory is very limited on many platforms. Still,
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d9a3113dde..7232c615d9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -882,6 +882,18 @@ config ARCH_MX5
+ 	select MACH_IMX
+ 	imply MXC_GPIO
+ 
++config ARCH_S32G2
++	bool "NXP S32G2 platform"
++	select NXP_S32_CC
++
++config ARCH_S32G3
++	bool "NXP S32G3 platform"
++	select NXP_S32_CC
++
++config ARCH_S32R45
++	bool "NXP S32R45 platform"
++	select NXP_S32_CC
++
+ config ARCH_OWL
+ 	bool "Actions Semi OWL SoCs"
+ 	select ARM64
+@@ -1116,11 +1128,6 @@ config ARCH_ZYNQMP
+ 	imply MP
+ 	imply DM_USB_GADGET
+ 
+-config MACH_S32
+-	bool "Support S32 SOCs"
+-	select ARM64
+-	select OF_BOARD_SETUP
+-
+ config TEGRA
+ 	bool "NVIDIA Tegra"
+ 	imply DISTRO_DEFAULTS
+@@ -1723,7 +1730,6 @@ config ISW_ENTRY_ADDR
+ endif
+ 
+ source "arch/arm/mach-s32/Kconfig"
+-source "arch/arm/mach-s32/s32-cc/Kconfig"
+ 
+ source "arch/arm/mach-aspeed/Kconfig"
+ 
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 70043c5841..0a9de117db 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -1,11 +1,66 @@
+ # SPDX-License-Identifier: GPL-2.0+
+ # Copyright 2020-2022 NXP
+ 
++config SYS_SOC
++	string
++	default "s32"
++
++config MACH_S32
++	bool
++	select ARM64
++	select DM
++	select OF_BOARD_SETUP
++
+ config SYS_VENDOR
+ 	string
+ 	default "nxp"
+ 
+-config MKIMAGE_T
+-	string
+-	default "s32gen1image" if NXP_S32_CC
+-	depends on MACH_S32
++config NXP_S32_CC
++	bool
++	imply DM_ETH
++	imply DM_I2C
++	imply DM_PCI
++	imply DM_PMIC
++	imply DM_PMIC_VR5510
++	imply DM_SPI
++	imply DM_SPI_FLASH
++	imply DWC_ETH_QOS_DEVICES
++	imply DWC_ETH_QOS_S32CC
++	imply FSL_DSPI
++	imply FSL_PFENG
++	imply FSL_QSPI
++	imply FSL_USDHC
++	imply MISC
++	imply MMC_HS400_ES_SUPPORT
++	imply MP
++	imply PCI
++	imply PCIE_S32GEN1
++	imply S32_TIMER
++	imply SPI
++	imply SYS_I2C_MXC
++	imply TIMER
++	select ARCH_MISC_INIT
++	select ARM_SMCCC
++	select BINMAN
++	select CLK
++	select CLK_SCMI
++	select CPU
++	select DISTRO_DEFAULTS
++	select DM_GPIO
++	select DM_MMC
++	select DM_SERIAL
++	select FSL_LINFLEXUART
++	select MACH_S32
++	select MMC_HS400_SUPPORT
++	select OF_CONTROL
++	select OF_SEPARATE
++	select PINCTRL
++	select PINCTRL_FULL
++	select PINCTRL_S32
++	select S32_GPIO
++	select SCMI_FIRMWARE
++	select SYSRESET
++	select SYSRESET_PSCI
++	select SYS_MALLOC_F
++
++source "arch/arm/mach-s32/s32-cc/Kconfig"
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index dc9774e5e6..d5f1bdcc36 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -1,137 +1,48 @@
+-if MACH_S32
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
+ 
+-config SYS_SOC
+-	string
+-	default "s32"
+-
+-config BAUDRATE
+-	int "Serial baudrate"
+-	default 115200
++if NXP_S32_CC
+ 
+-config ARCH_S32G2
+-	bool
+-	select NXP_S32_CC
++config CUSTOM_SYS_TEXT_BASE
++	bool "Use a custom SYS_TEXT_BASE"
+ 	help
+-	  Platforms having S32G2XXX SoC
++	  Enable this if you need to use a custom SYS_TEXT_BASE address.
++	  When disabled, a suitable SYS_TEXT_BASE address will be calculated
++	  automatically.
+ 
+-config ARCH_S32G3
+-	bool
+-	select NXP_S32_CC
+-	help
+-	  Platforms having S32G3XXX SoC
++config SYS_TEXT_BASE
++	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
++	default 0xbfaa0000 if TARGET_TYPE_S32GEN1_EMULATOR
++	default 0xffaa0000
+ 
+-config ARCH_S32R45
+-	bool
+-	select NXP_S32_CC
+-	help
+-	  Platforms having S32R45 SoC
++config SYS_LOAD_ADDR
++	hex "Address in memory to use by default"
++	default 0x80000000
+ 
+-choice
+-	prompt "Select S32 Target Board Support"
+-	default TARGET_S32G274ARDB2
++config CUSTOM_SYS_DATA_BASE
++	bool "Use a custom SYS_DATA_BASE address"
+ 	help
+-	  S32 Target Board Selection
+-
+-config TARGET_S32R45EVB
+-	bool "Support s32r45evb"
+-	imply ADC
+-	imply I2C_EEPROM
+-	imply PHY_AQUANTIA
+-	imply S32_SARADC
+-	select ARCH_S32R45
+-	select SPI_FLASH_MACRONIX
+-
+-config TARGET_S32R45EMU
+-	bool "Support s32r45 ZeBu"
+-	select ARCH_S32R45
+-
+-config TARGET_S32G2XXAEVB
+-	bool "Support s32g274aevb"
+-	imply ADC
+-	imply DM_USB
+-	imply I2C_EEPROM
+-	imply PHY
+-	imply PHY_AQUANTIA
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	imply S32_SARADC
+-	imply SAF1508BET_USB_PHY
+-	imply SJA1105
+-	imply USB
+-	imply USB_EHCI_HCD
+-	select MISC_INIT_R if SJA1105
+-	select ARCH_S32G2
+-	select SPI_FLASH_MACRONIX
+-
+-config TARGET_S32G274ARDB2
+-	bool "Support s32g274ardb2"
+-	imply DM_PMIC_PF5020
+-	imply DM_PMIC_FS5600
+-	imply PHY_ATHEROS
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	select ADC
+-	select ARCH_S32G2
+-	select S32_SARADC
+-	select SPI_FLASH_MACRONIX
+-
+-config TARGET_S32G274ABLUEBOX3
+-	bool "Support s32g274abluebox3"
+-	imply ADC
+-	imply I2C_EEPROM
+-	imply PHY
+-	imply PHYLIB
+-	imply S32_SARADC
+-	select ARCH_S32G2
+-	select SPI_FLASH_STMICRO
++	  Enable this if you need to define a custom SYS_DATA_BASE address.
++	  When disabled, a suitable SYS_DATA_BASE address is calculated
++	  automatically.
++
++config SYS_DATA_BASE
++	hex "Data Base" if CUSTOM_SYS_DATA_BASE
++	default 0xbfa00000 if TARGET_TYPE_S32GEN1_EMULATOR
++	default 0xffa00000
+ 	help
+-	  Enable Microsys S32G SoM Bluebox 3 target.
+-	  S32G works as PCIE EP.
+-
+-config TARGET_S32G274AEMU
+-	bool "Support s32g274a ZeBu"
+-	select ARCH_S32G2
+-
+-config TARGET_S32G399AEMU
+-	bool "Support S32G399A ZeBu"
+-	select ARCH_S32G3
+-
+-config TARGET_S32G3XXAEVB
+-	bool "Support for S32G3 EVB boards"
+-	imply ADC
+-	imply DM_USB
+-	imply I2C_EEPROM
+-	imply PHY
+-	imply PHY_AQUANTIA
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	imply S32_SARADC
+-	imply SAF1508BET_USB_PHY
+-	imply SJA1105
+-	imply USB
+-	imply USB_EHCI_HCD
+-	select ARCH_S32G3
+-	select SPI_FLASH_MACRONIX
+-
+-config TARGET_S32G399ARDB3
+-	bool "Support s32g399ardb3"
+-	imply DM_PMIC_PF5020
+-	imply DM_PMIC_FS5600
+-	imply I2C_EEPROM
+-	imply PHY_ATHEROS
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	select ADC
+-	select ARCH_S32G3
+-	select S32_SARADC
+-	select SPI_FLASH_MACRONIX
+-
+-endchoice
++	  U-Boot data base address in DDR.
++
++config S32_CC_MAX_DTB_SIZE
++	hex "Max size reserved for device tree in image layout"
++	default 0x7000
++
++config SYS_MALLOC_F_LEN
++	default 0x2000
+ 
+ config S32_CMU
+ 	bool "Enable Clock Monitoring Unit-Frequency Check"
+ 	default y
+-	depends on NXP_S32_CC
+ 	help
+ 	  Checks if the frequency of a monitored clock (monitored_clock)
+ 	  is within a programmable frequency range specified by the user.
+@@ -141,6 +52,84 @@ config BOARD_NFS_BOOT_INTERFACE
+ 	default "br0" if TARGET_S32G274ABLUEBOX3
+ 	default "eth0"
+ 
+-source "board/nxp/Kconfig"
++config S32GEN1_DRAM_INLINE_ECC
++	bool "S32 GEN1 inline ECC"
++	default y if !TARGET_TYPE_S32GEN1_EMULATOR
++	help
++	  Select this config if you want to use inline ECC feature for
++	  S32 Gen1 boards.
++
++config SYS_MEM_SIZE
++	hex "RAM Memory Size"
++	default 0x00800000
++	help
++	  U-boot SRAM size (8 MB for Gen1)
++
++config MKIMAGE_T
++	string
++	default "s32gen1image"
++
++config S32GEN1_HWCONFIG
++	string "S32GEN1 HWConfig definition"
++	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
++	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
++	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)
++	help
++	  The configuration for the PCIe controllers, stored in
++	  the variable 'hwconfig'
++	  It configures the mode (rc, ep, sgmii) or the clock type
++	  (internal or external)
++	  It is also possible to configure combo mode either ep&sgmii or
++	  rc&sgmii, with these configurations lane0 is PCIe and lane1
++	  is connected to mac depending on 'xpcs_mode'.
++	  SGMII uses additional configurations 'fmhz' and 'xpcs_mode'.
++	  Config 'xpcs_mode' is used to specifically configure each line in
++	  SGMII mode. The following are valid options: '2G5', 'both', '0' and
++	  '1'. Mode '2G5' uses lane0 in 2.5G mode and leaves lane1 disabled.
++	  Mode 'both' configures both lanes for 1G operation so 2 macs can
++	  be connected. Mode '0' is used to configure only XPCS0, this can be
++	  used in 'sgmii' mode (one lane emac 1G other lane disabled) or
++	  in 'rc&sgmii'/'ep&sgmii' (one lane PCIeX1 other lane SGMII 1G).
++	  Same configuration is used for '1', which corresponds to XPCS1.
++	  Config 'fmhz' specifies frequency used as reference. In case of
++	  2.5G mode it is required to set this 125, if used in SGMII/PCIe
++	  combo mode 'fmhz' has to be 100 (PCIe ignores this and always
++	  uses 100). In case the SerDes is configured as SGMII and not in
++	  2.5G mode either 100 or 125 can be used in 'fmhz'.
++	  Available 'xpcs_mode' are depedent on platform:
++	  	s32g274a - supports '0','1','both' and '2G5'
++	  	s32r45   - supports '0' and '2G5'
++
++config S32GEN1_CONFIG_FILE
++	string
++	default "arch/arm/mach-s32/s32-cc/s32gen1.cfg"
++
++config TARGET_TYPE_S32GEN1_EMULATOR
++	bool
++	default n
++
++config EXTRA_KERNEL_BOOT_ARGS
++	string "Additional boot arguments for Linux kernel"
++	default ""
++
++config PHY_RGMII_DIRECT_CONNECTED
++	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
++	default n
++	help
++	  Adds the platform "fixed" MDIO Bus to cover the boards that
++	  use PHYs that are not connected to the real MDIO bus.
++
++config XEN_SUPPORT
++	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
++	default n
++	help
++	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
++	  fdts load addresses and u-boot environment variables in order for u-boot
++	  to directly load the Xen Image which will use a given Kernel Image as
++	  Dom0.
+ 
+ endif
++
++source "arch/arm/mach-s32/s32g2/Kconfig"
++source "arch/arm/mach-s32/s32g3/Kconfig"
++source "arch/arm/mach-s32/s32r45/Kconfig"
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index a80833b614..f2a7f50445 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -3,8 +3,10 @@
+ # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+ # (C) Copyright 2016-2018, 2020-2022 NXP
+ #
+-ccflags-y += -I./board/nxp/common/
+ ccflags-y += -I./arch/arm/mach-s32/s32-cc/
++ccflags-y += -I./board/nxp/common/
++ccflags-y += -I./board/nxp/s32-cc/include/
++ccflags-y += -I./drivers/net/s32/
+ 
+ obj-$(CONFIG_NXP_S32_CC)		+= scmi_reset_agent.o
+ obj-y				+= cpu.o
+@@ -28,3 +30,5 @@ ccflags-y			+= -I./board/nxp/s32-cc/
+ ccflags-y			+= -I./arch/arm/mach-s32/s32-cc/include
+ ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-cc/
+ ccflags-y			+= -I./drivers/misc/
++
++obj-$(CONFIG_NETDEVICES)	+= eth.o
+diff --git a/board/nxp/s32-cc/eth.c b/arch/arm/mach-s32/s32-cc/eth.c
+similarity index 100%
+rename from board/nxp/s32-cc/eth.c
+rename to arch/arm/mach-s32/s32-cc/eth.c
+diff --git a/board/nxp/s32-cc/s32gen1_gmac_utils.h b/arch/arm/mach-s32/s32-cc/include/s32gen1_gmac_utils.h
+similarity index 100%
+rename from board/nxp/s32-cc/s32gen1_gmac_utils.h
+rename to arch/arm/mach-s32/s32-cc/include/s32gen1_gmac_utils.h
+diff --git a/board/nxp/s32-cc/s32gen1.cfg b/arch/arm/mach-s32/s32-cc/s32gen1.cfg
+similarity index 100%
+rename from board/nxp/s32-cc/s32gen1.cfg
+rename to arch/arm/mach-s32/s32-cc/s32gen1.cfg
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+new file mode 100644
+index 0000000000..9cb4ad1f22
+--- /dev/null
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -0,0 +1,61 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if ARCH_S32G2
++
++choice
++	prompt "S32G2 board select"
++	default TARGET_S32G274ARDB2
++
++config TARGET_S32G274ARDB2
++	bool "Support S32G274ARDB2 board"
++	imply DM_PMIC_FS5600
++	imply DM_PMIC_PF5020
++	imply PHY_ATHEROS
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	select ADC
++	select NXP_S32GRDB_BOARD
++	select S32_SARADC
++	select SPI_FLASH_MACRONIX
++
++config TARGET_S32G2XXAEVB
++	bool "Support S32G274AEVB board"
++	imply ADC
++	imply DM_USB
++	imply I2C_EEPROM
++	imply PHY
++	imply PHY_AQUANTIA
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	imply S32_SARADC
++	imply SAF1508BET_USB_PHY
++	imply SJA1105
++	imply USB
++	imply USB_EHCI_HCD
++	select MISC_INIT_R if SJA1105
++	select NXP_S32GEVB_BOARD
++	select SPI_FLASH_MACRONIX
++
++config TARGET_S32G274ABLUEBOX3
++	bool "Support S32G274A BlueBox3 board"
++	imply ADC
++	imply I2C_EEPROM
++	imply PHY
++	imply PHYLIB
++	imply S32_SARADC
++	select SPI_FLASH_STMICRO
++
++config TARGET_S32G274AEMU
++	bool "Support S32G274A ZeBu"
++	select TARGET_TYPE_S32GEN1_EMULATOR
++
++endchoice
++
++source "board/nxp/s32-cc/s32g/Kconfig"
++source "board/nxp/s32g274ardb2/Kconfig"
++source "board/nxp/s32g2xxaevb/Kconfig"
++source "board/nxp/s32g274abluebox3/Kconfig"
++source "board/nxp/s32g274aemu/Kconfig"
++
++endif
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+new file mode 100644
+index 0000000000..eed52cfc0a
+--- /dev/null
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -0,0 +1,51 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if ARCH_S32G3
++
++choice
++	prompt "S32G3 board select"
++	default TARGET_S32G399ARDB3
++
++config TARGET_S32G399ARDB3
++	bool "Support S32G399ARDB3 board"
++	imply DM_PMIC_FS5600
++	imply DM_PMIC_PF5020
++	imply I2C_EEPROM
++	imply PHY_ATHEROS
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	select ADC
++	select NXP_S32GRDB_BOARD
++	select S32_SARADC
++	select SPI_FLASH_MACRONIX
++
++config TARGET_S32G3XXAEVB
++	bool "Support S32G3-EVB board"
++	imply ADC
++	imply DM_USB
++	imply I2C_EEPROM
++	imply PHY
++	imply PHY_AQUANTIA
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	imply S32_SARADC
++	imply SAF1508BET_USB_PHY
++	imply SJA1105
++	imply USB
++	imply USB_EHCI_HCD
++	select NXP_S32GEVB_BOARD
++	select SPI_FLASH_MACRONIX
++
++config TARGET_S32G399AEMU
++	bool "Support S32G399A ZeBu"
++	select TARGET_TYPE_S32GEN1_EMULATOR
++
++endchoice
++
++source "board/nxp/s32-cc/s32g/Kconfig"
++source "board/nxp/s32g399ardb3/Kconfig"
++source "board/nxp/s32g3xxaevb/Kconfig"
++source "board/nxp/s32g399aemu/Kconfig"
++
++endif
+diff --git a/arch/arm/mach-s32/s32r45/Kconfig b/arch/arm/mach-s32/s32r45/Kconfig
+new file mode 100644
+index 0000000000..6dc60f82c9
+--- /dev/null
++++ b/arch/arm/mach-s32/s32r45/Kconfig
+@@ -0,0 +1,27 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if ARCH_S32R45
++
++choice
++	prompt "S32R45 board select"
++	default TARGET_S32R45EVB
++
++config TARGET_S32R45EVB
++	bool "Support S32R45EVB board"
++	imply ADC
++	imply I2C_EEPROM
++	imply PHY_AQUANTIA
++	imply S32_SARADC
++	select SPI_FLASH_MACRONIX
++
++config TARGET_S32R45EMU
++	bool "Support S32R45 ZeBu"
++	select TARGET_TYPE_S32GEN1_EMULATOR
++
++endchoice
++
++source "board/nxp/s32r45evb/Kconfig"
++source "board/nxp/s32r45emu/Kconfig"
++
++endif
+diff --git a/board/nxp/Kconfig b/board/nxp/Kconfig
+deleted file mode 100644
+index 0576dad788..0000000000
+--- a/board/nxp/Kconfig
++++ /dev/null
+@@ -1,72 +0,0 @@
+-
+-config NXP_S32_CC
+-	bool
+-	imply DM_ETH
+-	imply DM_I2C
+-	imply DM_PCI
+-	imply DM_PMIC
+-	imply DM_PMIC_VR5510
+-	imply DM_SPI
+-	imply DM_SPI_FLASH
+-	imply DWC_ETH_QOS_DEVICES
+-	imply DWC_ETH_QOS_S32CC
+-	imply FSL_DSPI
+-	imply FSL_LINFLEXUART
+-	imply FSL_PFENG
+-	imply FSL_QSPI
+-	imply FSL_USDHC
+-	imply MISC
+-	imply MMC_HS400_ES_SUPPORT
+-	imply MP
+-	imply PCI
+-	imply PCIE_S32GEN1
+-	imply S32_TIMER
+-	imply SPI
+-	imply SYS_I2C_MXC
+-	imply TIMER
+-	select ARCH_MISC_INIT
+-	select ARM_SMCCC
+-	select BINMAN
+-	select CLK
+-	select CLK_SCMI
+-	select CPU
+-	select DISTRO_DEFAULTS
+-	select DM
+-	select DM_GPIO
+-	select DM_MMC
+-	select DM_SERIAL
+-	select MMC_HS400_SUPPORT
+-	select OF_CONTROL
+-	select OF_SEPARATE
+-	select PINCTRL
+-	select PINCTRL_FULL
+-	select PINCTRL_S32
+-	select S32_GPIO
+-	select SCMI_FIRMWARE
+-	select SYSRESET
+-	select SYSRESET_PSCI
+-	select SYS_MALLOC_F
+-	help
+-	  Platform Selection
+-
+-config EXTRA_KERNEL_BOOT_ARGS
+-	string "Additional boot arguments for Linux kernel"
+-	default ""
+-
+-config PHY_RGMII_DIRECT_CONNECTED
+-	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
+-	default n
+-	help
+-	  Adds the platform "fixed" MDIO Bus to cover the boards that
+-	  use PHYs that are not connected to the real MDIO bus.
+-
+-config XEN_SUPPORT
+-	bool "Enable Xen EL2 Booting and set environment variables in order to boot directly into Xen Hypervisor"
+-	default n
+-	help
+-	  Skip the enablement of CONFIG_ARMV8_SWITCH_TO_EL1 and set Xen Image,
+-	  fdts load addresses and u-boot environment variables in order for u-boot
+-	  to directly load the Xen Image which will use a given Kernel Image as
+-	  Dom0.
+-
+-source "board/nxp/s32-cc/Kconfig"
+diff --git a/board/nxp/s32-cc/Kconfig b/board/nxp/s32-cc/Kconfig
+deleted file mode 100644
+index 9c219230ce..0000000000
+--- a/board/nxp/s32-cc/Kconfig
++++ /dev/null
+@@ -1,107 +0,0 @@
+-if TARGET_S32G274AEMU || TARGET_S32R45EMU || TARGET_S32G399AEMU
+-
+-config TARGET_TYPE_S32GEN1_EMULATOR
+-	bool
+-	default y
+-	help
+-	  Target Type S32 Gen1 Emulator
+-
+-endif
+-
+-config NXP_S32GRDB_BOARD
+-	bool
+-	default y
+-	depends on TARGET_S32G274ARDB2 || TARGET_S32G399ARDB3
+-	imply NVME
+-
+-config S32GEN1_DRAM_INLINE_ECC
+-	bool "S32 GEN1 inline ECC"
+-	default y if !TARGET_TYPE_S32GEN1_EMULATOR
+-	help
+-	  Select this config if you want to use inline ECC feature for
+-	  S32 Gen1 boards.
+-
+-config CUSTOM_SYS_DATA_BASE
+-	bool "Use a custom SYS_DATA_BASE address"
+-	help
+-	  Enable this if you need to define a custom SYS_DATA_BASE address.
+-	  When disabled, a suitable SYS_DATA_BASE address is calculated
+-	  automatically.
+-
+-config SYS_DATA_BASE
+-	hex "Data Base" if CUSTOM_SYS_DATA_BASE
+-	default 0xbfa00000 if TARGET_TYPE_S32GEN1_EMULATOR
+-	default 0xffa00000
+-	help
+-	  U-Boot data base address in DDR.
+-
+-config CUSTOM_SYS_TEXT_BASE
+-	bool "Use a custom SYS_TEXT_BASE"
+-	help
+-	  Enable this if you need to use a custom SYS_TEXT_BASE address.
+-	  When disabled, a suitable SYS_TEXT_BASE address will be calculated
+-	  automatically.
+-
+-config SYS_TEXT_BASE
+-	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
+-	default 0xbfaa0000 if TARGET_TYPE_S32GEN1_EMULATOR
+-	default 0xffaa0000
+-
+-config SYS_MEM_SIZE
+-	hex "RAM Memory Size"
+-	default 0x00800000
+-	help
+-	  U-boot SRAM size (8 MB for Gen1)
+-
+-config SYS_BOARD
+-	string
+-	default "s32-cc"
+-
+-config SYS_CONFIG_NAME
+-	string
+-	default "s32g274a" if ARCH_S32G2
+-	default "s32r45" if ARCH_S32R45
+-	default "s32g399a" if ARCH_S32G3
+-
+-config S32_CC_MAX_DTB_SIZE
+-	hex "Max size reserved for device tree in image layout"
+-	default 0x7000
+-
+-config S32GEN1_HWCONFIG
+-	string "S32GEN1 HWConfig definition"
+-	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
+-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && (TARGET_S32G274ARDB2 || TARGET_S32G399ARDB3)
+-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  (TARGET_S32G2XXAEVB || TARGET_S32G3XXAEVB)
+-	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ABLUEBOX3
+-	default "pcie0:mode=sgmii;pcie1:mode=sgmii" if (!PCIE_S32GEN1 && FSL_PFENG)
+-	default "pcie0:mode=rc,clock=ext;pcie1:mode=ep,clock=int" if (PCIE_S32GEN1 && !FSL_PFENG)
+-	default ""
+-	help
+-	  The configuration for the PCIe controllers, stored in
+-	  the variable 'hwconfig'
+-	  It configures the mode (rc, ep, sgmii) or the clock type
+-	  (internal or external)
+-	  It is also possible to configure combo mode either ep&sgmii or
+-	  rc&sgmii, with these configurations lane0 is PCIe and lane1
+-	  is connected to mac depending on 'xpcs_mode'.
+-	  SGMII uses additional configurations 'fmhz' and 'xpcs_mode'.
+-	  Config 'xpcs_mode' is used to specifically configure each line in
+-	  SGMII mode. The following are valid options: '2G5', 'both', '0' and
+-	  '1'. Mode '2G5' uses lane0 in 2.5G mode and leaves lane1 disabled.
+-	  Mode 'both' configures both lanes for 1G operation so 2 macs can
+-	  be connected. Mode '0' is used to configure only XPCS0, this can be
+-	  used in 'sgmii' mode (one lane emac 1G other lane disabled) or
+-	  in 'rc&sgmii'/'ep&sgmii' (one lane PCIeX1 other lane SGMII 1G).
+-	  Same configuration is used for '1', which corresponds to XPCS1.
+-	  Config 'fmhz' specifies frequency used as reference. In case of
+-	  2.5G mode it is required to set this 125, if used in SGMII/PCIe
+-	  combo mode 'fmhz' has to be 100 (PCIe ignores this and always
+-	  uses 100). In case the SerDes is configured as SGMII and not in
+-	  2.5G mode either 100 or 125 can be used in 'fmhz'.
+-	  Available 'xpcs_mode' are depedent on platform:
+-	  	s32g274a - supports '0','1','both' and '2G5'
+-	  	s32r45   - supports '0' and '2G5'
+-
+-config S32GEN1_CONFIG_FILE
+-	string
+-	default "board/nxp/s32-cc/s32gen1.cfg"
+diff --git a/board/nxp/s32-cc/Makefile b/board/nxp/s32-cc/Makefile
+index a1d87c8dcb..386cdb4779 100644
+--- a/board/nxp/s32-cc/Makefile
++++ b/board/nxp/s32-cc/Makefile
+@@ -1,28 +1,9 @@
+ #
+-# (C) Copyright 2013-2015 Freescale Semiconductor, Inc.
+-# Copyright 2018-2022 NXP
++# Copyright 2022 NXP
+ #
+ # SPDX-License-Identifier:	GPL-2.0+
+ #
+ 
+-ccflags-$(CONFIG_NXP_S32_CC) += -Iarch/$(ARCH)/cpu/armv8/s32
+-ccflags-$(CONFIG_NXP_S32_CC) += -Iboard/nxp/s32-cc
+-ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/net/s32
+-ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
+-obj-y := common.o
++obj-y += board_common.o
+ 
+-ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
+-	obj-y	+= ../../../drivers/core/ofnode.o
+-endif
+-
+-obj-$(CONFIG_NETDEVICES) += eth.o
+-
+-obj-$(CONFIG_TARGET_S32G2XXAEVB) += s32gxxxaevb.o
+-obj-$(CONFIG_TARGET_S32G3XXAEVB) += s32gxxxaevb.o
+-obj-$(CONFIG_TARGET_S32G274ARDB2) += s32gxxxardb.o
+-obj-$(CONFIG_TARGET_S32G399ARDB3) += s32gxxxardb.o
+-obj-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.o
+-
+-obj-$(CONFIG_TARGET_S32R45EVB) += s32r45evb.o
+-
+-#########################################################################
++ccflags-y += -Iboard/nxp/s32-cc/include/
+diff --git a/board/nxp/s32-cc/common.c b/board/nxp/s32-cc/board_common.c
+similarity index 96%
+rename from board/nxp/s32-cc/common.c
+rename to board/nxp/s32-cc/board_common.c
+index fc056859d1..0cd0c5f824 100644
+--- a/board/nxp/s32-cc/common.c
++++ b/board/nxp/s32-cc/board_common.c
+@@ -2,7 +2,6 @@
+ /*
+  * Copyright 2017-2022 NXP
+  */
+-
+ #include <common.h>
+ #include <asm/io.h>
+ #include <asm/arch/clock.h>
+@@ -10,7 +9,7 @@
+ #include <linux/libfdt.h>
+ #include <miiphy.h>
+ 
+-#include "board_common.h"
++#include <board_common.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+diff --git a/board/nxp/s32-cc/board_common.h b/board/nxp/s32-cc/include/board_common.h
+similarity index 100%
+rename from board/nxp/s32-cc/board_common.h
+rename to board/nxp/s32-cc/include/board_common.h
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+new file mode 100644
+index 0000000000..2cadfb7aa0
+--- /dev/null
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -0,0 +1,12 @@
++config NXP_S32GRDB_BOARD
++	bool
++	default n
++	imply NVME
++
++config NXP_S32GEVB_BOARD
++	bool
++	default n
++
++config S32GEN1_HWCONFIG
++	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GRDB_BOARD
++	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GEVB_BOARD
+diff --git a/board/nxp/s32-cc/s32g/Makefile b/board/nxp/s32-cc/s32g/Makefile
+new file mode 100644
+index 0000000000..c17461c1fd
+--- /dev/null
++++ b/board/nxp/s32-cc/s32g/Makefile
+@@ -0,0 +1,11 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y				+= ../
++obj-$(CONFIG_NXP_S32GRDB_BOARD)	+= s32gxxxardb.o
++obj-$(CONFIG_NXP_S32GEVB_BOARD)	+= s32gxxxaevb.o
++
++ccflags-y += -Iboard/nxp/s32-cc/include
+diff --git a/board/nxp/s32-cc/s32gxxxaevb.c b/board/nxp/s32-cc/s32g/s32gxxxaevb.c
+similarity index 100%
+rename from board/nxp/s32-cc/s32gxxxaevb.c
+rename to board/nxp/s32-cc/s32g/s32gxxxaevb.c
+diff --git a/board/nxp/s32-cc/s32gxxxardb.c b/board/nxp/s32-cc/s32g/s32gxxxardb.c
+similarity index 100%
+rename from board/nxp/s32-cc/s32gxxxardb.c
+rename to board/nxp/s32-cc/s32g/s32gxxxardb.c
+diff --git a/board/nxp/s32g274abluebox3/Kconfig b/board/nxp/s32g274abluebox3/Kconfig
+new file mode 100644
+index 0000000000..c79e74d03c
+--- /dev/null
++++ b/board/nxp/s32g274abluebox3/Kconfig
+@@ -0,0 +1,18 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G274ABLUEBOX3
++
++config SYS_CONFIG_NAME
++	default "s32g274abluebox3"
++
++config SYS_BOARD
++	default "s32g274abluebox3"
++
++config NR_DRAM_BANKS
++	default 2
++
++config S32GEN1_HWCONFIG
++	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG)
++
++endif
+diff --git a/board/nxp/s32g274abluebox3/Makefile b/board/nxp/s32g274abluebox3/Makefile
+new file mode 100644
+index 0000000000..858f2b62d4
+--- /dev/null
++++ b/board/nxp/s32g274abluebox3/Makefile
+@@ -0,0 +1,10 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y		+= ../s32-cc/s32g/
++obj-y 		+= s32g274abluebox3.o
++
++ccflags-y	+= -Iboard/nxp/s32-cc/include
+diff --git a/board/nxp/s32-cc/s32g274abluebox3.c b/board/nxp/s32g274abluebox3/s32g274abluebox3.c
+similarity index 100%
+rename from board/nxp/s32-cc/s32g274abluebox3.c
+rename to board/nxp/s32g274abluebox3/s32g274abluebox3.c
+diff --git a/board/nxp/s32g274aemu/Kconfig b/board/nxp/s32g274aemu/Kconfig
+new file mode 100644
+index 0000000000..5382689ba4
+--- /dev/null
++++ b/board/nxp/s32g274aemu/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G274AEMU
++
++config SYS_CONFIG_NAME
++	default "s32g274aemu"
++
++config SYS_BOARD
++	default "s32g274aemu"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g274aemu/Makefile b/board/nxp/s32g274aemu/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g274aemu/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32g274ardb2/Kconfig b/board/nxp/s32g274ardb2/Kconfig
+new file mode 100644
+index 0000000000..ff35839593
+--- /dev/null
++++ b/board/nxp/s32g274ardb2/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G274ARDB2
++
++config SYS_CONFIG_NAME
++	default "s32g274ardb2"
++
++config SYS_BOARD
++	default "s32g274ardb2"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g274ardb2/Makefile b/board/nxp/s32g274ardb2/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g274ardb2/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32g2xxaevb/Kconfig b/board/nxp/s32g2xxaevb/Kconfig
+new file mode 100644
+index 0000000000..f3a8df9c87
+--- /dev/null
++++ b/board/nxp/s32g2xxaevb/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G2XXAEVB
++
++config SYS_CONFIG_NAME
++	default "s32g2xxaevb"
++
++config SYS_BOARD
++	default "s32g2xxaevb"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g2xxaevb/Makefile b/board/nxp/s32g2xxaevb/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g2xxaevb/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32g399aemu/Kconfig b/board/nxp/s32g399aemu/Kconfig
+new file mode 100644
+index 0000000000..b0d22eb5b1
+--- /dev/null
++++ b/board/nxp/s32g399aemu/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G399AEMU
++
++config SYS_CONFIG_NAME
++	default "s32g399aemu"
++
++config SYS_BOARD
++	default "s32g399aemu"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g399aemu/Makefile b/board/nxp/s32g399aemu/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g399aemu/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32g399ardb3/Kconfig b/board/nxp/s32g399ardb3/Kconfig
+new file mode 100644
+index 0000000000..c4cf192768
+--- /dev/null
++++ b/board/nxp/s32g399ardb3/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G399ARDB3
++
++config SYS_CONFIG_NAME
++	default "s32g399ardb3"
++
++config SYS_BOARD
++	default "s32g399ardb3"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g399ardb3/Makefile b/board/nxp/s32g399ardb3/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g399ardb3/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32g3xxaevb/Kconfig b/board/nxp/s32g3xxaevb/Kconfig
+new file mode 100644
+index 0000000000..368651474d
+--- /dev/null
++++ b/board/nxp/s32g3xxaevb/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G3XXAEVB
++
++config SYS_CONFIG_NAME
++	default "s32g3xxaevb"
++
++config SYS_BOARD
++	default "s32g3xxaevb"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32g3xxaevb/Makefile b/board/nxp/s32g3xxaevb/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g3xxaevb/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/board/nxp/s32r45emu/Kconfig b/board/nxp/s32r45emu/Kconfig
+new file mode 100644
+index 0000000000..86355bd390
+--- /dev/null
++++ b/board/nxp/s32r45emu/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32R45EMU
++
++config SYS_CONFIG_NAME
++	default "s32r45emu"
++
++config SYS_BOARD
++	default "s32r45emu"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32r45emu/Makefile b/board/nxp/s32r45emu/Makefile
+new file mode 100644
+index 0000000000..8ccd875651
+--- /dev/null
++++ b/board/nxp/s32r45emu/Makefile
+@@ -0,0 +1,5 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
+diff --git a/board/nxp/s32r45evb/Kconfig b/board/nxp/s32r45evb/Kconfig
+new file mode 100644
+index 0000000000..53f9d508d9
+--- /dev/null
++++ b/board/nxp/s32r45evb/Kconfig
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32R45EVB
++
++config SYS_CONFIG_NAME
++	default "s32r45evb"
++
++config SYS_BOARD
++	default "s32r45evb"
++
++config NR_DRAM_BANKS
++	default 2
++
++endif
+diff --git a/board/nxp/s32r45evb/Makefile b/board/nxp/s32r45evb/Makefile
+new file mode 100644
+index 0000000000..0a6935df1c
+--- /dev/null
++++ b/board/nxp/s32r45evb/Makefile
+@@ -0,0 +1,9 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y		+= ../s32-cc/
++obj-y 		+= s32r45evb.o
++ccflags-y	+= -Iarch/arm/mach-s32/s32-cc/include/
+diff --git a/board/nxp/s32-cc/s32r45evb.c b/board/nxp/s32r45evb/s32r45evb.c
+similarity index 100%
+rename from board/nxp/s32-cc/s32r45evb.c
+rename to board/nxp/s32r45evb/s32r45evb.c
+diff --git a/configs/s32g274a_emu_defconfig b/configs/s32g274a_emu_defconfig
+index 3feb81dcb8..f542e3dd35 100644
+--- a/configs/s32g274a_emu_defconfig
++++ b/configs/s32g274a_emu_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274abluebox3_defconfig b/configs/s32g274abluebox3_defconfig
+index de44d1c2c8..900b94a997 100644
+--- a/configs/s32g274abluebox3_defconfig
++++ b/configs/s32g274abluebox3_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274abluebox3_qspi_defconfig b/configs/s32g274abluebox3_qspi_defconfig
+index 9fb557cb63..3321e74732 100644
+--- a/configs/s32g274abluebox3_qspi_defconfig
++++ b/configs/s32g274abluebox3_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x1000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
+index 219a4af154..9b54c0448b 100644
+--- a/configs/s32g274ardb2_defconfig
++++ b/configs/s32g274ardb2_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274ardb2_qspi_defconfig b/configs/s32g274ardb2_qspi_defconfig
+index b4b0052e8e..0e61e217a4 100644
+--- a/configs/s32g274ardb2_qspi_defconfig
++++ b/configs/s32g274ardb2_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
+index 6aca62e82a..55c8f7dca3 100644
+--- a/configs/s32g2xxaevb_defconfig
++++ b/configs/s32g2xxaevb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g2xxaevb_qspi_defconfig b/configs/s32g2xxaevb_qspi_defconfig
+index e4d8186387..ef1190b5ba 100644
+--- a/configs/s32g2xxaevb_qspi_defconfig
++++ b/configs/s32g2xxaevb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G2=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g399a_emu_defconfig b/configs/s32g399a_emu_defconfig
+index 1c1acb044b..29c65eac20 100644
+--- a/configs/s32g399a_emu_defconfig
++++ b/configs/s32g399a_emu_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G3=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
+index 4430aad5a0..24406c7004 100644
+--- a/configs/s32g399ardb3_defconfig
++++ b/configs/s32g399ardb3_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G3=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g399ardb3_qspi_defconfig b/configs/s32g399ardb3_qspi_defconfig
+index 6e26cbc446..e910c7f2e8 100644
+--- a/configs/s32g399ardb3_qspi_defconfig
++++ b/configs/s32g399ardb3_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G3=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
+index 61a994531b..43ab78e5c2 100644
+--- a/configs/s32g3xxaevb_defconfig
++++ b/configs/s32g3xxaevb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G3=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g3xxaevb_qspi_defconfig b/configs/s32g3xxaevb_qspi_defconfig
+index d67fe27b5b..2b4db16bb1 100644
+--- a/configs/s32g3xxaevb_qspi_defconfig
++++ b/configs/s32g3xxaevb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32G3=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32r45_emu_defconfig b/configs/s32r45_emu_defconfig
+index e9e667cb7f..55a5c7bff9 100644
+--- a/configs/s32r45_emu_defconfig
++++ b/configs/s32r45_emu_defconfig
+@@ -1,11 +1,10 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32R45=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_NR_DRAM_BANKS=2
+ CONFIG_TARGET_S32R45EMU=y
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+ CONFIG_FIT=y
+-CONFIG_QSPI_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+ CONFIG_BOOTARGS="root=/dev/ram rw earlycon loglevel=7"
+ CONFIG_CMD_MEMTEST=y
+diff --git a/configs/s32r45evb_defconfig b/configs/s32r45evb_defconfig
+index c43d9e037f..4649a13dc0 100644
+--- a/configs/s32r45evb_defconfig
++++ b/configs/s32r45evb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32R45=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32r45evb_qspi_defconfig b/configs/s32r45evb_qspi_defconfig
+index bab0bdc7be..c5c1d49377 100644
+--- a/configs/s32r45evb_qspi_defconfig
++++ b/configs/s32r45evb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_MACH_S32=y
++CONFIG_ARCH_S32R45=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index dbd6fa6dec..cf9fbaf68d 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -3,9 +3,10 @@
+ # (C) Copyright 2006
+ # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ 
+-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
++ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/arm/include/asm/arch-s32/s32-cc
++ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/arm/mach-s32/s32-cc/include
++ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-cc/include
+ ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Idrivers/net/s32
+-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-cc
+ 
+ obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
+ obj-$(CONFIG_AG7XXX) += ag7xxx.o
+diff --git a/include/configs/s32.h b/include/configs/s32.h
+index 7df102258a..36b79a3da0 100644
+--- a/include/configs/s32.h
++++ b/include/configs/s32.h
+@@ -367,8 +367,7 @@
+ 					 PHYS_SDRAM_1_SIZE)
+ 
+ /*Kernel image load address */
+-#define CONFIG_LOADADDR			0x80000000
+-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
++#define CONFIG_LOADADDR			CONFIG_SYS_LOAD_ADDR
+ #define CONFIG_SYS_HZ			1000
+ 
+ #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
+diff --git a/include/configs/s32g274abluebox3.h b/include/configs/s32g274abluebox3.h
+new file mode 100644
+index 0000000000..d1fedcab03
+--- /dev/null
++++ b/include/configs/s32g274abluebox3.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G274ABLUEBOX3_H__
++#define __S32G274ABLUEBOX3_H__
++
++#include <configs/s32g274a.h>
++
++#endif
+diff --git a/include/configs/s32g274aemu.h b/include/configs/s32g274aemu.h
+new file mode 100644
+index 0000000000..b6fa0b7e95
+--- /dev/null
++++ b/include/configs/s32g274aemu.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G274AEMU_H__
++#define __S32G274AEMU_H__
++
++#include <configs/s32g274a.h>
++
++#endif
+diff --git a/include/configs/s32g274ardb2.h b/include/configs/s32g274ardb2.h
+new file mode 100644
+index 0000000000..db5302226a
+--- /dev/null
++++ b/include/configs/s32g274ardb2.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G274ARDB2_H__
++#define __S32G274ARDB2_H__
++
++#include <configs/s32g274a.h>
++
++#endif
+diff --git a/include/configs/s32g2xxaevb.h b/include/configs/s32g2xxaevb.h
+new file mode 100644
+index 0000000000..3c51010d8d
+--- /dev/null
++++ b/include/configs/s32g2xxaevb.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G2XXAEVB_H__
++#define __S32G2XXAEVB_H__
++
++#include <configs/s32g274a.h>
++
++#endif
+diff --git a/include/configs/s32g399aemu.h b/include/configs/s32g399aemu.h
+new file mode 100644
+index 0000000000..05601ae4fb
+--- /dev/null
++++ b/include/configs/s32g399aemu.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G399AEMU_H__
++#define __S32G399AEMU_H__
++
++#include <configs/s32g399a.h>
++
++#endif
+diff --git a/include/configs/s32g399ardb3.h b/include/configs/s32g399ardb3.h
+new file mode 100644
+index 0000000000..8a027ea150
+--- /dev/null
++++ b/include/configs/s32g399ardb3.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G399ARDB3_H__
++#define __S32G399ARDB3_H__
++
++#include <configs/s32g399a.h>
++
++#endif
+diff --git a/include/configs/s32g3xxaevb.h b/include/configs/s32g3xxaevb.h
+new file mode 100644
+index 0000000000..ffef4f544d
+--- /dev/null
++++ b/include/configs/s32g3xxaevb.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G3XXAEVB_H__
++#define __S32G3XXAEVB_H__
++
++#include <configs/s32g399a.h>
++
++#endif
+diff --git a/include/configs/s32r45emu.h b/include/configs/s32r45emu.h
+new file mode 100644
+index 0000000000..eaa5e1a60e
+--- /dev/null
++++ b/include/configs/s32r45emu.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32GR45EMU_H__
++#define __S32GR45EMU_H__
++
++#include <configs/s32r45.h>
++
++#endif
+diff --git a/include/configs/s32r45evb.h b/include/configs/s32r45evb.h
+new file mode 100644
+index 0000000000..556e375a5a
+--- /dev/null
++++ b/include/configs/s32r45evb.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32GR45EVB_H__
++#define __S32GR45EVB_H__
++
++#include <configs/s32r45.h>
++
++#endif
+-- 
+2.25.1
+

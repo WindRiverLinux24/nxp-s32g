@@ -1,0 +1,31 @@
+From 2c4bcd095a6d2fc6662551eda37e3ecca72f84c1 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Fri, 1 Apr 2022 11:32:02 +0300
+Subject: [PATCH 078/103] config_whitelist: Remove CONFIG_DSPI_CS_CSK and
+ CONFI_DSPI_CSK_CS
+
+Issue: ALB-8598
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ scripts/config_whitelist.txt | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/scripts/config_whitelist.txt b/scripts/config_whitelist.txt
+index d175617bbc..8d72610989 100644
+--- a/scripts/config_whitelist.txt
++++ b/scripts/config_whitelist.txt
+@@ -351,8 +351,6 @@ CONFIG_DRIVER_EP93XX_MAC
+ CONFIG_DRIVER_NE2000
+ CONFIG_DRIVER_NE2000_BASE
+ CONFIG_DRIVER_TI_EMAC_USE_RMII
+-CONFIG_DSPI_CS_SCK_DELAY
+-CONFIG_DSPI_SCK_CS_DELAY
+ CONFIG_DSP_CLUSTER_START
+ CONFIG_DUOVERO
+ CONFIG_DWC2_DFLT_SPEED_FULL
+-- 
+2.25.1
+

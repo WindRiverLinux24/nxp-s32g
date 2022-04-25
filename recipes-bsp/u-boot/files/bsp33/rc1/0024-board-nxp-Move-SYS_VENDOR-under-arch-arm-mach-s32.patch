@@ -1,0 +1,44 @@
+From 95c7b2617fa23b5b1099ca59f0600a9117afcda5 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 16:17:37 +0200
+Subject: [PATCH 024/103] board: nxp: Move SYS_VENDOR under arch/arm/mach-s32
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/Kconfig | 6 +++++-
+ board/nxp/Kconfig         | 3 ---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 0fc5d76683..70043c5841 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -1,5 +1,9 @@
+ # SPDX-License-Identifier: GPL-2.0+
+-# Copyright 2020-2021 NXP
++# Copyright 2020-2022 NXP
++
++config SYS_VENDOR
++	string
++	default "nxp"
+ 
+ config MKIMAGE_T
+ 	string
+diff --git a/board/nxp/Kconfig b/board/nxp/Kconfig
+index deb0dbd80a..0576dad788 100644
+--- a/board/nxp/Kconfig
++++ b/board/nxp/Kconfig
+@@ -1,6 +1,3 @@
+-config SYS_VENDOR
+-	string
+-	default "nxp"
+ 
+ config NXP_S32_CC
+ 	bool
+-- 
+2.25.1
+

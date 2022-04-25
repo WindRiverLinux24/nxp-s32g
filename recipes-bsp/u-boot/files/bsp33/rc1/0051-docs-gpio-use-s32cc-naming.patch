@@ -1,0 +1,47 @@
+From 65aee6eff37e3cff79be7ea8f7e4c7c080a3aa08 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Tue, 29 Mar 2022 12:11:22 +0300
+Subject: [PATCH 051/103] docs: gpio: use 's32cc' naming
+
+Update the gpio doc file to reflect the new naming convention. Thus, use
+'s32cc' instead of 's32gen1' or 's32'.
+
+Issue: ALB-8590
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../gpio/{gpio-s32.txt => gpio-s32cc.txt}                   | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+ rename doc/device-tree-bindings/gpio/{gpio-s32.txt => gpio-s32cc.txt} (80%)
+
+diff --git a/doc/device-tree-bindings/gpio/gpio-s32.txt b/doc/device-tree-bindings/gpio/gpio-s32cc.txt
+similarity index 80%
+rename from doc/device-tree-bindings/gpio/gpio-s32.txt
+rename to doc/device-tree-bindings/gpio/gpio-s32cc.txt
+index 722ab116f1..2c2418179b 100644
+--- a/doc/device-tree-bindings/gpio/gpio-s32.txt
++++ b/doc/device-tree-bindings/gpio/gpio-s32cc.txt
+@@ -1,7 +1,7 @@
+-* NXP S32 SIUL2 GPIO controller
++* NXP S32CC SIUL2 GPIO controller
+ 
+ Required properties:
+-- compatible : "fsl,s32-gen1-siul2-gpio"
++- compatible : "nxp,s32cc-siul2-gpio"
+ - #gpio-cells : Should be 2 (pin number and his properties)
+ - gpio-controller : Marks the device node as a GPIO controller
+ - gpio-ranges: See gpio.txt
+@@ -17,7 +17,7 @@ siul2_1@44010000 {
+ 	};
+ 
+ 	gpio1: siul2-gpio1 {
+-		compatible = "fsl,s32-gen1-siul2-gpio";
++		compatible = "nxp,s32cc-siul2-gpio";
+ 		#gpio-cells = <2>;
+ 		gpio-controller;
+ 		gpio-ranges = <&pinctrl1 0 112 11>,
+-- 
+2.25.1
+

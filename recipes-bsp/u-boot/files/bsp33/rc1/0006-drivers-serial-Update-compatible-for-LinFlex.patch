@@ -1,0 +1,30 @@
+From 7b6c1f4dda6856f9a61b9fccaf3030ef6ff41a0b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 11:19:40 +0200
+Subject: [PATCH 006/103] drivers: serial: Update compatible for LinFlex
+
+Issue: ALB-8575
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/serial/serial_linflexuart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/serial/serial_linflexuart.c b/drivers/serial/serial_linflexuart.c
+index 4371dfafcd..590eadd7bb 100644
+--- a/drivers/serial/serial_linflexuart.c
++++ b/drivers/serial/serial_linflexuart.c
+@@ -270,7 +270,7 @@ static const struct dm_serial_ops linflex_serial_ops = {
+ };
+ 
+ static const struct udevice_id linflex_serial_ids[] = {
+-	{ .compatible = "fsl,s32-linflexuart", },
++	{ .compatible = "nxp,s32-cc-linflexuart", },
+ };
+ 
+ U_BOOT_DRIVER(serial_linflex) = {
+-- 
+2.25.1
+

@@ -1,0 +1,114 @@
+From ad356a48cb00164c038a41af0df73a87e5111c60 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 30 Mar 2022 17:11:54 +0300
+Subject: [PATCH 071/103] configs: Rename s32g274a.h to s32g2.h
+
+Issue: ALB-8583
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ board/nxp/s32-cc/MAINTAINERS            | 4 ++--
+ include/configs/{s32g274a.h => s32g2.h} | 9 ++-------
+ include/configs/s32g274abluebox3.h      | 2 +-
+ include/configs/s32g274aemu.h           | 2 +-
+ include/configs/s32g274ardb2.h          | 2 +-
+ include/configs/s32g2xxaevb.h           | 2 +-
+ 6 files changed, 8 insertions(+), 13 deletions(-)
+ rename include/configs/{s32g274a.h => s32g2.h} (80%)
+
+diff --git a/board/nxp/s32-cc/MAINTAINERS b/board/nxp/s32-cc/MAINTAINERS
+index 7c4ab3c5a3..d34dd52991 100644
+--- a/board/nxp/s32-cc/MAINTAINERS
++++ b/board/nxp/s32-cc/MAINTAINERS
+@@ -9,13 +9,13 @@ S32G274A-EVB BOARD
+ M:	-
+ S:	Maintained
+ F:	configs/s32g274aevb_defconfig
+-F:	include/configs/s32g274a.h
++F:	include/configs/s32g2xxaevb.h
+ 
+ S32G274A-RDB BOARD
+ M:	-
+ S:	Maintained
+ F:	configs/s32g274ardb_defconfig
+-F:	include/configs/s32g274a.h
++F:	include/configs/s32g274ardb2.h
+ 
+ S32R45 BOARD
+ M:	-
+diff --git a/include/configs/s32g274a.h b/include/configs/s32g2.h
+similarity index 80%
+rename from include/configs/s32g274a.h
+rename to include/configs/s32g2.h
+index fc27c74aa7..f6ced42e60 100644
+--- a/include/configs/s32g274a.h
++++ b/include/configs/s32g2.h
+@@ -2,13 +2,8 @@
+ /*
+  * Copyright 2017-2022 NXP
+  */
+-
+-/*
+- * Configuration settings for all the Freescale S32G274A boards.
+- */
+-
+-#ifndef __S32G274A_H
+-#define __S32G274A_H
++#ifndef __S32G2_H__
++#define __S32G2_H__
+ 
+ #include <configs/s32-cc.h>
+ 
+diff --git a/include/configs/s32g274abluebox3.h b/include/configs/s32g274abluebox3.h
+index d1fedcab03..81f796ca68 100644
+--- a/include/configs/s32g274abluebox3.h
++++ b/include/configs/s32g274abluebox3.h
+@@ -5,6 +5,6 @@
+ #ifndef __S32G274ABLUEBOX3_H__
+ #define __S32G274ABLUEBOX3_H__
+ 
+-#include <configs/s32g274a.h>
++#include <configs/s32g2.h>
+ 
+ #endif
+diff --git a/include/configs/s32g274aemu.h b/include/configs/s32g274aemu.h
+index b6fa0b7e95..d5f22f369d 100644
+--- a/include/configs/s32g274aemu.h
++++ b/include/configs/s32g274aemu.h
+@@ -5,6 +5,6 @@
+ #ifndef __S32G274AEMU_H__
+ #define __S32G274AEMU_H__
+ 
+-#include <configs/s32g274a.h>
++#include <configs/s32g2.h>
+ 
+ #endif
+diff --git a/include/configs/s32g274ardb2.h b/include/configs/s32g274ardb2.h
+index db5302226a..703af0b2a0 100644
+--- a/include/configs/s32g274ardb2.h
++++ b/include/configs/s32g274ardb2.h
+@@ -5,6 +5,6 @@
+ #ifndef __S32G274ARDB2_H__
+ #define __S32G274ARDB2_H__
+ 
+-#include <configs/s32g274a.h>
++#include <configs/s32g2.h>
+ 
+ #endif
+diff --git a/include/configs/s32g2xxaevb.h b/include/configs/s32g2xxaevb.h
+index 3c51010d8d..cf78191258 100644
+--- a/include/configs/s32g2xxaevb.h
++++ b/include/configs/s32g2xxaevb.h
+@@ -5,6 +5,6 @@
+ #ifndef __S32G2XXAEVB_H__
+ #define __S32G2XXAEVB_H__
+ 
+-#include <configs/s32g274a.h>
++#include <configs/s32g2.h>
+ 
+ #endif
+-- 
+2.25.1
+

@@ -1,4 +1,4 @@
-HSE_FW_DEFAULT_NAME ?= "s32gen1_hse_fw.bin"
+HSE_FW_DEFAULT_NAME ?= "s32cc_hse_fw.bin"
 HSE_LOCAL_FIRMWARE_DIR ?= ""
 HSE_FW_NAME_S32G2 ?= ""
 HSE_FW_NAME_S32G3 ?= ""

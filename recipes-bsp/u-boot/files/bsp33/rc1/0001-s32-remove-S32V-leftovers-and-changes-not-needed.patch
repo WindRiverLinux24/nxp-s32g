@@ -1,0 +1,245 @@
+From f1204148c1ff1c90b3d88656ebc321cc687de261 Mon Sep 17 00:00:00 2001
+From: Andrei Botila <andrei.botila@nxp.com>
+Date: Tue, 15 Feb 2022 17:01:12 +0200
+Subject: [PATCH 001/103] s32: remove S32V leftovers and changes not needed
+
+Remove changes in file that are no longer necessary to
+prepare for u-boot upstreaming.
+
+Issue: ALB-8525
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Botila <andrei.botila@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .github/pull_request_template.md         |  3 +
+ Licenses/LA_OPT_BINARY_FIRMWARE_ONLY.txt | 90 ------------------------
+ arch/sandbox/dts/test.dts                |  6 --
+ drivers/ddr/fsl/Makefile                 |  1 -
+ drivers/mtd/nand/raw/nand.c              |  5 --
+ drivers/video/cfb_console.c              |  3 +-
+ include/common.h                         |  1 -
+ include/micrel.h                         |  4 --
+ 8 files changed, 4 insertions(+), 109 deletions(-)
+ create mode 100644 .github/pull_request_template.md
+ delete mode 100644 Licenses/LA_OPT_BINARY_FIRMWARE_ONLY.txt
+
+diff --git a/.github/pull_request_template.md b/.github/pull_request_template.md
+new file mode 100644
+index 0000000000..23599b97c0
+--- /dev/null
++++ b/.github/pull_request_template.md
+@@ -0,0 +1,3 @@
++Please do not submit a Pull Request via github.  Our project makes use of
++mailing lists for patch submission and review.  For more details please
++see https://www.denx.de/wiki/U-Boot/Patches
+diff --git a/Licenses/LA_OPT_BINARY_FIRMWARE_ONLY.txt b/Licenses/LA_OPT_BINARY_FIRMWARE_ONLY.txt
+deleted file mode 100644
+index 3628c2b785..0000000000
+--- a/Licenses/LA_OPT_BINARY_FIRMWARE_ONLY.txt
++++ /dev/null
+@@ -1,90 +0,0 @@
+-LA_OPT_BINARY_FIRMWARE_ONLY rev1 May 2018
+-
+-Copyright © 2018-2019 NXP. All rights reserved.
+-
+-Software License Agreement (“Agreement”)
+-
+-ANY USE, REPRODUCTION, OR DISTRIBUTION OF THE ACCOMPANYING BINARY
+-SOFTWARE CONSTITUTES LICENSEE'S ACCEPTANCE OF THE TERMS AND CONDITIONS
+-OF THIS AGREEMENT.
+-
+-Licensed Software. “Binary Software” means the software in binary form
+-supplied directly by NXP pursuant to this Agreement. Subject to the
+-terms and conditions of this Agreement, NXP USA, Inc. ("Licensor"),
+-grants to you (“Licensee”) a worldwide, non-exclusive, and royalty-free
+-copyright license to reproduce and distribute the Binary Software in its
+-complete and unmodified binary form as provided by Licensor, for use
+-solely in conjunction with a programmable processing unit supplied
+-directly or indirectly from Licensor.
+-
+-Restrictions. Licensee must reproduce the Licensor copyright notice
+-above with each binary copy of the Binary Software or in the
+-accompanying documentation. Licensee must not reverse engineer,
+-decompile, disassemble or modify in any way the Binary Software.
+-Licensee must not use the Binary Software in violation of any applicable
+-law or regulation. This Agreement shall automatically terminate upon
+-Licensee's breach of any term or condition of this Agreement in which
+-case, Licensee shall destroy all copies of the Binary Software. Neither
+-the name of Licensor nor the names of its suppliers may be used to
+-endorse or promote products derived from this Binary Software without
+-specific prior written permission.
+-
+-Disclaimer.  TO THE MAXIMUM EXTENT PERMITTED BY LAW, LICENSOR EXPRESSLY
+-DISCLAIMS ANY WARRANTY FOR THE BINARY SOFTWARE.  THE BINARY SOFTWARE IS
+-PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR
+-IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED WARRANTIES OF
+-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+-WITHOUT LIMITING THE GENERALITY OF THE FOREGOING, LICENSOR DOES NOT
+-WARRANT THAT THE BINARY SOFTWARE IS ERROR-FREE OR WILL OPERATE WITHOUT
+-INTERRUPTION, AND LICENSOR GRANTS NO WARRANTY REGARDING ITS USE OR THE
+-RESULTS THEREFROM, INCLUDING ITS CORRECTNESS, ACCURACY, OR RELIABILITY.
+-
+-Limitation of Liability.IN NO EVENT WILL LICENSOR, OR ANY OF LICENSOR'S
+-LICENSORS HAVE ANY LIABILITY HEREUNDER FOR ANY INDIRECT, SPECIAL, OR
+-
+-CONSEQUENTIAL DAMAGES, HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+-WHETHER FOR BREACH OF CONTRACT, TORT (INCLUDING NEGLIGENCE), OR
+-OTHERWISE, ARISING OUT OF THIS AGREEMENT, INCLUDING DAMAGES FOR LOSS OF
+-PROFITS, OR THE COST OF PROCUREMENT OF SUBSTITUTE GOODS, EVEN IF SUCH
+-PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.LICENSOR’S
+-TOTAL LIABILITY FOR ALL COSTS, DAMAGES, CLAIMS, OR LOSSES WHATSOEVER
+-ARISING OUT OF OR IN CONNECTION WITH THIS AGREEMENT OR THE BINARY
+-SOFTWARE SUPPLIED UNDER THIS AGREEMENT IS LIMITED TO THE AGGREGATE
+-AMOUNT PAID BY LICENSEE TO LICENSOR IN CONNECTION WITH THE BINARY
+-SOFTWARE TO WHICH LOSSES OR DAMAGES ARE CLAIMED.
+-
+-Trade Compliance.  Licensee shall comply with all applicable export and
+-import control laws and regulations including but not limited to the US
+-Export Administration Regulation (including prohibited party lists
+-issued by other federal governments), Catch-all regulations and all
+-national and international embargoes. Licensee further agrees that it
+-will not knowingly transfer, divert, export or re-export, directly or
+-indirectly, any product, software, including software source code, or
+-technology restricted by such regulations or by other applicable
+-national regulations, received from Licensor under this Agreement, or
+-any direct product of such software or technical data to any person,
+-firm, entity, country or destination to which such transfer, diversion,
+-export or re-export is restricted or prohibited, without obtaining prior
+-written authorization from the applicable competent government
+-authorities to the extent required by those laws. Licensee acknowledge
+-that the “restricted encryption software” that is subject to the US
+-Export Administration Regulations (EAR), is not intended for use by a
+-government end user, as defined in part 772 of the EAR. This provision
+-shall survive termination or expiration of this Agreement.
+-
+-Assignment.  Licensee may not assign this Agreement without the prior
+-written consent of Licensor.  Licensor may assign this Agreement without
+-Licensee’s consent.
+-
+-Governing Law.  This Agreement will be governed by, construed, and
+-enforced in accordance with the laws of the State of Texas, USA, without
+-regard to conflicts of laws principles, will apply to all matters
+-relating to this Agreement or the Binary Software, and Licensee agrees
+-that any litigation will be subject to the exclusive jurisdiction of the
+-state or federal courts Texas, USA.  The United Nations Convention on
+-Contracts for the International Sale of Goods will not apply to this
+-Agreement.
+-
+-Restrictions, Disclaimer,Limitation of Liability, Trade Compliance,
+-Assignment, and Governing Law shall survive termination or expiration of
+-this Agreement.
+diff --git a/arch/sandbox/dts/test.dts b/arch/sandbox/dts/test.dts
+index c7088acce1..4a277934a7 100644
+--- a/arch/sandbox/dts/test.dts
++++ b/arch/sandbox/dts/test.dts
+@@ -1,8 +1,3 @@
+-// SPDX-License-Identifier: GPL-2.0+
+-/*
+- * Copyright 2021 NXP
+- */
+-
+ /dts-v1/;
+ 
+ / {
+@@ -98,7 +93,6 @@
+ 			<&gpio_b 9 0xc 3 2 1>;
+ 		int-value = <1234>;
+ 		uint-value = <(-1234)>;
+-		int-array = <5678 9123 4567>;
+ 		interrupts-extended = <&irq 3 0>;
+ 	};
+ 
+diff --git a/drivers/ddr/fsl/Makefile b/drivers/ddr/fsl/Makefile
+index a6b866b5f6..c675f44ab0 100644
+--- a/drivers/ddr/fsl/Makefile
++++ b/drivers/ddr/fsl/Makefile
+@@ -1,7 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ #
+ # Copyright 2008-2014 Freescale Semiconductor, Inc.
+-# Copyright 2021 NXP
+ 
+ obj-$(CONFIG_SYS_FSL_DDR1) += main.o util.o ctrl_regs.o options.o \
+ 				lc_common_dimm_params.o
+diff --git a/drivers/mtd/nand/raw/nand.c b/drivers/mtd/nand/raw/nand.c
+index b5557e7d4e..026419e4e6 100644
+--- a/drivers/mtd/nand/raw/nand.c
++++ b/drivers/mtd/nand/raw/nand.c
+@@ -89,14 +89,9 @@ static void nand_init_chip(int i)
+ 	nand->IO_ADDR_R = nand->IO_ADDR_W = (void  __iomem *)base_addr;
+ 
+ 	if (board_nand_init(nand))
+-	{
+-		printf("failed to do board_nand_init\n");
+ 		return;
+-	}
+ 
+ 	if (nand_scan(mtd, maxchips))
+-	{
+-		printf("failed to do nand_scan\n");
+ 		return;
+ 
+ 	nand_register(i, mtd);
+diff --git a/drivers/video/cfb_console.c b/drivers/video/cfb_console.c
+index ff68c20685..5442bac4c6 100644
+--- a/drivers/video/cfb_console.c
++++ b/drivers/video/cfb_console.c
+@@ -1,6 +1,5 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+- * (C) Copyright 2018 NXP
+  * (C) Copyright 2002 ELTEC Elektronik AG
+  * Frank Gottschling <fgottschling@eltec.de>
+  */
+@@ -2027,7 +2026,7 @@ static int cfg_video_init(void)
+ 	if (pGD == NULL)
+ 		return -1;
+ 
+-	video_fb_address = (void *)(uintptr_t)VIDEO_FB_ADRS;
++	video_fb_address = (void *) VIDEO_FB_ADRS;
+ 
+ 	cfb_do_flush_cache = cfb_fb_is_in_dram() && dcache_status();
+ 
+diff --git a/include/common.h b/include/common.h
+index 8ffcdae54c..0ef8505fc7 100644
+--- a/include/common.h
++++ b/include/common.h
+@@ -17,7 +17,6 @@
+ #include <errno.h>
+ #include <time.h>
+ #include <asm-offsets.h>
+-#include <linux/kernel.h>
+ #include <linux/bitops.h>
+ #include <linux/bug.h>
+ #include <linux/delay.h>
+diff --git a/include/micrel.h b/include/micrel.h
+index bc253de0e2..3e6b5312d8 100644
+--- a/include/micrel.h
++++ b/include/micrel.h
+@@ -1,5 +1,4 @@
+ #ifndef _MICREL_H
+-#define _MICREL_H
+ 
+ #define MII_KSZ9021_EXT_COMMON_CTRL		0x100
+ #define MII_KSZ9021_EXT_STRAP_STATUS		0x101
+@@ -16,7 +15,6 @@
+ #define MII_KSZ9031_MOD_DATA_POST_INC_RW	0x8000
+ #define MII_KSZ9031_MOD_DATA_POST_INC_W		0xC000
+ 
+-#define MII_KSZ9031_EXT_OP_MODE_STRAP_OVRD	0x2
+ #define MII_KSZ9031_EXT_RGMII_CTRL_SIG_SKEW	0x4
+ #define MII_KSZ9031_EXT_RGMII_RX_DATA_SKEW	0x5
+ #define MII_KSZ9031_EXT_RGMII_TX_DATA_SKEW	0x6
+@@ -25,8 +23,6 @@
+ #define MII_KSZ9031_FLP_BURST_TX_LO		0x3
+ #define MII_KSZ9031_FLP_BURST_TX_HI		0x4
+ 
+-#define MII_KSZ9031_EXT_OMSO_RGMII_ALL_CAP_OVRD	0x8001
+-
+ /* Registers */
+ #define MMD_ACCESS_CONTROL	0xd
+ #define MMD_ACCESS_REG_DATA	0xe
+-- 
+2.25.1
+

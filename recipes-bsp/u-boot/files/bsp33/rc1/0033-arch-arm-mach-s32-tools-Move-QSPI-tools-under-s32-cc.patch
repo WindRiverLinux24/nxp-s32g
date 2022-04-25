@@ -1,0 +1,246 @@
+From d6252f9c073be9c971b6f5da797c86e441bb0f80 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 09:10:55 +0200
+Subject: [PATCH 033/103] arch: arm/mach-s32/tools: Move QSPI tools under
+ s32-cc
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Makefile                                      |  2 +-
+ arch/arm/mach-s32/.gitignore                  |  1 -
+ arch/arm/mach-s32/Makefile                    | 37 -------------------
+ arch/arm/mach-s32/s32-cc/.gitignore           |  1 +
+ arch/arm/mach-s32/s32-cc/Kconfig              |  4 +-
+ arch/arm/mach-s32/s32-cc/Makefile             | 37 +++++++++++++++++++
+ .../s32-cc/{s32gen1.cfg => s32cc.cfg}         |  0
+ .../tools/macronix_params.c}                  |  4 +-
+ .../tools/micron_params.c}                    |  4 +-
+ .../tools/qspiparams.c}                       |  2 +-
+ doc/README.s32gen1image                       |  2 +-
+ 11 files changed, 47 insertions(+), 47 deletions(-)
+ delete mode 100644 arch/arm/mach-s32/.gitignore
+ create mode 100644 arch/arm/mach-s32/s32-cc/.gitignore
+ rename arch/arm/mach-s32/s32-cc/{s32gen1.cfg => s32cc.cfg} (100%)
+ rename arch/arm/mach-s32/{tools/s32gen1image_qspi_macronix.c => s32-cc/tools/macronix_params.c} (93%)
+ rename arch/arm/mach-s32/{tools/s32gen1image_qspi_micron.c => s32-cc/tools/micron_params.c} (93%)
+ rename arch/arm/mach-s32/{tools/s32gen1_qspiparam.c => s32-cc/tools/qspiparams.c} (97%)
+
+diff --git a/Makefile b/Makefile
+index 612d9f899e..ea62f1d47e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1176,7 +1176,7 @@ endif
+ 
+ ifeq ($(CONFIG_NXP_S32_CC),y)
+ %.cfgout: FORCE
+-	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
++	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
+ 
+ u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin
+ 	$(call if_changed,binman)
+diff --git a/arch/arm/mach-s32/.gitignore b/arch/arm/mach-s32/.gitignore
+deleted file mode 100644
+index dcfafb0f68..0000000000
+--- a/arch/arm/mach-s32/.gitignore
++++ /dev/null
+@@ -1 +0,0 @@
+-/s32gen1_qspiparam
+diff --git a/arch/arm/mach-s32/Makefile b/arch/arm/mach-s32/Makefile
+index 45a7fb66fb..a732a0154a 100644
+--- a/arch/arm/mach-s32/Makefile
++++ b/arch/arm/mach-s32/Makefile
+@@ -6,40 +6,3 @@
+ # Copyright 2019-2020,2022 NXP
+ 
+ obj-$(CONFIG_NXP_S32_CC) += s32-cc/
+-
+-ifdef CONFIG_SPI_FLASH_MACRONIX
+-QSPI_MEMORY = MX25UW51245G
+-endif
+-
+-ifdef CONFIG_SPI_FLASH_STMICRO
+-QSPI_MEMORY = MT35XU512ABA
+-endif
+-
+-QSPI_PARAMS_FILE ?= qspi_params_$(QSPI_MEMORY).bin
+-
+-s32gen1_qspiparam-objs := tools/s32gen1image_qspi_micron.o \
+-	tools/s32gen1image_qspi_macronix.o \
+-	tools/s32gen1_qspiparam.o
+-HOSTCFLAGS_s32gen1image_qspi_macronix.o += -Itools/
+-HOSTCFLAGS_s32gen1image_qspi_micron.o += -Itools/
+-HOSTCFLAGS_s32gen1_qspiparam.o += -Itools/
+-hostprogs-y += s32gen1_qspiparam
+-always := $(hostprogs-y)
+-
+-quiet_cmd_cpp_cfg = CFGS    $@
+-      cmd_cpp_cfg = $(CPP) $(cpp_flags) -x c -o $@ $<
+-
+-S32GEN1_CONFIG_FILE = $(CONFIG_S32GEN1_CONFIG_FILE:"%"=%)
+-
+-ifdef CONFIG_QSPI_BOOT
+-$(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32gen1_qspiparam FORCE
+-	$(Q)$(objtree)/arch/arm/mach-s32/s32gen1_qspiparam \
+-		-m $(QSPI_MEMORY) \
+-		-o $(QSPI_PARAMS_FILE)
+-else
+-$(QSPI_PARAMS_FILE):
+-endif
+-
+-%.cfgout: $(S32GEN1_CONFIG_FILE) $(QSPI_PARAMS_FILE) FORCE
+-	$(Q)mkdir -p $(dir $@)
+-	$(call if_changed_dep,cpp_cfg)
+diff --git a/arch/arm/mach-s32/s32-cc/.gitignore b/arch/arm/mach-s32/s32-cc/.gitignore
+new file mode 100644
+index 0000000000..697d876c26
+--- /dev/null
++++ b/arch/arm/mach-s32/s32-cc/.gitignore
+@@ -0,0 +1 @@
++/s32cc_qspiparams
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index d5f1bdcc36..254a79f54c 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -100,9 +100,9 @@ config S32GEN1_HWCONFIG
+ 	  	s32g274a - supports '0','1','both' and '2G5'
+ 	  	s32r45   - supports '0' and '2G5'
+ 
+-config S32GEN1_CONFIG_FILE
++config S32CC_CONFIG_FILE
+ 	string
+-	default "arch/arm/mach-s32/s32-cc/s32gen1.cfg"
++	default "arch/arm/mach-s32/s32-cc/s32cc.cfg"
+ 
+ config TARGET_TYPE_S32GEN1_EMULATOR
+ 	bool
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index d6d9e764e7..8526fbe890 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -31,3 +31,40 @@ ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-cc/
+ ccflags-y			+= -I./drivers/misc/
+ 
+ obj-$(CONFIG_NETDEVICES)	+= eth.o
++
++ifdef CONFIG_SPI_FLASH_MACRONIX
++QSPI_MEMORY = MX25UW51245G
++endif
++
++ifdef CONFIG_SPI_FLASH_STMICRO
++QSPI_MEMORY = MT35XU512ABA
++endif
++
++QSPI_PARAMS_FILE ?= qspi_params_$(QSPI_MEMORY).bin
++
++s32cc_qspiparams-objs := tools/micron_params.o \
++	tools/macronix_params.o \
++	tools/qspiparams.o
++HOSTCFLAGS_macronix_params.o += -Itools/
++HOSTCFLAGS_micron_params.o += -Itools/
++HOSTCFLAGS_qspiparams.o += -Itools/
++hostprogs-y += s32cc_qspiparams
++always := $(hostprogs-y)
++
++quiet_cmd_cpp_cfg = CFGS    $@
++      cmd_cpp_cfg = $(CPP) $(cpp_flags) -x c -o $@ $<
++
++S32CC_CONFIG_FILE = $(CONFIG_S32CC_CONFIG_FILE:"%"=%)
++
++ifdef CONFIG_QSPI_BOOT
++$(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32-cc/s32cc_qspiparams FORCE
++	$(Q)$(objtree)/arch/arm/mach-s32/s32-cc/s32cc_qspiparams \
++		-m $(QSPI_MEMORY) \
++		-o $(QSPI_PARAMS_FILE)
++else
++$(QSPI_PARAMS_FILE):
++endif
++
++%.cfgout: $(S32CC_CONFIG_FILE) $(QSPI_PARAMS_FILE) FORCE
++	$(Q)mkdir -p $(dir $@)
++	$(call if_changed_dep,cpp_cfg)
+diff --git a/arch/arm/mach-s32/s32-cc/s32gen1.cfg b/arch/arm/mach-s32/s32-cc/s32cc.cfg
+similarity index 100%
+rename from arch/arm/mach-s32/s32-cc/s32gen1.cfg
+rename to arch/arm/mach-s32/s32-cc/s32cc.cfg
+diff --git a/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c b/arch/arm/mach-s32/s32-cc/tools/macronix_params.c
+similarity index 93%
+rename from arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c
+rename to arch/arm/mach-s32/s32-cc/tools/macronix_params.c
+index adb6d63b4e..8ace10717b 100644
+--- a/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c
++++ b/arch/arm/mach-s32/s32-cc/tools/macronix_params.c
+@@ -3,7 +3,7 @@
+ 
+ #include <s32cc_image_params.h>
+ 
+-static struct qspi_params s32g2xx_qspi_conf = {
++static struct qspi_params macronix_qspi_conf = {
+ 	.header   = 0x5a5a5a5a,
+ 	.mcr      = 0x030f00cc,
+ 	.flshcr   = 0x00010303,
+@@ -61,5 +61,5 @@ static struct qspi_params s32g2xx_qspi_conf = {
+ 
+ struct qspi_params *get_macronix_qspi_conf(void)
+ {
+-	return &s32g2xx_qspi_conf;
++	return &macronix_qspi_conf;
+ }
+diff --git a/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c b/arch/arm/mach-s32/s32-cc/tools/micron_params.c
+similarity index 93%
+rename from arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c
+rename to arch/arm/mach-s32/s32-cc/tools/micron_params.c
+index 181a7f708b..6a90ac8c27 100644
+--- a/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c
++++ b/arch/arm/mach-s32/s32-cc/tools/micron_params.c
+@@ -3,7 +3,7 @@
+ 
+ #include <s32cc_image_params.h>
+ 
+-static struct qspi_params s32g2xx_qspi_conf = {
++static struct qspi_params micron_qspi_conf = {
+ 	.header   = 0x5a5a5a5a,
+ 	.mcr      = 0x010f00cc,
+ 	.flshcr   = 0x00010303,
+@@ -61,5 +61,5 @@ static struct qspi_params s32g2xx_qspi_conf = {
+ 
+ struct qspi_params *get_micron_qspi_conf(void)
+ {
+-	return &s32g2xx_qspi_conf;
++	return &micron_qspi_conf;
+ }
+diff --git a/arch/arm/mach-s32/tools/s32gen1_qspiparam.c b/arch/arm/mach-s32/s32-cc/tools/qspiparams.c
+similarity index 97%
+rename from arch/arm/mach-s32/tools/s32gen1_qspiparam.c
+rename to arch/arm/mach-s32/s32-cc/tools/qspiparams.c
+index 54f297630e..170640e5bb 100644
+--- a/arch/arm/mach-s32/tools/s32gen1_qspiparam.c
++++ b/arch/arm/mach-s32/s32-cc/tools/qspiparams.c
+@@ -25,7 +25,7 @@ const char *mem_names[] = {
+ static void show_usage(char *arg)
+ {
+ 	fprintf(stderr, "This tool is used to generate QSPI parameters ");
+-	fprintf(stderr, "binary for S32GEN1 platforms.\n");
++	fprintf(stderr, "binary for S32CC platforms.\n");
+ 	fprintf(stderr,
+ 		"The resulted binary will be added to IVT by mkimage tool.\n\n");
+ 	fprintf(stderr, "Usage: %s -m MEMORY -o FILE\n\n", arg);
+diff --git a/doc/README.s32gen1image b/doc/README.s32gen1image
+index cdd1fbe054..20cf692949 100644
+--- a/doc/README.s32gen1image
++++ b/doc/README.s32gen1image
+@@ -92,7 +92,7 @@ Available commands
+ 	Selects a file to be used as QSPI initialization parameters in IVT. The referenced file
+ 	must contain the QSPI configuration using the format described in subsection 'QuadSPI
+ 	configuration parameters' from SoC's Reference Manual. This file is usually generated
+-	using 'arch/arm/mach-s32/s32gen1_qspiparam' tool.
++	using 'arch/arm/mach-s32/s32-cc/s32cc_qspiparams' tool.
+ 
+ 	Usage:
+ 		QSPI_PARAMS_FILE qspi_params_MX25UW51245G.bin
+-- 
+2.25.1
+

@@ -1,0 +1,294 @@
+From 7e9b7754c5ffc418d822a814e52fa7f3f7b141d2 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 22 Mar 2022 15:12:14 +0200
+Subject: [PATCH 056/103] pcie: Set PCI device ID according to variant bits
+
+Issue: ALB-8078
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi     |  3 +-
+ arch/arm/dts/fsl-s32g.dtsi         |  3 +-
+ arch/arm/dts/fsl-s32r45.dts        |  6 ++--
+ drivers/misc/s32gen1_siul2_nvram.c | 43 ++++++++++++++++++++++--
+ drivers/misc/s32gen1_siul2_nvram.h |  2 ++
+ drivers/pci/pcie_s32gen1.c         | 52 +++++++++++++++++++++++++-----
+ 6 files changed, 93 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index 2a0e2a5bb2..5b1b0c0fc1 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -5,8 +5,8 @@
+  * Copyright 2019-2022 NXP
+  */
+ 
+-#include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/clock/s32gen1-scmi-clock.h>
++#include <dt-bindings/interrupt-controller/irq.h>
+ 
+ / {
+ 	compatible = "fsl,s32gen1", "arm,vexpress";
+@@ -212,6 +212,7 @@
+ 		device_id = <0>;
+ 		num-lanes = <2>; /* supports max 2 lanes */
+ 		link-speed = <3>; /* supports Gen3 speed */
++		nvmem-cells = <&siul2_0_nvram>;
+ 
+ 		bus-range = <0x0 0xff>;
+ 		ranges =
+diff --git a/arch/arm/dts/fsl-s32g.dtsi b/arch/arm/dts/fsl-s32g.dtsi
+index 88e531cb82..a16f2344da 100644
+--- a/arch/arm/dts/fsl-s32g.dtsi
++++ b/arch/arm/dts/fsl-s32g.dtsi
+@@ -66,6 +66,7 @@
+ 		#size-cells = <2>;
+ 		device_type = "pci";
+ 		serdes-handle = <&serdes1>;
++		nvmem-cells = <&siul2_0_nvram>;
+ 		device_id = <1>;
+ 		num-lanes = <1>; /* supports max 1 pcie lane */
+ 		link-speed = <3>; /* supports Gen3 speed */
+@@ -150,7 +151,7 @@
+ 			status = "okay";
+ 		};
+ 
+-		siul2_0_nvram {
++		siul2_0_nvram: siul2_0_nvram {
+ 			compatible = "fsl,s32g-siul2_0-nvram";
+ 			status = "okay";
+ 			u-boot,dm-pre-reloc;
+diff --git a/arch/arm/dts/fsl-s32r45.dts b/arch/arm/dts/fsl-s32r45.dts
+index 48ad09a6c8..88fada6f92 100644
+--- a/arch/arm/dts/fsl-s32r45.dts
++++ b/arch/arm/dts/fsl-s32r45.dts
+@@ -64,7 +64,7 @@
+ 			status = "okay";
+ 		};
+ 
+-		siul2_0_nvram {
++		siul2_0_nvram: siul2_0_nvram {
+ 			compatible = "fsl,s32r-siul2_0-nvram";
+ 			status = "okay";
+ 			u-boot,dm-pre-reloc;
+@@ -139,7 +139,7 @@
+ 	};
+ 
+ 	pcie1: pcie@44100000 {
+-		compatible = "fsl,s32r45-pcie";
++		compatible = "fsl,s32gen1-pcie";
+ 		reg =
+ 			<0x00 0x44100000 0x0 0x80000   /* dbi registers */
+ 			/* configuration space, 4KB each for cfg0 and cfg1
+@@ -151,6 +151,7 @@
+ 		#size-cells = <2>;
+ 		device_type = "pci";
+ 		serdes-handle = <&serdes1>;
++		nvmem-cells = <&siul2_0_nvram>;
+ 		device_id = <1>;
+ 		num-lanes = <1>; /* supports max 1 pcie lane */
+ 		link-speed = <3>; /* supports Gen3 speed */
+@@ -191,7 +192,6 @@
+ };
+ 
+ &pcie0 {
+-	compatible = "fsl,s32r45-pcie";
+ 	status = "okay";
+ 
+ 	link-speed = <3>; /* Gen3 */
+diff --git a/drivers/misc/s32gen1_siul2_nvram.c b/drivers/misc/s32gen1_siul2_nvram.c
+index 6d1bd210ea..46d83dd8d5 100644
+--- a/drivers/misc/s32gen1_siul2_nvram.c
++++ b/drivers/misc/s32gen1_siul2_nvram.c
+@@ -2,15 +2,15 @@
+ /*
+  * Copyright 2022 NXP
+  */
+-#include "s32gen1_siul2_nvram.h"
++#include <log.h>
++#include <misc.h>
+ #include <asm/io.h>
+ #include <dm/device.h>
+ #include <dm/fdtaddr.h>
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+-#include <log.h>
+-#include <misc.h>
++#include "s32gen1_siul2_nvram.h"
+ 
+ #define MIDR1_OFF	0x4
+ #define MIDR2_OFF	0x8
+@@ -205,6 +205,36 @@ static u32 adjust_s32g_derivative_cores(u32 value,
+ 	return 0;
+ }
+ 
++static u32 adjust_pcie_dev_id(u32 value,
++			      struct siul2_nvram *nvram)
++{
++	/* Mapping between G3 variant ID and the PCIe Device ID,
++	 * as described in the "S32G3 Reference Manual rev1.0,
++	 * chapter SerDes Subsystem, section "Device and revision IDs",
++	 * where: index = last 2 digits of the variant
++	 *        value = last hex digit of the PCIe Device ID"
++	 */
++	static const u32 s32g3_variants[] = {
++		[78] = 0x6,
++		[79] = 0x4,
++		[98] = 0x2,
++		[99] = 0x0,
++	};
++
++	if (value / 10 == 45)
++		return 0x4002;
++
++	if (value / 100 == 2)
++		return 0;
++
++	value %= 100;
++
++	if (value < ARRAY_SIZE(s32g3_variants))
++		return s32g3_variants[value];
++
++	return 0;
++}
++
+ static const struct siul_mapping siul20_mappings[] = {
+ 	{
+ 		.nvram_off = S32GEN1_SOC_MAJOR,
+@@ -239,6 +269,13 @@ static const struct siul_mapping siul20_mappings[] = {
+ 		.shift = CORE_FREQ_SHIFT,
+ 		.adjust_value = adjust_freq,
+ 	},
++	{
++		.nvram_off = S32GEN1_OVERWRITE_PCIE_DEV_ID,
++		.siul2_off = MIDR1_OFF,
++		.mask = PART_NO_MASK,
++		.shift = PART_NO_SHIFT,
++		.adjust_value = adjust_pcie_dev_id,
++	},
+ };
+ 
+ static const struct siul_mapping siul21_mappings[] = {
+diff --git a/drivers/misc/s32gen1_siul2_nvram.h b/drivers/misc/s32gen1_siul2_nvram.h
+index e93cd44148..73abac75aa 100644
+--- a/drivers/misc/s32gen1_siul2_nvram.h
++++ b/drivers/misc/s32gen1_siul2_nvram.h
+@@ -20,6 +20,8 @@
+  */
+ #define S32GEN1_A53_CORES_MASK	0x18
+ 
++#define S32GEN1_OVERWRITE_PCIE_DEV_ID		0x1C
++
+ /* siul2_1 */
+ #define S32GEN1_SERDES_PRESENCE	0x100
+ #define S32GEN1_LAX_PRESENCE	0x104
+diff --git a/drivers/pci/pcie_s32gen1.c b/drivers/pci/pcie_s32gen1.c
+index 2ed07d0060..4edd46a9d1 100644
+--- a/drivers/pci/pcie_s32gen1.c
++++ b/drivers/pci/pcie_s32gen1.c
+@@ -43,7 +43,6 @@
+ 
+ #define PCI_MAX_BUS_NUM	256
+ 
+-#define PCI_OVERWRITE_DEVICE_ID	1
+ #define PCI_DEVICE_ID_S32GEN1	0x4002
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+@@ -813,6 +812,37 @@ static u32 s32_get_pcie_width(struct s32_pcie *pcie)
+ 		PCIE_NUM_OF_LANES_LSB) & PCIE_NUM_OF_LANES_MASK;
+ }
+ 
++static int s32_pcie_get_dev_id_variant(struct udevice *dev)
++{
++	struct udevice *siul2_nvmem;
++	struct ofnode_phandle_args phandle_args;
++	u32 variant_bits = 0;
++	int ret;
++
++	if (dev_read_phandle_with_args(dev, "nvmem-cells", NULL,
++				       0, 0, &phandle_args)) {
++		printf("%s: soc_revision backing device not specified\n",
++		       dev->name);
++		return -ENOENT;
++	}
++
++	if (uclass_get_device_by_ofnode(UCLASS_MISC, phandle_args.node,
++					&siul2_nvmem)) {
++		printf("%s: could not get backing device\n", dev->name);
++		return -ENODEV;
++	}
++
++	ret = misc_read(siul2_nvmem, S32GEN1_OVERWRITE_PCIE_DEV_ID,
++			&variant_bits, sizeof(variant_bits));
++	if (ret != sizeof(variant_bits)) {
++		printf("%s: Failed to read PCIe device ID (err = %d)\n",
++		       __func__, ret);
++		return -EINVAL;
++	}
++
++	return variant_bits;
++}
++
+ static int s32_pcie_probe_rc(struct s32_pcie *pcie)
+ {
+ 	u32 speed, width;
+@@ -892,8 +922,8 @@ static int s32_pcie_probe(struct udevice *dev)
+ 	struct uclass *uc = dev->uclass;
+ 	int ret = 0;
+ 	bool ltssm_en = false;
+-	ulong dev_data = dev_get_driver_data(dev);
+ 	u32 soc_serdes_presence;
++	u32 variant_bits, pcie_dev_id;
+ 	struct udevice *siul21_nvmem = NULL;
+ 
+ 	pcie->enabled = false;
+@@ -942,7 +972,9 @@ static int s32_pcie_probe(struct udevice *dev)
+ 
+ 	pcie->ep_mode = s32_pcie_get_hw_mode_ep(pcie);
+ 
+-	if (dev_data & PCI_OVERWRITE_DEVICE_ID) {
++	variant_bits = s32_pcie_get_dev_id_variant(dev);
++	s32_pcie_enable_dbi_rw(pcie->dbi);
++	if (variant_bits == PCI_DEVICE_ID_S32GEN1) {
+ 		/* As per S32R45 Reference Manual rev 3 Draft D,
+ 		 * the device ID for the SoC has to be 0x4002.
+ 		 * Rev 2 sets it to 0x4003, and we need to fix it.
+@@ -951,14 +983,20 @@ static int s32_pcie_probe(struct udevice *dev)
+ 		 * revision (2 registers) is bigger than just
+ 		 * applying the fix.
+ 		 */
+-		s32_pcie_enable_dbi_rw(pcie->dbi);
+ 		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
+ 			PCI_DEVICE_ID_S32GEN1, PCI_VENDOR_ID_FREESCALE);
+ 		W32(pcie->dbi + PCI_VENDOR_ID,
+-			(PCI_DEVICE_ID_S32GEN1 << 16) |
++		    (PCI_DEVICE_ID_S32GEN1 << 16) |
+ 				PCI_VENDOR_ID_FREESCALE);
+-		s32_pcie_disable_dbi_rw(pcie->dbi);
++	} else {
++		pcie_dev_id = in_le16(pcie->dbi + PCI_DEVICE_ID);
++		pcie_dev_id |= variant_bits;
++		printf("Setting PCI Device and Vendor IDs to 0x%x:0x%x\n",
++		       pcie_dev_id, PCI_VENDOR_ID_FREESCALE);
++		W32(pcie->dbi + PCI_VENDOR_ID,
++		    (pcie_dev_id << 16) | PCI_VENDOR_ID_FREESCALE);
+ 	}
++	s32_pcie_disable_dbi_rw(pcie->dbi);
+ 
+ 	if (pcie->ep_mode)
+ 		return s32_pcie_probe_ep(pcie, uc);
+@@ -1058,8 +1096,6 @@ static const struct dm_pci_ops s32_pcie_ops = {
+ 
+ static const struct udevice_id s32_pcie_ids[] = {
+ 	{ .compatible = "fsl,s32gen1-pcie" },
+-	{ .compatible = "fsl,s32r45-pcie",
+-	  .data = PCI_OVERWRITE_DEVICE_ID },
+ 	{ }
+ };
+ 
+-- 
+2.25.1
+

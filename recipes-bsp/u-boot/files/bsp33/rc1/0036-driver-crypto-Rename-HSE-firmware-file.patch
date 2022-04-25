@@ -1,0 +1,33 @@
+From 9206f5a3c90b299ce2791b87299cf3ec9570f8cb Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 09:59:45 +0200
+Subject: [PATCH 036/103] driver: crypto: Rename HSE firmware file
+
+Rename default HSE firmware file name from s32gen1_hse_fw.bin
+to s32cc_hse_fw.bin
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/crypto/fsl/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/fsl/Kconfig b/drivers/crypto/fsl/Kconfig
+index 6eb0bb7d3c..6ee1c2d6b1 100644
+--- a/drivers/crypto/fsl/Kconfig
++++ b/drivers/crypto/fsl/Kconfig
+@@ -54,7 +54,7 @@ config HSE_SECBOOT
+ 
+ config HSE_FW_FILE
+ 	string "HSE Firmware file"
+-	default "s32gen1_hse_fw.bin"
++	default "s32cc_hse_fw.bin"
+ 	depends on HSE_SECBOOT
+ 	help
+ 		File to be used as firmware for NXP HSE
+-- 
+2.25.1
+

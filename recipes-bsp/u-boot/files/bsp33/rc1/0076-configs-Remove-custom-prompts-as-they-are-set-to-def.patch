@@ -1,0 +1,38 @@
+From bcb3390d22dd62dc1792b941aa77f600f6e98d2f Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 31 Mar 2022 16:08:05 +0300
+Subject: [PATCH 076/103] configs: Remove custom prompts as they are set to
+ default values
+
+Issue: ALB-8583
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/configs/s32-cc.h | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
+index eb29380026..4bdbf0be8d 100644
+--- a/include/configs/s32-cc.h
++++ b/include/configs/s32-cc.h
+@@ -312,15 +312,6 @@
+ 	EXTRA_BOOTCOMMAND \
+ 	BOOTCOMMAND
+ 
+-/* Miscellaneous configurable options */
+-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+-#define CONFIG_SYS_PROMPT		"=> "
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
+-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
+-					 sizeof(CONFIG_SYS_PROMPT) + 16)
+-#define CONFIG_SYS_MAXARGS		16	/* max number of command args */
+-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
+-
+ /* Limit mtest to first DDR bank if no arguments are given */
+ #define CONFIG_SYS_MEMTEST_START	(PHYS_SDRAM_1)
+ #define CONFIG_SYS_MEMTEST_END		(PHYS_SDRAM_1 + \
+-- 
+2.25.1
+

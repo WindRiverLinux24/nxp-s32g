@@ -1,0 +1,659 @@
+From 079759415ff19428297e1f9de58a3a79a18851a1 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 15:09:51 +0200
+Subject: [PATCH 020/103] arch: Rename S32_GEN1 to NXP_S32_CC config
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Makefile                          |  4 ++--
+ arch/arm/cpu/armv8/Kconfig        |  2 +-
+ arch/arm/mach-s32/Kconfig         |  2 +-
+ arch/arm/mach-s32/Makefile        |  2 +-
+ arch/arm/mach-s32/s32-cc/Kconfig  |  8 ++++----
+ arch/arm/mach-s32/s32-cc/Makefile |  4 ++--
+ board/nxp/Kconfig                 |  2 +-
+ board/nxp/s32-gen1/Kconfig        |  2 +-
+ board/nxp/s32-gen1/Makefile       |  8 ++++----
+ board/nxp/s32-gen1/board_common.h |  6 +++---
+ doc/README.nxp-hse-secboot        |  4 ++--
+ drivers/cpu/Makefile              |  4 ++--
+ drivers/crypto/fsl/Kconfig        |  2 +-
+ drivers/i2c/mxc_i2c.c             |  2 +-
+ drivers/misc/Makefile             |  8 ++++----
+ drivers/mmc/fsl_esdhc_imx.c       |  6 +++---
+ drivers/net/Kconfig               |  2 +-
+ drivers/net/Makefile              |  2 +-
+ drivers/pci/Kconfig               |  2 +-
+ drivers/spi/Makefile              |  8 ++++----
+ drivers/spi/fsl_dspi.c            |  6 +++---
+ drivers/spi/fsl_qspi.c            | 18 +++++++++---------
+ drivers/spi/fsl_qspi.h            | 26 +++++++++++++-------------
+ include/configs/s32-gen1.h        |  4 ++--
+ include/configs/s32.h             |  4 ++--
+ 25 files changed, 69 insertions(+), 69 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 0924462c41..612d9f899e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -926,7 +926,7 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP)$(CONFIG_SPL),yy)
+ ALL-y += u-boot-rockchip.bin
+ endif
+ 
+-ifeq ($(CONFIG_S32_GEN1),y)
++ifeq ($(CONFIG_NXP_S32_CC),y)
+ ALL-y += u-boot-s32.bin u-boot-s32.cfgout
+ endif
+ 
+@@ -1174,7 +1174,7 @@ endif
+ %.vyb: %.imx
+ 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
+ 
+-ifeq ($(CONFIG_S32_GEN1),y)
++ifeq ($(CONFIG_NXP_S32_CC),y)
+ %.cfgout: FORCE
+ 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32 $@
+ 
+diff --git a/arch/arm/cpu/armv8/Kconfig b/arch/arm/cpu/armv8/Kconfig
+index 8c8e4f623f..3603edb509 100644
+--- a/arch/arm/cpu/armv8/Kconfig
++++ b/arch/arm/cpu/armv8/Kconfig
+@@ -111,7 +111,7 @@ config PSCI_RESET
+ 		   !TARGET_LS2081ARDB && !TARGET_LX2160ARDB && \
+ 		   !TARGET_LX2160AQDS && \
+ 		   !ARCH_UNIPHIER && \
+-		   !S32_GEN1
++		   !NXP_S32_CC
+ 	help
+ 	  Most armv8 systems have PSCI support enabled in EL3, either through
+ 	  ARM Trusted Firmware or other firmware.
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 8dc181b027..0fc5d76683 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -3,5 +3,5 @@
+ 
+ config MKIMAGE_T
+ 	string
+-	default "s32gen1image" if S32_GEN1
++	default "s32gen1image" if NXP_S32_CC
+ 	depends on MACH_S32
+diff --git a/arch/arm/mach-s32/Makefile b/arch/arm/mach-s32/Makefile
+index c405efbe43..45a7fb66fb 100644
+--- a/arch/arm/mach-s32/Makefile
++++ b/arch/arm/mach-s32/Makefile
+@@ -5,7 +5,7 @@
+ # (C) Copyright 2011 Freescale Semiconductor, Inc.
+ # Copyright 2019-2020,2022 NXP
+ 
+-obj-$(CONFIG_S32_GEN1) += s32-cc/
++obj-$(CONFIG_NXP_S32_CC) += s32-cc/
+ 
+ ifdef CONFIG_SPI_FLASH_MACRONIX
+ QSPI_MEMORY = MX25UW51245G
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 6c307d0193..dc9774e5e6 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -10,19 +10,19 @@ config BAUDRATE
+ 
+ config ARCH_S32G2
+ 	bool
+-	select S32_GEN1
++	select NXP_S32_CC
+ 	help
+ 	  Platforms having S32G2XXX SoC
+ 
+ config ARCH_S32G3
+ 	bool
+-	select S32_GEN1
++	select NXP_S32_CC
+ 	help
+ 	  Platforms having S32G3XXX SoC
+ 
+ config ARCH_S32R45
+ 	bool
+-	select S32_GEN1
++	select NXP_S32_CC
+ 	help
+ 	  Platforms having S32R45 SoC
+ 
+@@ -131,7 +131,7 @@ endchoice
+ config S32_CMU
+ 	bool "Enable Clock Monitoring Unit-Frequency Check"
+ 	default y
+-	depends on S32_GEN1
++	depends on NXP_S32_CC
+ 	help
+ 	  Checks if the frequency of a monitored clock (monitored_clock)
+ 	  is within a programmable frequency range specified by the user.
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index d80309237d..92c8f4c11d 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -6,7 +6,7 @@
+ ccflags-y += -I./board/nxp/common/
+ ccflags-y += -I./arch/arm/mach-s32/s32-cc/
+ 
+-obj-$(CONFIG_S32_GEN1)		+= scmi_reset_agent.o
++obj-$(CONFIG_NXP_S32_CC)		+= scmi_reset_agent.o
+ obj-y				+= cpu.o
+ obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
+ obj-$(CONFIG_MP)		+= mp.o
+@@ -20,7 +20,7 @@ obj-$(CONFIG_ARCH_S32G3)	+= s32g3_cmu.o
+ obj-$(CONFIG_ARCH_S32R45)	+= s32r45_cmu.o
+ obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
+ obj-y				+= soc.o
+-ifdef CONFIG_S32_GEN1
++ifdef CONFIG_NXP_S32_CC
+ obj-$(CONFIG_NETDEVICES)	+= sgmii/sgmii.o sgmii/serdes_xpcs.o
+ endif
+ obj-y				+= start_m7.o
+diff --git a/board/nxp/Kconfig b/board/nxp/Kconfig
+index 1b360f20af..204a89191d 100644
+--- a/board/nxp/Kconfig
++++ b/board/nxp/Kconfig
+@@ -2,7 +2,7 @@ config SYS_VENDOR
+ 	string
+ 	default "nxp"
+ 
+-config S32_GEN1
++config NXP_S32_CC
+ 	bool "S32 GEN1 Common Chassis"
+ 	imply DM_ETH
+ 	imply DM_I2C
+diff --git a/board/nxp/s32-gen1/Kconfig b/board/nxp/s32-gen1/Kconfig
+index f14d98ff1b..060f18ddce 100644
+--- a/board/nxp/s32-gen1/Kconfig
++++ b/board/nxp/s32-gen1/Kconfig
+@@ -69,7 +69,7 @@ config S32GEN1_MAX_DTB_SIZE
+ 
+ config S32GEN1_HWCONFIG
+ 	string "S32GEN1 HWConfig definition"
+-	depends on S32_GEN1 && (PCIE_S32GEN1 || FSL_PFENG)
++	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
+ 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && (TARGET_S32G274ARDB2 || TARGET_S32G399ARDB3)
+ 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  (TARGET_S32G2XXAEVB || TARGET_S32G3XXAEVB)
+ 	default "pcie0:mode=ep,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) &&  TARGET_S32G274ABLUEBOX3
+diff --git a/board/nxp/s32-gen1/Makefile b/board/nxp/s32-gen1/Makefile
+index d706447f4d..011235e267 100644
+--- a/board/nxp/s32-gen1/Makefile
++++ b/board/nxp/s32-gen1/Makefile
+@@ -5,10 +5,10 @@
+ # SPDX-License-Identifier:	GPL-2.0+
+ #
+ 
+-ccflags-$(CONFIG_S32_GEN1) += -Iarch/$(ARCH)/cpu/armv8/s32
+-ccflags-$(CONFIG_S32_GEN1) += -Iboard/nxp/s32-gen1
+-ccflags-$(CONFIG_S32_GEN1) += -Idrivers/net/s32
+-ccflags-$(CONFIG_S32_GEN1) += -Idrivers/misc
++ccflags-$(CONFIG_NXP_S32_CC) += -Iarch/$(ARCH)/cpu/armv8/s32
++ccflags-$(CONFIG_NXP_S32_CC) += -Iboard/nxp/s32-gen1
++ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/net/s32
++ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
+ obj-y := common.o
+ 
+ ifeq (,$(CONFIG_OF_EMBED)$(CONFIG_OF_SEPARATE))
+diff --git a/board/nxp/s32-gen1/board_common.h b/board/nxp/s32-gen1/board_common.h
+index f13519e5b6..245ddb163f 100644
+--- a/board/nxp/s32-gen1/board_common.h
++++ b/board/nxp/s32-gen1/board_common.h
+@@ -3,8 +3,8 @@
+  * Copyright 2018-2022 NXP
+  */
+ 
+-#ifndef __S32_GEN1_BOARD_COMMON_H__
+-#define __S32_GEN1_BOARD_COMMON_H__
++#ifndef __NXP_S32_CC_BOARD_COMMON_H__
++#define __NXP_S32_CC_BOARD_COMMON_H__
+ 
+ #include <config.h>
+ #include <asm/types.h>
+@@ -14,4 +14,4 @@ void ft_enet_fixup(void *fdt);
+ u32 s32ccgmac_cfg_get_mode(int cardnum);
+ #endif
+ 
+-#endif /* __S32_GEN1_BOARD_COMMON_H__ */
++#endif /* __NXP_S32_CC_BOARD_COMMON_H__ */
+diff --git a/doc/README.nxp-hse-secboot b/doc/README.nxp-hse-secboot
+index 501180f097..6829fe658b 100644
+--- a/doc/README.nxp-hse-secboot
++++ b/doc/README.nxp-hse-secboot
+@@ -21,8 +21,8 @@ Building U-Boot with HSE secure boot support
+ 
+ The follow config options must be set:
+ 
+-    CONFIG_S32_GEN1="y"
+-    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_S32_GEN1)
++    CONFIG_NXP_S32_CC="y"
++    CONFIG_HSE_SECBOOT="y" (depends on CONFIG_NXP_S32_CC)
+     CONFIG_CMD_HSE_ADVANCED_SECBOOT="y" (depends on CONFIG_HSE_SECBOOT)
+ 
+ Preparing U-Boot for secure booting
+diff --git a/drivers/cpu/Makefile b/drivers/cpu/Makefile
+index c9f0596e48..d6e9dcbbf5 100644
+--- a/drivers/cpu/Makefile
++++ b/drivers/cpu/Makefile
+@@ -4,12 +4,12 @@
+ # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ #
+ 
+-ccflags-$(CONFIG_S32_GEN1) += -Idrivers/misc
++ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
+ obj-$(CONFIG_CPU) += cpu-uclass.o
+ 
+ obj-$(CONFIG_ARCH_BMIPS) += bmips_cpu.o
+ obj-$(CONFIG_ARCH_IMX8) += imx8_cpu.o
+ obj-$(CONFIG_CPU_MPC83XX) += mpc83xx_cpu.o
+ obj-$(CONFIG_CPU_RISCV) += riscv_cpu.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_cpu.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_cpu.o
+ obj-$(CONFIG_SANDBOX) += cpu_sandbox.o
+diff --git a/drivers/crypto/fsl/Kconfig b/drivers/crypto/fsl/Kconfig
+index e8f702065a..6eb0bb7d3c 100644
+--- a/drivers/crypto/fsl/Kconfig
++++ b/drivers/crypto/fsl/Kconfig
+@@ -48,7 +48,7 @@ config SYS_FSL_SEC_LE
+ 
+ config HSE_SECBOOT
+ 	bool "HSE Secure Boot"
+-	depends on S32_GEN1
++	depends on NXP_S32_CC
+ 	help
+ 		Enable HSE-provided Advanced Secure Boot
+ 
+diff --git a/drivers/i2c/mxc_i2c.c b/drivers/i2c/mxc_i2c.c
+index 077455f030..efa2d6bb75 100644
+--- a/drivers/i2c/mxc_i2c.c
++++ b/drivers/i2c/mxc_i2c.c
+@@ -691,7 +691,7 @@ static int bus_i2c_write(struct mxc_i2c_bus *i2c_bus, u8 chip, u32 addr,
+ static struct mxc_i2c_bus mxc_i2c_buses[] = {
+ #if defined(CONFIG_LS1021A) || defined(CONFIG_VF610) || \
+ 	defined(CONFIG_FSL_LAYERSCAPE) || \
+-	defined(CONFIG_S32_GEN1)
++	defined(CONFIG_NXP_S32_CC)
+ 	{ 0, I2C1_BASE_ADDR, I2C_QUIRK_FLAG },
+ 	{ 1, I2C2_BASE_ADDR, I2C_QUIRK_FLAG },
+ 	{ 2, I2C3_BASE_ADDR, I2C_QUIRK_FLAG },
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 95c81d960d..5abffef3f3 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -58,10 +58,10 @@ obj-$(CONFIG_$(SPL_)PWRSEQ) += pwrseq-uclass.o
+ obj-$(CONFIG_QFW) += qfw.o
+ obj-$(CONFIG_ROCKCHIP_EFUSE) += rockchip-efuse.o
+ obj-$(CONFIG_ROCKCHIP_OTP) += rockchip-otp.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_fuse.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_ocotp.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_siul2_nvram.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_a53_gpr.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_fuse.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_ocotp.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_siul2_nvram.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_a53_gpr.o
+ obj-$(CONFIG_SANDBOX) += syscon_sandbox.o misc_sandbox.o
+ obj-$(CONFIG_SMSC_LPC47M) += smsc_lpc47m.o
+ obj-$(CONFIG_SMSC_SIO1007) += smsc_sio1007.o
+diff --git a/drivers/mmc/fsl_esdhc_imx.c b/drivers/mmc/fsl_esdhc_imx.c
+index c28b152c37..63c6ce7ddb 100644
+--- a/drivers/mmc/fsl_esdhc_imx.c
++++ b/drivers/mmc/fsl_esdhc_imx.c
+@@ -81,7 +81,7 @@ struct fsl_esdhc {
+ 	uint    mmcboot;
+ 	uint    vendorspec2;
+ 	uint    tuning_ctrl;	/* on i.MX6/7/8/RT */
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ 	char	reserved5[44];
+ 	uint    hostver;	/* Host controller version register */
+ 	char    reserved6[4];	/* reserved */
+@@ -629,7 +629,7 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
+ {
+ 	struct fsl_esdhc *regs = priv->esdhc_regs;
+ 	int div = 1;
+-#if defined(ARCH_MXC) || defined(CONFIG_S32_GEN1)
++#if defined(ARCH_MXC) || defined(CONFIG_NXP_S32_CC)
+ #ifdef CONFIG_MX53
+ 	/* For i.MX53 eSDHCv3, SYSCTL.SDCLKFS may not be set to 0. */
+ 	int pre_div = (regs == (struct fsl_esdhc *)MMC_SDHC3_BASE_ADDR) ? 2 : 1;
+@@ -1136,7 +1136,7 @@ static int esdhc_init_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
+ 	esdhc_write32(&regs->dllctrl, 0x0);
+ #endif
+ 
+-#if !defined(ARCH_MXC) && !defined(CONFIG_S32_GEN1)
++#if !defined(ARCH_MXC) && !defined(CONFIG_NXP_S32_CC)
+ 	/* Enable cache snooping */
+ 	esdhc_write32(&regs->scr, 0x00000040);
+ #endif
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index 0061121bba..4f4d703474 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -71,7 +71,7 @@ if NETDEVICES
+ 
+ config FSL_PFENG
+ 	bool "Enable PFEng on S32G support"
+-	depends on NET && DM_ETH && S32_GEN1
++	depends on NET && DM_ETH && NXP_S32_CC
+ 	select OF_EMBED
+ 	select OF_CONTROL
+ 	imply SERDES_S32GEN1
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 6fedf96c46..54514a5e3f 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -90,4 +90,4 @@ obj-y += mscc_eswitch/
+ obj-$(CONFIG_HIGMACV300_ETH) += higmacv300.o
+ obj-$(CONFIG_MDIO_SANDBOX) += mdio_sandbox.o
+ obj-$(CONFIG_FSL_ENETC) += fsl_enetc.o fsl_enetc_mdio.o
+-obj-$(CONFIG_S32_GEN1) += s32/
++obj-$(CONFIG_NXP_S32_CC) += s32/
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index 18e3bd877c..0a139ef698 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -219,7 +219,7 @@ endif
+ 
+ config SERDES_S32GEN1
+ 	bool "S32GEN1 SerDes support"
+-	depends on S32_GEN1 && (PCIE_S32GEN1 || FSL_PFENG || DWC_ETH_QOS_S32CC)
++	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG || DWC_ETH_QOS_S32CC)
+ 	help
+ 	  Support for S32GEN1 SerDes. The S32GEN1 SoC may have one or two
+ 	  SerDes modules.
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 244540705a..be0f50cd9e 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -32,10 +32,10 @@ obj-$(CONFIG_FSL_DSPI) += fsl_dspi.o
+ obj-$(CONFIG_FSL_ESPI) += fsl_espi.o
+ obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
+ ifdef CONFIG_FSL_QSPI
+-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_macronix.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_micron.o
+-obj-$(CONFIG_S32_GEN1) += s32gen1_qspi_mem_common.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_macronix.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_micron.o
++obj-$(CONFIG_NXP_S32_CC) += s32gen1_qspi_mem_common.o
+ endif
+ obj-$(CONFIG_ICH_SPI) +=  ich.o
+ obj-$(CONFIG_KIRKWOOD_SPI) += kirkwood_spi.o
+diff --git a/drivers/spi/fsl_dspi.c b/drivers/spi/fsl_dspi.c
+index ab4089aa46..1fb83778b7 100644
+--- a/drivers/spi/fsl_dspi.c
++++ b/drivers/spi/fsl_dspi.c
+@@ -189,7 +189,7 @@ static void dspi_halt(struct fsl_dspi_priv *priv, u8 halt)
+ 	dspi_write32(priv->flags, &priv->regs->mcr, mcr_val);
+ }
+ 
+-#if defined(CONFIG_S32_GEN1)
++#if defined(CONFIG_NXP_S32_CC)
+ static ulong fsl_dspi_get_clk_freq(struct udevice *bus)
+ {
+ 	struct clk clk;
+@@ -535,7 +535,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
+ 
+ #ifdef CONFIG_M68K
+ 	dspi->priv.bus_clk = gd->bus_clk;
+-#elif defined(CONFIG_S32_GEN1)
++#elif defined(CONFIG_NXP_S32_CC)
+ 	dspi->priv.bus_clk = fsl_dspi_get_clk_freq(dspi->slave.dev);
+ 	if (!dspi->priv.bus_clk) {
+ 		printf("Invalid clk rate: %u\n", dspi->priv.bus_clk);
+@@ -673,7 +673,7 @@ static int fsl_dspi_probe(struct udevice *bus)
+ 	priv->flags = plat->flags;
+ #ifdef CONFIG_M68K
+ 	priv->bus_clk = gd->bus_clk;
+-#elif defined(CONFIG_S32_GEN1)
++#elif defined(CONFIG_NXP_S32_CC)
+ 	priv->bus_clk = fsl_dspi_get_clk_freq(bus);
+ 	if (!priv->bus_clk) {
+ 		printf("Invalid clk rate: %u\n", priv->bus_clk);
+diff --git a/drivers/spi/fsl_qspi.c b/drivers/spi/fsl_qspi.c
+index 1ee56c16dd..22fc8b9fa9 100644
+--- a/drivers/spi/fsl_qspi.c
++++ b/drivers/spi/fsl_qspi.c
+@@ -192,7 +192,7 @@ static inline u32 qspi_endian_xchg(struct fsl_qspi_priv *priv, u32 data)
+ 		return data;
+ }
+ 
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ static void qspi_set_lut(struct fsl_qspi_priv *priv)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+@@ -470,7 +470,7 @@ static void qspi_ahb_read(struct fsl_qspi_priv *priv, u8 *rxbuf, int len)
+ 
+ static void qspi_enable_ddr_mode(struct fsl_qspi_priv *priv)
+ {
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ 	u32 reg;
+ 	u32 reg2;
+ 	struct fsl_qspi_regs *regs = priv->regs;
+@@ -994,7 +994,7 @@ static int fsl_qspi_probe(struct udevice *bus)
+ 
+ 	dm_spi_bus = bus->uclass_priv;
+ 
+-#if defined(CONFIG_S32_GEN1)
++#if defined(CONFIG_NXP_S32_CC)
+ 	dm_spi_bus->max_hz = fsl_qspi_clk_get_rate(bus);
+ 	if (!dm_spi_bus->max_hz) {
+ 		printf("Invalid clk rate: %u\n", dm_spi_bus->max_hz);
+@@ -1010,12 +1010,12 @@ static int fsl_qspi_probe(struct udevice *bus)
+ 	priv->ddr_mode = false;
+ 	priv->num_pads = 1;
+ 
+-#if defined(CONFIG_S32_GEN1) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
++#if defined(CONFIG_NXP_S32_CC) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
+ 	defined(CONFIG_SPI_FLASH_STMICRO))
+ 	s32gen1_reset_bootrom_settings(priv);
+ #endif
+ 
+-#if defined(CONFIG_S32_GEN1)
++#if defined(CONFIG_NXP_S32_CC)
+ 	priv->speed_hz = dm_spi_bus->max_hz;
+ #else
+ 	priv->speed_hz = plat->speed_hz;
+@@ -1052,14 +1052,14 @@ static int fsl_qspi_probe(struct udevice *bus)
+ 	}
+ 
+ 	mcr_val = 0;
+-	if (IS_ENABLED(CONFIG_S32_GEN1))
++	if (IS_ENABLED(CONFIG_NXP_S32_CC))
+ 		mcr_val = QSPI_MCR_DQS_EN;
+ 
+ 	qspi_write32(priv->flags, &priv->regs->mcr,
+ 		     QSPI_MCR_RESERVED_MASK | QSPI_MCR_MDIS_MASK |
+ 		     QSPI_MCR_END_CFD_LE | mcr_val);
+ 
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ 	qspi_cfg_smpr(priv, ~(QSPI_SMPR_FSDLY_MASK | QSPI_SMPR_DDRSMP_MASK |
+ 		QSPI_SMPR_FSPHS_MASK | QSPI_SMPR_HSENA_MASK), 0);
+ #endif
+@@ -1118,7 +1118,7 @@ static int fsl_qspi_probe(struct udevice *bus)
+ 		return -EINVAL;
+ 	}
+ 
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ 	qspi_set_lut(priv);
+ #else
+ 	s32gen1_enable_spi(priv, true);
+@@ -1257,7 +1257,7 @@ static const struct dm_spi_ops fsl_qspi_ops = {
+ 	.xfer		= fsl_qspi_xfer,
+ 	.set_speed	= fsl_qspi_set_speed,
+ 	.set_mode	= fsl_qspi_set_mode,
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ 	.mem_ops	= &s32gen1_mem_ops,
+ #endif
+ };
+diff --git a/drivers/spi/fsl_qspi.h b/drivers/spi/fsl_qspi.h
+index fc982a46e7..139633176d 100644
+--- a/drivers/spi/fsl_qspi.h
++++ b/drivers/spi/fsl_qspi.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0+ */
+ /*
+  * Copyright 2013-2014 Freescale Semiconductor, Inc.
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  *
+  * Register definitions for Freescale QSPI
+  */
+@@ -27,7 +27,7 @@ struct fsl_qspi_regs {
+ 	u32 buf0ind;
+ 	u32 buf1ind;
+ 	u32 buf2ind;
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ 	u32 rsvd2[5];
+ 	u32 awrcr;
+ 	u32 rsvd21[3];
+@@ -37,7 +37,7 @@ struct fsl_qspi_regs {
+ 	u32 rsvd2[49];
+ #endif
+ 	u32 sfar;
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ 	u32 sfacr;
+ #else
+ 	u32 rsvd3[1];
+@@ -45,7 +45,7 @@ struct fsl_qspi_regs {
+ 	u32 smpr;
+ 	u32 rbsr;
+ 	u32 rbct;
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ 	u32 rsvd31[3];
+ 	u32 awrsr;
+ 	u32 rsvd32[2];
+@@ -68,7 +68,7 @@ struct fsl_qspi_regs {
+ 	u32 sfa2ad;
+ 	u32 sfb1ad;
+ 	u32 sfb2ad;
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ 	u32 dlpr;
+ 	u32 rsvd7[27];
+ #else
+@@ -102,7 +102,7 @@ struct fsl_qspi_regs {
+ #define QSPI_MCR_CLR_RXF_MASK		(1 << QSPI_MCR_CLR_RXF_SHIFT)
+ #define QSPI_MCR_CLR_TXF_SHIFT		11
+ #define QSPI_MCR_CLR_TXF_MASK		(1 << QSPI_MCR_CLR_TXF_SHIFT)
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_MCR_DLPEN_SHIFT		12
+ #define QSPI_MCR_DLPEN_MASK		(1 << QSPI_MCR_DLPEN_SHIFT)
+ #endif
+@@ -114,7 +114,7 @@ struct fsl_qspi_regs {
+ #define QSPI_MCR_SWRSTHD_MASK		(1 << QSPI_MCR_SWRSTHD_SHIFT)
+ #define QSPI_MCR_SWRSTSD_SHIFT		0
+ #define QSPI_MCR_SWRSTSD_MASK		(1 << QSPI_MCR_SWRSTSD_SHIFT)
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_MCR_ISD2FA_SHIFT		16
+ #define QSPI_MCR_ISD2FA_EN		(1 << QSPI_MCR_ISD2FA_SHIFT)
+ #define QSPI_MCR_ISD3FA_SHIFT		17
+@@ -130,7 +130,7 @@ struct fsl_qspi_regs {
+ #define QSPI_MCR_DQS_EXTERNAL		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
+ #define QSPI_MCR_DQS_MASK		(0x3 << QSPI_MCR_DQS_FA_SEL_SHIFT)
+ 
+-#ifndef CONFIG_S32_GEN1
++#ifndef CONFIG_NXP_S32_CC
+ #define QSPI_SMPR_HSENA_SHIFT		0
+ #define QSPI_SMPR_HSENA_MASK		(1 << QSPI_SMPR_HSENA_SHIFT)
+ #endif
+@@ -138,7 +138,7 @@ struct fsl_qspi_regs {
+ #define QSPI_SMPR_FSPHS_MASK		(1 << QSPI_SMPR_FSPHS_SHIFT)
+ #define QSPI_SMPR_FSDLY_SHIFT		6
+ #define QSPI_SMPR_FSDLY_MASK		(1 << QSPI_SMPR_FSDLY_SHIFT)
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_SMPR_DLLFSMPFA_SHIFT	24
+ #define QSPI_SMPR_DLLFSMPFA_NTH(N)	((N) << QSPI_SMPR_DLLFSMPFA_SHIFT)
+ #define QSPI_SMPR_DLLFSMPFB_SHIFT	28
+@@ -199,7 +199,7 @@ struct fsl_qspi_regs {
+ 
+ #define QSPI_DLPR_RESET_VALUE		0xaa553443
+ 
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_DLLSR_SLVA_LOCK_SHIFT	14
+ #define QSPI_DLLSR_SLVA_LOCK_MASK	(1 << QSPI_DLLSR_SLVA_LOCK_SHIFT)
+ #define QSPI_DLLSR_DLLA_LOCK_SHIFT	15
+@@ -214,7 +214,7 @@ struct fsl_qspi_regs {
+ #define QSPI_BFGENCR_PAR_EN_SHIFT	16
+ #define QSPI_BFGENCR_PAR_EN_MASK	(1 << QSPI_BFGENCR_PAR_EN_SHIFT)
+ 
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_RBSR_RDBFL_SHIFT		0
+ #define QSPI_RBSR_RDBFL_MASK		(0xff << QSPI_RBSR_RDBFL_SHIFT)
+ #else
+@@ -236,7 +236,7 @@ struct fsl_qspi_regs {
+ #define QSPI_TBSR_TRCTR(TBSR)		((TBSR) >> QSPI_TBSR_TRCTR_SHIFT)
+ #define QSPI_TBSR_TRBFL(TBSR)		((TBSR) & 0xFF)
+ 
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define QSPI_FR_RBDF_SHIFT		16
+ #define QSPI_FR_RBDF_MASK		(1 << QSPI_FR_RBDF_SHIFT)
+ #define QSPI_FR_ALL_FLAGS_MASK		(0xffffffff)
+@@ -320,7 +320,7 @@ struct fsl_qspi_priv {
+ #define QSPI_FLAG_REGMAP_ENDIAN_BIG	BIT(0)
+ #define QSPI_FLAG_PREV_READ_MEM		BIT(1)
+ 
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ struct qspi_op {
+ 	const struct spi_mem_op *op;
+ 	u8 *cfg;
+diff --git a/include/configs/s32-gen1.h b/include/configs/s32-gen1.h
+index 07c8bd57f1..8856aef41d 100644
+--- a/include/configs/s32-gen1.h
++++ b/include/configs/s32-gen1.h
+@@ -9,8 +9,8 @@
+  * Configuration settings for the Freescale/NXP S32-GEN1.
+  */
+ 
+-#ifndef __S32_GEN1_H
+-#define __S32_GEN1_H
++#ifndef __NXP_S32_CC_H
++#define __NXP_S32_CC_H
+ 
+ #include <linux/sizes.h>
+ 
+diff --git a/include/configs/s32.h b/include/configs/s32.h
+index 3f8a4a58c8..7df102258a 100644
+--- a/include/configs/s32.h
++++ b/include/configs/s32.h
+@@ -81,7 +81,7 @@
+ /* COUNTER_FREQUENCY value will be used at startup but will be replaced
+  * if an older chip version is determined at runtime.
+  */
+-#if defined(CONFIG_S32_GEN1)
++#if defined(CONFIG_NXP_S32_CC)
+ /* FXOSC_CLK; this will be further divided by "GPR00[26:24] + 1"
+  * Note: CONFIG_TARGET_S32G2XXAEVB is a per-board configuration, as the value of
+  * FXOSC_CLK itself is board-specific.
+@@ -382,7 +382,7 @@
+ #define MMC_PART_EXT			2
+ #define CONFIG_MMC_PART			MMC_PART_FAT
+ 
+-#ifdef CONFIG_S32_GEN1
++#ifdef CONFIG_NXP_S32_CC
+ #define FLASH_SECTOR_SIZE               (64 * 1024) /* 64 KB */
+ #else
+ #define FLASH_SECTOR_SIZE		0x40000 /* 256 KB */
+-- 
+2.25.1
+

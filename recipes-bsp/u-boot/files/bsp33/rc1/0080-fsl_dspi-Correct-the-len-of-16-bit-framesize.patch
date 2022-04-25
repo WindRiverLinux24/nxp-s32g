@@ -1,0 +1,38 @@
+From 6720b6b68e86b45715237f6384b8fcdab7418439 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Mon, 4 Apr 2022 10:26:02 +0300
+Subject: [PATCH 080/103] fsl_dspi: Correct the len of 16 bit framesize
+
+When switching from 8 bits frame size to 16 bits frame size,
+half transfers are needed, as the number of bits sent is
+doubled.
+
+Adapted from "7db0445: dspi: Change how RX/TX logic works"
+
+Issue: ALB-8598
+Upstream-Status: Pending 
+
+Signed-off-by: Iustin Dumitrescu <iustin.dumitrescu@nxp.com>
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/spi/fsl_dspi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/fsl_dspi.c b/drivers/spi/fsl_dspi.c
+index 290ac8343c..071a6f8502 100644
+--- a/drivers/spi/fsl_dspi.c
++++ b/drivers/spi/fsl_dspi.c
+@@ -340,7 +340,8 @@ static int dspi_xfer(struct fsl_dspi_priv *priv, uint cs, unsigned int bitlen,
+ 	uint len = bitlen >> 3;
+ 
+ 	if (priv->charbit == 16) {
+-		len >>= 1;
++		/* half the number of transfers */
++		len /= 2;
+ 		spi_wr16 = (u16 *)dout;
+ 		spi_rd16 = (u16 *)din;
+ 	} else {
+-- 
+2.25.1
+

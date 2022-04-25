@@ -1,0 +1,33 @@
+From d7d66446b88de33125150c63ea58f38f855968aa Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 16 Mar 2022 15:10:34 +0200
+Subject: [PATCH 021/103] include: dt-bindigns: Rename S32_GEN1 to NXP_S32_CC
+ config
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/dt-bindings/pinctrl/s32-gen1-pinctrl.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/dt-bindings/pinctrl/s32-gen1-pinctrl.h b/include/dt-bindings/pinctrl/s32-gen1-pinctrl.h
+index 54f21b1cde..c1bbb5f7f4 100644
+--- a/include/dt-bindings/pinctrl/s32-gen1-pinctrl.h
++++ b/include/dt-bindings/pinctrl/s32-gen1-pinctrl.h
+@@ -3,8 +3,8 @@
+  * Copyright 2021-2022 NXP
+  */
+ 
+-#ifndef S32_GEN1_PINCTRL_H
+-#define S32_GEN1_PINCTRL_H
++#ifndef NXP_S32_CC_PINCTRL_H
++#define NXP_S32_CC_PINCTRL_H
+ 
+ #define SIUL2_MSCR_S32_G1_OBE		(1 << 21) /* Output buffer enable. */
+ #define SIUL2_MSCR_S32_G1_ODE		(1 << 20) /* Open drain eable. */
+-- 
+2.25.1
+

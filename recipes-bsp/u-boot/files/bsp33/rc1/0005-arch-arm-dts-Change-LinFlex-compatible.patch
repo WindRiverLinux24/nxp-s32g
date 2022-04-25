@@ -1,0 +1,53 @@
+From 7713c9c42979756cbdc651a5eda68d64d77ef78f Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 11:14:56 +0200
+Subject: [PATCH 005/103] arch: arm/dts: Change LinFlex compatible
+
+Rename comaptible string from "fsl,s32-linflexuart" to
+"nxp,s32-cc-linflexuart". This is needed to reflect
+NXP vendor and restrict the scope to S32 Common Chassis platforms
+instead of a generic S32.
+
+Issue: ALB-8575
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index 57b2a76004..cbc6bbdf7a 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -127,7 +127,7 @@
+ 
+ 	uart0:serial@401C8000 {
+ 		device_type = "serial";
+-		compatible = "fsl,s32-linflexuart";
++		compatible = "nxp,s32-cc-linflexuart";
+ 		reg = <0x0 0x401C8000 0x0 0x3000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+ 		clock-names = "lin";
+@@ -137,7 +137,7 @@
+ 
+ 	uart1:serial@401CC000 {
+ 		device_type = "serial";
+-		compatible = "fsl,s32-linflexuart";
++		compatible = "nxp,s32-cc-linflexuart";
+ 		reg = <0x0 0x401CC000 0x0 0x3000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+ 		clock-names = "lin";
+@@ -147,7 +147,7 @@
+ 
+ 	uart2:serial@402BC000 {
+ 		device_type = "serial";
+-		compatible = "fsl,s32-linflexuart";
++		compatible = "nxp,s32-cc-linflexuart";
+ 		reg = <0x0 0x402BC000 0x0 0x3000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_LINFLEX_LIN>;
+ 		clock-names = "lin";
+-- 
+2.25.1
+

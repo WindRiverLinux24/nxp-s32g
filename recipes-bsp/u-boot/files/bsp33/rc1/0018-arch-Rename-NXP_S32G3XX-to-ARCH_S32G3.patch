@@ -1,0 +1,188 @@
+From ef32e4e1902a8eafbce76daf2632580b5941190e Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 15:04:59 +0200
+Subject: [PATCH 018/103] arch: Rename NXP_S32G3XX to ARCH_S32G3
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Kconfig  |  8 ++++----
+ arch/arm/mach-s32/s32-cc/Makefile |  2 +-
+ board/nxp/s32-gen1/Kconfig        |  2 +-
+ drivers/pci/Kconfig               |  2 +-
+ drivers/usb/host/ehci-mx6.c       | 16 ++++++++--------
+ include/configs/s32-gen1.h        |  2 +-
+ 6 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 0f0545722d..96fa987a7c 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -14,7 +14,7 @@ config ARCH_S32G2
+ 	help
+ 	  Platforms having S32G2XXX SoC
+ 
+-config NXP_S32G3XX
++config ARCH_S32G3
+ 	bool
+ 	select S32_GEN1
+ 	help
+@@ -94,7 +94,7 @@ config TARGET_S32G274AEMU
+ 
+ config TARGET_S32G399AEMU
+ 	bool "Support S32G399A ZeBu"
+-	select NXP_S32G3XX
++	select ARCH_S32G3
+ 
+ config TARGET_S32G3XXAEVB
+ 	bool "Support for S32G3 EVB boards"
+@@ -110,7 +110,7 @@ config TARGET_S32G3XXAEVB
+ 	imply SJA1105
+ 	imply USB
+ 	imply USB_EHCI_HCD
+-	select NXP_S32G3XX
++	select ARCH_S32G3
+ 	select SPI_FLASH_MACRONIX
+ 
+ config TARGET_S32G399ARDB3
+@@ -122,7 +122,7 @@ config TARGET_S32G399ARDB3
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+ 	select ADC
+-	select NXP_S32G3XX
++	select ARCH_S32G3
+ 	select S32_SARADC
+ 	select SPI_FLASH_MACRONIX
+ 
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index 8ba5be8c4e..34e0d831a2 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -16,7 +16,7 @@ ccflags-y			+= -Iboard/nxp/s32-gen1
+ 
+ obj-$(CONFIG_S32_CMU)		+= cmu.o
+ obj-$(CONFIG_ARCH_S32G2)	+= s32g2_cmu.o
+-obj-$(CONFIG_NXP_S32G3XX)	+= s32g3_cmu.o
++obj-$(CONFIG_ARCH_S32G3)	+= s32g3_cmu.o
+ obj-$(CONFIG_NXP_S32R45)	+= s32r45_cmu.o
+ obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
+ obj-y				+= soc.o
+diff --git a/board/nxp/s32-gen1/Kconfig b/board/nxp/s32-gen1/Kconfig
+index 62862da534..661de86707 100644
+--- a/board/nxp/s32-gen1/Kconfig
++++ b/board/nxp/s32-gen1/Kconfig
+@@ -61,7 +61,7 @@ config SYS_CONFIG_NAME
+ 	string
+ 	default "s32g274a" if ARCH_S32G2
+ 	default "s32r45" if NXP_S32R45
+-	default "s32g399a" if NXP_S32G3XX
++	default "s32g399a" if ARCH_S32G3
+ 
+ config S32GEN1_MAX_DTB_SIZE
+ 	hex "Max size reserved for device tree in image layout"
+diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+index 2c969d8aac..9afeec6c45 100644
+--- a/drivers/pci/Kconfig
++++ b/drivers/pci/Kconfig
+@@ -170,7 +170,7 @@ config FSL_PCIE_EP_COMPAT
+ config PCIE_S32GEN1
+ 	bool "S32GEN1 PCIe support"
+ 	depends on DM_PCI
+-	depends on (ARCH_S32G2 || NXP_S32R45 || NXP_S32G3XX)
++	depends on (ARCH_S32G2 || NXP_S32R45 || ARCH_S32G3)
+ 	select DM_PCI_COMPAT
+ 	select OF_EMBED
+ 	select OF_CONTROL
+diff --git a/drivers/usb/host/ehci-mx6.c b/drivers/usb/host/ehci-mx6.c
+index 1e176cc8a3..eec3eb0afc 100644
+--- a/drivers/usb/host/ehci-mx6.c
++++ b/drivers/usb/host/ehci-mx6.c
+@@ -148,13 +148,13 @@ static void usb_power_config(int index)
+ #endif
+ 
+ #if defined(CONFIG_MX6) || defined(CONFIG_ARCH_S32G2) || \
+-	defined(CONFIG_NXP_S32G3XX)
++	defined(CONFIG_ARCH_S32G3)
+ /* Return 0 : host node, <>0 : device mode */
+ static int usb_phy_enable(int index, struct usb_ehci *ehci)
+ {
+ 	int ret;
+ 	void __iomem *usb_cmd;
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ 	void __iomem *phy_reg;
+ 	void __iomem *phy_ctrl;
+ 
+@@ -177,7 +177,7 @@ static int usb_phy_enable(int index, struct usb_ehci *ehci)
+ 	if (ret)
+ 		return ret;
+ 
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ 	/* Reset USBPHY module */
+ 	setbits_le32(phy_ctrl, USBPHY_CTRL_SFTRST);
+ 	udelay(10);
+@@ -279,7 +279,7 @@ int usb_phy_mode(int port)
+ 
+ static void usb_oc_config(int index)
+ {
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ #if defined(CONFIG_MX6)
+ 	struct usbnc_regs *usbnc = (struct usbnc_regs *)(USB_BASE_ADDR +
+ 			USB_OTHERREGS_OFFSET);
+@@ -356,7 +356,7 @@ int __weak board_ehci_power(int port, int on)
+ 
+ int ehci_mx6_common_init(struct usb_ehci *ehci, int index)
+ {
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ 	int ret;
+ 
+ 	enable_usboh3_clk(1);
+@@ -376,7 +376,7 @@ int ehci_mx6_common_init(struct usb_ehci *ehci, int index)
+ #endif
+ 
+ #if defined(CONFIG_MX6) || defined(CONFIG_ARCH_S32G2) || \
+-	defined(CONFIG_NXP_S32G3XX)
++	defined(CONFIG_ARCH_S32G3)
+ 	usb_phy_enable(index, ehci);
+ #endif
+ 
+@@ -482,7 +482,7 @@ static const struct ehci_ops mx6_ehci_ops = {
+ 
+ static int ehci_usb_phy_mode(struct udevice *dev)
+ {
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ 	struct usb_platdata *plat = dev_get_platdata(dev);
+ 	void *__iomem addr = (void *__iomem)devfdt_get_addr(dev);
+ 	void *__iomem phy_ctrl, *__iomem phy_status;
+@@ -554,7 +554,7 @@ static int ehci_usb_ofdata_to_platdata(struct udevice *dev)
+ 
+ static int ehci_usb_bind(struct udevice *dev)
+ {
+-#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_NXP_S32G3XX)
++#if !defined(CONFIG_ARCH_S32G2) && !defined(CONFIG_ARCH_S32G3)
+ 	/*
+ 	 * TODO:
+ 	 * This driver is only partly converted to DT probing and still uses
+diff --git a/include/configs/s32-gen1.h b/include/configs/s32-gen1.h
+index 33db827e53..07c8bd57f1 100644
+--- a/include/configs/s32-gen1.h
++++ b/include/configs/s32-gen1.h
+@@ -43,7 +43,7 @@
+ 
+ #define S32_SRAM_BASE		0x34000000
+ 
+-#ifdef CONFIG_NXP_S32G3XX
++#ifdef CONFIG_ARCH_S32G3
+ #define S32_SRAM_SIZE		(20 * SZ_1M)
+ #else
+ #define S32_SRAM_SIZE		(8 * SZ_1M)
+-- 
+2.25.1
+

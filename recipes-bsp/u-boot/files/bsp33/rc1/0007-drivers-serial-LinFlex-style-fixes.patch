@@ -1,0 +1,91 @@
+From 3da45c12bd9e4f0b62c3115f257e7d2fd1a6b5c8 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 7 Mar 2022 15:51:42 +0200
+Subject: [PATCH 007/103] drivers: serial: LinFlex style fixes
+
+Fixes for issues reported by checkpatch tool from v2022.01.
+
+Issue: ALB-8575
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/serial/Makefile             |  4 ----
+ drivers/serial/serial_linflexuart.c | 16 ++++++++--------
+ 2 files changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
+index 88fc303eb3..e9626180ab 100644
+--- a/drivers/serial/Makefile
++++ b/drivers/serial/Makefile
+@@ -54,11 +54,7 @@ obj-$(CONFIG_SANDBOX_SERIAL) += sandbox.o
+ obj-$(CONFIG_SCIF_CONSOLE) += serial_sh.o
+ obj-$(CONFIG_ZYNQ_SERIAL) += serial_zynq.o
+ obj-$(CONFIG_FSL_LPUART) += serial_lpuart.o
+-ifdef CONFIG_DM_SERIAL
+ obj-$(CONFIG_FSL_LINFLEXUART) += serial_linflexuart.o
+-else
+-obj-$(CONFIG_FSL_LINFLEXUART) += serial_linflexuart_nondm.o
+-endif
+ obj-$(CONFIG_MXS_AUART) += mxs_auart.o
+ obj-$(CONFIG_ARC_SERIAL) += serial_arc.o
+ obj-$(CONFIG_UNIPHIER_SERIAL) += serial_uniphier.o
+diff --git a/drivers/serial/serial_linflexuart.c b/drivers/serial/serial_linflexuart.c
+index 590eadd7bb..df6d73903a 100644
+--- a/drivers/serial/serial_linflexuart.c
++++ b/drivers/serial/serial_linflexuart.c
+@@ -4,14 +4,13 @@
+  * Copyright 2017, 2019, 2021-2022 NXP
+  */
+ 
++#include <asm/io.h>
++#include <clk.h>
+ #include <common.h>
+ #include <dm.h>
+ #include <errno.h>
+-#include <watchdog.h>
+-#include <asm/io.h>
+-#include <serial.h>
+ #include <linux/compiler.h>
+-#include <clk.h>
++#include <serial.h>
+ 
+ #define LINCR1_INIT			BIT(0)
+ #define LINCR1_MME			BIT(4)
+@@ -29,7 +28,7 @@
+ #define UARTSR_DTF			BIT(1)
+ #define UARTSR_RFE			BIT(2)
+ #define UARTSR_RMB			BIT(9)
+-#define LINFLEXD_UARTCR_OSR_MASK	(0xF<<24)
++#define LINFLEXD_UARTCR_OSR_MASK	(0xF << 24)
+ #define LINFLEXD_UARTCR_OSR(uartcr)	(((uartcr) \
+ 					& LINFLEXD_UARTCR_OSR_MASK) >> 24)
+ 
+@@ -62,7 +61,7 @@ struct linflex_fsl {
+ 	u32 reserved[3];
+ 	u32 gcr;
+ 	u32 uartpto;
+-};
++} __packed;
+ 
+ static void _linflex_enter_init(struct linflex_fsl *base)
+ {
+@@ -290,11 +289,12 @@ U_BOOT_DRIVER(serial_linflex) = {
+ 
+ static inline void _debug_uart_init(void)
+ {
+-#ifndef CONFIG_DEBUG_UART_SKIP_INIT
+ 	struct linflex_fsl *base = (struct linflex_fsl *)CONFIG_DEBUG_UART_BASE;
+ 
++	if (IS_ENABLED(CONFIG_DEBUG_UART_SKIP_INIT))
++		return;
++
+ 	_linflex_serial_init(base, CONFIG_DEBUG_UART_CLOCK);
+-#endif
+ }
+ 
+ static inline void _debug_uart_putc(int ch)
+-- 
+2.25.1
+

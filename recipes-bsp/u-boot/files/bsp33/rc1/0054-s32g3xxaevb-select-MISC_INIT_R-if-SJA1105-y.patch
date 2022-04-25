@@ -1,0 +1,32 @@
+From b9ee6e2462b59ca1c5f42ef86a2135ff0f510ba5 Mon Sep 17 00:00:00 2001
+From: "Radu Pirea (NXP OSS)" <radu-nicolae.pirea@oss.nxp.com>
+Date: Fri, 1 Apr 2022 10:32:08 +0300
+Subject: [PATCH 054/103] s32g3xxaevb: select MISC_INIT_R if SJA1105=y
+
+Select MISC_INIT_R if SJA1105 is enabled.
+
+Issue: ALB-8695
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea (NXP OSS) <radu-nicolae.pirea@oss.nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32g3/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index eed52cfc0a..c7343cc72f 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -34,6 +34,7 @@ config TARGET_S32G3XXAEVB
+ 	imply SJA1105
+ 	imply USB
+ 	imply USB_EHCI_HCD
++	select MISC_INIT_R if SJA1105
+ 	select NXP_S32GEVB_BOARD
+ 	select SPI_FLASH_MACRONIX
+ 
+-- 
+2.25.1
+

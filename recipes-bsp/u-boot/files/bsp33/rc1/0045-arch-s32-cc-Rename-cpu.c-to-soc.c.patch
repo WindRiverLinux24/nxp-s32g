@@ -1,0 +1,109 @@
+From 52ec5f7c124a9b1e982af4c2a614d2312099989c Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 23 Mar 2022 09:02:02 +0200
+Subject: [PATCH 045/103] arch: s32-cc: Rename cpu.c to soc.c
+
+This is needed for v2022.01 sync.
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Makefile         |  2 +-
+ arch/arm/mach-s32/s32-cc/{cpu.c => soc.c} | 46 +++++++++++------------
+ 2 files changed, 24 insertions(+), 24 deletions(-)
+ rename arch/arm/mach-s32/s32-cc/{cpu.c => soc.c} (65%)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index c9433ab07c..80ec7ebe88 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -9,7 +9,7 @@ ccflags-y += -I./board/nxp/s32-cc/include/
+ ccflags-y += -I./drivers/net/s32/
+ 
+ obj-$(CONFIG_NXP_S32CC)		+= scmi_reset_agent.o
+-obj-y				+= cpu.o
++obj-y				+= soc.o
+ obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
+ obj-$(CONFIG_MP)		+= mp.o
+ obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
+diff --git a/arch/arm/mach-s32/s32-cc/cpu.c b/arch/arm/mach-s32/s32-cc/soc.c
+similarity index 65%
+rename from arch/arm/mach-s32/s32-cc/cpu.c
+rename to arch/arm/mach-s32/s32-cc/soc.c
+index 9af173dfd9..3979d39236 100644
+--- a/arch/arm/mach-s32/s32-cc/cpu.c
++++ b/arch/arm/mach-s32/s32-cc/soc.c
+@@ -36,44 +36,44 @@ DECLARE_GLOBAL_DATA_PTR;
+ 
+ static struct mm_region s32_mem_map[] = {
+ 	{
+-	  PHYS_SDRAM_1, PHYS_SDRAM_1,
+-	  PHYS_SDRAM_1_SIZE,
+-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
++		PHYS_SDRAM_1, PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE,
++		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE |
++		    PTE_BLOCK_NS
+ 	},
+ #ifdef PHYS_SDRAM_2
+ 	{
+-	  PHYS_SDRAM_2, PHYS_SDRAM_2,
+-	  PHYS_SDRAM_2_SIZE,
+-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE | PTE_BLOCK_NS
++		PHYS_SDRAM_2, PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE,
++		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE |
++		    PTE_BLOCK_NS
+ 	},
+ #endif
+ 	{
+-	  S32_SRAM_BASE, S32_SRAM_BASE,
+-	  S32_SRAM_SIZE,
+-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
++		S32_SRAM_BASE, S32_SRAM_BASE,
++		S32_SRAM_SIZE,
++		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+ 	},
+ 	{
+-	  PERIPH_BASE, PERIPH_BASE, PERIPH_SIZE,
+-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
+-	  PTE_BLOCK_PXN | PTE_BLOCK_UXN
++		PERIPH_BASE, PERIPH_BASE, PERIPH_SIZE,
++		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) | PTE_BLOCK_NON_SHARE |
++		    PTE_BLOCK_PXN | PTE_BLOCK_UXN
+ 	},
+ 	{
+-	  CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE,
+-	  CONFIG_SYS_FLASH_SIZE,
+-	  PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
++		CONFIG_SYS_FLASH_BASE, CONFIG_SYS_FLASH_BASE,
++		CONFIG_SYS_FLASH_SIZE,
++		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+ 	},
+ #if defined(CONFIG_PCIE_S32GEN1)
+ 	{
+-	  CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
+-	  CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
+-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+-	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
++		CONFIG_SYS_PCIE0_PHYS_ADDR_HI, CONFIG_SYS_PCIE0_PHYS_ADDR_HI,
++		CONFIG_SYS_PCIE0_PHYS_SIZE_HI,
++		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
++		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
+ 	},
+ 	{
+-	  CONFIG_SYS_PCIE1_PHYS_ADDR_HI, CONFIG_SYS_PCIE1_PHYS_ADDR_HI,
+-	  CONFIG_SYS_PCIE1_PHYS_SIZE_HI,
+-	  PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+-	  PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
++		CONFIG_SYS_PCIE1_PHYS_ADDR_HI, CONFIG_SYS_PCIE1_PHYS_ADDR_HI,
++		CONFIG_SYS_PCIE1_PHYS_SIZE_HI,
++		PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
++		PTE_BLOCK_NON_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN
+ 	},
+ #endif
+ 	/* list terminator */
+-- 
+2.25.1
+

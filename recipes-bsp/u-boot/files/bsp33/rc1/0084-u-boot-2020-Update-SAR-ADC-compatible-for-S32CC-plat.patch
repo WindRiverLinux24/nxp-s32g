@@ -1,0 +1,379 @@
+From d6edf26f7d052997599d8fc7ef4e7122b949bafa Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Wed, 30 Mar 2022 08:34:08 +0300
+Subject: [PATCH 084/103] u-boot-2020: Update SAR-ADC compatible for S32CC
+ platforms
+
+Issue: ALB-8600
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi               |  4 +--
+ arch/arm/mach-s32/s32g2/Kconfig              |  6 +---
+ arch/arm/mach-s32/s32g3/Kconfig              |  4 +--
+ arch/arm/mach-s32/s32r45/Kconfig             |  2 +-
+ board/nxp/s32-cc/s32g/Kconfig                |  5 +++
+ board/nxp/s32-cc/s32g/s32gxxxardb.c          | 11 +++---
+ configs/s32g274ardb2_defconfig               |  1 -
+ configs/s32g274ardb2_qspi_defconfig          |  1 -
+ configs/s32g399ardb3_defconfig               |  1 -
+ configs/s32g399ardb3_qspi_defconfig          |  1 -
+ drivers/adc/Kconfig                          |  6 ++--
+ drivers/adc/Makefile                         |  2 +-
+ drivers/adc/{s32-saradc.c => s32cc-saradc.c} | 35 +++++++++++---------
+ 13 files changed, 40 insertions(+), 39 deletions(-)
+ rename drivers/adc/{s32-saradc.c => s32cc-saradc.c} (85%)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index ed70ba14cb..f232ae5669 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -376,7 +376,7 @@
+ 	};
+ 
+ 	saradc0: saradc0 {
+-		compatible = "fsl,s32gen1-adc";
++		compatible = "nxp,s32cc-adc";
+ 		reg = <0x0 0x401f8000 0x0 0x1000>;
+ 		interrupts = <0 70 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SAR_ADC_BUS>;
+@@ -385,7 +385,7 @@
+ 	};
+ 
+ 	saradc1: saradc1 {
+-		compatible = "fsl,s32gen1-adc";
++		compatible = "nxp,s32cc-adc";
+ 		reg = <0x0 0x402e8000 0x0 0x1000>;
+ 		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SAR_ADC_BUS>;
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index 9cb4ad1f22..810e0aa005 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -14,21 +14,17 @@ config TARGET_S32G274ARDB2
+ 	imply PHY_ATHEROS
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+-	select ADC
+ 	select NXP_S32GRDB_BOARD
+-	select S32_SARADC
+ 	select SPI_FLASH_MACRONIX
+ 
+ config TARGET_S32G2XXAEVB
+ 	bool "Support S32G274AEVB board"
+-	imply ADC
+ 	imply DM_USB
+ 	imply I2C_EEPROM
+ 	imply PHY
+ 	imply PHY_AQUANTIA
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+-	imply S32_SARADC
+ 	imply SAF1508BET_USB_PHY
+ 	imply SJA1105
+ 	imply USB
+@@ -43,7 +39,7 @@ config TARGET_S32G274ABLUEBOX3
+ 	imply I2C_EEPROM
+ 	imply PHY
+ 	imply PHYLIB
+-	imply S32_SARADC
++	imply SARADC_S32CC
+ 	select SPI_FLASH_STMICRO
+ 
+ config TARGET_S32G274AEMU
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index c7343cc72f..25ce8ca7f6 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -17,7 +17,7 @@ config TARGET_S32G399ARDB3
+ 	imply PHY_MICREL_KSZ90X1
+ 	select ADC
+ 	select NXP_S32GRDB_BOARD
+-	select S32_SARADC
++	select SARADC_S32CC
+ 	select SPI_FLASH_MACRONIX
+ 
+ config TARGET_S32G3XXAEVB
+@@ -29,7 +29,7 @@ config TARGET_S32G3XXAEVB
+ 	imply PHY_AQUANTIA
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+-	imply S32_SARADC
++	imply SARADC_S32CC
+ 	imply SAF1508BET_USB_PHY
+ 	imply SJA1105
+ 	imply USB
+diff --git a/arch/arm/mach-s32/s32r45/Kconfig b/arch/arm/mach-s32/s32r45/Kconfig
+index 6dc60f82c9..ccadb2c12e 100644
+--- a/arch/arm/mach-s32/s32r45/Kconfig
++++ b/arch/arm/mach-s32/s32r45/Kconfig
+@@ -12,7 +12,7 @@ config TARGET_S32R45EVB
+ 	imply ADC
+ 	imply I2C_EEPROM
+ 	imply PHY_AQUANTIA
+-	imply S32_SARADC
++	imply SARADC_S32CC
+ 	select SPI_FLASH_MACRONIX
+ 
+ config TARGET_S32R45EMU
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+index 2cadfb7aa0..8747c6e4fa 100644
+--- a/board/nxp/s32-cc/s32g/Kconfig
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -2,10 +2,15 @@ config NXP_S32GRDB_BOARD
+ 	bool
+ 	default n
+ 	imply NVME
++	select ADC
++	select BOARD_LATE_INIT
++	select SARADC_S32CC
+ 
+ config NXP_S32GEVB_BOARD
+ 	bool
+ 	default n
++	imply ADC
++	imply SARADC_S32CC
+ 
+ config S32GEN1_HWCONFIG
+ 	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GRDB_BOARD
+diff --git a/board/nxp/s32-cc/s32g/s32gxxxardb.c b/board/nxp/s32-cc/s32g/s32gxxxardb.c
+index 9b33bf92cb..07103bd8e6 100644
+--- a/board/nxp/s32-cc/s32g/s32gxxxardb.c
++++ b/board/nxp/s32-cc/s32g/s32gxxxardb.c
+@@ -2,13 +2,13 @@
+ /*
+  * Copyright 2018-2022 NXP
+  */
+-#include <board_common.h>
+ #include <common.h>
+-#include <dm/uclass.h>
+ #include <adc.h>
++#include <env.h>
++#include <dm/uclass.h>
+ 
+-#define SARADC0_DEV	"saradc0"
+-#define SARADC0_CH5	5
++#define SARADC0_DEV			"saradc0"
++#define SARADC0_CH5			5
+ #define SARADC0_TOLERANCE	200
+ 
+ static const struct {
+@@ -52,7 +52,8 @@ static int find_rdb_rev(uint32_t adc_value)
+ 		    adc_value <= rdb_revisions[i].upper)
+ 			return i;
+ 	}
+-	return -1;
++
++	return -EINVAL;
+ }
+ 
+ int board_late_init(void)
+diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
+index 9b54c0448b..d629fa271e 100644
+--- a/configs/s32g274ardb2_defconfig
++++ b/configs/s32g274ardb2_defconfig
+@@ -7,7 +7,6 @@ CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+ CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_BOARD_LATE_INIT=y
+ CONFIG_CMD_CPU=y
+ CONFIG_CMD_MD5SUM=y
+ CONFIG_MD5SUM_VERIFY=y
+diff --git a/configs/s32g274ardb2_qspi_defconfig b/configs/s32g274ardb2_qspi_defconfig
+index 0e61e217a4..e8bb847c5a 100644
+--- a/configs/s32g274ardb2_qspi_defconfig
++++ b/configs/s32g274ardb2_qspi_defconfig
+@@ -8,7 +8,6 @@ CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+ CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_BOARD_LATE_INIT=y
+ CONFIG_CMD_CPU=y
+ CONFIG_CMD_MD5SUM=y
+ CONFIG_MD5SUM_VERIFY=y
+diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
+index 24406c7004..0119026b62 100644
+--- a/configs/s32g399ardb3_defconfig
++++ b/configs/s32g399ardb3_defconfig
+@@ -8,7 +8,6 @@ CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+ CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_BOARD_LATE_INIT=y
+ CONFIG_CMD_CPU=y
+ CONFIG_CMD_MD5SUM=y
+ CONFIG_MD5SUM_VERIFY=y
+diff --git a/configs/s32g399ardb3_qspi_defconfig b/configs/s32g399ardb3_qspi_defconfig
+index e910c7f2e8..0297c19ffa 100644
+--- a/configs/s32g399ardb3_qspi_defconfig
++++ b/configs/s32g399ardb3_qspi_defconfig
+@@ -9,7 +9,6 @@ CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+ CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_BOARD_LATE_INIT=y
+ CONFIG_CMD_CPU=y
+ CONFIG_CMD_MD5SUM=y
+ CONFIG_MD5SUM_VERIFY=y
+diff --git a/drivers/adc/Kconfig b/drivers/adc/Kconfig
+index 4020fd01b4..f1fb2e303c 100644
+--- a/drivers/adc/Kconfig
++++ b/drivers/adc/Kconfig
+@@ -48,10 +48,10 @@ config SARADC_ROCKCHIP
+ 	  - 1O or 12 bits resolution
+ 	  - Up to 1MSPS of sample rate
+ 
+-config S32_SARADC
+-	bool "Enable NXP S32 SARADC driver"
++config SARADC_S32CC
++	bool "Enable NXP S32CC SARADC driver"
+ 	help
+-	  This enables driver for NXP S32 SARADC
++	  This enables driver for NXP S32CC SARADC
+ 	  It provides:
+ 	  - 8 analog input channels
+ 	  - 12-bit resolution
+diff --git a/drivers/adc/Makefile b/drivers/adc/Makefile
+index 9c87de8246..5f06a8db8a 100644
+--- a/drivers/adc/Makefile
++++ b/drivers/adc/Makefile
+@@ -9,5 +9,5 @@ obj-$(CONFIG_ADC_EXYNOS) += exynos-adc.o
+ obj-$(CONFIG_ADC_SANDBOX) += sandbox.o
+ obj-$(CONFIG_SARADC_ROCKCHIP) += rockchip-saradc.o
+ obj-$(CONFIG_SARADC_MESON) += meson-saradc.o
+-obj-$(CONFIG_S32_SARADC) += s32-saradc.o
++obj-$(CONFIG_SARADC_S32CC) += s32cc-saradc.o
+ obj-$(CONFIG_STM32_ADC) += stm32-adc.o stm32-adc-core.o
+diff --git a/drivers/adc/s32-saradc.c b/drivers/adc/s32cc-saradc.c
+similarity index 85%
+rename from drivers/adc/s32-saradc.c
+rename to drivers/adc/s32cc-saradc.c
+index 2fb258ed2c..24680e0ad6 100644
+--- a/drivers/adc/s32-saradc.c
++++ b/drivers/adc/s32cc-saradc.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+  * Copyright 2022 NXP
+- * S32Gen1 SAR-ADC driver
++ * S32CC SAR-ADC driver
+  */
+ 
+ #include <common.h>
+@@ -10,6 +10,7 @@
+ #include <dm.h>
+ #include <errno.h>
+ #include <asm/io.h>
++#include <linux/iopoll.h>
+ 
+ #define SARADC_MCR	0x0
+ #define SARADC_MSR	0x4
+@@ -20,7 +21,7 @@
+ 
+ #define SARADC_MCR_PWDN			BIT(0)
+ #define SARADC_MCR_ADCLKSE		BIT(8)
+-#define SARADC_MCR_TSAMP_MASK	(BIT(10) | BIT(9))
++#define SARADC_MCR_TSAMP_MASK	GENMASK(10, 9)
+ #define SARADC_MCR_AVGEN		BIT(13)
+ #define SARADC_MCR_CALSTART		BIT(14)
+ #define SARADC_MCR_NSTART		BIT(24)
+@@ -38,9 +39,9 @@
+ #define SARADC_PCDR_VALID		BIT(19)
+ #define SARADC_PCDR_CDATA(x)	((x) & 0xfff)
+ 
+-#define SARADC_NSEC_PER_SEC	1000000000
+-#define RDB_CHECK_REV_CH	5
+-#define SARADC_TIMEOUT_VALUE 0x100000
++#define SARADC_NSEC_PER_SEC		1000000000
++#define SARADC_TIMEOUT_VALUE	100000 /* us */
++#define RDB_CHECK_REV_CH		5
+ 
+ struct s32_saradc_data {
+ 	int num_bits;
+@@ -75,7 +76,8 @@ static void s32_saradc_powerup(ulong base)
+ 	writel(tmp, base + SARADC_MCR);
+ }
+ 
+-static int s32_saradc_calibration(ulong base)
++static int s32_saradc_calibration(ulong base,
++				  struct adc_uclass_platdata *pdata)
+ {
+ 	u32 tmp;
+ 
+@@ -93,9 +95,10 @@ static int s32_saradc_calibration(ulong base)
+ 	tmp |= SARADC_MCR_CALSTART;
+ 	writel(tmp, base + SARADC_MCR);
+ 
+-	do {
+-		tmp = readl(base + SARADC_MSR);
+-	} while (tmp & SARADC_MSR_CALBUSY);
++	if (readx_poll_timeout(readl, base + SARADC_MSR, tmp,
++			       !(tmp & SARADC_MSR_CALBUSY),
++			       pdata->data_timeout_us))
++		return -EINVAL;
+ 
+ 	if (tmp & SARADC_MSR_CALFAIL)
+ 		return -EINVAL;
+@@ -186,6 +189,7 @@ static int s32_adc_stop(struct udevice *dev)
+ static int s32_saradc_probe(struct udevice *dev)
+ {
+ 	struct s32_saradc_priv *priv = dev_get_priv(dev);
++	struct adc_uclass_platdata *uc_pdata = dev_get_uclass_platdata(dev);
+ 	struct clk clk;
+ 	u32 tmp;
+ 	int ret;
+@@ -203,7 +207,7 @@ static int s32_saradc_probe(struct udevice *dev)
+ 		return -EINVAL;
+ 	}
+ 
+-	ret = s32_saradc_calibration(priv->base);
++	ret = s32_saradc_calibration(priv->base, uc_pdata);
+ 	s32_saradc_powerdown(priv->base);
+ 	if (ret) {
+ 		printf("SARADC calibration failed\n");
+@@ -220,7 +224,7 @@ static int s32_saradc_probe(struct udevice *dev)
+ 	return 0;
+ }
+ 
+-static int s32_saradc_ofdata_to_platdata(struct udevice *dev)
++static int s32_saradc_ofdata_to_plat(struct udevice *dev)
+ {
+ 	struct adc_uclass_platdata *uc_pdata = dev_get_uclass_platdata(dev);
+ 	struct s32_saradc_priv *priv = dev_get_priv(dev);
+@@ -234,10 +238,10 @@ static int s32_saradc_ofdata_to_platdata(struct udevice *dev)
+ 
+ 	priv->data = (struct s32_saradc_data *)dev_get_driver_data(dev);
+ 
+-	uc_pdata->data_mask = (1 << priv->data->num_bits) - 1;
++	uc_pdata->data_mask = GENMASK(priv->data->num_bits - 1, 0);
+ 	uc_pdata->data_format = ADC_DATA_FORMAT_BIN;
+ 	uc_pdata->data_timeout_us = SARADC_TIMEOUT_VALUE;
+-	uc_pdata->channel_mask = (1 << priv->data->num_channels) - 1;
++	uc_pdata->channel_mask = GENMASK(priv->data->num_channels - 1, 0);
+ 
+ 	return 0;
+ }
+@@ -249,8 +253,7 @@ static const struct adc_ops s32_saradc_ops = {
+ };
+ 
+ static const struct udevice_id s32_saradc_ids[] = {
+-	{ .compatible = "fsl,s32gen1-adc",
+-	  .data = (ulong)&saradc_data },
++	{ .compatible = "nxp,s32cc-adc", .data = (ulong)&saradc_data },
+ 	{ }
+ };
+ 
+@@ -260,6 +263,6 @@ U_BOOT_DRIVER(s32_saradc) = {
+ 	.of_match = s32_saradc_ids,
+ 	.ops = &s32_saradc_ops,
+ 	.probe = s32_saradc_probe,
+-	.ofdata_to_platdata = s32_saradc_ofdata_to_platdata,
++	.ofdata_to_platdata = s32_saradc_ofdata_to_plat,
+ 	.priv_auto_alloc_size = sizeof(struct s32_saradc_priv),
+ };
+-- 
+2.25.1
+

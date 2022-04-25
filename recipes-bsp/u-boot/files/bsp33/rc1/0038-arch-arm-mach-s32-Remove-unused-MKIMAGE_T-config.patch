@@ -1,0 +1,32 @@
+From f2a009e698168621a981434612aa6c7d85c22c34 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 10:49:05 +0200
+Subject: [PATCH 038/103] arch: arm/mach-s32: Remove unused MKIMAGE_T config
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Kconfig | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 254a79f54c..2f9e3030c3 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -65,10 +65,6 @@ config SYS_MEM_SIZE
+ 	help
+ 	  U-boot SRAM size (8 MB for Gen1)
+ 
+-config MKIMAGE_T
+-	string
+-	default "s32gen1image"
+-
+ config S32GEN1_HWCONFIG
+ 	string "S32GEN1 HWConfig definition"
+ 	depends on NXP_S32_CC && (PCIE_S32GEN1 || FSL_PFENG)
+-- 
+2.25.1
+

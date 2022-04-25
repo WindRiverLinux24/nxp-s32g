@@ -1,0 +1,36 @@
+From 80edb68c935bb8125e4689394ab7ce7a14fdb30c Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Fri, 1 Apr 2022 12:02:33 +0300
+Subject: [PATCH 079/103] fsl_dspi: Revert DSPI_CTAR_PCSSCK_7CLK to original
+ value
+
+Macro is not used.
+
+Issue: ALB-8598
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/fsl_dspi.h | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/include/fsl_dspi.h b/include/fsl_dspi.h
+index afabce7507..e8029c28d8 100644
+--- a/include/fsl_dspi.h
++++ b/include/fsl_dspi.h
+@@ -72,11 +72,7 @@ struct dspi {
+ #define DSPI_CTAR_CPHA			0x02000000
+ #define DSPI_CTAR_LSBFE			0x01000000
+ #define DSPI_CTAR_PCSSCK(x)		(((x) & 0x03) << 22)
+-#ifdef CONFIG_MACH_S32
+-#define DSPI_CTAR_PCSSCK_7CLK		0x00C00000
+-#else
+ #define DSPI_CTAR_PCSSCK_7CLK		0x00A00000
+-#endif
+ #define DSPI_CTAR_PCSSCK_5CLK		0x00800000
+ #define DSPI_CTAR_PCSSCK_3CLK		0x00400000
+ #define DSPI_CTAR_PCSSCK_1CLK		0x00000000
+-- 
+2.25.1
+

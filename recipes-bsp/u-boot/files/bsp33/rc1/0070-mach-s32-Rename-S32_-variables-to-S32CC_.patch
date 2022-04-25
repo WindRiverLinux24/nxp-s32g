@@ -1,0 +1,105 @@
+From ea44e555ed03cb94e8b56dcfb92f44d7d078eabc Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 30 Mar 2022 17:03:07 +0300
+Subject: [PATCH 070/103] mach-s32: Rename S32_* variables to S32CC_*
+
+Issue: ALB-8583
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/soc.c      |  4 ++--
+ arch/arm/mach-s32/s32-cc/start_m7.c |  2 +-
+ include/configs/s32-cc.h            | 16 ++++++++--------
+ 3 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/soc.c b/arch/arm/mach-s32/s32-cc/soc.c
+index fce34a8ffe..becc1b6cfc 100644
+--- a/arch/arm/mach-s32/s32-cc/soc.c
++++ b/arch/arm/mach-s32/s32-cc/soc.c
+@@ -47,8 +47,8 @@ static struct mm_region s32_mem_map[] = {
+ 	},
+ #endif
+ 	{
+-		S32_SRAM_BASE, S32_SRAM_BASE,
+-		S32_SRAM_SIZE,
++		S32CC_SRAM_BASE, S32CC_SRAM_BASE,
++		S32CC_SRAM_SIZE,
+ 		PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_OUTER_SHARE
+ 	},
+ 	{
+diff --git a/arch/arm/mach-s32/s32-cc/start_m7.c b/arch/arm/mach-s32/s32-cc/start_m7.c
+index c6268de20e..631ccb40c7 100644
+--- a/arch/arm/mach-s32/s32-cc/start_m7.c
++++ b/arch/arm/mach-s32/s32-cc/start_m7.c
+@@ -136,7 +136,7 @@ static int do_startm7(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+ 		return CMD_RET_FAILURE;
+ 	}
+ 
+-	if (addr < S32_SRAM_BASE || addr >= S32_SRAM_BASE + sram_size) {
++	if (addr < S32CC_SRAM_BASE || addr >= S32CC_SRAM_BASE + sram_size) {
+ 		printf("ERROR: Address 0x%08lX is not in internal SRAM ...\n",
+ 		       addr);
+ 		return CMD_RET_USAGE;
+diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
+index 32366843ae..85d45cbac8 100644
+--- a/include/configs/s32-cc.h
++++ b/include/configs/s32-cc.h
+@@ -55,7 +55,7 @@
+ /* Increase image size */
+ #define CONFIG_SYS_BOOTM_LEN    (SZ_64M)
+ 
+-#define S32_LOAD_FLASH_IMAGES_CMD\
++#define S32CC_LOAD_FLASH_IMAGES_CMD\
+ 	"sf probe 6:0;"\
+ 	"sf read ${loadaddr} ${kernel_flashaddr} ${kernel_maxsize};"\
+ 	"sf read ${fdt_addr} ${fdt_flashaddr} ${fdt_maxsize};"\
+@@ -132,8 +132,8 @@
+ 
+ #endif
+ 
+-#ifndef S32_DEFAULT_IP
+-#define S32_DEFAULT_IP "10.0.0.100\0"
++#ifndef S32CC_DEFAULT_IP
++#define S32CC_DEFAULT_IP "10.0.0.100\0"
+ #endif
+ 
+ /*
+@@ -230,7 +230,7 @@
+ #endif
+ 
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+-	"ipaddr=" S32_DEFAULT_IP \
++	"ipaddr=" S32CC_DEFAULT_IP \
+ 	"serverip=10.0.0.1\0" \
+ 	"netmask=255.255.255.0\0" \
+ 	"nfsbootargs=setenv bootargs console=${console},${baudrate} " \
+@@ -340,7 +340,7 @@
+ 				__stringify(RAMDISK_FLASH_MAXSIZE) ";\0" \
+ 	"flashboot=echo Booting from flash...; " \
+ 		"run flashbootargs;"\
+-		S32_LOAD_FLASH_IMAGES_CMD\
++		S32CC_LOAD_FLASH_IMAGES_CMD\
+ 		"${boot_mtd} ${loadaddr}" CONFIG_FLASHBOOT_RAMDISK \
+ 		"${fdt_addr};\0" \
+ 	XEN_EXTRA_ENV_SETTINGS \
+@@ -412,12 +412,12 @@
+ 
+ #define CONFIG_SYS_LDSCRIPT  "arch/arm/cpu/armv8/u-boot.lds"
+ 
+-#define S32_SRAM_BASE		0x34000000
++#define S32CC_SRAM_BASE		0x34000000
+ 
+ #ifdef CONFIG_ARCH_S32G3
+-#define S32_SRAM_SIZE		(20 * SZ_1M)
++#define S32CC_SRAM_SIZE		(20 * SZ_1M)
+ #else
+-#define S32_SRAM_SIZE		(SZ_8M)
++#define S32CC_SRAM_SIZE		(SZ_8M)
+ #endif
+ 
+ #if defined(CONFIG_SPI_FLASH) && defined(CONFIG_FSL_QSPI)
+-- 
+2.25.1
+

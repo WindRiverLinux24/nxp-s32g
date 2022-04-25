@@ -1,0 +1,48 @@
+From 3a9f8861dd8b8c611ec7e428144845f0e2ccf25e Mon Sep 17 00:00:00 2001
+From: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Date: Fri, 18 Mar 2022 15:15:08 +0200
+Subject: [PATCH 031/103] s32:serdes:hwconfig: Add 'skip' option to hwconfig
+
+This option allows skipping SERDES/PCIe controller configuration in u-boot,
+thus allowing full config to be performed from Linux directly.
+Some PCIe devices (e.g. PCIe switches) cannot be configured twice, as the
+PHY does not link and remains dangling in POLL_ACTIVE (0x2) state.
+
+Issue: ALB-7415
+
+Upstream-Status: Pending 
+
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/serdes_s32gen1.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index 01e275ee0b..64fe70b24c 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -689,6 +689,20 @@ static int s32_serdes_probe(struct udevice *dev)
+ 		return ret;
+ 	}
+ 
++	if (pcie->devtype & SERDES_SKIP) {
++		printf("Skipping configuration for SerDes%d,", pcie->id);
++
++		/* Skip the 'skip' flag for other settings */
++		pcie->devtype &= ~(uint32_t)(SERDES_SKIP);
++		return ret;
++	}
++
++	ret = enable_serdes_clocks(dev);
++	if (ret) {
++		dev_err(dev, "Failed to enable SERDES clocks\n");
++		return ret;
++	}
++
+ 	pcie->clktype = s32_serdes_get_clock_from_hwconfig(pcie->id);
+ 	/* Get XPCS configuration */
+ 	pcie->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(pcie->id);
+-- 
+2.25.1
+

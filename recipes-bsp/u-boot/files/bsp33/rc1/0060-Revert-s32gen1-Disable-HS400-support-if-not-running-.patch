@@ -1,0 +1,37 @@
+From 38e6ecc8fda74d4cd4d5b9096c24bdff5af484db Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 31 Mar 2022 08:22:00 +0300
+Subject: [PATCH 060/103] Revert "s32gen1: Disable HS400 support if not running
+ at 1.8V"
+
+This reverts commit 544cbc7cc7af7745c7880414fdd3fb78bb0a4f0e.
+
+Issue: ALB-8582
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/mmc/fsl_esdhc_imx.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/mmc/fsl_esdhc_imx.c b/drivers/mmc/fsl_esdhc_imx.c
+index ded1efd22a..2d32a28d4c 100644
+--- a/drivers/mmc/fsl_esdhc_imx.c
++++ b/drivers/mmc/fsl_esdhc_imx.c
+@@ -1541,12 +1541,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
+ 	else
+ 		priv->bus_width = 1;
+ 
+-	if (data == &usdhc_s32cc_data)
+-		if (dev_read_bool(dev, "no-1-8-v"))
+-			priv->flags &= ~(ESDHC_FLAG_HS200 |
+-					 ESDHC_FLAG_HS400 |
+-					 ESDHC_FLAG_HS400_ES);
+-
+ 	val = fdtdec_get_int(fdt, node, "fsl,tuning-step", 1);
+ 	priv->tuning_step = val;
+ 	val = fdtdec_get_int(fdt, node, "fsl,tuning-start-tap",
+-- 
+2.25.1
+

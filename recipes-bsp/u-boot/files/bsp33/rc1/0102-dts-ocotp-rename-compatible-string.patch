@@ -1,0 +1,42 @@
+From 62ec0e4aa3ef8ba0e603033ad8f917cf62abe51e Mon Sep 17 00:00:00 2001
+From: Andrei Botila <andrei.botila@nxp.com>
+Date: Thu, 7 Apr 2022 12:00:19 +0300
+Subject: [PATCH 102/103] dts: ocotp: rename compatible string
+
+Issue: ALB-8601
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Botila <andrei.botila@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32g.dtsi  | 2 +-
+ arch/arm/dts/fsl-s32r45.dts | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32g.dtsi b/arch/arm/dts/fsl-s32g.dtsi
+index 10b421c668..b5587f9353 100644
+--- a/arch/arm/dts/fsl-s32g.dtsi
++++ b/arch/arm/dts/fsl-s32g.dtsi
+@@ -384,5 +384,5 @@
+ };
+ 
+ &ocotp {
+-	compatible = "fsl,s32g-ocotp";
++	compatible = "nxp,s32g-ocotp";
+ };
+diff --git a/arch/arm/dts/fsl-s32r45.dts b/arch/arm/dts/fsl-s32r45.dts
+index 3c90abbe56..6bd1b45830 100644
+--- a/arch/arm/dts/fsl-s32r45.dts
++++ b/arch/arm/dts/fsl-s32r45.dts
+@@ -460,7 +460,7 @@
+ };
+ 
+ &ocotp {
+-	compatible = "fsl,s32r45-ocotp";
++	compatible = "nxp,s32r45-ocotp";
+ };
+ 
+ &uart0 {
+-- 
+2.25.1
+

@@ -1,0 +1,62 @@
+From 14b24cb7997752b09b57284885751c98e8cbfce4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 10 Mar 2022 16:19:23 +0200
+Subject: [PATCH 028/103] arch: arm/mach-s32: Use IS_ENABLED to guard SAF1508
+ code
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/soc.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/soc.c b/arch/arm/mach-s32/s32-cc/soc.c
+index 9577071b2f..e206557deb 100644
+--- a/arch/arm/mach-s32/s32-cc/soc.c
++++ b/arch/arm/mach-s32/s32-cc/soc.c
+@@ -11,12 +11,10 @@
+ #include <hang.h>
+ #include <board_common.h>
+ #include <fdtdec.h>
+-#ifdef CONFIG_SAF1508BET_USB_PHY
+ #include <dm/device.h>
+ #include <dm/device-internal.h>
+ #include <dm/uclass.h>
+ #include <generic-phy.h>
+-#endif
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -25,7 +23,6 @@ __weak int dram_init(void)
+ 	return fdtdec_setup_mem_size_base();
+ }
+ 
+-#ifdef CONFIG_SAF1508BET_USB_PHY
+ static int enable_saf1508bet(void)
+ {
+ 	int ret = 0;
+@@ -67,15 +64,14 @@ static int enable_saf1508bet(void)
+ 
+ 	return ret;
+ }
+-#endif
+ 
+ int arch_misc_init(void)
+ {
+-#ifdef CONFIG_SAF1508BET_USB_PHY
+ 	/* The usb phy must be probed in u-boot in order to have a working USB
+ 	 * interface in linux.
+ 	 */
+-	enable_saf1508bet();
+-#endif
++	if (IS_ENABLED(CONFIG_SAF1508BET_USB_PHY))
++		enable_saf1508bet();
++
+ 	return 0;
+ }
+-- 
+2.25.1
+

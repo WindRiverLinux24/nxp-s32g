@@ -1,0 +1,65 @@
+From 6cec2ddd63c8d1c20259e9c9754715d7982d5ed8 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 10:43:10 +0200
+Subject: [PATCH 037/103] tools: mkimage: Correct style errors from
+ tools/s32ccimage.c
+
+Correct errors reported by the checkpatch script.
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ tools/s32ccimage.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/tools/s32ccimage.c b/tools/s32ccimage.c
+index 370bed8a30..8a873517d3 100644
+--- a/tools/s32ccimage.c
++++ b/tools/s32ccimage.c
+@@ -1,4 +1,4 @@
+-/* SPDX-License-Identifier: GPL-2.0+ */
++// SPDX-License-Identifier: GPL-2.0+
+ /* Copyright 2019-2022 NXP */
+ 
+ #include <ctype.h>
+@@ -285,14 +285,15 @@ static struct reserved_range reserved_sram[] = {
+ 
+ static void enforce_reserved_ranges(void *image_start, int image_length)
+ {
+-	void *image_end = (void*)((__u8*)image_start + image_length);
++	void *image_end = (void *)((__u8 *)image_start + image_length);
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(reserved_sram); i++)
+ 		if (image_start < reserved_sram[i].end &&
+ 		    image_end > reserved_sram[i].start) {
+-			fprintf(stderr, "Loading data of size 0x%x at %p "
+-				"forbidden.", image_length, image_start);
++			fprintf(stderr,
++				"Loading data of size 0x%x at %p forbidden.",
++				image_length, image_start);
+ 			fprintf(stderr, " Range %p --- %p is reserved!\n",
+ 				reserved_sram[i].start, reserved_sram[i].end);
+ 			exit(EXIT_FAILURE);
+@@ -371,7 +372,6 @@ static void s32_compute_dyn_offsets(struct image_comp **parts, size_t n_parts)
+ 
+ 		/* Look for an empty spot between existing allocations */
+ 		for (i = 1; i < aindex; i++) {
+-
+ 			place_after(parts[i - 1], parts[aindex]);
+ 
+ 			/* Does it fit between i - 1 and i ? */
+@@ -475,7 +475,6 @@ static void s32cc_set_header(void *header, struct stat *sbuf, int unused,
+ 	app_code->tag = APPLICATION_BOOT_CODE_TAG;
+ 	app_code->version = APPLICATION_BOOT_CODE_VERSION;
+ 
+-
+ 	if (tool_params->ep < tool_params->addr) {
+ 		fprintf(stderr,
+ 			"The entrypoint is higher than the load address (0x%x < 0x%x)\n",
+-- 
+2.25.1
+

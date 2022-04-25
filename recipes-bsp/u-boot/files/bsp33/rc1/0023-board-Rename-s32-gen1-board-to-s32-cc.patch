@@ -1,0 +1,188 @@
+From eb2318a0e0d6afbf116213281116cd86a74c64b4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 15:39:02 +0200
+Subject: [PATCH 023/103] board: Rename s32-gen1 board to s32-cc
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Makefile                   | 4 ++--
+ board/nxp/Kconfig                                   | 4 ++--
+ board/nxp/{s32-gen1 => s32-cc}/Kconfig              | 4 ++--
+ board/nxp/{s32-gen1 => s32-cc}/MAINTAINERS          | 4 ++--
+ board/nxp/{s32-gen1 => s32-cc}/Makefile             | 2 +-
+ board/nxp/{s32-gen1 => s32-cc}/board_common.h       | 0
+ board/nxp/{s32-gen1 => s32-cc}/common.c             | 0
+ board/nxp/{s32-gen1 => s32-cc}/eth.c                | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32g274abluebox3.c   | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32gen1.cfg          | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32gen1_gmac_utils.h | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32gxxxaevb.c        | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32gxxxardb.c        | 0
+ board/nxp/{s32-gen1 => s32-cc}/s32r45evb.c          | 0
+ drivers/net/Makefile                                | 2 +-
+ 15 files changed, 10 insertions(+), 10 deletions(-)
+ rename board/nxp/{s32-gen1 => s32-cc}/Kconfig (98%)
+ rename board/nxp/{s32-gen1 => s32-cc}/MAINTAINERS (90%)
+ rename board/nxp/{s32-gen1 => s32-cc}/Makefile (93%)
+ rename board/nxp/{s32-gen1 => s32-cc}/board_common.h (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/common.c (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/eth.c (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32g274abluebox3.c (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32gen1.cfg (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32gen1_gmac_utils.h (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32gxxxaevb.c (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32gxxxardb.c (100%)
+ rename board/nxp/{s32-gen1 => s32-cc}/s32r45evb.c (100%)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index 915732d6f1..a80833b614 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -12,7 +12,7 @@ obj-$(CONFIG_GICSUPPORT)	+= gicsupport.o
+ obj-$(CONFIG_MP)		+= mp.o
+ obj-$(CONFIG_OF_LIBFDT)		+= fdt.o
+ ccflags-y			+= -Idrivers/misc
+-ccflags-y			+= -Iboard/nxp/s32-gen1
++ccflags-y			+= -Iboard/nxp/s32-cc
+ 
+ obj-$(CONFIG_S32_CMU)		+= cmu.o
+ obj-$(CONFIG_ARCH_S32G2)	+= s32g2_cmu.o
+@@ -24,7 +24,7 @@ ifdef CONFIG_NXP_S32_CC
+ obj-$(CONFIG_NETDEVICES)	+= sgmii/sgmii.o sgmii/serdes_xpcs.o
+ endif
+ obj-y				+= start_m7.o
+-ccflags-y			+= -I./board/nxp/s32-gen1/
++ccflags-y			+= -I./board/nxp/s32-cc/
+ ccflags-y			+= -I./arch/arm/mach-s32/s32-cc/include
+ ccflags-y			+= -I./arch/arm/include/asm/arch-s32/s32-cc/
+ ccflags-y			+= -I./drivers/misc/
+diff --git a/board/nxp/Kconfig b/board/nxp/Kconfig
+index 204a89191d..deb0dbd80a 100644
+--- a/board/nxp/Kconfig
++++ b/board/nxp/Kconfig
+@@ -3,7 +3,7 @@ config SYS_VENDOR
+ 	default "nxp"
+ 
+ config NXP_S32_CC
+-	bool "S32 GEN1 Common Chassis"
++	bool
+ 	imply DM_ETH
+ 	imply DM_I2C
+ 	imply DM_PCI
+@@ -72,4 +72,4 @@ config XEN_SUPPORT
+ 	  to directly load the Xen Image which will use a given Kernel Image as
+ 	  Dom0.
+ 
+-source "board/nxp/s32-gen1/Kconfig"
++source "board/nxp/s32-cc/Kconfig"
+diff --git a/board/nxp/s32-gen1/Kconfig b/board/nxp/s32-cc/Kconfig
+similarity index 98%
+rename from board/nxp/s32-gen1/Kconfig
+rename to board/nxp/s32-cc/Kconfig
+index 060f18ddce..b43370be7c 100644
+--- a/board/nxp/s32-gen1/Kconfig
++++ b/board/nxp/s32-cc/Kconfig
+@@ -55,7 +55,7 @@ config SYS_MEM_SIZE
+ 
+ config SYS_BOARD
+ 	string
+-	default "s32-gen1"
++	default "s32-cc"
+ 
+ config SYS_CONFIG_NAME
+ 	string
+@@ -104,4 +104,4 @@ config S32GEN1_HWCONFIG
+ 
+ config S32GEN1_CONFIG_FILE
+ 	string
+-	default "board/nxp/s32-gen1/s32gen1.cfg"
++	default "board/nxp/s32-cc/s32gen1.cfg"
+diff --git a/board/nxp/s32-gen1/MAINTAINERS b/board/nxp/s32-cc/MAINTAINERS
+similarity index 90%
+rename from board/nxp/s32-gen1/MAINTAINERS
+rename to board/nxp/s32-cc/MAINTAINERS
+index 724d6b7d1d..7c4ab3c5a3 100644
+--- a/board/nxp/s32-gen1/MAINTAINERS
++++ b/board/nxp/s32-cc/MAINTAINERS
+@@ -1,7 +1,7 @@
+-S32-GEN1 BOARD
++S32-CC BOARD
+ M:	-
+ S:	Maintained
+-F:	board/nxp/s32-gen1/
++F:	board/nxp/s32-cc/
+ F:	arch/arm/mach-s32/s32-cc
+ F:	arch/arm/include/asm/arch-s32
+ 
+diff --git a/board/nxp/s32-gen1/Makefile b/board/nxp/s32-cc/Makefile
+similarity index 93%
+rename from board/nxp/s32-gen1/Makefile
+rename to board/nxp/s32-cc/Makefile
+index 011235e267..a1d87c8dcb 100644
+--- a/board/nxp/s32-gen1/Makefile
++++ b/board/nxp/s32-cc/Makefile
+@@ -6,7 +6,7 @@
+ #
+ 
+ ccflags-$(CONFIG_NXP_S32_CC) += -Iarch/$(ARCH)/cpu/armv8/s32
+-ccflags-$(CONFIG_NXP_S32_CC) += -Iboard/nxp/s32-gen1
++ccflags-$(CONFIG_NXP_S32_CC) += -Iboard/nxp/s32-cc
+ ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/net/s32
+ ccflags-$(CONFIG_NXP_S32_CC) += -Idrivers/misc
+ obj-y := common.o
+diff --git a/board/nxp/s32-gen1/board_common.h b/board/nxp/s32-cc/board_common.h
+similarity index 100%
+rename from board/nxp/s32-gen1/board_common.h
+rename to board/nxp/s32-cc/board_common.h
+diff --git a/board/nxp/s32-gen1/common.c b/board/nxp/s32-cc/common.c
+similarity index 100%
+rename from board/nxp/s32-gen1/common.c
+rename to board/nxp/s32-cc/common.c
+diff --git a/board/nxp/s32-gen1/eth.c b/board/nxp/s32-cc/eth.c
+similarity index 100%
+rename from board/nxp/s32-gen1/eth.c
+rename to board/nxp/s32-cc/eth.c
+diff --git a/board/nxp/s32-gen1/s32g274abluebox3.c b/board/nxp/s32-cc/s32g274abluebox3.c
+similarity index 100%
+rename from board/nxp/s32-gen1/s32g274abluebox3.c
+rename to board/nxp/s32-cc/s32g274abluebox3.c
+diff --git a/board/nxp/s32-gen1/s32gen1.cfg b/board/nxp/s32-cc/s32gen1.cfg
+similarity index 100%
+rename from board/nxp/s32-gen1/s32gen1.cfg
+rename to board/nxp/s32-cc/s32gen1.cfg
+diff --git a/board/nxp/s32-gen1/s32gen1_gmac_utils.h b/board/nxp/s32-cc/s32gen1_gmac_utils.h
+similarity index 100%
+rename from board/nxp/s32-gen1/s32gen1_gmac_utils.h
+rename to board/nxp/s32-cc/s32gen1_gmac_utils.h
+diff --git a/board/nxp/s32-gen1/s32gxxxaevb.c b/board/nxp/s32-cc/s32gxxxaevb.c
+similarity index 100%
+rename from board/nxp/s32-gen1/s32gxxxaevb.c
+rename to board/nxp/s32-cc/s32gxxxaevb.c
+diff --git a/board/nxp/s32-gen1/s32gxxxardb.c b/board/nxp/s32-cc/s32gxxxardb.c
+similarity index 100%
+rename from board/nxp/s32-gen1/s32gxxxardb.c
+rename to board/nxp/s32-cc/s32gxxxardb.c
+diff --git a/board/nxp/s32-gen1/s32r45evb.c b/board/nxp/s32-cc/s32r45evb.c
+similarity index 100%
+rename from board/nxp/s32-gen1/s32r45evb.c
+rename to board/nxp/s32-cc/s32r45evb.c
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 1d21477849..dbd6fa6dec 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -5,7 +5,7 @@
+ 
+ ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iarch/$(ARCH)/include/asm/arch-s32/s32-cc
+ ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Idrivers/net/s32
+-ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-gen1
++ccflags-$(CONFIG_DWC_ETH_QOS_S32CC) += -Iboard/nxp/s32-cc
+ 
+ obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
+ obj-$(CONFIG_AG7XXX) += ag7xxx.o
+-- 
+2.25.1
+

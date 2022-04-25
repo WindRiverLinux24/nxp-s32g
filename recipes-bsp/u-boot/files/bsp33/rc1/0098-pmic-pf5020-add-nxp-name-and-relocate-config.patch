@@ -1,0 +1,74 @@
+From 3f090128713dd91f2290e47352ab4c5c354e32fa Mon Sep 17 00:00:00 2001
+From: Andrei Botila <andrei.botila@nxp.com>
+Date: Wed, 13 Apr 2022 17:19:03 +0300
+Subject: [PATCH 098/103] pmic: pf5020: add nxp name and relocate config
+
+Issue: ALB-8596
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Botila <andrei.botila@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32g2/Kconfig | 1 -
+ arch/arm/mach-s32/s32g3/Kconfig | 1 -
+ board/nxp/s32-cc/s32g/Kconfig   | 1 +
+ drivers/power/pmic/Kconfig      | 4 ++--
+ 4 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index 490d619f18..38621e02bf 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -15,7 +15,6 @@ config TARGET_S32G274ARDB2
+ 	  M.2 and PCIe x1 expansion slots, USB, serial port,
+ 	  18 CAN ports, I2C and DSPI.
+ 	imply DM_PMIC_FS5600
+-	imply DM_PMIC_PF5020
+ 	imply PHY_ATHEROS
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index 9d07835543..f88d0253a3 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -10,7 +10,6 @@ choice
+ config TARGET_S32G399ARDB3
+ 	bool "Support S32G399ARDB3 board"
+ 	imply DM_PMIC_FS5600
+-	imply DM_PMIC_PF5020
+ 	imply I2C_EEPROM
+ 	imply PHY_ATHEROS
+ 	imply PHY_MICREL
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+index d55cd5f4ae..b3b9952b46 100644
+--- a/board/nxp/s32-cc/s32g/Kconfig
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -2,6 +2,7 @@ config NXP_S32GRDB_BOARD
+ 	bool
+ 	default n
+ 	imply DM_PMIC
++	imply DM_PMIC_PF5020
+ 	imply DM_PMIC_VR5510
+ 	imply NVME
+ 	select ADC
+diff --git a/drivers/power/pmic/Kconfig b/drivers/power/pmic/Kconfig
+index 9fbf247d23..aaac570f84 100644
+--- a/drivers/power/pmic/Kconfig
++++ b/drivers/power/pmic/Kconfig
+@@ -312,11 +312,11 @@ config DM_PMIC_VR5510
+ 	for PMIC VR5510. The driver implements read/write operations.
+ 
+ config DM_PMIC_PF5020
+-	bool "Enable Driver Model for PMIC PF5020"
++	bool "Enable Driver Model for NXP PMIC PF5020"
+ 	depends on DM_PMIC
+ 	help
+ 	This config enables implementation of driver-model pmic uclass features
+-	for PMIC PF5020. The driver implements read/write operations.
++	for NXP PMIC PF5020. The driver implements read/write operations.
+ 
+ config DM_PMIC_FS5600
+ 	bool "Enable Driver Model for PMIC FS5600"
+-- 
+2.25.1
+

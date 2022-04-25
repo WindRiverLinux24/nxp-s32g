@@ -1,0 +1,342 @@
+From cb884698bd14cafddf1ff4f782204dffbc0e46eb Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 15:00:35 +0200
+Subject: [PATCH 016/103] arch: Rename ARCH_S32 to MACH_S32
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Kconfig                                 | 4 ++--
+ arch/arm/Kconfig                        | 2 +-
+ arch/arm/Makefile                       | 5 +----
+ arch/arm/include/asm/gpio.h             | 4 ++--
+ arch/arm/mach-s32/Kconfig               | 2 +-
+ arch/arm/mach-s32/s32-cc/Kconfig        | 2 +-
+ configs/s32g274a_emu_defconfig          | 2 +-
+ configs/s32g274abluebox3_defconfig      | 2 +-
+ configs/s32g274abluebox3_qspi_defconfig | 2 +-
+ configs/s32g274ardb2_defconfig          | 2 +-
+ configs/s32g274ardb2_qspi_defconfig     | 2 +-
+ configs/s32g2xxaevb_defconfig           | 2 +-
+ configs/s32g2xxaevb_qspi_defconfig      | 2 +-
+ configs/s32g399a_emu_defconfig          | 2 +-
+ configs/s32g399ardb3_defconfig          | 2 +-
+ configs/s32g399ardb3_qspi_defconfig     | 2 +-
+ configs/s32g3xxaevb_defconfig           | 2 +-
+ configs/s32g3xxaevb_qspi_defconfig      | 2 +-
+ configs/s32r45_emu_defconfig            | 2 +-
+ configs/s32r45evb_defconfig             | 2 +-
+ configs/s32r45evb_qspi_defconfig        | 2 +-
+ drivers/mmc/Kconfig                     | 2 +-
+ drivers/net/Kconfig                     | 2 +-
+ include/fsl_dspi.h                      | 2 +-
+ 24 files changed, 26 insertions(+), 29 deletions(-)
+
+diff --git a/Kconfig b/Kconfig
+index 66480dfa51..e6662f3f76 100644
+--- a/Kconfig
++++ b/Kconfig
+@@ -152,7 +152,7 @@ config SYS_MALLOC_F_LEN
+ 	default 0x2000 if (ARCH_IMX8 || ARCH_IMX8M || ARCH_MX7 || \
+ 			   ARCH_MX7ULP || ARCH_MX6 || ARCH_MX5 || \
+ 			   ARCH_LS1012A || ARCH_LS1021A || ARCH_LS1043A || \
+-			   ARCH_LS1046A || ARCH_S32)
++			   ARCH_LS1046A || MACH_S32)
+ 	default 0x400
+ 	help
+ 	  Before relocation, memory is very limited on many platforms. Still,
+@@ -594,7 +594,7 @@ config SYS_TEXT_BASE
+ 	default 0x4a000000 if ARCH_SUNXI && !MACH_SUN9I && !MACH_SUN8I_V3S
+ 	default 0x2a000000 if ARCH_SUNXI && MACH_SUN9I
+ 	default 0x42e00000 if ARCH_SUNXI && MACH_SUN8I_V3S
+-	hex "Text Base" if !ARCH_S32
++	hex "Text Base" if !MACH_S32
+ 	help
+ 	  The address in memory that U-Boot will be running from, initially.
+ 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index dee56f63f4..d9a3113dde 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1116,7 +1116,7 @@ config ARCH_ZYNQMP
+ 	imply MP
+ 	imply DM_USB_GADGET
+ 
+-config ARCH_S32
++config MACH_S32
+ 	bool "Support S32 SOCs"
+ 	select ARM64
+ 	select OF_BOARD_SETUP
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 15a4baf75c..73667a599b 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -71,6 +71,7 @@ machine-$(CONFIG_ORION5X)		+= orion5x
+ machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
+ machine-$(CONFIG_ARCH_OWL)		+= owl
+ machine-$(CONFIG_ARCH_S5PC1XX)		+= s5pc1xx
++machine-$(CONFIG_MACH_S32)		+= s32
+ machine-$(CONFIG_ARCH_SUNXI)		+= sunxi
+ machine-$(CONFIG_ARCH_SNAPDRAGON)	+= snapdragon
+ machine-$(CONFIG_ARCH_SOCFPGA)		+= socfpga
+@@ -118,9 +119,5 @@ ifneq (,$(filter $(SOC), kirkwood))
+ libs-y += arch/arm/mach-mvebu/
+ endif
+ 
+-ifeq ($(CONFIG_ARCH_S32),y)
+-libs-y += arch/arm/mach-s32/
+-endif
+-
+ # deprecated
+ -include $(machdirs)/config.mk
+diff --git a/arch/arm/include/asm/gpio.h b/arch/arm/include/asm/gpio.h
+index 7c00c2268f..b6065cceae 100644
+--- a/arch/arm/include/asm/gpio.h
++++ b/arch/arm/include/asm/gpio.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0+ */
+ /*
+- * Copyright 2017-2021 NXP
++ * Copyright 2017-2022 NXP
+  */
+ 
+ #if !defined(CONFIG_ARCH_UNIPHIER) && !defined(CONFIG_ARCH_STI) && \
+@@ -11,7 +11,7 @@
+ 	!defined(CONFIG_ARCH_LS1088A) && !defined(CONFIG_ARCH_ASPEED) && \
+ 	!defined(CONFIG_ARCH_LS1012A) && !defined(CONFIG_ARCH_LS1043A) && \
+ 	!defined(CONFIG_ARCH_LS1046A) && !defined(CONFIG_ARCH_U8500) && \
+-	!defined(CONFIG_CORTINA_PLATFORM) && !defined(CONFIG_ARCH_S32)
++	!defined(CONFIG_CORTINA_PLATFORM) && !defined(CONFIG_MACH_S32)
+ #include <asm/arch/gpio.h>
+ #endif
+ #include <asm-generic/gpio.h>
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 927d56a5ec..8dc181b027 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -4,4 +4,4 @@
+ config MKIMAGE_T
+ 	string
+ 	default "s32gen1image" if S32_GEN1
+-	depends on ARCH_S32
++	depends on MACH_S32
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 2712af0acd..09b687fdec 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -1,4 +1,4 @@
+-if ARCH_S32
++if MACH_S32
+ 
+ config SYS_SOC
+ 	string
+diff --git a/configs/s32g274a_emu_defconfig b/configs/s32g274a_emu_defconfig
+index 6299610715..3feb81dcb8 100644
+--- a/configs/s32g274a_emu_defconfig
++++ b/configs/s32g274a_emu_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274abluebox3_defconfig b/configs/s32g274abluebox3_defconfig
+index 5c1d5a75ea..de44d1c2c8 100644
+--- a/configs/s32g274abluebox3_defconfig
++++ b/configs/s32g274abluebox3_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274abluebox3_qspi_defconfig b/configs/s32g274abluebox3_qspi_defconfig
+index 5ecdfa6994..9fb557cb63 100644
+--- a/configs/s32g274abluebox3_qspi_defconfig
++++ b/configs/s32g274abluebox3_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x1000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
+index 4b2a105ca5..219a4af154 100644
+--- a/configs/s32g274ardb2_defconfig
++++ b/configs/s32g274ardb2_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g274ardb2_qspi_defconfig b/configs/s32g274ardb2_qspi_defconfig
+index 49feb11a61..b4b0052e8e 100644
+--- a/configs/s32g274ardb2_qspi_defconfig
++++ b/configs/s32g274ardb2_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
+index b8a5490296..6aca62e82a 100644
+--- a/configs/s32g2xxaevb_defconfig
++++ b/configs/s32g2xxaevb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g2xxaevb_qspi_defconfig b/configs/s32g2xxaevb_qspi_defconfig
+index 2c878106eb..e4d8186387 100644
+--- a/configs/s32g2xxaevb_qspi_defconfig
++++ b/configs/s32g2xxaevb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g399a_emu_defconfig b/configs/s32g399a_emu_defconfig
+index 611c99141c..1c1acb044b 100644
+--- a/configs/s32g399a_emu_defconfig
++++ b/configs/s32g399a_emu_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
+index 85543e94df..4430aad5a0 100644
+--- a/configs/s32g399ardb3_defconfig
++++ b/configs/s32g399ardb3_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g399ardb3_qspi_defconfig b/configs/s32g399ardb3_qspi_defconfig
+index dfc4fa50f7..6e26cbc446 100644
+--- a/configs/s32g399ardb3_qspi_defconfig
++++ b/configs/s32g399ardb3_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
+index a42f6256a4..61a994531b 100644
+--- a/configs/s32g3xxaevb_defconfig
++++ b/configs/s32g3xxaevb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32g3xxaevb_qspi_defconfig b/configs/s32g3xxaevb_qspi_defconfig
+index 10d08e6535..d67fe27b5b 100644
+--- a/configs/s32g3xxaevb_qspi_defconfig
++++ b/configs/s32g3xxaevb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/configs/s32r45_emu_defconfig b/configs/s32r45_emu_defconfig
+index 361ec306b8..e9e667cb7f 100644
+--- a/configs/s32r45_emu_defconfig
++++ b/configs/s32r45_emu_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_NR_DRAM_BANKS=2
+ CONFIG_TARGET_S32R45EMU=y
+diff --git a/configs/s32r45evb_defconfig b/configs/s32r45evb_defconfig
+index 4e8d9d1d98..c43d9e037f 100644
+--- a/configs/s32r45evb_defconfig
++++ b/configs/s32r45evb_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x2000
+ CONFIG_ENV_OFFSET=0x1e0000
+ CONFIG_NR_DRAM_BANKS=2
+diff --git a/configs/s32r45evb_qspi_defconfig b/configs/s32r45evb_qspi_defconfig
+index 8723c1e576..bab0bdc7be 100644
+--- a/configs/s32r45evb_qspi_defconfig
++++ b/configs/s32r45evb_qspi_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+-CONFIG_ARCH_S32=y
++CONFIG_MACH_S32=y
+ CONFIG_ENV_SIZE=0x10000
+ CONFIG_ENV_SECT_SIZE=0x10000
+ CONFIG_ENV_OFFSET=0x1e0000
+diff --git a/drivers/mmc/Kconfig b/drivers/mmc/Kconfig
+index aa0304045c..80fbe892db 100644
+--- a/drivers/mmc/Kconfig
++++ b/drivers/mmc/Kconfig
+@@ -734,7 +734,7 @@ config FSL_ESDHC_IMX
+ endif
+ config FSL_USDHC
+ 	bool "Freescale/NXP i.MX uSDHC controller support"
+-	depends on MX6 || MX7 ||ARCH_MX7ULP || IMX8 || IMX8M || IMXRT || ARCH_S32
++	depends on MX6 || MX7 ||ARCH_MX7ULP || IMX8 || IMX8M || IMXRT || MACH_S32
+ 	select FSL_ESDHC_IMX
+ 	help
+ 	  This enables the Ultra Secured Digital Host Controller enhancements
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index 8d42d15d22..0061121bba 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -322,7 +322,7 @@ config FEC_MXC_MDIO_BASE
+ 
+ config FEC_MXC
+ 	bool "FEC Ethernet controller"
+-	depends on MX28 || MX5 || MX6 || MX7 || IMX8 || IMX8M || VF610 || ARCH_S32
++	depends on MX28 || MX5 || MX6 || MX7 || IMX8 || IMX8M || VF610 || MACH_S32
+ 	help
+ 	  This driver supports the 10/100 Fast Ethernet controller for
+ 	  NXP i.MX processors.
+diff --git a/include/fsl_dspi.h b/include/fsl_dspi.h
+index 65a9bf0c24..afabce7507 100644
+--- a/include/fsl_dspi.h
++++ b/include/fsl_dspi.h
+@@ -72,7 +72,7 @@ struct dspi {
+ #define DSPI_CTAR_CPHA			0x02000000
+ #define DSPI_CTAR_LSBFE			0x01000000
+ #define DSPI_CTAR_PCSSCK(x)		(((x) & 0x03) << 22)
+-#ifdef CONFIG_ARCH_S32
++#ifdef CONFIG_MACH_S32
+ #define DSPI_CTAR_PCSSCK_7CLK		0x00C00000
+ #else
+ #define DSPI_CTAR_PCSSCK_7CLK		0x00A00000
+-- 
+2.25.1
+

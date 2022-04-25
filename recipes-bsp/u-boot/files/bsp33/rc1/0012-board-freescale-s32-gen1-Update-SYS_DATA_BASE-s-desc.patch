@@ -1,0 +1,31 @@
+From b0577febb1d0684e88e7035e2246a8836f68efa1 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Mar 2022 12:02:00 +0200
+Subject: [PATCH 012/103] board: freescale/s32-gen1: Update SYS_DATA_BASE's
+ description
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ board/freescale/s32-gen1/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/board/freescale/s32-gen1/Kconfig b/board/freescale/s32-gen1/Kconfig
+index 8d445d709c..5f4fc0ceed 100644
+--- a/board/freescale/s32-gen1/Kconfig
++++ b/board/freescale/s32-gen1/Kconfig
+@@ -33,7 +33,7 @@ config SYS_DATA_BASE
+ 	default 0xbfa00000 if TARGET_TYPE_S32GEN1_EMULATOR
+ 	default 0xffa00000
+ 	help
+-	  U-boot data base address (normally SRAM base address)
++	  U-Boot data base address in DDR.
+ 
+ config CUSTOM_SYS_TEXT_BASE
+ 	bool "Use a custom SYS_TEXT_BASE"
+-- 
+2.25.1
+

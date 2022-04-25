@@ -1,0 +1,189 @@
+From 373d09aef962357ce29cf888c968885efe368cfe Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 10 Mar 2022 16:36:53 +0200
+Subject: [PATCH 030/103] arch: mach-s32: Make board initialization part of
+ board/nxp/s32-cc
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Makefile |  1 -
+ arch/arm/mach-s32/s32-cc/cpu.c    | 26 ---------------------
+ arch/arm/mach-s32/s32-cc/soc.c    | 24 -------------------
+ board/nxp/s32-cc/Makefile         |  1 +
+ board/nxp/s32-cc/board_common.c   | 38 ++++++++++++++++++++++++++++---
+ 5 files changed, 36 insertions(+), 54 deletions(-)
+ delete mode 100644 arch/arm/mach-s32/s32-cc/soc.c
+
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index f2a7f50445..d6d9e764e7 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -21,7 +21,6 @@ obj-$(CONFIG_ARCH_S32G2)	+= s32g2_cmu.o
+ obj-$(CONFIG_ARCH_S32G3)	+= s32g3_cmu.o
+ obj-$(CONFIG_ARCH_S32R45)	+= s32r45_cmu.o
+ obj-$(CONFIG_HSE_SECBOOT)	+= hse_adv_secboot.o
+-obj-y				+= soc.o
+ ifdef CONFIG_NXP_S32_CC
+ obj-$(CONFIG_NETDEVICES)	+= sgmii/sgmii.o sgmii/serdes_xpcs.o
+ endif
+diff --git a/arch/arm/mach-s32/s32-cc/cpu.c b/arch/arm/mach-s32/s32-cc/cpu.c
+index c1fe08a343..4017596133 100644
+--- a/arch/arm/mach-s32/s32-cc/cpu.c
++++ b/arch/arm/mach-s32/s32-cc/cpu.c
+@@ -14,7 +14,6 @@
+ #include <asm-generic/sections.h>
+ #include <linux/sizes.h>
+ #include <debug_uart.h>
+-#include <fdtdec.h>
+ 
+ #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
+ #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
+@@ -126,11 +125,6 @@ int arch_cpu_init(void)
+ 	return 0;
+ }
+ 
+-int dram_init_banksize(void)
+-{
+-	return fdtdec_setup_memory_banksize();
+-}
+-
+ phys_size_t __weak get_effective_memsize(void)
+ {
+ 	unsigned long size;
+@@ -161,23 +155,3 @@ phys_size_t __weak get_effective_memsize(void)
+ 	return size;
+ }
+ 
+-void board_prep_linux(bootm_headers_t *images)
+-{
+-	int ret;
+-
+-	ret = scmi_reset_agent();
+-	if (ret)
+-		pr_err("Failed to reset SCMI agent's settings\n");
+-}
+-
+-void *board_fdt_blob_setup(void)
+-{
+-	void *dtb;
+-
+-	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32_CC_MAX_DTB_SIZE);
+-
+-	if (fdt_magic(dtb) != FDT_MAGIC)
+-		panic("DTB is not passed via %p\n", dtb);
+-
+-	return dtb;
+-}
+diff --git a/arch/arm/mach-s32/s32-cc/soc.c b/arch/arm/mach-s32/s32-cc/soc.c
+deleted file mode 100644
+index 9ceae7833f..0000000000
+--- a/arch/arm/mach-s32/s32-cc/soc.c
++++ /dev/null
+@@ -1,24 +0,0 @@
+-// SPDX-License-Identifier:     GPL-2.0+
+-/*
+- * Copyright 2017-2022 NXP
+- */
+-
+-#include <common.h>
+-#include <asm/io.h>
+-#include <mmc.h>
+-#include <div64.h>
+-#include <errno.h>
+-#include <hang.h>
+-#include <board_common.h>
+-#include <fdtdec.h>
+-#include <dm/device.h>
+-#include <dm/device-internal.h>
+-#include <dm/uclass.h>
+-#include <generic-phy.h>
+-
+-DECLARE_GLOBAL_DATA_PTR;
+-
+-__weak int dram_init(void)
+-{
+-	return fdtdec_setup_mem_size_base();
+-}
+diff --git a/board/nxp/s32-cc/Makefile b/board/nxp/s32-cc/Makefile
+index 386cdb4779..02d2d52403 100644
+--- a/board/nxp/s32-cc/Makefile
++++ b/board/nxp/s32-cc/Makefile
+@@ -6,4 +6,5 @@
+ 
+ obj-y += board_common.o
+ 
++ccflags-y += -Iarch/arm/mach-s32/s32-cc/
+ ccflags-y += -Iboard/nxp/s32-cc/include/
+diff --git a/board/nxp/s32-cc/board_common.c b/board/nxp/s32-cc/board_common.c
+index 0cd0c5f824..c377ac47e4 100644
+--- a/board/nxp/s32-cc/board_common.c
++++ b/board/nxp/s32-cc/board_common.c
+@@ -8,11 +8,23 @@
+ #include <fdt_support.h>
+ #include <linux/libfdt.h>
+ #include <miiphy.h>
++#include <fdtdec.h>
+ 
+ #include <board_common.h>
++#include <scmi_reset_agent.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
++int dram_init(void)
++{
++	return fdtdec_setup_mem_size_base();
++}
++
++int dram_init_banksize(void)
++{
++	return fdtdec_setup_memory_banksize();
++}
++
+ int board_phy_config(struct phy_device *phydev)
+ {
+ 	if (phydev->drv->config)
+@@ -29,14 +41,34 @@ int board_init(void)
+ 	return 0;
+ }
+ 
++void board_prep_linux(bootm_headers_t *images)
++{
++	int ret;
++
++	ret = scmi_reset_agent();
++	if (ret)
++		pr_err("Failed to reset SCMI agent's settings\n");
++}
++
++void *board_fdt_blob_setup(void)
++{
++	void *dtb;
++
++	dtb = (void *)(CONFIG_SYS_TEXT_BASE - CONFIG_S32_CC_MAX_DTB_SIZE);
++
++	if (fdt_magic(dtb) != FDT_MAGIC)
++		panic("DTB is not passed via %p\n", dtb);
++
++	return dtb;
++}
++
+ #if defined(CONFIG_OF_BOARD_SETUP)
+ int ft_board_setup(void *blob, bd_t *bd)
+ {
+ 	ft_cpu_setup(blob, bd);
+ 
+-#if CONFIG_IS_ENABLED(NETDEVICES)
+-	ft_enet_fixup(blob);
+-#endif
++	if (IS_ENABLED(CONFIG_NETDEVICES))
++		ft_enet_fixup(blob);
+ 
+ 	return 0;
+ }
+-- 
+2.25.1
+

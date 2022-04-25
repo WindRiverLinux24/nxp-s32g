@@ -1,0 +1,334 @@
+From 31f6aac51c7ae3be64d39d6edc82b6e59ae88ecc Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 18 Mar 2022 08:40:47 +0200
+Subject: [PATCH 032/103] tools: Split s32gen1image.h header
+
+Issue: ALB-8580
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/tools/s32gen1_qspiparam.c   |   2 +-
+ .../tools/s32gen1image_qspi_macronix.c        |   2 +-
+ .../mach-s32/tools/s32gen1image_qspi_micron.c |   2 +-
+ tools/s32cc_image_params.h                    |  59 +++++++++
+ tools/s32gen1image.c                          |  58 ++++++++-
+ tools/s32gen1image.h                          | 118 ------------------
+ 6 files changed, 119 insertions(+), 122 deletions(-)
+ create mode 100644 tools/s32cc_image_params.h
+ delete mode 100644 tools/s32gen1image.h
+
+diff --git a/arch/arm/mach-s32/tools/s32gen1_qspiparam.c b/arch/arm/mach-s32/tools/s32gen1_qspiparam.c
+index 9723af5ef9..54f297630e 100644
+--- a/arch/arm/mach-s32/tools/s32gen1_qspiparam.c
++++ b/arch/arm/mach-s32/tools/s32gen1_qspiparam.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /* Copyright 2022 NXP */
+ 
+-#include <s32gen1image.h>
++#include <s32cc_image_params.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff --git a/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c b/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c
+index cdce5700dc..adb6d63b4e 100644
+--- a/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c
++++ b/arch/arm/mach-s32/tools/s32gen1image_qspi_macronix.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /* Copyright 2019-2022 NXP */
+ 
+-#include "s32gen1image.h"
++#include <s32cc_image_params.h>
+ 
+ static struct qspi_params s32g2xx_qspi_conf = {
+ 	.header   = 0x5a5a5a5a,
+diff --git a/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c b/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c
+index 618b554da8..181a7f708b 100644
+--- a/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c
++++ b/arch/arm/mach-s32/tools/s32gen1image_qspi_micron.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /* Copyright 2019-2022 NXP */
+ 
+-#include "s32gen1image.h"
++#include <s32cc_image_params.h>
+ 
+ static struct qspi_params s32g2xx_qspi_conf = {
+ 	.header   = 0x5a5a5a5a,
+diff --git a/tools/s32cc_image_params.h b/tools/s32cc_image_params.h
+new file mode 100644
+index 0000000000..d4ca82425e
+--- /dev/null
++++ b/tools/s32cc_image_params.h
+@@ -0,0 +1,59 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/* Copyright 2019-2022 NXP */
++
++#ifndef S32CC_IMAGE_PARAMS_H
++#define S32CC_IMAGE_PARAMS_H
++
++#include <asm/types.h>
++
++#ifndef __packed
++#define __packed __attribute__((packed))
++#endif
++
++struct flash_write {
++	union {
++		struct {
++			__u32 opcode:8;
++			__u32 reserved:8;
++			__u32 pad:2;
++			__u32 addr_size:6;
++			__u32 cdata_size:7;
++
++			__u32 valid_addr:1;
++		} config;
++		__u32 _config;
++	};
++	__u32 addr;
++	__u32 data;
++} __packed;
++
++struct qspi_params {
++	__u32 header;
++	__u32 mcr;
++	__u32 flshcr;
++	__u32 bufgencr;
++	__u32 dllcr;
++	__u32 paritycr;
++	__u32 sfacr;
++	__u32 smpr;
++	__u32 dlcr;
++	__u32 sflash_1_size;
++	__u32 sflash_2_size;
++	__u32 dlpr;
++	__u32 sfar;
++	__u32 ipcr;
++	__u32 tbdr;
++	__u8 dll_bypass_en;
++	__u8 dll_slv_upd_en;
++	__u8 dll_auto_upd_en;
++	__u8 ipcr_trigger_en;
++	__u8 sflash_clk_freq;
++	__u8 reserved[3];
++	__u32 command_seq[80];
++	struct flash_write writes[10];
++};
++
++struct qspi_params *get_macronix_qspi_conf(void);
++struct qspi_params *get_micron_qspi_conf(void);
++
++#endif /* IMAGE_QSPI_PARAMS_H */
+diff --git a/tools/s32gen1image.c b/tools/s32gen1image.c
+index e9ba43ac7d..dfae6ac838 100644
+--- a/tools/s32gen1image.c
++++ b/tools/s32gen1image.c
+@@ -5,13 +5,16 @@
+ #include <image.h>
+ #include <imagetool.h>
+ #include <inttypes.h>
+-#include <s32gen1image.h>
++#include <s32cc_image_params.h>
++#include <stddef.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+ #define UNSPECIFIED	-1
+ 
++#define BCW_BOOT_TARGET_A53_0		(1)
++
+ #define MBR_OFFSET			0x0
+ #define MBR_SIZE			0x200
+ 
+@@ -66,6 +69,59 @@
+ #define DCD_MASK(x)	cpu_to_be32((x))
+ #define DCD_COUNT(x)	cpu_to_be32((x))
+ 
++struct ivt {
++	__u8		tag;
++	__u16		length;
++	__u8		version;
++	__u8		reserved1[4];
++	__u32		self_test_dcd_pointer;
++	__u32		self_test_dcd_pointer_backup;
++	__u32		dcd_pointer;
++	__u32		dcd_pointer_backup;
++	__u32		hse_firmware_pointer;
++	__u32		hse_firmware_pointer_backup;
++	__u32		application_boot_code_pointer;
++	__u32		application_boot_code_pointer_backup;
++	__u32		boot_configuration_word;
++	__u32		lifecycle_configuration_word;
++	__u8		reserved2[4];
++	__u32		hse_sys_img_pointer;
++	__u8		reserved_for_hse_h_fw[28];
++	__u8		reserved3[156];
++	__u32		gmac[4];
++} __packed;
++
++struct application_boot_code {
++	__u8		tag;
++	__u8		reserved1[2];
++	__u8		version;
++	__u32		ram_start_pointer;
++	__u32		ram_entry_pointer;
++	__u32		code_length;
++	__u32		auth_mode;
++	__u8		reserved2[44];
++	__u8		code[0];
++} __packed;
++
++struct image_comp {
++	size_t offset;
++	size_t size;
++	size_t alignment;
++	__u8 *data;
++};
++
++struct program_image {
++	struct image_comp mbr_reserved;
++	struct image_comp ivt;
++	struct image_comp qspi_params;
++	struct image_comp dcd;
++	struct image_comp hse_fw;
++	struct image_comp hse_sys_img;
++	struct image_comp app_code;
++	struct image_comp code;
++	__u8 *header;
++};
++
+ typedef int (*parser_handler_t)(char *);
+ 
+ struct image_config {
+diff --git a/tools/s32gen1image.h b/tools/s32gen1image.h
+deleted file mode 100644
+index 7d3f224ea2..0000000000
+--- a/tools/s32gen1image.h
++++ /dev/null
+@@ -1,118 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0+ */
+-/* Copyright 2019-2022 NXP */
+-
+-#ifndef S32GEN1IMAGE_H
+-#define S32GEN1IMAGE_H
+-
+-#include <asm/types.h>
+-#include <stddef.h>
+-
+-#define BCW_BOOT_SEQ			(1 << 3)
+-#define BCW_SWT				(1 << 2)
+-#define BCW_BOOT_TARGET_M7_0		(0)
+-#define BCW_BOOT_TARGET_A53_0		(1 << 0)
+-
+-#define LCCW_IN_FIELD			(1 << 1)
+-#define LCCW_OEM_PROD			(1 << 0)
+-
+-struct ivt {
+-	__u8		tag;
+-	__u16		length;
+-	__u8		version;
+-	__u8		reserved1[4];
+-	__u32		self_test_dcd_pointer;
+-	__u32		self_test_dcd_pointer_backup;
+-	__u32		dcd_pointer;
+-	__u32		dcd_pointer_backup;
+-	__u32		hse_firmware_pointer;
+-	__u32		hse_firmware_pointer_backup;
+-	__u32		application_boot_code_pointer;
+-	__u32		application_boot_code_pointer_backup;
+-	__u32		boot_configuration_word;
+-	__u32		lifecycle_configuration_word;
+-	__u8		reserved2[4];
+-	__u32		hse_sys_img_pointer;
+-	__u8		reserved_for_hse_h_fw[28];
+-	__u8		reserved3[156];
+-	__u32		gmac[4];
+-} __attribute__((packed));
+-
+-struct application_boot_code {
+-	__u8		tag;
+-	__u8		reserved1[2];
+-	__u8		version;
+-	__u32		ram_start_pointer;
+-	__u32		ram_entry_pointer;
+-	__u32		code_length;
+-	__u32		auth_mode;
+-	__u8		reserved2[44];
+-	__u8		code[0];
+-} __attribute__((packed));
+-
+-struct flash_write {
+-	union {
+-		struct {
+-			__u32 opcode:8;
+-			__u32 reserved:8;
+-			__u32 pad:2;
+-			__u32 addr_size:6;
+-			__u32 cdata_size:7;
+-
+-			__u32 valid_addr:1;
+-		} config;
+-		__u32 _config;
+-	};
+-	__u32 addr;
+-	__u32 data;
+-} __attribute__((packed));
+-
+-struct qspi_params {
+-	__u32 header;
+-	__u32 mcr;
+-	__u32 flshcr;
+-	__u32 bufgencr;
+-	__u32 dllcr;
+-	__u32 paritycr;
+-	__u32 sfacr;
+-	__u32 smpr;
+-	__u32 dlcr;
+-	__u32 sflash_1_size;
+-	__u32 sflash_2_size;
+-	__u32 dlpr;
+-	__u32 sfar;
+-	__u32 ipcr;
+-	__u32 tbdr;
+-	__u8 dll_bypass_en;
+-	__u8 dll_slv_upd_en;
+-	__u8 dll_auto_upd_en;
+-	__u8 ipcr_trigger_en;
+-	__u8 sflash_clk_freq;
+-	__u8 reserved[3];
+-	__u32 command_seq[80];
+-	struct flash_write writes[10];
+-};
+-
+-struct image_comp {
+-	size_t offset;
+-	size_t size;
+-	size_t alignment;
+-	__u8 *data;
+-};
+-
+-struct program_image {
+-	struct image_comp mbr_reserved;
+-	struct image_comp ivt;
+-	struct image_comp qspi_params;
+-	struct image_comp dcd;
+-	struct image_comp hse_fw;
+-	struct image_comp hse_sys_img;
+-	struct image_comp app_code;
+-	struct image_comp code;
+-	struct image_comp reserved;
+-	__u8 *header;
+-};
+-
+-struct qspi_params *get_macronix_qspi_conf(void);
+-struct qspi_params *get_micron_qspi_conf(void);
+-
+-#endif /* S32GEN1IMAGE_H */
+-- 
+2.25.1
+

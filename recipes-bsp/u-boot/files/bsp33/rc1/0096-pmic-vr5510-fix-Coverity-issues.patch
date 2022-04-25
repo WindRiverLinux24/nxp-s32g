@@ -1,0 +1,53 @@
+From 53d0ecc485816dddf0ee7ec1b0f1fc0343806326 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Thu, 7 Apr 2022 10:08:25 +0300
+Subject: [PATCH 096/103] pmic: vr5510: fix Coverity issues
+
+Issue: ALB-8597
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/power/pmic/vr5510.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/power/pmic/vr5510.c b/drivers/power/pmic/vr5510.c
+index 26984bcf8f..e9047deb52 100644
+--- a/drivers/power/pmic/vr5510.c
++++ b/drivers/power/pmic/vr5510.c
+@@ -4,12 +4,10 @@
+  */
+ 
+ #include <common.h>
+-#include <fdtdec.h>
+-#include <errno.h>
+ #include <dm.h>
++#include <errno.h>
+ #include <i2c.h>
+ #include <power/pmic.h>
+-#include <power/regulator.h>
+ #include <u-boot/crc.h>
+ 
+ #define VR5510_ADDR_SIZE	2
+@@ -91,7 +89,7 @@ static void set_reg_addr(struct read_msg *m, u8 addr)
+ static int vr5510_read(struct udevice *dev, uint reg, u8 *buff, int len)
+ {
+ 	unsigned int crc;
+-	struct read_msg msg;
++	struct read_msg msg = {0};
+ 	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+ 
+ 	if (!valid_register(dev, reg)) {
+@@ -126,7 +124,7 @@ static int vr5510_read(struct udevice *dev, uint reg, u8 *buff, int len)
+ 
+ static int vr5510_write(struct udevice *dev, uint reg, const u8 *buff, int len)
+ {
+-	struct read_msg msg;
++	struct read_msg msg = {0};
+ 	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+ 
+ 	if (!valid_register(dev, reg)) {
+-- 
+2.25.1
+

@@ -1,0 +1,65 @@
+From abd09ff55aab1b0ee105c3891cf216f15c3f90dc Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 28 Mar 2022 14:00:33 +0300
+Subject: [PATCH 046/103] board: nxp: s32cc: Sort includes
+
+This sorts includes based on U-Boot Coding Style.
+
+Issue: ALB-8576
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/soc.c  | 7 +++----
+ board/nxp/s32-cc/board_common.c | 9 +++------
+ 2 files changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/soc.c b/arch/arm/mach-s32/s32-cc/soc.c
+index 3979d39236..9c6436fee3 100644
+--- a/arch/arm/mach-s32/s32-cc/soc.c
++++ b/arch/arm/mach-s32/s32-cc/soc.c
+@@ -6,14 +6,13 @@
+ 
+ #include <common.h>
+ #include <cpu_func.h>
+-#include <asm/armv8/mmu.h>
++#include <debug_uart.h>
+ #include <asm/io.h>
+ #include <asm/system.h>
++#include <asm/armv8/mmu.h>
++#include <linux/sizes.h>
+ #include <asm-generic/sections.h>
+-#include "scmi_reset_agent.h"
+ #include <asm-generic/sections.h>
+-#include <linux/sizes.h>
+-#include <debug_uart.h>
+ 
+ #define S32GEN1_DRAM_STD_ADDR	0x80000000ULL
+ #define S32GEN1_DRAM_EXT_ADDR	0x800000000ULL
+diff --git a/board/nxp/s32-cc/board_common.c b/board/nxp/s32-cc/board_common.c
+index b27eeb0db0..53656ed1a0 100644
+--- a/board/nxp/s32-cc/board_common.c
++++ b/board/nxp/s32-cc/board_common.c
+@@ -3,15 +3,12 @@
+  * Copyright 2017-2022 NXP
+  */
+ #include <common.h>
+-#include <asm/io.h>
+-#include <asm/arch/clock.h>
++#include <board_common.h>
+ #include <fdt_support.h>
+-#include <linux/libfdt.h>
+-#include <miiphy.h>
+ #include <fdtdec.h>
+-
+-#include <board_common.h>
++#include <miiphy.h>
+ #include <scmi_reset_agent.h>
++#include <linux/libfdt.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+-- 
+2.25.1
+

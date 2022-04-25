@@ -1,0 +1,79 @@
+From 5a561c527cc7f72dd66cd7f2cdb3049afd587e2e Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Fri, 8 Apr 2022 11:28:33 +0300
+Subject: [PATCH 092/103] Kconfig: s32-cc: Add board help information
+
+Issue: ALB-8614
+Issue: ALB-8616
+Issue: ALB-8617
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32g2/Kconfig  | 10 ++++++++++
+ arch/arm/mach-s32/s32g3/Kconfig  |  4 ++++
+ arch/arm/mach-s32/s32r45/Kconfig |  4 ++++
+ 3 files changed, 18 insertions(+)
+
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index 810e0aa005..5c3547cf63 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -9,6 +9,11 @@ choice
+ 
+ config TARGET_S32G274ARDB2
+ 	bool "Support S32G274ARDB2 board"
++	help
++	  This board is based on S32G274A SoC. It is equipped with
++	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports,
++	  M.2 and PCIe x1 expansion slots, USB, serial port,
++	  18 CAN ports, I2C and DSPI.
+ 	imply DM_PMIC_FS5600
+ 	imply DM_PMIC_PF5020
+ 	imply PHY_ATHEROS
+@@ -35,6 +40,11 @@ config TARGET_S32G2XXAEVB
+ 
+ config TARGET_S32G274ABLUEBOX3
+ 	bool "Support S32G274A BlueBox3 board"
++	help
++	  This board is a dual SoC board with S32G2 and LX2,
++	  where these two SoCs are connected together via PCIe.
++	  Also, this board has rich networking features, such as:
++	  PFE, DPAA2 and three sja1110 switches.
+ 	imply ADC
+ 	imply I2C_EEPROM
+ 	imply PHY
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index 25ce8ca7f6..9d07835543 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -22,6 +22,10 @@ config TARGET_S32G399ARDB3
+ 
+ config TARGET_S32G3XXAEVB
+ 	bool "Support S32G3-EVB board"
++	help
++	  This board is based on S32G3 family of SoCs. It is equipped with
++	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
++	  I2C and DSPI.
+ 	imply ADC
+ 	imply DM_USB
+ 	imply I2C_EEPROM
+diff --git a/arch/arm/mach-s32/s32r45/Kconfig b/arch/arm/mach-s32/s32r45/Kconfig
+index ccadb2c12e..1ad3753881 100644
+--- a/arch/arm/mach-s32/s32r45/Kconfig
++++ b/arch/arm/mach-s32/s32r45/Kconfig
+@@ -9,6 +9,10 @@ choice
+ 
+ config TARGET_S32R45EVB
+ 	bool "Support S32R45EVB board"
++	help
++	  This board is based on S32R45 SoC. Is is equipped with
++	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
++	  I2C and DSPI.
+ 	imply ADC
+ 	imply I2C_EEPROM
+ 	imply PHY_AQUANTIA
+-- 
+2.25.1
+

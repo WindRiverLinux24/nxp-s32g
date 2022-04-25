@@ -1,0 +1,55 @@
+From 4fb28b9d888411e51f0577e477d523b9acfb5582 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 30 Mar 2022 17:27:06 +0300
+Subject: [PATCH 074/103] configs: Move target settings from s32r45.h into
+ target header
+
+Issue: ALB-8583
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/configs/s32r45.h    | 13 ++-----------
+ include/configs/s32r45evb.h |  2 ++
+ 2 files changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/include/configs/s32r45.h b/include/configs/s32r45.h
+index ad3fb552ae..90f56c17e5 100644
+--- a/include/configs/s32r45.h
++++ b/include/configs/s32r45.h
+@@ -2,18 +2,9 @@
+ /*
+  * Copyright 2017-2021 NXP
+  */
+-
+-/*
+- * Configuration settings for all the Freescale S32R45 boards.
+- */
+-
+-#ifndef __S32R45_H
+-#define __S32R45_H
++#ifndef __S32R45_H__
++#define __S32R45_H__
+ 
+ #include <configs/s32-cc.h>
+ 
+-#if defined(CONFIG_TARGET_S32R45EVB)
+-#define FDT_FILE "fsl-s32r45-evb.dtb"
+-#endif
+-
+ #endif
+diff --git a/include/configs/s32r45evb.h b/include/configs/s32r45evb.h
+index 556e375a5a..32fbcfb85a 100644
+--- a/include/configs/s32r45evb.h
++++ b/include/configs/s32r45evb.h
+@@ -7,4 +7,6 @@
+ 
+ #include <configs/s32r45.h>
+ 
++#define FDT_FILE "fsl-s32r45-evb.dtb"
++
+ #endif
+-- 
+2.25.1
+
