@@ -19,6 +19,9 @@ SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
+    file://bsp33/rc1/0001-plat-nxp-Use-s32ccimage-instead-of-s32gen1image.patch \
+    file://bsp33/rc1/0002-ddr-Rename-compatible-of-U-Boot-DT-ddr-node.patch \
+    file://bsp33/rc1/0003-pmic-vr5510-rename-compatible-string.patch \
     file://0001-Fix-fiptool-build-error.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
