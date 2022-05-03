@@ -127,6 +127,7 @@ SRC_URI += " \
     file://0001-Makefile-add-.cfgout-file-dependency-to-fix-atf-buil.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
+    file://0001-u-boot-s32-Makefile-add-scripts_basic-dependency-to-.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g2xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
 "
 

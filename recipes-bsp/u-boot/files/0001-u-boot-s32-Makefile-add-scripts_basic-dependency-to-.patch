@@ -1,0 +1,47 @@
+From c1dca47f2f7bd0adf09060ad635582c124db819d Mon Sep 17 00:00:00 2001
+From: Quanyang Wang <quanyang.wang@windriver.com>
+Date: Tue, 3 May 2022 16:43:22 +0800
+Subject: [PATCH] u-boot-s32: Makefile: add scripts_basic dependency to .cfgout
+ file
+
+Sometimes building .cfgout file will fail when it calls if_changed_dep.
+Considering the following scenarios:
+1) While CONFIG_DEBUG_TOOLS is enabled, the tool fixdep is recompiled
+with "-g" before building target u-boot-s32.bin.
+2) Meanwhile, u-boot-s32.cfgout is built in another job, and it will
+run $(call if_changed_dep,cpp_cfg) in arch/arm/mach-s32/s32-cc/Makefile.
+The tool fixdep is called in the function if_changed_dep to make .cmd
+files.
+3) There are some chances that u-boot-s32.cfgout calls fixdep but at
+this time fixdep hasn't been made out since they are in different jobs.
+And this will trigger the error log as below:
+
+| /bin/sh: line 1: scripts/basic/fixdep: Permission denied
+| make[2]: *** [../arch/arm/mach-s32/s32-cc/Makefile:71: u-boot-s32.cfgout] Error 126
+| make[2]: *** Deleting file 'u-boot-s32.cfgout'
+
+Add scripts_basic dependency to .cfgout file can fix this.
+
+Upstream-Status: Pending
+
+Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 54e23fae35..4d463fdda9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1174,7 +1174,7 @@ endif
+ 	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
+ 
+ ifeq ($(CONFIG_NXP_S32CC),y)
+-%.cfgout: FORCE
++%.cfgout: scripts_basic FORCE
+ 	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
+ 
+ u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin u-boot-s32.cfgout
+-- 
+2.25.1
+
