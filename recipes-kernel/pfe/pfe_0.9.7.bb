@@ -18,6 +18,7 @@ SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
 	file://0001-fix-hwts-kmemleak.patch \
 	file://0001-pfe-fix-compile-error.patch \
+	file://0001-sw-fix-dma-share-memory-init-failed-issue.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
 SRCREV = "d6aac63e29e1dd06db925f200846937f78db327a"
