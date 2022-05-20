@@ -5,7 +5,11 @@
 UBOOT_SIGN_ENABLE = "1"
 UBOOT_SIGN_KEYDIR = "${LAYER_PATH_s32g-secure-layer}/s32g-sample-key/fitImage-rsa2048-keys"
 UBOOT_MKIMAGE_DTCOPTS = "-I dts -O dtb -p 2000"
+# Key used to sign configuration part in fit image
 UBOOT_SIGN_KEYNAME = "boot_key"
+# Key used to sign kernel and dtb parts in fit image
+UBOOT_SIGN_IMG_KEYNAME = "boot_key_individual"
+FIT_SIGN_INDIVIDUAL  = "1"
 
 UBOOT_ENTRYPOINT = "0x80080000"
 UBOOT_LOADADDRESS = "0x80080000"
