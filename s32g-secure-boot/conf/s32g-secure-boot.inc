@@ -10,14 +10,21 @@ UBOOT_SIGN_KEYNAME = "boot_key"
 UBOOT_ENTRYPOINT = "0x80080000"
 UBOOT_LOADADDRESS = "0x80080000"
 
-# Now only S32G274A-EVB board supports secure-boot
-UBOOT_CONFIG = "s32g274aevb"
-UBOOT_MAKE_TARGET ?= "u-boot.s32 u-boot.dtb"
+S32G2XXAEVB_UBOOT_DEFCONFIG_NAME:nxp-s32g = "s32g2xxaevb_defconfig"
+S32G274ARDB2_UBOOT_DEFCONFIG_NAME:nxp-s32g = "s32g274ardb2_defconfig"
+S32G399ARDB3_UBOOT_DEFCONFIG_NAME:nxp-s32g = "s32g399ardb3_defconfig"
+S32G3XXAEVB_UBOOT_DEFCONFIG_NAME:nxp-s32g = "s32g3xxaevb_defconfig"
+
+KERNEL_DEVICETREE:nxp-s32g = "freescale/fsl-s32g2xxa-evb.dtb freescale/fsl-s32g274a-rdb2.dtb \
+						freescale/fsl-s32g399a-rdb3.dtb freescale/fsl-s32g3xxa-evb.dtb \
+"
+
+IMAGE_BOOT_FILES:nxp-s32g = "${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'fitImage-s32g274ardb2 fitImage-s32g2xxaevb fitImage-s32g399ardb3 fitImage-s32g3xxaevb', \
+						'Image fsl-s32g2xxa-evb.dtb fsl-s32g274a-rdb2.dtb fsl-s32g399a-rdb3.dtb fsl-s32g3xxa-evb.dtb', d)}"
+
 UBOOT_SUFFIX = "img"
 PREFERRED_PROVIDER_u-boot = "u-boot-s32"
 KERNEL_CLASSES  = " kernel-fitimage"
-# So far the secure boot version is not updated yet and keeps the u-boot version with 2019.04
-PREFERRED_VERSION_u-boot-s32 = "2019.04"
 
 # NXPS32G secure boot feature supports rsa2048.
 # Set KERNEL_RAS_TYPE as the expected value. The default one is rsa2048.
