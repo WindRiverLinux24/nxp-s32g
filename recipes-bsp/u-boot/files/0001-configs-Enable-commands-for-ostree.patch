@@ -1,9 +1,7 @@
-From 9c5f8fcb47bc7ea696eac571e3cfbfe335e43d52 Mon Sep 17 00:00:00 2001
+From ae4cf36b853250152b3db016e264a75f51443a16 Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
-Date: Thu, 1 Apr 2021 10:43:06 +0000
-Subject: [PATCH] Make s32g274ardb2 and s32g2xxaevb support ostree
-
-These settings are required by ostree
+Date: Wed, 8 Jun 2022 11:18:47 +0000
+Subject: [PATCH] configs: Enable commands for ostree
 
 Upstream-Status: Pending
 
@@ -11,27 +9,48 @@ Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
 ---
  configs/s32g274ardb2_defconfig | 3 +++
  configs/s32g2xxaevb_defconfig  | 3 +++
+ configs/s32g399ardb3_defconfig | 3 +++
+ configs/s32g3xxaevb_defconfig  | 3 +++
  include/configs/s32-cc.h       | 3 +++
- 3 files changed, 9 insertions(+)
+ 5 files changed, 15 insertions(+)
 
 diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
-index d629fa271e..bdbb3716da 100644
+index d629fa271e..ae77a62ddb 100644
 --- a/configs/s32g274ardb2_defconfig
 +++ b/configs/s32g274ardb2_defconfig
-@@ -7,6 +7,9 @@ CONFIG_FIT=y
- CONFIG_SD_BOOT=y
- CONFIG_USE_BOOTARGS=y
- CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+@@ -34,3 +34,6 @@ CONFIG_E1000=y
+ CONFIG_CMD_E1000=y
+ CONFIG_RGMII=y
+ # CONFIG_EFI_LOADER is not set
 +CONFIG_FAT_WRITE=y
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
- CONFIG_CMD_CPU=y
- CONFIG_CMD_MD5SUM=y
- CONFIG_MD5SUM_VERIFY=y
 diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
 index 55c8f7dca3..258246443a 100644
 --- a/configs/s32g2xxaevb_defconfig
 +++ b/configs/s32g2xxaevb_defconfig
+@@ -40,3 +40,6 @@ CONFIG_RGMII=y
+ CONFIG_USB_ULPI_VIEWPORT=y
+ CONFIG_USB_ULPI=y
+ # CONFIG_EFI_LOADER is not set
++CONFIG_FAT_WRITE=y
++CONFIG_MENU=y
++CONFIG_CMD_BOOTMENU=y
+diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
+index 0119026b62..d424e8b95e 100644
+--- a/configs/s32g399ardb3_defconfig
++++ b/configs/s32g399ardb3_defconfig
+@@ -35,3 +35,6 @@ CONFIG_E1000=y
+ CONFIG_CMD_E1000=y
+ CONFIG_RGMII=y
+ # CONFIG_EFI_LOADER is not set
++CONFIG_FAT_WRITE=y
++CONFIG_MENU=y
++CONFIG_CMD_BOOTMENU=y
+diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
+index 43ab78e5c2..e190055813 100644
+--- a/configs/s32g3xxaevb_defconfig
++++ b/configs/s32g3xxaevb_defconfig
 @@ -40,3 +40,6 @@ CONFIG_RGMII=y
  CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_USB_ULPI=y
@@ -54,5 +73,5 @@ index 5056ab5f8a..753045c007 100644
  		"then " \
  			"run mmcboot; " \
 -- 
-2.25.1
+2.32.0
 

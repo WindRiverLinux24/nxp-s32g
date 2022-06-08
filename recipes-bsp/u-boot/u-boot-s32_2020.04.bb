@@ -122,12 +122,12 @@ SRC_URI += " \
     file://bsp33/rc1/0101-misc-s32cc_ocotp-rename-s32gen1-to-s32cc.patch \
     file://bsp33/rc1/0102-dts-ocotp-rename-compatible-string.patch \
     file://bsp33/rc1/0103-s32cc-Make-memory-fixups-part-of-ft_system_setup-cal.patch \
-    file://0001-Make-s32g274ardb2-and-s32g2xxaevb-support-ostree.patch \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-Makefile-add-.cfgout-file-dependency-to-fix-atf-buil.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
     file://0001-u-boot-s32-Makefile-add-scripts_basic-dependency-to-.patch \
+    file://0001-configs-Enable-commands-for-ostree.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g2xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
 "
 
