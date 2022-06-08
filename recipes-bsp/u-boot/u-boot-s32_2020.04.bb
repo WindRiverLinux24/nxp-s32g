@@ -143,25 +143,24 @@ USRC ?= ""
 S = '${@oe.utils.conditional("USRC", "", "${WORKDIR}/git", "${USRC}", d)}'
 
 
-# For now, only rdb2 boards support ATF, this function will be fixed when new ATF supported boards added.
-do_install:append() {
+do_compile:append() {
+    cfgout="${B}/s32g2xxaevb_defconfig/u-boot-s32.cfgout"
+    if [ "${HSE_SEC_ENABLED}" = "1"  -a -e $cfgout ]; then
+        sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
+    fi
+}
 
+do_deploy:append() {
     unset i j
-    install -d ${DEPLOY_DIR_IMAGE}
     for config in ${UBOOT_MACHINE}; do
         i=$(expr $i + 1);
         for type in ${UBOOT_CONFIG}; do
             j=$(expr $j + 1)
             if  [ $j -eq $i ]; then
-		if [ "${type}" = "s32g2xxaevb" ] && [ "${HSE_SEC_ENABLED}" = "1" ]; then
-                        sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' ${B}/${config}/${UBOOT_CFGOUT}
-		fi
-
-                install -d ${DEPLOY_DIR_IMAGE}/${type}/tools
-                cp ${B}/${config}/${UBOOT_BINARY} ${DEPLOY_DIR_IMAGE}/${type}/${UBOOT_BINARY}
-                cp ${B}/${config}/tools/mkimage ${DEPLOY_DIR_IMAGE}/${type}/tools/mkimage
-                cp ${B}/${config}/${UBOOT_CFGOUT} ${DEPLOY_DIR_IMAGE}/${type}/tools/${UBOOT_CFGOUT}
-
+                install -d ${DEPLOYDIR}/${type}/tools
+                install -m 0644 ${B}/${config}/${UBOOT_BINARY} ${DEPLOYDIR}/${type}/${UBOOT_BINARY}
+                install -m 0644 ${B}/${config}/${UBOOT_CFGOUT} ${DEPLOYDIR}/${type}/tools/${UBOOT_CFGOUT}
+                install -m 0755 ${B}/${config}/tools/mkimage ${DEPLOYDIR}/${type}/tools/mkimage
             fi
         done
         unset j
