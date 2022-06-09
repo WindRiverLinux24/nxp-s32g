@@ -128,6 +128,7 @@ SRC_URI += " \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
     file://0001-u-boot-s32-Makefile-add-scripts_basic-dependency-to-.patch \
     file://0001-configs-Enable-commands-for-ostree.patch \
+    file://0001-include-config_distro_bootcmd.h-Check-go-before-boot.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g2xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
 "
 
