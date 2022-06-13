@@ -40,7 +40,11 @@ do_deploy:append:nxp-s32g() {
 				cp -f $deployed_uboot_dtb_binary ${B}/${ma[i]}/${UBOOT_DTB_BINARY}
 				oe_runmake EXT_DTB=$deployed_uboot_dtb_binary ${UBOOT_MAKE_TARGET}
 		fi
-		cp -f ${B}/${ma[i]}/${UBOOT_BINARY} ${DEPLOY_DIR_IMAGE}/${config}/${UBOOT_BINARY}
+		cp -f ${B}/${ma[i]}/${UBOOT_BINARY} ${DEPLOYDIR}/${config}/${UBOOT_BINARY}
+		if [ "${config}" = "s32g2xxaevb" ]; then
+			sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' ${UBOOT_CFGOUT}
+		fi
+		cp -f ${B}/${ma[i]}/${UBOOT_CFGOUT} ${DEPLOYDIR}/${config}/tools/${UBOOT_CFGOUT}
 		i=$(expr $i + 1);
 	done
 }
