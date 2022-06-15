@@ -1,0 +1,54 @@
+From fc135bd4c86baa0818e1f16d4b1fbd53d955b244 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 10 May 2022 16:28:08 +0300
+Subject: [PATCH 60/64] arm: dts: s32g3: Make GIC part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32g3.dtsi | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm/dts/s32g3.dtsi b/arch/arm/dts/s32g3.dtsi
+index 53ca199f92..67027b14d1 100644
+--- a/arch/arm/dts/s32g3.dtsi
++++ b/arch/arm/dts/s32g3.dtsi
+@@ -23,18 +23,20 @@
+ 		reg = <0x8 0x80000000 0 0x80000000>;
+ 	};
+ 
+-	gic: interrupt-controller@50800000 {
+-		compatible = "arm,gic-v3";
+-		#interrupt-cells = <3>;
+-		#address-cells = <2>;
+-		#size-cells = <2>;
+-		interrupt-controller;
+-		reg = <0 0x50800000 0 0x10000>, /* GIC Dist */
+-		      <0 0x50900000 0 0x200000>, /* GICR (RD_base + SGI_base) */
+-		      <0 0x50400000 0 0x2000>, /* GICC */
+-		      <0 0x50410000 0 0x2000>, /* GICH */
+-		      <0 0x50420000 0 0x2000>; /* GICV */
+-		interrupts = <1 9 0xf04>;
++	soc {
++		gic: interrupt-controller@50800000 {
++			compatible = "arm,gic-v3";
++			#interrupt-cells = <3>;
++			#address-cells = <2>;
++			#size-cells = <2>;
++			interrupt-controller;
++			reg = <0 0x50800000 0 0x10000>, /* GIC Dist */
++			      <0 0x50900000 0 0x200000>, /* GICR (RD_base + SGI_base) */
++			      <0 0x50400000 0 0x2000>, /* GICC */
++			      <0 0x50410000 0 0x2000>, /* GICH */
++			      <0 0x50420000 0 0x2000>; /* GICV */
++			interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
++		};
+ 	};
+ };
+ 
+-- 
+2.17.1
+

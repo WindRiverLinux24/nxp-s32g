@@ -1,0 +1,44 @@
+From 2fa1043bb9d1b11b097f486bc96be14770c9465c Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 14 Apr 2022 10:16:16 +0300
+Subject: [PATCH 11/33] s32cc: Rename "fsl,s32cc-usdhc" to "nxp,s32cc-usdhc"
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi | 2 +-
+ drivers/mmc/fsl_esdhc_imx.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index c8bcb1fec9..6649e7d8c6 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -156,7 +156,7 @@
+ 	};
+ 
+ 	usdhc0: usdhc@402F0000{
+-		compatible = "fsl,s32cc-usdhc";
++		compatible = "nxp,s32cc-usdhc";
+ 		reg = <0x0 0x402F0000 0x0 0x1000>;
+ 		interrupts = <0 36 4>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_USDHC_MODULE>,
+diff --git a/drivers/mmc/fsl_esdhc_imx.c b/drivers/mmc/fsl_esdhc_imx.c
+index 9e146ac7e6..cffd725ecc 100644
+--- a/drivers/mmc/fsl_esdhc_imx.c
++++ b/drivers/mmc/fsl_esdhc_imx.c
+@@ -1754,7 +1754,7 @@ static const struct udevice_id fsl_esdhc_ids[] = {
+ 	{ .compatible = "fsl,imx8mn-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
+ 	{ .compatible = "fsl,imx8mq-usdhc", .data = (ulong)&usdhc_imx8qm_data,},
+ 	{ .compatible = "fsl,imxrt-usdhc", },
+-	{ .compatible = "fsl,s32cc-usdhc",
++	{ .compatible = "nxp,s32cc-usdhc",
+ 	  .data = (ulong)&usdhc_s32cc_data,},
+ 	{ .compatible = "fsl,esdhc", },
+ 	{ /* sentinel */ }
+-- 
+2.17.1
+

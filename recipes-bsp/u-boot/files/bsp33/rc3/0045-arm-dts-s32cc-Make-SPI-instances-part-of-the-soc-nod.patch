@@ -1,0 +1,316 @@
+From 19e3c76f367a2ef69f90dc88cbbcdb91b03285a6 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 10 May 2022 15:04:24 +0300
+Subject: [PATCH 45/64] arm: dts: s32cc: Make SPI instances part of the soc
+ node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32cc.dtsi            | 168 ++++++++++++++---------------
+ arch/arm/dts/s32g274a-bluebox3.dts |   4 +-
+ arch/arm/dts/s32gxxxa-evb.dtsi     |   4 +-
+ arch/arm/dts/s32gxxxa-rdb.dtsi     |   4 +-
+ arch/arm/dts/s32r45-evb.dts        |   8 +-
+ 5 files changed, 94 insertions(+), 94 deletions(-)
+
+diff --git a/arch/arm/dts/s32cc.dtsi b/arch/arm/dts/s32cc.dtsi
+index f3347d4060..d121b4e14c 100644
+--- a/arch/arm/dts/s32cc.dtsi
++++ b/arch/arm/dts/s32cc.dtsi
+@@ -27,12 +27,12 @@
+ 		i2c2 = &i2c2;
+ 		i2c3 = &i2c3;
+ 		i2c4 = &i2c4;
+-		spi0 = &dspi0;
+-		spi1 = &dspi1;
+-		spi2 = &dspi2;
+-		spi3 = &dspi3;
+-		spi4 = &dspi4;
+-		spi5 = &dspi5;
++		spi0 = &spi0;
++		spi1 = &spi1;
++		spi2 = &spi2;
++		spi3 = &spi3;
++		spi4 = &spi4;
++		spi5 = &spi5;
+ 		spi6 = &qspi;
+ 		serdes0 = &serdes0;
+ 		pcie0 = &pcie0;
+@@ -193,6 +193,45 @@
+ 			clock-frequency = <0>;	/* updated dynamically if 0 */
+ 		};
+ 
++		spi0: spi@401d4000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x401d4000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <8>;
++			// For U-Boot 2020.04 only
++			num-cs = <8>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
++		spi1: spi@401d8000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x401d8000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <5>;
++			num-cs = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			// For U-Boot 2020.04 only
++			status = "disabled";
++		};
++
++		spi2: spi@401dc000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x401dc000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <5>;
++			// For U-Boot 2020.04 only
++			num-cs = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
+ 		pit1: pit@40288000 {
+ 			compatible = "nxp,s32cc-pit";
+ 			reg = <0x0 0x40288000 0x0 0x3000>;
+@@ -212,6 +251,45 @@
+ 			device_type = "serial";
+ 			clock-frequency = <0>;	/* updated dynamically if 0 */
+ 		};
++
++		spi3: spi@402c8000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x402c8000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <5>;
++			// For U-Boot 2020.04 only
++			num-cs = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
++		spi4: spi@402cc000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x402cc000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <5>;
++			// For U-Boot 2020.04 only
++			num-cs = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
++		spi5: spi@402d0000 {
++			compatible = "nxp,s32cc-dspi";
++			reg = <0x0 0x402d0000 0x0 0x1000>;
++			clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
++			clock-names = "dspi";
++			spi-num-chipselects = <5>;
++			// For U-Boot 2020.04 only
++			num-cs = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
+ 	};
+ 
+ 	usdhc0: usdhc@402F0000{
+@@ -289,84 +367,6 @@
+ 		status = "disabled";
+ 	};
+ 
+-	dspi0: dspi0@401D4000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x401d4000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <8>;
+-		spi-num-chipselects = <8>;
+-		status = "disabled";
+-	};
+-
+-	dspi1: dspi1@401D8000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x401d8000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <5>;
+-		spi-num-chipselects = <5>;
+-		status = "disabled";
+-	};
+-
+-	dspi2: dspi2@401DC000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x401dc000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <5>;
+-		spi-num-chipselects = <5>;
+-		status = "disabled";
+-	};
+-
+-	dspi3: dspi3@402C8000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x402c8000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <5>;
+-		spi-num-chipselects = <5>;
+-		status = "disabled";
+-	};
+-
+-	dspi4: dspi4@402CC000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x402cc000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <5>;
+-		spi-num-chipselects = <5>;
+-		status = "disabled";
+-	};
+-
+-	dspi5: dspi5@402D0000 {
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		compatible = "nxp,s32cc-dspi";
+-		reg = <0x0 0x402d0000 0x0 0x1000>;
+-		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+-		clock-names = "dspi";
+-		// For U-Boot 2020.04 only
+-		num-cs = <5>;
+-		spi-num-chipselects = <5>;
+-		status = "disabled";
+-	};
+-
+ 	gmac0: ethernet@4033c000 {
+ 		compatible = "nxp,s32cc-dwmac";
+ 		reg = <0x0 0x4033c000 0x0 0x2000>, /* gmac IP */
+diff --git a/arch/arm/dts/s32g274a-bluebox3.dts b/arch/arm/dts/s32g274a-bluebox3.dts
+index ba90e200ed..5bf5aa69e7 100644
+--- a/arch/arm/dts/s32g274a-bluebox3.dts
++++ b/arch/arm/dts/s32g274a-bluebox3.dts
+@@ -12,13 +12,13 @@
+ 	model = "NXP S32G274A BlueBox3";
+ };
+ 
+-&dspi0 {
++&spi0 {
+ 	pinctrl-0 = <&pinctrl0_dspi0 &pinctrl1_dspi0>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+ };
+ 
+-&dspi1 {
++&spi1 {
+ 	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+diff --git a/arch/arm/dts/s32gxxxa-evb.dtsi b/arch/arm/dts/s32gxxxa-evb.dtsi
+index 28b9429876..64eb612d44 100644
+--- a/arch/arm/dts/s32gxxxa-evb.dtsi
++++ b/arch/arm/dts/s32gxxxa-evb.dtsi
+@@ -33,13 +33,13 @@
+ 	status = "okay";
+ };
+ 
+-&dspi1 {
++&spi1 {
+ 	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+ };
+ 
+-&dspi5 {
++&spi5 {
+ 	pinctrl-0 = <&pinctrl0_dspi5 &pinctrl1_dspi5>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+diff --git a/arch/arm/dts/s32gxxxa-rdb.dtsi b/arch/arm/dts/s32gxxxa-rdb.dtsi
+index db4c1fd616..171eba26d0 100644
+--- a/arch/arm/dts/s32gxxxa-rdb.dtsi
++++ b/arch/arm/dts/s32gxxxa-rdb.dtsi
+@@ -14,13 +14,13 @@
+ 	status = "okay";
+ };
+ 
+-&dspi1 {
++&spi1 {
+ 	pinctrl-0 = <&pinctrl0_dspi1 &pinctrl1_dspi1>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+ };
+ 
+-&dspi5 {
++&spi5 {
+ 	pinctrl-0 = <&pinctrl0_dspi5 &pinctrl1_dspi5>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+diff --git a/arch/arm/dts/s32r45-evb.dts b/arch/arm/dts/s32r45-evb.dts
+index 47199841c9..c33fd18b27 100644
+--- a/arch/arm/dts/s32r45-evb.dts
++++ b/arch/arm/dts/s32r45-evb.dts
+@@ -504,25 +504,25 @@
+ 	};
+ };
+ 
+-&dspi1 {
++&spi1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl0_dspi1>, <&pinctrl1_dspi1>;
+ 	status = "okay";
+ };
+ 
+-&dspi2 {
++&spi2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl0_dspi2>, <&pinctrl1_dspi2>;
+ 	status = "okay";
+ };
+ 
+-&dspi3 {
++&spi3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl0_dspi3>, <&pinctrl1_dspi3>;
+ 	status = "okay";
+ };
+ 
+-&dspi5 {
++&spi5 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 =  <&pinctrl1_dspi5>;
+ 	status = "okay";
+-- 
+2.17.1
+

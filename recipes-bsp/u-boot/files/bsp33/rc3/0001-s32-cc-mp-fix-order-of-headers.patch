@@ -1,0 +1,57 @@
+From 6fa9788604ca924297e99c042ebc22081e90626e Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Mon, 18 Apr 2022 12:09:31 +0300
+Subject: [PATCH 01/64] s32-cc: mp: fix order of headers
+
+Also added small fixes.
+
+Issue: ALB-8557
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/mp.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/mp.c b/arch/arm/mach-s32/s32-cc/mp.c
+index a5997c4f59..b437e10846 100644
+--- a/arch/arm/mach-s32/s32-cc/mp.c
++++ b/arch/arm/mach-s32/s32-cc/mp.c
+@@ -1,13 +1,13 @@
+ // SPDX-License-Identifier:     GPL-2.0+
+ /*
+  * Copyright 2014-2015 Freescale Semiconductor, Inc.
+- * (C) Copyright 2017-2022 NXP
++ * Copyright 2017-2022 NXP
+  */
+ 
+ #include <common.h>
++#include <malloc.h>
+ #include <dm/uclass.h>
+ #include <linux/psci.h>
+-#include <malloc.h>
+ 
+ #define CLUSTER_SHIFT	8U
+ #define CLUSTER_MASK	GENMASK(11, CLUSTER_SHIFT)
+@@ -30,7 +30,7 @@ static int get_next_cpu(int off)
+ 
+ static struct cpu_desc *get_cpu(unsigned int cpu_id)
+ {
+-	/* S32GEN1 SoCs have 2 clusters */
++	/* S32CC SoCs have 2 clusters */
+ 	u32 cluster_cores = n_cpus / 2;
+ 	u32 i, cluster;
+ 
+@@ -84,7 +84,7 @@ static int add_cpu(u32 psci_id)
+ static int initialize_cpus_data(void)
+ {
+ 	static bool initialized;
+-	int off, ret, addr_cells;
++	int off, ret = -1, addr_cells = 0;
+ 	fdt32_t *reg;
+ 	u64 core_id;
+ 
+-- 
+2.17.1
+

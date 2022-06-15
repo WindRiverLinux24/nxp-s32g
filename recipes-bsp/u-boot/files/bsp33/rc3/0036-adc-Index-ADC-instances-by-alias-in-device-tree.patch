@@ -1,0 +1,31 @@
+From 9ae7fad1c11fbbf6d0f9a49ad545663cdec7c443 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 9 May 2022 11:06:00 +0300
+Subject: [PATCH 36/64] adc: Index ADC instances by alias in device tree
+
+Allow adc instances to be indexed by aliases in device tree.
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/adc/adc-uclass.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/adc/adc-uclass.c b/drivers/adc/adc-uclass.c
+index 0a492eba54..12111e04cb 100644
+--- a/drivers/adc/adc-uclass.c
++++ b/drivers/adc/adc-uclass.c
+@@ -435,6 +435,7 @@ static int adc_pre_probe(struct udevice *dev)
+ UCLASS_DRIVER(adc) = {
+ 	.id	= UCLASS_ADC,
+ 	.name	= "adc",
++	.flags	= DM_UC_FLAG_SEQ_ALIAS,
+ 	.pre_probe =  adc_pre_probe,
+ 	.per_device_platdata_auto_alloc_size = ADC_UCLASS_PLATDATA_SIZE,
+ };
+-- 
+2.17.1
+

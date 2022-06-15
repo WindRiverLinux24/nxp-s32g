@@ -1,0 +1,54 @@
+From f8a748779d7f041acda62c1490933824b028d023 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 10 May 2022 16:20:16 +0300
+Subject: [PATCH 57/64] arm: dts: Add a device tree for S32R45 emulator
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/Makefile       |  2 +-
+ arch/arm/dts/s32r45-emu.dts | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/dts/s32r45-emu.dts
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index db83a14c05..3b9de08844 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -397,7 +397,7 @@ dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399a-emu.dtb
+ dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274a-rdb2.dtb
+ dtb-$(CONFIG_TARGET_S32G399ARDB3) += s32g399a-rdb3.dtb
+ dtb-$(CONFIG_TARGET_S32R45EVB) += s32r45-evb.dtb
+-dtb-$(CONFIG_TARGET_S32R45EMU) += s32r45-evb.dtb
++dtb-$(CONFIG_TARGET_S32R45EMU) += s32r45-emu.dtb
+ 
+ dtb-$(CONFIG_TARGET_DRAGONBOARD410C) += dragonboard410c.dtb
+ dtb-$(CONFIG_TARGET_DRAGONBOARD820C) += dragonboard820c.dtb
+diff --git a/arch/arm/dts/s32r45-emu.dts b/arch/arm/dts/s32r45-emu.dts
+new file mode 100644
+index 0000000000..ae01916761
+--- /dev/null
++++ b/arch/arm/dts/s32r45-emu.dts
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Copyright 2022 NXP
++ */
++
++/dts-v1/;
++#include "s32r45.dtsi"
++
++/delete-node/ &mem2;
++/ {
++	model = "ZeBu model for NXP S32R45";
++
++	chosen {
++		stdout-path = "serial1:7812500n8";
++	};
++};
+-- 
+2.17.1
+

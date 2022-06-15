@@ -1,0 +1,592 @@
+From ff07ac6bf2a2425e53dd70e8fe203457cb0fde6e Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 4 Apr 2022 08:34:15 +0300
+Subject: [PATCH 12/33] driver/spi: fsl_qspi: Rename s32gen1 to s32cc
+
+Issue: ALB-8592
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi                |  2 +-
+ arch/arm/mach-s32/s32-cc/soc.c                |  2 +-
+ drivers/spi/Makefile                          |  8 +--
+ drivers/spi/fsl_qspi.c                        | 14 ++---
+ drivers/spi/fsl_qspi.h                        | 26 ++++----
+ drivers/spi/{s32gen1_qspi.c => s32cc_qspi.c}  | 60 +++++++++----------
+ ..._qspi_macronix.c => s32cc_qspi_macronix.c} | 14 ++---
+ ...i_mem_common.c => s32cc_qspi_mem_common.c} | 28 ++++-----
+ ...gen1_qspi_micron.c => s32cc_qspi_micron.c} | 18 +++---
+ 9 files changed, 86 insertions(+), 86 deletions(-)
+ rename drivers/spi/{s32gen1_qspi.c => s32cc_qspi.c} (92%)
+ rename drivers/spi/{s32gen1_qspi_macronix.c => s32cc_qspi_macronix.c} (88%)
+ rename drivers/spi/{s32gen1_qspi_mem_common.c => s32cc_qspi_mem_common.c} (79%)
+ rename drivers/spi/{s32gen1_qspi_micron.c => s32cc_qspi_micron.c} (86%)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index 6649e7d8c6..44513933e6 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -294,7 +294,7 @@
+ 	};
+ 
+ 	qspi: quadspi@40134000 {
+-		compatible = "fsl,s32gen1-qspi";
++		compatible = "fsl,s32cc-qspi";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		reg = <0x0 0x00000000 0x0 0x20000000>,
+diff --git a/arch/arm/mach-s32/s32-cc/soc.c b/arch/arm/mach-s32/s32-cc/soc.c
+index becc1b6cfc..6617f8f5f6 100644
+--- a/arch/arm/mach-s32/s32-cc/soc.c
++++ b/arch/arm/mach-s32/s32-cc/soc.c
+@@ -88,7 +88,7 @@ static void disable_qspi_mmu_entry(void)
+ 	size_t i;
+ 
+ 	offset = fdt_node_offset_by_compatible(gd->fdt_blob, -1,
+-					       "fsl,s32gen1-qspi");
++					       "fsl,s32cc-qspi");
+ 	if (offset > 0) {
+ 		if (fdtdec_get_is_enabled(gd->fdt_blob, offset))
+ 			return;
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index d06da77a9e..f3ea28fc5c 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -32,10 +32,10 @@ obj-$(CONFIG_FSL_DSPI) += fsl_dspi.o
+ obj-$(CONFIG_FSL_ESPI) += fsl_espi.o
+ obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
+ ifdef CONFIG_FSL_QSPI
+-obj-$(CONFIG_NXP_S32CC) += s32gen1_qspi.o
+-obj-$(CONFIG_NXP_S32CC) += s32gen1_qspi_macronix.o
+-obj-$(CONFIG_NXP_S32CC) += s32gen1_qspi_micron.o
+-obj-$(CONFIG_NXP_S32CC) += s32gen1_qspi_mem_common.o
++obj-$(CONFIG_NXP_S32CC) += s32cc_qspi.o
++obj-$(CONFIG_NXP_S32CC) += s32cc_qspi_macronix.o
++obj-$(CONFIG_NXP_S32CC) += s32cc_qspi_micron.o
++obj-$(CONFIG_NXP_S32CC) += s32cc_qspi_mem_common.o
+ endif
+ obj-$(CONFIG_ICH_SPI) +=  ich.o
+ obj-$(CONFIG_KIRKWOOD_SPI) += kirkwood_spi.o
+diff --git a/drivers/spi/fsl_qspi.c b/drivers/spi/fsl_qspi.c
+index d0208a894b..a9f84d5f4b 100644
+--- a/drivers/spi/fsl_qspi.c
++++ b/drivers/spi/fsl_qspi.c
+@@ -82,7 +82,7 @@ enum fsl_qspi_devtype {
+ 	FSL_QUADSPI_IMX6SX,
+ 	FSL_QUADSPI_IMX6UL_7D,
+ 	FSL_QUADSPI_IMX7ULP,
+-	FSL_QUADSPI_S32GEN1,
++	FSL_QUADSPI_S32CC,
+ };
+ 
+ struct fsl_qspi_devtype_data {
+@@ -150,8 +150,8 @@ static const struct fsl_qspi_devtype_data imx7ulp_data = {
+ 	.driver_data = 0,
+ };
+ 
+-static const struct fsl_qspi_devtype_data s32gen1_data = {
+-	.devtype = FSL_QUADSPI_S32GEN1,
++static const struct fsl_qspi_devtype_data s32cc_data = {
++	.devtype = FSL_QUADSPI_S32CC,
+ 	.rxfifo = 128,
+ 	.txfifo = 256,
+ 	.ahb_buf_size = 1024,
+@@ -1012,7 +1012,7 @@ static int fsl_qspi_probe(struct udevice *bus)
+ 
+ #if defined(CONFIG_NXP_S32CC) && (defined(CONFIG_SPI_FLASH_MACRONIX) || \
+ 	defined(CONFIG_SPI_FLASH_STMICRO))
+-	s32gen1_reset_bootrom_settings(priv);
++	s32cc_reset_bootrom_settings(priv);
+ #endif
+ 
+ #if defined(CONFIG_NXP_S32CC)
+@@ -1121,7 +1121,7 @@ static int fsl_qspi_probe(struct udevice *bus)
+ #ifndef CONFIG_NXP_S32CC
+ 	qspi_set_lut(priv);
+ #else
+-	s32gen1_enable_spi(priv, true);
++	s32cc_enable_spi(priv, true);
+ #endif
+ 
+ #ifdef CONFIG_SYS_FSL_QSPI_AHB
+@@ -1258,7 +1258,7 @@ static const struct dm_spi_ops fsl_qspi_ops = {
+ 	.set_speed	= fsl_qspi_set_speed,
+ 	.set_mode	= fsl_qspi_set_mode,
+ #ifdef CONFIG_NXP_S32CC
+-	.mem_ops	= &s32gen1_mem_ops,
++	.mem_ops	= &s32cc_mem_ops,
+ #endif
+ };
+ 
+@@ -1268,7 +1268,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
+ 	{ .compatible = "fsl,imx6ul-qspi", .data = (ulong)&imx6ul_7d_data },
+ 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
+ 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
+-	{ .compatible = "fsl,s32gen1-qspi", .data = (ulong)&s32gen1_data },
++	{ .compatible = "fsl,s32cc-qspi", .data = (ulong)&s32cc_data },
+ 	{ }
+ };
+ 
+diff --git a/drivers/spi/fsl_qspi.h b/drivers/spi/fsl_qspi.h
+index e681fac12e..00f705f387 100644
+--- a/drivers/spi/fsl_qspi.h
++++ b/drivers/spi/fsl_qspi.h
+@@ -338,26 +338,26 @@ struct qspi_config {
+ 	u32 dlpr;
+ };
+ 
+-void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *q);
++void s32cc_reset_bootrom_settings(struct fsl_qspi_priv *q);
+ void qspi_init_ahb_read(struct fsl_qspi_priv *priv);
+-int s32gen1_enable_spi(struct fsl_qspi_priv *q, bool force);
+-extern struct spi_controller_mem_ops s32gen1_mem_ops;
++int s32cc_enable_spi(struct fsl_qspi_priv *q, bool force);
++extern struct spi_controller_mem_ops s32cc_mem_ops;
+ void qspi_write32(u32 flags, u32 *addr, u32 val);
+ u32 qspi_read32(u32 flags, u32 *addr);
+-bool s32gen1_enable_operators(struct fsl_qspi_priv *priv,
+-			      struct qspi_op *ops, size_t n_ops);
+-void s32gen1_disable_operators(struct qspi_op *ops, size_t n_ops);
+-int s32gen1_mem_exec_read_op(struct fsl_qspi_priv *q,
+-			     const struct spi_mem_op *op, u8 lut_cfg);
+-int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *q,
+-			      const struct spi_mem_op *op, u8 lut_cfg);
+-int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *q, struct qspi_config *config);
++bool s32cc_enable_operators(struct fsl_qspi_priv *priv,
++			    struct qspi_op *ops, size_t n_ops);
++void s32cc_disable_operators(struct qspi_op *ops, size_t n_ops);
++int s32cc_mem_exec_read_op(struct fsl_qspi_priv *q,
++			   const struct spi_mem_op *op, u8 lut_cfg);
++int s32cc_mem_exec_write_op(struct fsl_qspi_priv *q,
++			    const struct spi_mem_op *op, u8 lut_cfg);
++int s32cc_mem_enable_ddr(struct fsl_qspi_priv *q, struct qspi_config *config);
+ int macronix_mem_enable_ddr(struct fsl_qspi_priv *q);
+ int micron_mem_enable_ddr(struct fsl_qspi_priv *q);
+ void macronix_get_ddr_config(struct qspi_config *ddr_config);
+ void micron_get_ddr_config(struct qspi_config *ddr_config);
+-int s32gen1_mem_reset(struct fsl_qspi_priv *q);
+-u32 *s32gen1_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index);
++int s32cc_mem_reset(struct fsl_qspi_priv *q);
++u32 *s32cc_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index);
+ 
+ #endif
+ 
+diff --git a/drivers/spi/s32gen1_qspi.c b/drivers/spi/s32cc_qspi.c
+similarity index 92%
+rename from drivers/spi/s32gen1_qspi.c
+rename to drivers/spi/s32cc_qspi.c
+index 7976dda320..3a55425261 100644
+--- a/drivers/spi/s32gen1_qspi.c
++++ b/drivers/spi/s32cc_qspi.c
+@@ -46,8 +46,8 @@ static void dump_op(const struct spi_mem_op *op)
+ }
+ #endif
+ 
+-static int s32gen1_adjust_op_size(struct spi_slave *slave,
+-				  struct spi_mem_op *op)
++static int s32cc_adjust_op_size(struct spi_slave *slave,
++				struct spi_mem_op *op)
+ {
+ 	return 0;
+ }
+@@ -67,8 +67,8 @@ static u32 clear_fifos(struct fsl_qspi_priv *priv)
+ 	return mcr_reg;
+ }
+ 
+-int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *priv,
+-			      const struct spi_mem_op *op, u8 lut_cfg)
++int s32cc_mem_exec_write_op(struct fsl_qspi_priv *priv,
++			    const struct spi_mem_op *op, u8 lut_cfg)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+ 	u32 mcr_reg, i, words = 0;
+@@ -127,8 +127,8 @@ int s32gen1_mem_exec_write_op(struct fsl_qspi_priv *priv,
+ 	return 0;
+ }
+ 
+-int s32gen1_mem_exec_read_op(struct fsl_qspi_priv *priv,
+-			     const struct spi_mem_op *op, u8 lut_cfg)
++int s32cc_mem_exec_read_op(struct fsl_qspi_priv *priv,
++			   const struct spi_mem_op *op, u8 lut_cfg)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+ 	u32 mcr_reg, rbsr_reg, data, size = 0;
+@@ -396,7 +396,7 @@ static bool add_op_to_lutdb(struct fsl_qspi_priv *priv,
+ 	return true;
+ }
+ 
+-u32 *s32gen1_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
++u32 *s32cc_get_lut_seq_start(struct fsl_qspi_regs *regs, u32 index)
+ {
+ 	return &regs->lut[index * LUTS_PER_CONFIG];
+ }
+@@ -410,7 +410,7 @@ static void set_lut(struct fsl_qspi_priv *priv, u8 index, u8 opcode)
+ 	iter = &lut_configs[opcode].conf[0];
+ 	iterb = iter;
+ 
+-	lutaddr = s32gen1_get_lut_seq_start(regs, index);
++	lutaddr = s32cc_get_lut_seq_start(regs, index);
+ 
+ 	/* Unlock the LUT */
+ 	qspi_write32(priv->flags, &regs->lutkey, LUT_KEY_VALUE);
+@@ -457,8 +457,8 @@ static bool enable_op(struct fsl_qspi_priv *priv, const struct spi_mem_op *op)
+ 	return true;
+ }
+ 
+-bool s32gen1_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
+-			      size_t n_ops)
++bool s32cc_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
++			    size_t n_ops)
+ 
+ {
+ 	bool res;
+@@ -485,7 +485,7 @@ bool s32gen1_enable_operators(struct fsl_qspi_priv *priv, struct qspi_op *ops,
+ 	return true;
+ }
+ 
+-void s32gen1_disable_operators(struct qspi_op *ops, size_t n_ops)
++void s32cc_disable_operators(struct qspi_op *ops, size_t n_ops)
+ {
+ 	size_t i;
+ 	const struct spi_mem_op *op;
+@@ -637,7 +637,7 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
+ 
+ #if defined(CONFIG_SPI_FLASH_MACRONIX) || \
+ 	defined(CONFIG_SPI_FLASH_STMICRO)
+-	if (s32gen1_mem_enable_ddr(priv, &ddr_config)) {
++	if (s32cc_mem_enable_ddr(priv, &ddr_config)) {
+ 		printf("Error: Failed to enable OPI DDR mode\n");
+ 		return -1;
+ 	}
+@@ -697,7 +697,7 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
+ 	return 0;
+ }
+ 
+-int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
++int s32cc_enable_spi(struct fsl_qspi_priv *priv, bool force)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+ 	u32 mcr;
+@@ -708,7 +708,7 @@ int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
+ #if defined(CONFIG_SPI_FLASH_MACRONIX) || \
+ 	defined(CONFIG_SPI_FLASH_STMICRO)
+ 	if (priv->ddr_mode) {
+-		if (s32gen1_mem_reset(priv))
++		if (s32cc_mem_reset(priv))
+ 			return -1;
+ 	}
+ #endif
+@@ -756,8 +756,8 @@ int s32gen1_enable_spi(struct fsl_qspi_priv *priv, bool force)
+ 	return 0;
+ }
+ 
+-static inline void s32gen1_qspi_print_read_speed(const struct spi_mem_op *op,
+-						 unsigned long us_before)
++static inline void s32cc_qspi_print_read_speed(const struct spi_mem_op *op,
++					       unsigned long us_before)
+ {
+ #ifdef DEBUG
+ 	unsigned long us_after, us;
+@@ -774,7 +774,7 @@ static inline void s32gen1_qspi_print_read_speed(const struct spi_mem_op *op,
+ #endif
+ }
+ 
+-static inline unsigned long s32gen1_get_initial_ts(void)
++static inline unsigned long s32cc_get_initial_ts(void)
+ {
+ #ifdef DEBUG
+ 	return timer_get_boot_us();
+@@ -799,10 +799,10 @@ static int qspi_read_mem(struct fsl_qspi_priv *priv,
+ 	invalidate_dcache_range(op->addr.val, op->addr.val + op->data.nbytes);
+ 
+ 	/* Read out the data directly from the AHB buffer. */
+-	us_before = s32gen1_get_initial_ts();
++	us_before = s32cc_get_initial_ts();
+ 	memcpy_fromio(op->data.buf.in, (void *)(uintptr_t)op->addr.val,
+ 		      op->data.nbytes);
+-	s32gen1_qspi_print_read_speed(op, us_before);
++	s32cc_qspi_print_read_speed(op, us_before);
+ 
+ 	qspi_write32(priv->flags, &regs->mcr, mcr_reg);
+ 	return 0;
+@@ -834,7 +834,7 @@ static void qspi_invalidate_ahb(struct fsl_qspi_priv *priv)
+ 	qspi_write32(priv->flags, &regs->mcr, mcr);
+ }
+ 
+-static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
++static int s32cc_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+ {
+ 	struct fsl_qspi_priv *priv;
+ 	struct udevice *bus;
+@@ -860,7 +860,7 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+ 	/* Register and memory write */
+ 	if (op->data.dir == SPI_MEM_DATA_OUT) {
+ 		priv->flags &= ~QSPI_FLAG_PREV_READ_MEM;
+-		return s32gen1_mem_exec_write_op(priv, op, lut_cfg);
++		return s32cc_mem_exec_write_op(priv, op, lut_cfg);
+ 	}
+ 
+ 	/* Memory operation */
+@@ -879,7 +879,7 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+ 		 * after any DTR-OPI read operation.
+ 		 */
+ #if defined(CONFIG_TARGET_S32R45EVB)
+-		s32gen1_enable_spi(priv, true);
++		s32cc_enable_spi(priv, true);
+ #endif
+ 		return ret;
+ 	}
+@@ -887,11 +887,11 @@ static int s32gen1_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
+ 	priv->flags &= ~QSPI_FLAG_PREV_READ_MEM;
+ 
+ 	/* Read Register */
+-	return s32gen1_mem_exec_read_op(priv, op, lut_cfg);
++	return s32cc_mem_exec_read_op(priv, op, lut_cfg);
+ }
+ 
+-static bool s32gen1_supports_op(struct spi_slave *slave,
+-				const struct spi_mem_op *op)
++static bool s32cc_supports_op(struct spi_slave *slave,
++			      const struct spi_mem_op *op)
+ {
+ 	struct udevice *bus;
+ 	struct fsl_qspi_priv *priv;
+@@ -905,15 +905,15 @@ static bool s32gen1_supports_op(struct spi_slave *slave,
+ 		if (enable_ddr(priv))
+ 			return -1;
+ 	} else {
+-		if (s32gen1_enable_spi(priv, false))
++		if (s32cc_enable_spi(priv, false))
+ 			return -1;
+ 	}
+ 
+ 	return enable_op(priv, op);
+ }
+ 
+-struct spi_controller_mem_ops s32gen1_mem_ops = {
+-	.adjust_op_size = s32gen1_adjust_op_size,
+-	.supports_op = s32gen1_supports_op,
+-	.exec_op = s32gen1_exec_op,
++struct spi_controller_mem_ops s32cc_mem_ops = {
++	.adjust_op_size = s32cc_adjust_op_size,
++	.supports_op = s32cc_supports_op,
++	.exec_op = s32cc_exec_op,
+ };
+diff --git a/drivers/spi/s32gen1_qspi_macronix.c b/drivers/spi/s32cc_qspi_macronix.c
+similarity index 88%
+rename from drivers/spi/s32gen1_qspi_macronix.c
+rename to drivers/spi/s32cc_qspi_macronix.c
+index 29162df032..22df6d9d16 100644
+--- a/drivers/spi/s32gen1_qspi_macronix.c
++++ b/drivers/spi/s32cc_qspi_macronix.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  */
+ 
+ #include "fsl_qspi.h"
+@@ -107,7 +107,7 @@ int macronix_mem_enable_ddr(struct fsl_qspi_priv *priv)
+ 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
+ 		;
+ 
+-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
++	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+ 		return -1;
+ 
+ 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
+@@ -115,28 +115,28 @@ int macronix_mem_enable_ddr(struct fsl_qspi_priv *priv)
+ 	/* Enable the module */
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
+ 
+-	if (s32gen1_mem_exec_read_op(priv, &rdcr2_sdr_op, rdcr2_cfg))
++	if (s32cc_mem_exec_read_op(priv, &rdcr2_sdr_op, rdcr2_cfg))
+ 		return -1;
+ 
+ 	cfg2_reg &= ~QSPI_CFG2_OPI_MASK;
+ 	cfg2_reg |= QSPI_CFG2_DTR_OPI_ENABLED;
+ 
+ 	/* Enable write */
+-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
++	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+ 		return -1;
+ 
+ 	/* Wait write enabled */
+ 	while (!(status & FLASH_STATUS_WEL)) {
+-		if (s32gen1_mem_exec_read_op(priv, &rdsr_sdr_op, rdsr_cfg))
++		if (s32cc_mem_exec_read_op(priv, &rdsr_sdr_op, rdsr_cfg))
+ 			return -1;
+ 	}
+ 
+-	if (s32gen1_mem_exec_write_op(priv, &wrcr2_sdr_op, wrcr2_cfg))
++	if (s32cc_mem_exec_write_op(priv, &wrcr2_sdr_op, wrcr2_cfg))
+ 		return -1;
+ 
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2);
+ 
+-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
++	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
+ 	udelay(400);
+ 
+ 	return 0;
+diff --git a/drivers/spi/s32gen1_qspi_mem_common.c b/drivers/spi/s32cc_qspi_mem_common.c
+similarity index 79%
+rename from drivers/spi/s32gen1_qspi_mem_common.c
+rename to drivers/spi/s32cc_qspi_mem_common.c
+index fba2f5f5e7..684aece0be 100644
+--- a/drivers/spi/s32gen1_qspi_mem_common.c
++++ b/drivers/spi/s32cc_qspi_mem_common.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  */
+ 
+ #include "fsl_qspi.h"
+@@ -32,7 +32,7 @@ SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RDID, 1),
+ 	   SPI_MEM_OP_NO_DUMMY,
+ 	   SPI_MEM_OP_DATA_IN(SPI_NOR_MAX_ID_LEN, NULL, 1));
+ 
+-int s32gen1_mem_reset(struct fsl_qspi_priv *priv)
++int s32cc_mem_reset(struct fsl_qspi_priv *priv)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+ 	u8 rsten_cfg, rst_cfg;
+@@ -55,23 +55,23 @@ int s32gen1_mem_reset(struct fsl_qspi_priv *priv)
+ 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
+ 
+-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
++	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+ 		return -1;
+ 
+-	if (s32gen1_mem_exec_write_op(priv, &rsten_ddr_op, rsten_cfg))
++	if (s32cc_mem_exec_write_op(priv, &rsten_ddr_op, rsten_cfg))
+ 		return -1;
+ 
+-	if (s32gen1_mem_exec_write_op(priv, &rst_ddr_op, rst_cfg))
++	if (s32cc_mem_exec_write_op(priv, &rst_ddr_op, rst_cfg))
+ 		return -1;
+ 
+ 	/* Reset recovery time after a read operation */
+ 	udelay(40);
+-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
++	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
+ 
+ 	return 0;
+ }
+ 
+-void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
++void s32cc_reset_bootrom_settings(struct fsl_qspi_priv *priv)
+ {
+ 	struct fsl_qspi_regs *regs = priv->regs;
+ 	u32 bfgencr, lutid;
+@@ -84,7 +84,7 @@ void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
+ 	bfgencr = qspi_read32(priv->flags, &regs->bfgencr);
+ 	lutid = (bfgencr & QSPI_BFGENCR_SEQID_MASK) >> QSPI_BFGENCR_SEQID_SHIFT;
+ 
+-	lutaddr = s32gen1_get_lut_seq_start(regs, lutid);
++	lutaddr = s32cc_get_lut_seq_start(regs, lutid);
+ 	lut = qspi_read32(priv->flags, lutaddr);
+ 
+ 	/* Not configured */
+@@ -99,11 +99,11 @@ void s32gen1_reset_bootrom_settings(struct fsl_qspi_priv *priv)
+ 	else
+ 		priv->ddr_mode = false;
+ 
+-	s32gen1_mem_reset(priv);
++	s32cc_mem_reset(priv);
+ }
+ 
+-int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
+-			   struct qspi_config *ddr_config)
++int s32cc_mem_enable_ddr(struct fsl_qspi_priv *priv,
++			 struct qspi_config *ddr_config)
+ {
+ 		struct fsl_qspi_regs *regs = priv->regs;
+ 	u8 id[SPI_NOR_MAX_ID_LEN];
+@@ -125,7 +125,7 @@ int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
+ 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
+ 		;
+ 
+-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
++	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+ 		return -1;
+ 
+ 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
+@@ -133,10 +133,10 @@ int s32gen1_mem_enable_ddr(struct fsl_qspi_priv *priv,
+ 	/* Enable the module */
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
+ 
+-	if (s32gen1_mem_exec_read_op(priv, &read_id_op, read_id_cfg))
++	if (s32cc_mem_exec_read_op(priv, &read_id_op, read_id_cfg))
+ 		return -1;
+ 
+-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
++	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
+ 
+ 	for (i = 0; i < SPI_NOR_MIN_ID_LEN; i++) {
+ 		byte = (SPI_NOR_MIN_ID_LEN - 1) - i;
+diff --git a/drivers/spi/s32gen1_qspi_micron.c b/drivers/spi/s32cc_qspi_micron.c
+similarity index 86%
+rename from drivers/spi/s32gen1_qspi_micron.c
+rename to drivers/spi/s32cc_qspi_micron.c
+index 532fbf3b34..342c87d7d4 100644
+--- a/drivers/spi/s32gen1_qspi_micron.c
++++ b/drivers/spi/s32cc_qspi_micron.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  */
+ 
+ #include "fsl_qspi.h"
+@@ -92,7 +92,7 @@ int micron_mem_enable_ddr(struct fsl_qspi_priv *priv)
+ 	while (qspi_read32(priv->flags, &regs->sr) & QSPI_SR_BUSY_MASK)
+ 		;
+ 
+-	if (!s32gen1_enable_operators(priv, ops, ARRAY_SIZE(ops)))
++	if (!s32cc_enable_operators(priv, ops, ARRAY_SIZE(ops)))
+ 		return -1;
+ 
+ 	mcr2 = qspi_read32(priv->flags, &regs->mcr);
+@@ -101,24 +101,24 @@ int micron_mem_enable_ddr(struct fsl_qspi_priv *priv)
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2 & ~QSPI_MCR_MDIS_MASK);
+ 
+ 	/* Enable write */
+-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
++	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+ 		return -1;
+ 
+-	if (s32gen1_mem_exec_write_op(priv, &micron_set_dummy,
+-				      micron_set_dummy_cfg))
++	if (s32cc_mem_exec_write_op(priv, &micron_set_dummy,
++				    micron_set_dummy_cfg))
+ 		return -1;
+ 
+ 	/* Enable write */
+-	if (s32gen1_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
++	if (s32cc_mem_exec_write_op(priv, &wren_sdr_op, wren_cfg))
+ 		return -1;
+ 
+-	if (s32gen1_mem_exec_write_op(priv, &micron_io_mode,
+-				      micron_io_mode_cfg))
++	if (s32cc_mem_exec_write_op(priv, &micron_io_mode,
++				    micron_io_mode_cfg))
+ 		return -1;
+ 
+ 	qspi_write32(priv->flags, &regs->mcr, mcr2);
+ 
+-	s32gen1_disable_operators(ops, ARRAY_SIZE(ops));
++	s32cc_disable_operators(ops, ARRAY_SIZE(ops));
+ 	udelay(400);
+ 
+ 	return 0;
+-- 
+2.17.1
+

@@ -1,0 +1,80 @@
+From 87980bc305e88d7548f4af602d37458cad1df688 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 14 Apr 2022 09:44:16 +0300
+Subject: [PATCH 03/33] s32cc: Rename "fsl,s32cc-dwmac" to "nxp,s32cc-dwmac"
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi            | 2 +-
+ arch/arm/dts/fsl-s32r45.dts               | 2 +-
+ arch/arm/mach-s32/s32-cc/eth.c            | 2 +-
+ include/dm/platform_data/dwc_eth_qos_dm.h | 4 ++--
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index 0c7d9ae316..b9a1ab827d 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -308,7 +308,7 @@
+ 	};
+ 
+ 	gmac0: ethernet@4033c000 {
+-		compatible = "fsl,s32cc-dwmac";
++		compatible = "nxp,s32cc-dwmac";
+ 		reg = <0x0 0x4033c000 0x0 0x2000>, /* gmac IP */
+ 		      <0x0 0x4007C004 0x0 0x4>;    /* S32 CTRL_STS reg */
+ 		tx-fifo-depth = <20480>;
+diff --git a/arch/arm/dts/fsl-s32r45.dts b/arch/arm/dts/fsl-s32r45.dts
+index 6bd1b45830..f3a0cffe86 100644
+--- a/arch/arm/dts/fsl-s32r45.dts
++++ b/arch/arm/dts/fsl-s32r45.dts
+@@ -117,7 +117,7 @@
+ 	};
+ 
+ 	gmac1: ethernet@44010000 {
+-		compatible = "fsl,s32cc-dwmac";
++		compatible = "nxp,s32cc-dwmac";
+ 		clocks = <&clks S32R45_SCMI_CLK_GMAC1_TS>,
+ 				<&clks S32R45_SCMI_CLK_GMAC1_RX_SGMII>,
+ 				<&clks S32R45_SCMI_CLK_GMAC1_TX_SGMII>,
+diff --git a/arch/arm/mach-s32/s32-cc/eth.c b/arch/arm/mach-s32/s32-cc/eth.c
+index 535b0e1a32..828f4bd918 100644
+--- a/arch/arm/mach-s32/s32-cc/eth.c
++++ b/arch/arm/mach-s32/s32-cc/eth.c
+@@ -210,7 +210,7 @@ void ft_enet_fixup(void *fdt)
+ 		int idx = -1;
+ 
+ 		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff,
+-							"fsl,s32cc-dwmac");
++							"nxp,s32cc-dwmac");
+ 		if (nodeoff < 0)
+ 			return;
+ 
+diff --git a/include/dm/platform_data/dwc_eth_qos_dm.h b/include/dm/platform_data/dwc_eth_qos_dm.h
+index 78afb5466e..0d0d653e9d 100644
+--- a/include/dm/platform_data/dwc_eth_qos_dm.h
++++ b/include/dm/platform_data/dwc_eth_qos_dm.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0+ */
+ /*
+- * Copyright 2019-2021 NXP
++ * Copyright 2019-2022 NXP
+  */
+ 
+ #ifndef DWC_ETH_QOS_DM_H
+@@ -55,7 +55,7 @@ static const struct udevice_id eqos_ids[] = {
+ #endif /* CONFIG_DWC_ETH_QOS_STM32 */
+ #if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+ 	{
+-		.compatible = "fsl,s32cc-dwmac",
++		.compatible = "nxp,s32cc-dwmac",
+ 		.data = (ulong)&eqos_s32cc_config
+ 	},
+ #endif /* CONFIG_DWC_ETH_QOS_S32CC */
+-- 
+2.17.1
+

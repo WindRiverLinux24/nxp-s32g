@@ -1,0 +1,208 @@
+From 93d2a7761f5ecfcc6dbdf47b7e9e360f258a0105 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 18 May 2022 11:11:50 +0300
+Subject: [PATCH 20/30] board: s32cc: Enable distro boot flow
+
+Issue: ALB-8903
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/Kconfig        | 14 +++++++++-
+ arch/arm/mach-s32/s32-cc/Kconfig |  3 ---
+ arch/arm/mach-s32/s32-cc/fdt.c   | 12 +++++++++
+ board/nxp/s32-cc/board_common.c  | 12 +++++++++
+ include/configs/s32-cc.h         | 45 ++++++++++++++++++++++++++++++--
+ 5 files changed, 80 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index e91cec2f11..39a2780066 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -17,15 +17,27 @@ config SYS_VENDOR
+ 
+ config NXP_S32CC
+ 	bool
++	imply CMD_DHCP
++	imply CMD_EXT2
++	imply CMD_EXT4
++	imply CMD_FAT
++	imply CMD_MDIO
++	imply CMD_MII
++	imply CMD_PART
++	imply CMD_PING
+ 	imply DM_ETH
+ 	imply DM_I2C
+ 	imply DM_PCI
+ 	imply DM_SPI
+ 	imply DM_SPI_FLASH
++	imply DOS_PARTITION
+ 	imply DWC_ETH_QOS_DEVICES
+ 	imply DWC_ETH_QOS_S32CC
++	imply EFI_LOADER
++	imply EFI_LOADER_BOUNCE_BUFFER
+ 	imply FSL_DSPI
+ 	imply FSL_QSPI
++	imply FS_FAT
+ 	imply MISC
+ 	imply MP
+ 	imply NXP_S32CC_PIT_TIMER
+@@ -38,12 +50,12 @@ config NXP_S32CC
+ 	select CLK
+ 	select CLK_SCMI
+ 	select CPU
+-	select DISTRO_DEFAULTS
+ 	select DM_GPIO
+ 	select DM_MMC
+ 	select DM_SERIAL
+ 	select FSL_LINFLEXUART
+ 	select FSL_USDHC
++	select HUSH_PARSER
+ 	select MACH_S32
+ 	select MMC_HS400_ES_SUPPORT
+ 	select MMC_HS400_SUPPORT
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 3d1fe62752..a9c68cbe99 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -149,9 +149,6 @@ config SF_DEFAULT_CS
+ config SPI_FLASH_BAR
+ 	default n
+ 
+-config EFI_LOADER
+-	default n
+-
+ config DM_DEVICE_REMOVE
+ 	default n
+ 
+diff --git a/arch/arm/mach-s32/s32-cc/fdt.c b/arch/arm/mach-s32/s32-cc/fdt.c
+index 1b554b24c3..7fdc2a6a4e 100644
+--- a/arch/arm/mach-s32/s32-cc/fdt.c
++++ b/arch/arm/mach-s32/s32-cc/fdt.c
+@@ -707,6 +707,18 @@ int ft_system_setup(void *blob, bd_t *bd)
+ {
+ 	int ret;
+ 
++	/*
++	 * Skip these fixups when reusing U-Boot dtb for Linux
++	 * as they don't make sense.
++	 *
++	 * This block should be removed once the bindings and the dtbs
++	 * used by Linux and U-Boot are fully compatible.
++	 */
++	if (IS_ENABLED(CONFIG_DISTRO_DEFAULTS)) {
++		printf("Skipping %s ...\n", __func__);
++		return 0;
++	}
++
+ 	ret = ft_fixup_cpu(blob);
+ 	if (ret)
+ 		goto exit;
+diff --git a/board/nxp/s32-cc/board_common.c b/board/nxp/s32-cc/board_common.c
+index aef29d8a6e..0c822ffddc 100644
+--- a/board/nxp/s32-cc/board_common.c
++++ b/board/nxp/s32-cc/board_common.c
+@@ -62,6 +62,18 @@ void *board_fdt_blob_setup(void)
+ #if defined(CONFIG_OF_BOARD_SETUP)
+ int ft_board_setup(void *blob, bd_t *bd)
+ {
++	/*
++	 * Skip these fixups when reusing U-Boot dtb for Linux
++	 * as they don't make sense.
++	 *
++	 * This block should be removed once the bindings and the dtbs
++	 * used by Linux and U-Boot are fully compatible.
++	 */
++	if (IS_ENABLED(CONFIG_DISTRO_DEFAULTS)) {
++		printf("Skipping %s...\n", __func__);
++		return 0;
++	}
++
+ 	ft_cpu_setup(blob, bd);
+ 
+ 	if (IS_ENABLED(CONFIG_NETDEVICES))
+diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
+index 5f6a71cc9f..b8bdffaf20 100644
+--- a/include/configs/s32-cc.h
++++ b/include/configs/s32-cc.h
+@@ -30,16 +30,21 @@
+  *
+  * Before changing the device tree offset or size, please read
+  * https://docs.kernel.org/arm64/booting.html#setup-the-device-tree
++ * and doc/README.distro
+  *
+  * DDR images layout
+  *
+  * Name				Size	Address
+  *
+- * Image			48M	CONFIG_SYS_LOAD_ADDR
++ * Image			46M	CONFIG_SYS_LOAD_ADDR
++ * PXE				1M	CONFIG_SYS_LOAD_ADDR + 46M
++ * boot.scr			1M	CONFIG_SYS_LOAD_ADDR + 47M
+  * Linux DTB			2M	CONFIG_SYS_LOAD_ADDR + 48M
+  * Reserved memory regions	206	CONFIG_SYS_LOAD_ADDR + 50M
+  * Ramdisk			-	CONFIG_SYS_LOAD_ADDR + 256M
+  */
++#define S32CC_PXE_ADDR			0x82E00000
++#define S32CC_BOOT_SCR_ADDR		0x82F00000
+ #define S32CC_FDT_ADDR			0x83000000
+ #define S32CC_RAMDISK_ADDR		0x90000000
+ 
+@@ -156,6 +161,7 @@
+ #endif
+ 
+ #define S32CC_ENV_SETTINGS \
++	BOOTENV \
+ 	"boot_fdt=try\0" \
+ 	"boot_mtd=booti\0" \
+ 	"bootscript=echo Running bootscript from mmc ...; " \
+@@ -301,9 +307,44 @@
+ #ifdef CONFIG_BOOTCOMMAND
+ #undef CONFIG_BOOTCOMMAND
+ #endif
+-#define CONFIG_BOOTCOMMAND \
++
++#if defined(CONFIG_DISTRO_DEFAULTS)
++#  define BOOT_TARGET_DEVICES(func) \
++	func(MMC, mmc, CONFIG_SYS_MMC_ENV_DEV)
++/*
++ * Variables required by doc/README.distro
++ */
++#  define DISTRO_VARS \
++	"setenv fdt_addr ${fdtcontroladdr};" \
++	"setenv ramdisk_addr_r " __stringify(S32CC_RAMDISK_ADDR) ";" \
++	"setenv kernel_addr_r ${loadaddr};" \
++	"setenv pxefile_addr_r " __stringify(S32CC_PXE_ADDR) ";" \
++	"setenv scriptaddr " __stringify(S32CC_BOOT_SCR_ADDR) ";"
++/*
++ * Remove pinmuxing properties as SIUL2 driver isn't upstreamed yet
++ */
++#  define DISTRO_FIXUPS \
++	"fdt addr ${fdtcontroladdr};" \
++	"fdt rm serial0 pinctrl-0;" \
++	"fdt rm serial0 pinctrl-names;" \
++	"fdt rm mmc0 pinctrl-0;" \
++	"fdt rm mmc0 pinctrl-1;" \
++	"fdt rm mmc0 pinctrl-2;" \
++	"fdt rm mmc0 pinctrl-names;" \
++	"fdt rm mmc0 mmc-ddr-1_8v;" \
++	"fdt rm mmc0 clock-frequency;"
++#  define CONFIG_BOOTCOMMAND \
++	EXTRA_BOOTCOMMAND \
++	DISTRO_VARS \
++	DISTRO_FIXUPS \
++	"run distro_bootcmd"
++#  include <config_distro_bootcmd.h>
++#else
++#  define BOOTENV
++#  define CONFIG_BOOTCOMMAND \
+ 	EXTRA_BOOTCOMMAND \
+ 	BOOTCOMMAND
++#endif
+ 
+ /* Limit mtest to first DDR bank if no arguments are given */
+ #define CONFIG_SYS_MEMTEST_START	(PHYS_SDRAM_1)
+-- 
+2.17.1
+

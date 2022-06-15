@@ -1,0 +1,41 @@
+From fba0147c9858c07c50785e61c1ed03db42a6febf Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 4 May 2022 08:23:15 +0300
+Subject: [PATCH 18/64] arm: s32cc: Use the same .text address for emulator as
+ for HW
+
+The same address can be used considering that latest version
+of the emulator can have 2GB of DDR.
+
+Issue: ALB-8822
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Kconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index e6e5e88c3c..d325d2bf4a 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -12,7 +12,6 @@ config CUSTOM_SYS_TEXT_BASE
+ 
+ config SYS_TEXT_BASE
+ 	hex "Text Base" if CUSTOM_SYS_TEXT_BASE
+-	default 0xbfaa0000 if TARGET_TYPE_S32GEN1_EMULATOR
+ 	default 0xffaa0000
+ 
+ config SYS_LOAD_ADDR
+@@ -28,7 +27,6 @@ config CUSTOM_SYS_DATA_BASE
+ 
+ config SYS_DATA_BASE
+ 	hex "Data Base" if CUSTOM_SYS_DATA_BASE
+-	default 0xbfa00000 if TARGET_TYPE_S32GEN1_EMULATOR
+ 	default 0xffa00000
+ 	help
+ 	  U-Boot data base address in DDR.
+-- 
+2.17.1
+

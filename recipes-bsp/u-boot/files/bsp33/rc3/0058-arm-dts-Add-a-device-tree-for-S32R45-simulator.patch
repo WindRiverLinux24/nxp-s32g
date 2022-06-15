@@ -1,0 +1,53 @@
+From 40dc76c4fb01d43cc2ab8d397275fcfd8921b03c Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 10 May 2022 16:24:25 +0300
+Subject: [PATCH 58/64] arm: dts: Add a device tree for S32R45 simulator
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32r45-simulator.dts | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+ create mode 100644 arch/arm/dts/s32r45-simulator.dts
+
+diff --git a/arch/arm/dts/s32r45-simulator.dts b/arch/arm/dts/s32r45-simulator.dts
+new file mode 100644
+index 0000000000..cd2a5c811b
+--- /dev/null
++++ b/arch/arm/dts/s32r45-simulator.dts
+@@ -0,0 +1,29 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright 2022 NXP
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++/dts-v1/;
++#include "s32r45.dtsi"
++/ {
++	model = "NXP S32G274A-SIM";
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory_DDR0@80000000 {
++		device_type = "memory";
++		reg = <0 0x80000000 0 0x40000000>;
++	};
++
++	memory_DDR1@c0000000 {
++		device_type = "memory";
++		reg = <0 0xc0000000 0 0x40000000>;
++	};
++};
+-- 
+2.17.1
+

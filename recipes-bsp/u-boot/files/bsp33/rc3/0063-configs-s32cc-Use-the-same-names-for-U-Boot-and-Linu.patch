@@ -1,0 +1,121 @@
+From f6f28fbdab03e843aa12eb8446e04cc2d1f20a10 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 12 May 2022 09:22:56 +0300
+Subject: [PATCH 63/64] configs: s32cc: Use the same names for U-Boot and Linux
+ DTBs
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/configs/s32-cc.h           | 2 +-
+ include/configs/s32g274abluebox3.h | 1 -
+ include/configs/s32g274ardb2.h     | 1 -
+ include/configs/s32g2xxaevb.h      | 1 -
+ include/configs/s32g399ardb3.h     | 1 -
+ include/configs/s32g3xxaevb.h      | 1 -
+ include/configs/s32g3xxaevb3.h     | 1 -
+ include/configs/s32r45evb.h        | 1 -
+ 8 files changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
+index 0afd916075..f0a8ba161d 100644
+--- a/include/configs/s32-cc.h
++++ b/include/configs/s32-cc.h
+@@ -166,7 +166,7 @@
+ 		"fdt addr ${fdt_addr}; " \
+ 		"fdt rm /usdhc no-1-8-v; " \
+ 		"fdt resize; \0" \
+-	"fdt_file=" FDT_FILE "\0" \
++	"fdt_file=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
+ 	"fdt_high=" __stringify(S32CC_FDT_HIGH_ADDR) "\0" \
+ 	"fdt_override=;\0" \
+ 	"flashboot=echo Booting from flash...; " \
+diff --git a/include/configs/s32g274abluebox3.h b/include/configs/s32g274abluebox3.h
+index 90dcf988d4..b1d7770b66 100644
+--- a/include/configs/s32g274abluebox3.h
++++ b/include/configs/s32g274abluebox3.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g274a-bluebox3.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_MODE			"enable,sgmii,none,none"
+diff --git a/include/configs/s32g274ardb2.h b/include/configs/s32g274ardb2.h
+index 8bfa4f2d61..67cd902a32 100644
+--- a/include/configs/s32g274ardb2.h
++++ b/include/configs/s32g274ardb2.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g274a-rdb2.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_EMAC			"0"
+diff --git a/include/configs/s32g2xxaevb.h b/include/configs/s32g2xxaevb.h
+index 263a511ca6..f49cbbffdb 100644
+--- a/include/configs/s32g2xxaevb.h
++++ b/include/configs/s32g2xxaevb.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g2xxa-evb.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_MODE "enable,none,rgmii,rgmii"
+diff --git a/include/configs/s32g399ardb3.h b/include/configs/s32g399ardb3.h
+index eab24b808c..44ac8c6e1a 100644
+--- a/include/configs/s32g399ardb3.h
++++ b/include/configs/s32g399ardb3.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g399a-rdb3.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_MODE			"enable,sgmii,none,rgmii"
+diff --git a/include/configs/s32g3xxaevb.h b/include/configs/s32g3xxaevb.h
+index ef2c52c8c1..7274f56a29 100644
+--- a/include/configs/s32g3xxaevb.h
++++ b/include/configs/s32g3xxaevb.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g3xxa-evb.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_MODE			"enable,none,rgmii,rgmii"
+diff --git a/include/configs/s32g3xxaevb3.h b/include/configs/s32g3xxaevb3.h
+index a4916e218a..ce58fa2943 100644
+--- a/include/configs/s32g3xxaevb3.h
++++ b/include/configs/s32g3xxaevb3.h
+@@ -9,7 +9,6 @@
+ 
+ #define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
+ #define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
+-#define FDT_FILE			"fsl-s32g3xxa-evb3.dtb"
+ 
+ #ifdef CONFIG_FSL_PFENG
+ #  define PFENG_MODE			"enable,sgmii,sgmii,rgmii"
+diff --git a/include/configs/s32r45evb.h b/include/configs/s32r45evb.h
+index 32571e15f2..e76a16127a 100644
+--- a/include/configs/s32r45evb.h
++++ b/include/configs/s32r45evb.h
+@@ -8,6 +8,5 @@
+ #include <configs/s32r45.h>
+ 
+ #define EXTRA_BOOT_ARGS		""
+-#define FDT_FILE		"fsl-s32r45-evb.dtb"
+ 
+ #endif
+-- 
+2.17.1
+

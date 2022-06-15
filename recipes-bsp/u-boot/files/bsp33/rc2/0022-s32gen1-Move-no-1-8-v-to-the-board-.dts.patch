@@ -1,0 +1,84 @@
+From 1131f6fbf387226a0b17d54c094f74a08e7eb888 Mon Sep 17 00:00:00 2001
+From: Dan Nica <dan.nica@nxp.com>
+Date: Wed, 13 Apr 2022 08:10:29 +0300
+Subject: [PATCH 22/33] s32gen1: Move no-1-8-v to the board .dts
+
+Being a board specific property, not a SoC one, this should stay in
+the .dts not in fsl-s32-gen1.dtsi.
+
+Issue: ALB-7950
+Upstream-Status: Pending 
+
+Signed-off-by: Dan Nica <dan.nica@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/fsl-s32-gen1.dtsi    | 1 -
+ arch/arm/dts/fsl-s32g274aevb.dts  | 4 ++++
+ arch/arm/dts/fsl-s32g274ardb2.dts | 4 ++++
+ arch/arm/dts/fsl-s32g3xxaevb.dts  | 4 ++++
+ arch/arm/dts/fsl-s32r45.dts       | 1 +
+ 5 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/fsl-s32-gen1.dtsi b/arch/arm/dts/fsl-s32-gen1.dtsi
+index 3a607e6585..cb4b7c46ea 100644
+--- a/arch/arm/dts/fsl-s32-gen1.dtsi
++++ b/arch/arm/dts/fsl-s32-gen1.dtsi
+@@ -169,7 +169,6 @@
+ 		 * supported at both 1.8V and 3.3V
+ 		 */
+ 		mmc-ddr-1_8v;
+-		no-1-8-v;
+ 		status = "disabled";
+ 	};
+ 
+diff --git a/arch/arm/dts/fsl-s32g274aevb.dts b/arch/arm/dts/fsl-s32g274aevb.dts
+index 240b82164c..845de02dd4 100644
+--- a/arch/arm/dts/fsl-s32g274aevb.dts
++++ b/arch/arm/dts/fsl-s32g274aevb.dts
+@@ -11,3 +11,7 @@
+ 	model = "NXP S32G2XXX-EVB";
+ 	compatible = "nxp,s32cc", "arm,vexpress,v2p-aarch64", "arm,vexpress";
+ };
++
++&usdhc0 {
++	no-1-8-v;
++};
+diff --git a/arch/arm/dts/fsl-s32g274ardb2.dts b/arch/arm/dts/fsl-s32g274ardb2.dts
+index d4cd674dcc..0843611d80 100644
+--- a/arch/arm/dts/fsl-s32g274ardb2.dts
++++ b/arch/arm/dts/fsl-s32g274ardb2.dts
+@@ -10,3 +10,7 @@
+ / {
+ 	model = "NXP S32G274A-RDB2";
+ };
++
++&usdhc0 {
++	no-1-8-v;
++};
+diff --git a/arch/arm/dts/fsl-s32g3xxaevb.dts b/arch/arm/dts/fsl-s32g3xxaevb.dts
+index b81ffcef9c..46607bab24 100644
+--- a/arch/arm/dts/fsl-s32g3xxaevb.dts
++++ b/arch/arm/dts/fsl-s32g3xxaevb.dts
+@@ -11,3 +11,7 @@
+ / {
+ 	model = "NXP S32G3XXX-EVB";
+ };
++
++&usdhc0 {
++	no-1-8-v;
++};
+diff --git a/arch/arm/dts/fsl-s32r45.dts b/arch/arm/dts/fsl-s32r45.dts
+index b853df9fff..4169ee18ab 100644
+--- a/arch/arm/dts/fsl-s32r45.dts
++++ b/arch/arm/dts/fsl-s32r45.dts
+@@ -189,6 +189,7 @@
+ &usdhc0 {
+ 	pinctrl-0 = <&pinctrl0_sd0>;
+ 	pinctrl-names = "default";
++	no-1-8-v;
+ 	status = "okay";
+ };
+ 
+-- 
+2.17.1
+

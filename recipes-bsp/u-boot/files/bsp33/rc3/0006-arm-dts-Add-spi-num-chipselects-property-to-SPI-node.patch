@@ -1,0 +1,94 @@
+From 6ffa7c5725604aa064ad8dca410418b7ec9273c4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 4 May 2022 13:48:42 +0300
+Subject: [PATCH 06/64] arm: dts: Add spi-num-chipselects property to SPI nodes
+
+U-Boot 2022.04 and Linux is using spi-num-chipselects instead
+of num-cs.
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32-cc.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/dts/s32-cc.dtsi b/arch/arm/dts/s32-cc.dtsi
+index acc3248635..9b809cd20d 100644
+--- a/arch/arm/dts/s32-cc.dtsi
++++ b/arch/arm/dts/s32-cc.dtsi
+@@ -236,7 +236,9 @@
+ 		reg = <0x0 0x401d4000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <8>;
++		spi-num-chipselects = <8>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -247,7 +249,9 @@
+ 		reg = <0x0 0x401d8000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <5>;
++		spi-num-chipselects = <5>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -258,7 +262,9 @@
+ 		reg = <0x0 0x401dc000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <5>;
++		spi-num-chipselects = <5>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -269,7 +275,9 @@
+ 		reg = <0x0 0x402c8000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <5>;
++		spi-num-chipselects = <5>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -280,7 +288,9 @@
+ 		reg = <0x0 0x402cc000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <5>;
++		spi-num-chipselects = <5>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -291,7 +301,9 @@
+ 		reg = <0x0 0x402d0000 0x0 0x1000>;
+ 		clocks = <&clks S32GEN1_SCMI_CLK_SPI_MODULE>;
+ 		clock-names = "dspi";
++		// For U-Boot 2020.04 only
+ 		num-cs = <5>;
++		spi-num-chipselects = <5>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -305,7 +317,9 @@
+ 		clocks = <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>,
+ 			 <&clks S32GEN1_SCMI_CLK_QSPI_FLASH1X>;
+ 		spi-max-frequency = <200000000>;
++		// For U-Boot 2020.04 only
+ 		num-cs = <2>;
++		spi-num-chipselects = <2>;
+ 		status = "disabled";
+ 	};
+ 
+-- 
+2.17.1
+

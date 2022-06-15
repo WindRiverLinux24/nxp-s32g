@@ -1,0 +1,240 @@
+From cbad9715d493ffe3cb8fc92a2582edc40a0f9006 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 5 May 2022 14:37:04 +0300
+Subject: [PATCH 31/64] dts: Add a dash between SoC and board name
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/Makefile                          | 18 +++++++++---------
+ ...g274abluebox3.dts => s32g274a-bluebox3.dts} |  0
+ .../dts/{s32g274aemu.dts => s32g274a-emu.dts}  |  0
+ .../{s32g274ardb2.dts => s32g274a-rdb2.dts}    |  0
+ .../dts/{s32g2xxaevb.dts => s32g2xxa-evb.dts}  |  0
+ .../dts/{s32g399aemu.dts => s32g399a-emu.dts}  |  0
+ .../{s32g399ardb3.dts => s32g399a-rdb3.dts}    |  0
+ .../dts/{s32g3xxaevb.dts => s32g3xxa-evb.dts}  |  0
+ .../{s32g3xxaevb3.dts => s32g3xxa-evb3.dts}    |  0
+ arch/arm/dts/{s32r45.dts => s32r45-evb.dts}    |  0
+ board/nxp/s32g274abluebox3/Kconfig             |  2 +-
+ board/nxp/s32g274aemu/Kconfig                  |  2 +-
+ board/nxp/s32g274ardb2/Kconfig                 |  2 +-
+ board/nxp/s32g2xxaevb/Kconfig                  |  2 +-
+ board/nxp/s32g399aemu/Kconfig                  |  2 +-
+ board/nxp/s32g399ardb3/Kconfig                 |  2 +-
+ board/nxp/s32g3xxaevb/Kconfig                  |  2 +-
+ board/nxp/s32g3xxaevb3/Kconfig                 |  2 +-
+ board/nxp/s32r45emu/Kconfig                    |  2 +-
+ board/nxp/s32r45evb/Kconfig                    |  2 +-
+ 20 files changed, 19 insertions(+), 19 deletions(-)
+ rename arch/arm/dts/{s32g274abluebox3.dts => s32g274a-bluebox3.dts} (100%)
+ rename arch/arm/dts/{s32g274aemu.dts => s32g274a-emu.dts} (100%)
+ rename arch/arm/dts/{s32g274ardb2.dts => s32g274a-rdb2.dts} (100%)
+ rename arch/arm/dts/{s32g2xxaevb.dts => s32g2xxa-evb.dts} (100%)
+ rename arch/arm/dts/{s32g399aemu.dts => s32g399a-emu.dts} (100%)
+ rename arch/arm/dts/{s32g399ardb3.dts => s32g399a-rdb3.dts} (100%)
+ rename arch/arm/dts/{s32g3xxaevb.dts => s32g3xxa-evb.dts} (100%)
+ rename arch/arm/dts/{s32g3xxaevb3.dts => s32g3xxa-evb3.dts} (100%)
+ rename arch/arm/dts/{s32r45.dts => s32r45-evb.dts} (100%)
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index de6d3e2ee0..80660a4163 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -388,15 +388,15 @@ dtb-$(CONFIG_FSL_LSCH2) += fsl-ls1043a-qds-duart.dtb \
+ 	fsl-ls1012a-frdm.dtb \
+ 	fsl-ls1012a-frwy.dtb
+ 
+-dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.dtb
+-dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g2xxaevb.dtb
+-dtb-$(CONFIG_TARGET_S32G3XXAEVB) += s32g3xxaevb.dtb
+-dtb-$(CONFIG_TARGET_S32G3XXAEVB3) += s32g3xxaevb3.dtb
+-dtb-$(CONFIG_TARGET_S32G274AEMU) += s32g274aemu.dtb
+-dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399aemu.dtb
+-dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274ardb2.dtb
+-dtb-$(CONFIG_TARGET_S32G399ARDB3) += s32g399ardb3.dtb
+-dtb-$(CONFIG_TARGET_S32R45EVB) += s32r45.dtb
++dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274a-bluebox3.dtb
++dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g2xxa-evb.dtb
++dtb-$(CONFIG_TARGET_S32G3XXAEVB) += s32g3xxa-evb.dtb
++dtb-$(CONFIG_TARGET_S32G3XXAEVB3) += s32g3xxa-evb3.dtb
++dtb-$(CONFIG_TARGET_S32G274AEMU) += s32g274a-emu.dtb
++dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399a-emu.dtb
++dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274a-rdb2.dtb
++dtb-$(CONFIG_TARGET_S32G399ARDB3) += s32g399a-rdb3.dtb
++dtb-$(CONFIG_TARGET_S32R45EVB) += s32r45-evb.dtb
+ 
+ dtb-$(CONFIG_TARGET_DRAGONBOARD410C) += dragonboard410c.dtb
+ dtb-$(CONFIG_TARGET_DRAGONBOARD820C) += dragonboard820c.dtb
+diff --git a/arch/arm/dts/s32g274abluebox3.dts b/arch/arm/dts/s32g274a-bluebox3.dts
+similarity index 100%
+rename from arch/arm/dts/s32g274abluebox3.dts
+rename to arch/arm/dts/s32g274a-bluebox3.dts
+diff --git a/arch/arm/dts/s32g274aemu.dts b/arch/arm/dts/s32g274a-emu.dts
+similarity index 100%
+rename from arch/arm/dts/s32g274aemu.dts
+rename to arch/arm/dts/s32g274a-emu.dts
+diff --git a/arch/arm/dts/s32g274ardb2.dts b/arch/arm/dts/s32g274a-rdb2.dts
+similarity index 100%
+rename from arch/arm/dts/s32g274ardb2.dts
+rename to arch/arm/dts/s32g274a-rdb2.dts
+diff --git a/arch/arm/dts/s32g2xxaevb.dts b/arch/arm/dts/s32g2xxa-evb.dts
+similarity index 100%
+rename from arch/arm/dts/s32g2xxaevb.dts
+rename to arch/arm/dts/s32g2xxa-evb.dts
+diff --git a/arch/arm/dts/s32g399aemu.dts b/arch/arm/dts/s32g399a-emu.dts
+similarity index 100%
+rename from arch/arm/dts/s32g399aemu.dts
+rename to arch/arm/dts/s32g399a-emu.dts
+diff --git a/arch/arm/dts/s32g399ardb3.dts b/arch/arm/dts/s32g399a-rdb3.dts
+similarity index 100%
+rename from arch/arm/dts/s32g399ardb3.dts
+rename to arch/arm/dts/s32g399a-rdb3.dts
+diff --git a/arch/arm/dts/s32g3xxaevb.dts b/arch/arm/dts/s32g3xxa-evb.dts
+similarity index 100%
+rename from arch/arm/dts/s32g3xxaevb.dts
+rename to arch/arm/dts/s32g3xxa-evb.dts
+diff --git a/arch/arm/dts/s32g3xxaevb3.dts b/arch/arm/dts/s32g3xxa-evb3.dts
+similarity index 100%
+rename from arch/arm/dts/s32g3xxaevb3.dts
+rename to arch/arm/dts/s32g3xxa-evb3.dts
+diff --git a/arch/arm/dts/s32r45.dts b/arch/arm/dts/s32r45-evb.dts
+similarity index 100%
+rename from arch/arm/dts/s32r45.dts
+rename to arch/arm/dts/s32r45-evb.dts
+diff --git a/board/nxp/s32g274abluebox3/Kconfig b/board/nxp/s32g274abluebox3/Kconfig
+index fac79e0747..32375cdcc4 100644
+--- a/board/nxp/s32g274abluebox3/Kconfig
++++ b/board/nxp/s32g274abluebox3/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g274abluebox3"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g274abluebox3"
++	default "s32g274a-bluebox3"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g274aemu/Kconfig b/board/nxp/s32g274aemu/Kconfig
+index 30a2e101d6..270dbffb37 100644
+--- a/board/nxp/s32g274aemu/Kconfig
++++ b/board/nxp/s32g274aemu/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g274aemu"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g274aemu"
++	default "s32g274a-emu"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g274ardb2/Kconfig b/board/nxp/s32g274ardb2/Kconfig
+index a7aa905b77..91c8703b07 100644
+--- a/board/nxp/s32g274ardb2/Kconfig
++++ b/board/nxp/s32g274ardb2/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g274ardb2"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g274ardb2"
++	default "s32g274a-rdb2"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g2xxaevb/Kconfig b/board/nxp/s32g2xxaevb/Kconfig
+index 56fec6302d..09e3ec3197 100644
+--- a/board/nxp/s32g2xxaevb/Kconfig
++++ b/board/nxp/s32g2xxaevb/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g2xxaevb"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g2xxaevb"
++	default "s32g2xxa-evb"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g399aemu/Kconfig b/board/nxp/s32g399aemu/Kconfig
+index d997e3511c..5c1fe4a91f 100644
+--- a/board/nxp/s32g399aemu/Kconfig
++++ b/board/nxp/s32g399aemu/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g399aemu"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g399aemu"
++	default "s32g399a-emu"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g399ardb3/Kconfig b/board/nxp/s32g399ardb3/Kconfig
+index 98945a5614..741516e9b0 100644
+--- a/board/nxp/s32g399ardb3/Kconfig
++++ b/board/nxp/s32g399ardb3/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g399ardb3"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g399ardb3"
++	default "s32g399a-rdb3"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g3xxaevb/Kconfig b/board/nxp/s32g3xxaevb/Kconfig
+index b6ed835356..c72033aa20 100644
+--- a/board/nxp/s32g3xxaevb/Kconfig
++++ b/board/nxp/s32g3xxaevb/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g3xxaevb"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g3xxaevb"
++	default "s32g3xxa-evb"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g3xxaevb3/Kconfig b/board/nxp/s32g3xxaevb3/Kconfig
+index 3eae37d5ad..92c669d511 100644
+--- a/board/nxp/s32g3xxaevb3/Kconfig
++++ b/board/nxp/s32g3xxaevb3/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g3xxaevb3"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g3xxaevb3"
++	default "s32g3xxa-evb3"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32r45emu/Kconfig b/board/nxp/s32r45emu/Kconfig
+index 1a9fced084..01536df629 100644
+--- a/board/nxp/s32r45emu/Kconfig
++++ b/board/nxp/s32r45emu/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32r45emu"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32r45"
++	default "s32r45-evb"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32r45evb/Kconfig b/board/nxp/s32r45evb/Kconfig
+index 530330bd9d..49c2088c01 100644
+--- a/board/nxp/s32r45evb/Kconfig
++++ b/board/nxp/s32r45evb/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32r45evb"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32r45"
++	default "s32r45-evb"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+-- 
+2.17.1
+

@@ -1,0 +1,100 @@
+From 78638fcb4e340097fee2a2dea72800152fbf2d70 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 21 Apr 2022 16:07:47 +0300
+Subject: [PATCH 15/64] s32cc: emu: Increase LinFlex baudrate to max value
+
+Increase LinFlex baudrate up to 7MB to get the fastest
+possible print on emulator.
+
+Issue: ALB-8822
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32g399aemu.dts        |  2 +-
+ arch/arm/mach-s32/s32-cc/Kconfig    |  5 +++++
+ drivers/serial/serial_linflexuart.c | 16 ----------------
+ 3 files changed, 6 insertions(+), 17 deletions(-)
+
+diff --git a/arch/arm/dts/s32g399aemu.dts b/arch/arm/dts/s32g399aemu.dts
+index 4e3d1be350..2399c7aeba 100644
+--- a/arch/arm/dts/s32g399aemu.dts
++++ b/arch/arm/dts/s32g399aemu.dts
+@@ -18,7 +18,7 @@
+ 	};
+ 
+ 	chosen {
+-		stdout-path = "serial1:115200n8";
++		stdout-path = "serial1:7812500n8";
+ 	};
+ };
+ 
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index f050ba3257..8ae4417a9b 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -124,6 +124,11 @@ config XEN_SUPPORT
+ 	  to directly load the Xen Image which will use a given Kernel Image as
+ 	  Dom0.
+ 
++if TARGET_TYPE_S32GEN1_EMULATOR
++config BAUDRATE
++	default 7812500
++endif
++
+ config ENV_OFFSET
+ 	default 0x1e0000
+ 
+diff --git a/drivers/serial/serial_linflexuart.c b/drivers/serial/serial_linflexuart.c
+index 3e47f38fed..adadf7e839 100644
+--- a/drivers/serial/serial_linflexuart.c
++++ b/drivers/serial/serial_linflexuart.c
+@@ -34,10 +34,6 @@
+ #define LINFLEXD_UARTCR_ROSE		BIT(23)
+ #define LINFLEX_LDIV_MULTIPLIER		(16)
+ 
+-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+-#define LIN_CLK			133000	// LIN_CLK in Hz
+-#endif
+-
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ struct linflex_fsl {
+@@ -92,9 +88,6 @@ static void _linflex_exit_init(struct linflex_fsl *base)
+ 
+ static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
+ {
+-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+-	return 1;
+-#endif
+ 	u32 mul = LINFLEX_LDIV_MULTIPLIER;
+ 	u32 cr;
+ 
+@@ -109,11 +102,7 @@ static u32 linflex_ldiv_multiplier(struct linflex_fsl *base)
+ static void _linflex_serial_setbrg(struct linflex_fsl *base, ulong rate,
+ 				   int baudrate)
+ {
+-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+-	u32 clk = LIN_CLK;
+-#else
+ 	u32 clk = rate;
+-#endif
+ 	u32 ibr, fbr, divisr, dividr;
+ 
+ 	if (!baudrate)
+@@ -165,11 +154,6 @@ static int _linflex_serial_init(struct linflex_fsl *base, ulong rate)
+ 	/* set UART bit to allow writing other bits */
+ 	__raw_writel(UARTCR_UART, &base->uartcr);
+ 
+-#ifdef CONFIG_TARGET_TYPE_S32GEN1_EMULATOR
+-	/* Set preset timeout register value. Otherwise, print is very slow. */
+-	__raw_writel(0xf, &base->uartpto);
+-#endif
+-
+ 	/* 8 bit data, no parity, Tx and Rx enabled, UART mode */
+ 	__raw_writel(UARTCR_PC1 | UARTCR_RXEN | UARTCR_TXEN | UARTCR_PC0
+ 		     | UARTCR_WL0 | UARTCR_UART | UARTCR_RFBM | UARTCR_TFBM,
+-- 
+2.17.1
+

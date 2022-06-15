@@ -1,0 +1,45 @@
+From 1f6ccd3991d1dae74b5e92ce81ce53918fe5e0e2 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 10 May 2022 15:26:29 +0300
+Subject: [PATCH 49/64] arm: dts: s32cc: Make OCOTP part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32cc.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/dts/s32cc.dtsi b/arch/arm/dts/s32cc.dtsi
+index 10e7e2ceb1..2ec5073e5f 100644
+--- a/arch/arm/dts/s32cc.dtsi
++++ b/arch/arm/dts/s32cc.dtsi
+@@ -145,6 +145,11 @@
+ 			status = "okay";
+ 		};
+ 
++		ocotp: ocotp@400a4000 {
++			reg = <0x0 0x400a4000 0x0 0x400>;
++			status = "okay";
++		};
++
+ 		qspi: spi@40134000 {
+ 			compatible = "nxp,s32cc-qspi";
+ 			#address-cells = <1>;
+@@ -447,11 +452,6 @@
+ 		};
+ 	};
+ 
+-	ocotp: ocotp@400A4000 {
+-		reg = <0x0 0x400A4000 0x0 0x400>;
+-		status = "okay";
+-	};
+-
+ 	binman {
+ 		filename = "u-boot-s32.bin";
+ 		u-boot-dtb {
+-- 
+2.17.1
+

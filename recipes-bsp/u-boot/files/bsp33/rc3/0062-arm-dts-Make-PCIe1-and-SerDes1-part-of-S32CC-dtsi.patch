@@ -1,0 +1,207 @@
+From daf68e57d4330f106438137c3a9217974f3edd83 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 11 May 2022 15:40:53 +0300
+Subject: [PATCH 62/64] arm: dts: Make PCIe1 and SerDes1 part of S32CC dtsi
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32cc.dtsi  | 51 ++++++++++++++++++++++++++++++++++++----
+ arch/arm/dts/s32g.dtsi   | 48 ++++---------------------------------
+ arch/arm/dts/s32r45.dtsi | 44 ----------------------------------
+ 3 files changed, 51 insertions(+), 92 deletions(-)
+
+diff --git a/arch/arm/dts/s32cc.dtsi b/arch/arm/dts/s32cc.dtsi
+index 70495d50a1..05657927cc 100644
+--- a/arch/arm/dts/s32cc.dtsi
++++ b/arch/arm/dts/s32cc.dtsi
+@@ -410,12 +410,12 @@
+ 			nvmem-cells = <&siul2_0_nvram>;
+ 
+ 			ranges =
+-				/* downstream I/O, 64KB and aligned naturally just before
+-				 * the config space to minimize fragmentation
++				/* downstream I/O, 64KB and aligned naturally just
++				 * before the config space to minimize fragmentation
+ 				 */
+ 				<0x81000000 0x0 0x00000000 0x5f 0xfffe0000 0x0 0x00010000
+-				/* non-prefetchable memory, with best case size
+-				 * and alignment
++				/* non-prefetchable memory, with best case size and
++				 * alignment
+ 				 */
+ 				 0x82000000 0x0 0x00000000 0x58 0x00000000 0x7 0xfffe0000>;
+ 			num-lanes = <2>;
+@@ -437,6 +437,49 @@
+ 			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+ 		};
+ 
++		pcie1: pcie@44100000 {
++			compatible = "nxp,s32cc-pcie";
++			reg = <0x00 0x44100000 0x0 0x00001000   /* dbi registers */
++				/* configuration space, 4KB each for cfg0 and cfg1
++				 * at the end of the outbound memory map
++				 */
++				0x4f 0xffffe000 0x0 0x00002000>;
++			reg-names = "dbi", "config";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			device_type = "pci";
++			serdes-handle = <&serdes1>;
++			nvmem-cells = <&siul2_0_nvram>;
++			device_id = <1>;
++			ranges =
++				/* downstream I/O, 64KB and aligned naturally just
++				 * before the config space to minimize fragmentation
++				 */
++				<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
++				/* non-prefetchable memory, with best case size and
++				 * alignment
++				 */
++				 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
++			num-lanes = <1>;
++			link-speed = <3>;
++			bus-range = <0x0 0xff>;
++			status = "okay";
++		};
++
++		serdes1: serdes@44180000 {
++			compatible = "nxp,s32cc-serdes";
++			reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
++			       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
++			reg-names = "dbi", "ss";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			device_type = "pci-generic";
++			device_id = <1>;
++			num-lanes = <1>; /* supports 1 lane */
++			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
++			status = "okay";
++		};
++
+ 		gic: interrupt-controller@50800000 {
+ 			compatible = "arm,gic-v3";
+ 			#interrupt-cells = <3>;
+diff --git a/arch/arm/dts/s32g.dtsi b/arch/arm/dts/s32g.dtsi
+index 211deaeea2..830b05779a 100644
+--- a/arch/arm/dts/s32g.dtsi
++++ b/arch/arm/dts/s32g.dtsi
+@@ -152,50 +152,6 @@
+ 			};
+ 		};
+ 
+-		pcie1: pcie@44100000 {
+-			compatible = "nxp,s32cc-pcie";
+-			reg =
+-				<0x00 0x44100000 0x0 0x80000   /* dbi registers */
+-				/* configuration space, 4KB each for cfg0 and cfg1
+-				 * at the end of the outbound memory map
+-				 */
+-				0x4f 0xffffe000 0x0 0x00002000>;
+-			reg-names = "dbi", "config";
+-			#address-cells = <3>;
+-			#size-cells = <2>;
+-			device_type = "pci";
+-			serdes-handle = <&serdes1>;
+-			nvmem-cells = <&siul2_0_nvram>;
+-			device_id = <1>;
+-			num-lanes = <1>; /* supports max 1 pcie lane */
+-			link-speed = <3>; /* supports Gen3 speed */
+-			bus-range = <0x0 0xff>;
+-			ranges =
+-				/* downstream I/O, 64KB and aligned naturally just before
+-				 * the config space to minimize fragmentation
+-				 */
+-				<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
+-				/* non-prefetchable memory, with best case size
+-				 * and alignment
+-				 */
+-				 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
+-			status = "disabled";
+-		};
+-
+-		serdes1: serdes@44180000 {
+-			compatible = "nxp,s32cc-serdes";
+-			reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
+-			       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
+-			reg-names = "dbi", "ss";
+-			#address-cells = <3>;
+-			#size-cells = <2>;
+-			device_type = "pci-generic";
+-			device_id = <1>;
+-			num-lanes = <2>; /* supports max 2 lanes */
+-			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+-			status = "okay";
+-		};
+-
+ 		pfe: ethernet@46080000 {
+ 			compatible = "fsl,s32g274a-pfe";
+ 			reg = <0x0 0x46000000 0x0 0x1000000>;
+@@ -467,3 +423,7 @@
+ &ocotp {
+ 	compatible = "nxp,s32g-ocotp";
+ };
++
++&serdes1 {
++	num-lanes = <2>;
++};
+diff --git a/arch/arm/dts/s32r45.dtsi b/arch/arm/dts/s32r45.dtsi
+index 7acf773723..1d871f3e54 100644
+--- a/arch/arm/dts/s32r45.dtsi
++++ b/arch/arm/dts/s32r45.dtsi
+@@ -186,49 +186,5 @@
+ 
+ 			};
+ 		};
+-
+-		pcie1: pcie@44100000 {
+-			compatible = "nxp,s32cc-pcie";
+-			reg =
+-				<0x00 0x44100000 0x0 0x80000   /* dbi registers */
+-				/* configuration space, 4KB each for cfg0 and cfg1
+-				 * at the end of the outbound memory map
+-				 */
+-				0x4f 0xffffe000 0x0 0x00002000>;
+-			reg-names = "dbi", "config";
+-			#address-cells = <3>;
+-			#size-cells = <2>;
+-			device_type = "pci";
+-			serdes-handle = <&serdes1>;
+-			nvmem-cells = <&siul2_0_nvram>;
+-			device_id = <1>;
+-			num-lanes = <1>; /* supports max 1 pcie lane */
+-			link-speed = <3>; /* supports Gen3 speed */
+-			bus-range = <0x0 0xff>;
+-			ranges =
+-				/* downstream I/O, 64KB and aligned naturally just before
+-				 * the config space to minimize fragmentation
+-				 */
+-				<0x81000000 0x0 0x00000000 0x4f 0xfffe0000 0x0 0x00010000
+-				/* non-prefetchable memory, with best case size
+-				 * and alignment
+-				 */
+-				 0x82000000 0x0 0x00000000 0x48 0x00000000 0x7 0xfffe0000>;
+-			status = "okay";
+-		};
+-
+-		serdes1: serdes@44180000 {
+-			compatible = "nxp,s32cc-serdes";
+-			reg = <0x00 0x44100000 0x0 0x80000   /* dbi registers */
+-			       0x00 0x44180000 0x0 0x04000>; /* serdes registers */
+-			reg-names = "dbi", "ss";
+-			#address-cells = <3>;
+-			#size-cells = <2>;
+-			device_type = "pci-generic";
+-			device_id = <1>;
+-			num-lanes = <1>; /* supports 1 lane */
+-			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+-			status = "okay";
+-		};
+ 	};
+ };
+-- 
+2.17.1
+

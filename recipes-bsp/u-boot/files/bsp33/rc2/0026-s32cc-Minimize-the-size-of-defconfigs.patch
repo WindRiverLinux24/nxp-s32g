@@ -1,0 +1,1002 @@
+From 555c62754e09eb95e32082da8651620362e83997 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 15 Apr 2022 15:43:41 +0300
+Subject: [PATCH 26/33] s32cc: Minimize the size of defconfigs
+
+Reduce the number of settings stored in defconfigs to avoid
+duplications across multiple boards.
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/Kconfig               |  1 -
+ arch/arm/mach-s32/s32-cc/Kconfig        | 32 ++++++++++++++-----
+ arch/arm/mach-s32/s32g2/Kconfig         | 22 +++++--------
+ arch/arm/mach-s32/s32g3/Kconfig         | 20 +++---------
+ arch/arm/mach-s32/s32r45/Kconfig        |  4 +++
+ board/nxp/s32-cc/Kconfig                | 41 +++++++++++++++++++++++++
+ board/nxp/s32-cc/s32g/Kconfig           | 26 ++++++++++++++++
+ board/nxp/s32g274abluebox3/Kconfig      |  6 ++++
+ board/nxp/s32g274aemu/Kconfig           |  3 ++
+ board/nxp/s32g2xxaevb/Kconfig           |  6 ++++
+ board/nxp/s32g399aemu/Kconfig           |  3 ++
+ board/nxp/s32g399ardb3/Kconfig          |  6 ++++
+ board/nxp/s32g3xxaevb/Kconfig           |  6 ++++
+ board/nxp/s32r45emu/Kconfig             |  3 ++
+ board/nxp/s32r45evb/Kconfig             |  6 ++++
+ configs/s32g274a_emu_defconfig          |  3 --
+ configs/s32g274abluebox3_defconfig      | 31 +------------------
+ configs/s32g274abluebox3_qspi_defconfig | 31 +------------------
+ configs/s32g274ardb2_defconfig          | 29 +----------------
+ configs/s32g274ardb2_qspi_defconfig     | 29 +----------------
+ configs/s32g2xxaevb_defconfig           | 33 +-------------------
+ configs/s32g2xxaevb_qspi_defconfig      | 33 +-------------------
+ configs/s32g399a_emu_defconfig          |  3 --
+ configs/s32g399ardb3_defconfig          | 29 +----------------
+ configs/s32g399ardb3_qspi_defconfig     | 29 +----------------
+ configs/s32g3xxaevb_defconfig           | 33 +-------------------
+ configs/s32g3xxaevb_qspi_defconfig      | 33 +-------------------
+ configs/s32r45_emu_defconfig            |  3 --
+ configs/s32r45evb_defconfig             | 32 +------------------
+ configs/s32r45evb_qspi_defconfig        | 31 +------------------
+ 30 files changed, 158 insertions(+), 409 deletions(-)
+ create mode 100644 board/nxp/s32-cc/Kconfig
+
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 3b294646bd..abfdd0844b 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -25,7 +25,6 @@ config NXP_S32CC
+ 	imply DWC_ETH_QOS_DEVICES
+ 	imply DWC_ETH_QOS_S32CC
+ 	imply FSL_DSPI
+-	imply FSL_PFENG
+ 	imply FSL_QSPI
+ 	imply MISC
+ 	imply MP
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 5a13a293bf..f050ba3257 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -127,17 +127,32 @@ config XEN_SUPPORT
+ config ENV_OFFSET
+ 	default 0x1e0000
+ 
+-if SD_BOOT
+-config ENV_SIZE
+-	default 0x2000
++config SF_DEFAULT_BUS
++	default 6
+ 
++config SF_DEFAULT_CS
++	default 0
++
++config SPI_FLASH_BAR
++	default n
++
++config EFI_LOADER
++	default n
++
++config DM_DEVICE_REMOVE
++	default n
++
++if SD_BOOT
+ config ENV_IS_IN_MMC
+ 	default y
++
++config ENV_SIZE
++	default 0x2000
+ endif
+ 
+ if QSPI_BOOT
+-config ENV_SIZE
+-	default 0x10000
++config USE_ENV_SPI_BUS
++	default y
+ 
+ config ENV_IS_IN_SPI_FLASH
+ 	default y
+@@ -145,14 +160,14 @@ config ENV_IS_IN_SPI_FLASH
+ config USE_ENV_SPI_CS
+ 	default y
+ 
+-config USE_ENV_SPI_BUS
+-	default y
+-
+ config ENV_SPI_BUS
+ 	default 6
+ 
+ config ENV_SPI_CS
+ 	default 0
++
++config ENV_SIZE
++	default 0x10000
+ endif
+ 
+ endif
+@@ -160,3 +175,4 @@ endif
+ source "arch/arm/mach-s32/s32g2/Kconfig"
+ source "arch/arm/mach-s32/s32g3/Kconfig"
+ source "arch/arm/mach-s32/s32r45/Kconfig"
++source "board/nxp/s32-cc/Kconfig"
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index 3b9129dab8..955f712051 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -14,9 +14,6 @@ config TARGET_S32G274ARDB2
+ 	  4 GB of RAM, 64MB of QSPI memory, 6 Ethernet Ports,
+ 	  M.2 and PCIe x1 expansion slots, USB, serial port,
+ 	  18 CAN ports, I2C and DSPI.
+-	imply PHY_ATHEROS
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+ 	select NXP_S32GRDB_BOARD
+ 
+ config TARGET_S32G2XXAEVB
+@@ -25,17 +22,6 @@ config TARGET_S32G2XXAEVB
+ 	  This board is based on S32G2 family of SoCs. It is equipped with
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+ 	  I2C and DSPI.
+-	imply DM_USB
+-	imply I2C_EEPROM
+-	imply PHY
+-	imply PHY_AQUANTIA
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	imply SAF1508BET_USB_PHY
+-	imply SJA1105
+-	imply USB
+-	imply USB_EHCI_HCD
+-	select MISC_INIT_R if SJA1105
+ 	select NXP_S32GEVB_BOARD
+ 
+ config TARGET_S32G274ABLUEBOX3
+@@ -46,9 +32,14 @@ config TARGET_S32G274ABLUEBOX3
+ 	  Also, this board has rich networking features, such as:
+ 	  PFE, DPAA2 and three sja1110 switches.
+ 	imply ADC
++	imply CMD_EEPROM
+ 	imply I2C_EEPROM
++	imply LAST_STAGE_INIT
++	imply NXP_S32CC_BOARD_COMMON
+ 	imply PHY
+ 	imply PHYLIB
++	imply PHY_GIGE
++	imply RGMII
+ 	imply SARADC_S32CC
+ 	select SPI_FLASH_STMICRO
+ 
+@@ -58,6 +49,9 @@ config TARGET_S32G274AEMU
+ 
+ endchoice
+ 
++config FSL_PFENG
++	default y if !TARGET_TYPE_S32GEN1_EMULATOR
++
+ source "board/nxp/s32-cc/s32g/Kconfig"
+ source "board/nxp/s32g274ardb2/Kconfig"
+ source "board/nxp/s32g2xxaevb/Kconfig"
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index fc5d1e8603..cedd9da660 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -9,10 +9,8 @@ choice
+ 
+ config TARGET_S32G399ARDB3
+ 	bool "Support S32G399ARDB3 board"
++	imply CMD_EEPROM
+ 	imply I2C_EEPROM
+-	imply PHY_ATHEROS
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+ 	select ADC
+ 	select NXP_S32GRDB_BOARD
+ 	select SARADC_S32CC
+@@ -23,19 +21,6 @@ config TARGET_S32G3XXAEVB
+ 	  This board is based on S32G3 family of SoCs. It is equipped with
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+ 	  I2C and DSPI.
+-	imply ADC
+-	imply DM_USB
+-	imply I2C_EEPROM
+-	imply PHY
+-	imply PHY_AQUANTIA
+-	imply PHY_MICREL
+-	imply PHY_MICREL_KSZ90X1
+-	imply SARADC_S32CC
+-	imply SAF1508BET_USB_PHY
+-	imply SJA1105
+-	imply USB
+-	imply USB_EHCI_HCD
+-	select MISC_INIT_R if SJA1105
+ 	select NXP_S32GEVB_BOARD
+ 
+ config TARGET_S32G399AEMU
+@@ -44,6 +29,9 @@ config TARGET_S32G399AEMU
+ 
+ endchoice
+ 
++config FSL_PFENG
++	default y if !TARGET_TYPE_S32GEN1_EMULATOR
++
+ source "board/nxp/s32-cc/s32g/Kconfig"
+ source "board/nxp/s32g399ardb3/Kconfig"
+ source "board/nxp/s32g3xxaevb/Kconfig"
+diff --git a/arch/arm/mach-s32/s32r45/Kconfig b/arch/arm/mach-s32/s32r45/Kconfig
+index 1ad3753881..c65b5f6eb4 100644
+--- a/arch/arm/mach-s32/s32r45/Kconfig
++++ b/arch/arm/mach-s32/s32r45/Kconfig
+@@ -14,7 +14,11 @@ config TARGET_S32R45EVB
+ 	  4GB of RAM, 64MB of QSPI memory, PCIe slot, serial port,
+ 	  I2C and DSPI.
+ 	imply ADC
++	imply CMD_E1000
++	imply CMD_EEPROM
++	imply E1000
+ 	imply I2C_EEPROM
++	imply NXP_S32CC_BOARD_COMMON
+ 	imply PHY_AQUANTIA
+ 	imply SARADC_S32CC
+ 	select SPI_FLASH_MACRONIX
+diff --git a/board/nxp/s32-cc/Kconfig b/board/nxp/s32-cc/Kconfig
+new file mode 100644
+index 0000000000..dfaa1896fa
+--- /dev/null
++++ b/board/nxp/s32-cc/Kconfig
+@@ -0,0 +1,41 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if NXP_S32CC
++
++config NXP_S32CC_BOARD_COMMON
++	bool
++	default n
++	imply CMD_ADC
++	imply CMD_CACHE
++	imply CMD_CLK
++	imply CMD_CPU
++	imply CMD_DM
++	imply CMD_FUSE
++	imply CMD_GPIO
++	imply CMD_I2C
++	imply CMD_MD5SUM
++	imply CMD_MEMTEST
++	imply CMD_MMC
++	imply CMD_PCI
++	imply CMD_SMC
++	imply CMD_SPI
++	imply CMD_TIMER
++	imply FIT
++	imply MD5SUM_VERIFY
++	imply NET_RANDOM_ETHADDR
++	imply PHY_FIXED
++	imply USE_BOOTARGS
++
++if NXP_S32CC_BOARD_COMMON
++
++config BOOTARGS
++	default "root=/dev/ram rw earlycon loglevel=7"
++
++if QSPI_BOOT
++config ENV_SECT_SIZE
++	default 0x10000
++endif
++endif
++
++endif
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+index 60def8b40a..6906ad64be 100644
+--- a/board/nxp/s32-cc/s32g/Kconfig
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -1,11 +1,19 @@
+ config NXP_S32GRDB_BOARD
+ 	bool
+ 	default n
++	imply CMD_E1000
++	imply CMD_PMIC
+ 	imply DM_PMIC
+ 	imply DM_PMIC_FS5600
+ 	imply DM_PMIC_PF5020
+ 	imply DM_PMIC_VR5510
++	imply E1000
+ 	imply NVME
++	imply NXP_S32CC_BOARD_COMMON
++	imply PHY_ATHEROS
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	imply RGMII
+ 	select ADC
+ 	select BOARD_LATE_INIT
+ 	select SARADC_S32CC
+@@ -15,9 +23,27 @@ config NXP_S32GEVB_BOARD
+ 	bool
+ 	default n
+ 	imply ADC
++	imply CMD_E1000
++	imply CMD_EEPROM
++	imply CMD_PMIC
+ 	imply DM_PMIC
+ 	imply DM_PMIC_VR5510
++	imply DM_USB
++	imply E1000
++	imply I2C_EEPROM
++	imply NXP_S32CC_BOARD_COMMON
++	imply PHY
++	imply PHY_AQUANTIA
++	imply PHY_MICREL
++	imply PHY_MICREL_KSZ90X1
++	imply RGMII
++	imply SAF1508BET_USB_PHY
+ 	imply SARADC_S32CC
++	imply SJA1105
++	imply USB
++	imply USB_EHCI_HCD
++	imply USB_ULPI
++	select MISC_INIT_R if SJA1105
+ 	select SPI_FLASH_MACRONIX
+ 
+ config S32GEN1_HWCONFIG
+diff --git a/board/nxp/s32g274abluebox3/Kconfig b/board/nxp/s32g274abluebox3/Kconfig
+index 0f5ef34640..fac79e0747 100644
+--- a/board/nxp/s32g274abluebox3/Kconfig
++++ b/board/nxp/s32g274abluebox3/Kconfig
+@@ -21,4 +21,10 @@ config S32GEN1_HWCONFIG
+ config ENV_SECT_SIZE
+ 	default 0x1000 if QSPI_BOOT
+ 
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
+ endif
+diff --git a/board/nxp/s32g274aemu/Kconfig b/board/nxp/s32g274aemu/Kconfig
+index 81e3c0706e..30a2e101d6 100644
+--- a/board/nxp/s32g274aemu/Kconfig
++++ b/board/nxp/s32g274aemu/Kconfig
+@@ -15,4 +15,7 @@ config DEFAULT_DEVICE_TREE
+ config NR_DRAM_BANKS
+ 	default 2
+ 
++config BOOTARGS
++	default "root=/dev/ram rw earlycon loglevel=7"
++
+ endif
+diff --git a/board/nxp/s32g2xxaevb/Kconfig b/board/nxp/s32g2xxaevb/Kconfig
+index 0e93f8fa37..97a7656646 100644
+--- a/board/nxp/s32g2xxaevb/Kconfig
++++ b/board/nxp/s32g2xxaevb/Kconfig
+@@ -18,4 +18,10 @@ config NR_DRAM_BANKS
+ config ENV_SECT_SIZE
+ 	default 0x10000 if QSPI_BOOT
+ 
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
+ endif
+diff --git a/board/nxp/s32g399aemu/Kconfig b/board/nxp/s32g399aemu/Kconfig
+index 69e69fb2f5..d997e3511c 100644
+--- a/board/nxp/s32g399aemu/Kconfig
++++ b/board/nxp/s32g399aemu/Kconfig
+@@ -15,4 +15,7 @@ config DEFAULT_DEVICE_TREE
+ config NR_DRAM_BANKS
+ 	default 2
+ 
++config BOOTARGS
++	default "root=/dev/ram rw earlycon loglevel=7"
++
+ endif
+diff --git a/board/nxp/s32g399ardb3/Kconfig b/board/nxp/s32g399ardb3/Kconfig
+index cb1a0fe6ad..98945a5614 100644
+--- a/board/nxp/s32g399ardb3/Kconfig
++++ b/board/nxp/s32g399ardb3/Kconfig
+@@ -18,4 +18,10 @@ config NR_DRAM_BANKS
+ config ENV_SECT_SIZE
+ 	default 0x10000 if QSPI_BOOT
+ 
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
+ endif
+diff --git a/board/nxp/s32g3xxaevb/Kconfig b/board/nxp/s32g3xxaevb/Kconfig
+index 3adc8d06e9..b6ed835356 100644
+--- a/board/nxp/s32g3xxaevb/Kconfig
++++ b/board/nxp/s32g3xxaevb/Kconfig
+@@ -18,4 +18,10 @@ config NR_DRAM_BANKS
+ config ENV_SECT_SIZE
+ 	default 0x10000 if QSPI_BOOT
+ 
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
+ endif
+diff --git a/board/nxp/s32r45emu/Kconfig b/board/nxp/s32r45emu/Kconfig
+index 86355bd390..2ba0d3823b 100644
+--- a/board/nxp/s32r45emu/Kconfig
++++ b/board/nxp/s32r45emu/Kconfig
+@@ -12,4 +12,7 @@ config SYS_BOARD
+ config NR_DRAM_BANKS
+ 	default 2
+ 
++config BOOTARGS
++	default "root=/dev/ram rw earlycon loglevel=7"
++
+ endif
+diff --git a/board/nxp/s32r45evb/Kconfig b/board/nxp/s32r45evb/Kconfig
+index dfadb617b8..530330bd9d 100644
+--- a/board/nxp/s32r45evb/Kconfig
++++ b/board/nxp/s32r45evb/Kconfig
+@@ -18,4 +18,10 @@ config NR_DRAM_BANKS
+ config ENV_SECT_SIZE
+ 	default 0x10000 if QSPI_BOOT
+ 
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
+ endif
+diff --git a/configs/s32g274a_emu_defconfig b/configs/s32g274a_emu_defconfig
+index 340f8a1ac1..46b8726da3 100644
+--- a/configs/s32g274a_emu_defconfig
++++ b/configs/s32g274a_emu_defconfig
+@@ -5,15 +5,12 @@ CONFIG_TARGET_S32G274AEMU=y
+ CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+ CONFIG_CMD_MEMTEST=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_SMC=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_DM_SEQ_ALIAS is not set
+ # CONFIG_DM_I2C is not set
+ # CONFIG_SYS_I2C_MXC is not set
+ # CONFIG_DM_ETH is not set
+ # CONFIG_PCI is not set
+-# CONFIG_DM_PMIC is not set
+ # CONFIG_SPI is not set
+diff --git a/configs/s32g274abluebox3_defconfig b/configs/s32g274abluebox3_defconfig
+index 7410001e34..b13ae3d5b5 100644
+--- a/configs/s32g274abluebox3_defconfig
++++ b/configs/s32g274abluebox3_defconfig
+@@ -1,36 +1,7 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
+ # CONFIG_S32GEN1_DRAM_INLINE_ECC is not set
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G274ABLUEBOX3=y
+-CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_LAST_STAGE_INIT=y
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_PHY_GIGE=y
+ # CONFIG_DWC_ETH_QOS_DEVICES is not set
+-CONFIG_RGMII=y
+diff --git a/configs/s32g274abluebox3_qspi_defconfig b/configs/s32g274abluebox3_qspi_defconfig
+index 62263f3133..2a5c2e24c3 100644
+--- a/configs/s32g274abluebox3_qspi_defconfig
++++ b/configs/s32g274abluebox3_qspi_defconfig
+@@ -1,36 +1,7 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
+ # CONFIG_S32GEN1_DRAM_INLINE_ECC is not set
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G274ABLUEBOX3=y
+-CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOARD_EARLY_INIT_R=y
+-CONFIG_LAST_STAGE_INIT=y
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_PHY_GIGE=y
+ # CONFIG_DWC_ETH_QOS_DEVICES is not set
+-CONFIG_RGMII=y
+diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
+index cf38784cc1..a48db2d8d4 100644
+--- a/configs/s32g274ardb2_defconfig
++++ b/configs/s32g274ardb2_defconfig
+@@ -1,31 +1,4 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
+-CONFIG_FIT=y
+-CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+-# CONFIG_EFI_LOADER is not set
++CONFIG_SD_BOOT=y
+diff --git a/configs/s32g274ardb2_qspi_defconfig b/configs/s32g274ardb2_qspi_defconfig
+index 79b215e515..bb2433f93e 100644
+--- a/configs/s32g274ardb2_qspi_defconfig
++++ b/configs/s32g274ardb2_qspi_defconfig
+@@ -1,31 +1,4 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
+-CONFIG_FIT=y
+-CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+-# CONFIG_EFI_LOADER is not set
++CONFIG_QSPI_BOOT=y
+diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
+index da45155e78..cfc3dd7d9f 100644
+--- a/configs/s32g2xxaevb_defconfig
++++ b/configs/s32g2xxaevb_defconfig
+@@ -1,37 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G2XXAEVB=y
+-CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+ CONFIG_USB_ULPI_VIEWPORT=y
+-CONFIG_USB_ULPI=y
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32g2xxaevb_qspi_defconfig b/configs/s32g2xxaevb_qspi_defconfig
+index 456e3dce47..5b6f352fa6 100644
+--- a/configs/s32g2xxaevb_qspi_defconfig
++++ b/configs/s32g2xxaevb_qspi_defconfig
+@@ -1,37 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G2=y
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G2XXAEVB=y
+-CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+ CONFIG_USB_ULPI_VIEWPORT=y
+-CONFIG_USB_ULPI=y
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32g399a_emu_defconfig b/configs/s32g399a_emu_defconfig
+index 0ee6b84514..ae8994f2c3 100644
+--- a/configs/s32g399a_emu_defconfig
++++ b/configs/s32g399a_emu_defconfig
+@@ -5,15 +5,12 @@ CONFIG_TARGET_S32G399AEMU=y
+ CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+ CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+ CONFIG_CMD_MEMTEST=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_SMC=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_DM_SEQ_ALIAS is not set
+ # CONFIG_DM_I2C is not set
+ # CONFIG_SYS_I2C_MXC is not set
+ # CONFIG_DM_ETH is not set
+ # CONFIG_PCI is not set
+-# CONFIG_DM_PMIC is not set
+ # CONFIG_SPI is not set
+diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
+index 33a0c3bd24..9deb414090 100644
+--- a/configs/s32g399ardb3_defconfig
++++ b/configs/s32g399ardb3_defconfig
+@@ -1,31 +1,4 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G3=y
+-CONFIG_FIT=y
+-CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+-# CONFIG_EFI_LOADER is not set
++CONFIG_SD_BOOT=y
+diff --git a/configs/s32g399ardb3_qspi_defconfig b/configs/s32g399ardb3_qspi_defconfig
+index 459d423c8a..4a5e9ca6ff 100644
+--- a/configs/s32g399ardb3_qspi_defconfig
++++ b/configs/s32g399ardb3_qspi_defconfig
+@@ -1,32 +1,5 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G3=y
+-CONFIG_FIT=y
+-CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
++CONFIG_QSPI_BOOT=y
+ CONFIG_FSL_PFENG_FW_LOC_SDCARD=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
+index 1d7f37ea08..c76cb29858 100644
+--- a/configs/s32g3xxaevb_defconfig
++++ b/configs/s32g3xxaevb_defconfig
+@@ -1,37 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G3=y
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G3XXAEVB=y
+-CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+ CONFIG_USB_ULPI_VIEWPORT=y
+-CONFIG_USB_ULPI=y
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32g3xxaevb_qspi_defconfig b/configs/s32g3xxaevb_qspi_defconfig
+index 307e5baed3..3f058cf491 100644
+--- a/configs/s32g3xxaevb_qspi_defconfig
++++ b/configs/s32g3xxaevb_qspi_defconfig
+@@ -1,37 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G3=y
++# CONFIG_SPI_FLASH_BAR is not set
+ CONFIG_TARGET_S32G3XXAEVB=y
+-CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_PMIC=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-CONFIG_RGMII=y
+ CONFIG_USB_ULPI_VIEWPORT=y
+-CONFIG_USB_ULPI=y
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32r45_emu_defconfig b/configs/s32r45_emu_defconfig
+index fa722dbcba..6828d60497 100644
+--- a/configs/s32r45_emu_defconfig
++++ b/configs/s32r45_emu_defconfig
+@@ -5,14 +5,11 @@ CONFIG_TARGET_S32R45EMU=y
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+ CONFIG_FIT=y
+ CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon loglevel=7"
+ CONFIG_CMD_MEMTEST=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+ # CONFIG_DM_SEQ_ALIAS is not set
+ # CONFIG_DM_I2C is not set
+ # CONFIG_SYS_I2C_MXC is not set
+ # CONFIG_DM_ETH is not set
+ # CONFIG_PCI is not set
+-# CONFIG_DM_PMIC is not set
+ # CONFIG_DM_SPI is not set
+ # CONFIG_FSL_QSPI is not set
+diff --git a/configs/s32r45evb_defconfig b/configs/s32r45evb_defconfig
+index da0184126f..a232ba06b7 100644
+--- a/configs/s32r45evb_defconfig
++++ b/configs/s32r45evb_defconfig
+@@ -1,36 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32R45=y
++# CONFIG_SPI_FLASH_BAR is not set
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+-CONFIG_FIT=y
+ CONFIG_SD_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon loglevel=7"
+ CONFIG_LAST_STAGE_INIT=y
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-CONFIG_PHY_FIXED=y
+-# CONFIG_FSL_PFENG is not set
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-# CONFIG_DM_PMIC is not set
+-# CONFIG_EFI_LOADER is not set
+diff --git a/configs/s32r45evb_qspi_defconfig b/configs/s32r45evb_qspi_defconfig
+index 0fe75e9b26..6ee9f84800 100644
+--- a/configs/s32r45evb_qspi_defconfig
++++ b/configs/s32r45evb_qspi_defconfig
+@@ -1,34 +1,5 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32R45=y
++# CONFIG_SPI_FLASH_BAR is not set
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+-CONFIG_FIT=y
+ CONFIG_QSPI_BOOT=y
+-CONFIG_USE_BOOTARGS=y
+-CONFIG_BOOTARGS="root=/dev/ram rw earlycon loglevel=7"
+-CONFIG_CMD_CPU=y
+-CONFIG_CMD_EEPROM=y
+-CONFIG_CMD_MD5SUM=y
+-CONFIG_MD5SUM_VERIFY=y
+-CONFIG_CMD_MEMTEST=y
+-CONFIG_CMD_ADC=y
+-CONFIG_CMD_CLK=y
+-CONFIG_CMD_DM=y
+-CONFIG_CMD_FUSE=y
+-CONFIG_CMD_GPIO=y
+-CONFIG_CMD_I2C=y
+-CONFIG_CMD_MMC=y
+-CONFIG_CMD_PCI=y
+-CONFIG_CMD_SPI=y
+-CONFIG_CMD_CACHE=y
+-CONFIG_CMD_TIMER=y
+-CONFIG_CMD_SMC=y
+-CONFIG_NET_RANDOM_ETHADDR=y
+-# CONFIG_DM_DEVICE_REMOVE is not set
+-CONFIG_SYS_EEPROM_SIZE=128
+-CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=10
+-# CONFIG_SPI_FLASH_BAR is not set
+-# CONFIG_FSL_PFENG is not set
+-CONFIG_E1000=y
+-CONFIG_CMD_E1000=y
+-# CONFIG_DM_PMIC is not set
+-# CONFIG_EFI_LOADER is not set
+-- 
+2.25.1
+

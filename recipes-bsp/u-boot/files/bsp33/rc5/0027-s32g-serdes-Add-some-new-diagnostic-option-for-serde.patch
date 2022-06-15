@@ -1,0 +1,160 @@
+From 5e825647b8f7ccecc3ab0c4b8bdb63c91dfca1ed Mon Sep 17 00:00:00 2001
+From: Ondrej Spacek <ondrej.spacek@nxp.com>
+Date: Wed, 6 Apr 2022 08:34:08 +0200
+Subject: [PATCH 27/30] s32g: serdes: Add some new diagnostic option for serdes
+
+This commit adds new options for xpcs command:
+*dump - dump XPCS indirect registers
+*lo - PMA loopback enable/disable
+
+Issue: ALB-8750
+Upstream-Status: Pending 
+
+Signed-off-by: Ondrej Spacek <ondrej.spacek@nxp.com>
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../asm/arch-s32/s32-cc/serdes_xpcs_regs.h    |  2 +-
+ arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c  | 48 +++++++++++++++++++
+ arch/arm/mach-s32/s32-cc/sgmii/sgmii.c        | 24 +++++++++-
+ 3 files changed, 71 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h b/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
+index e58189c2c5..bd952e7fb4 100644
+--- a/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
++++ b/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
+@@ -9,8 +9,8 @@
+ #define SERDES_XPCS_REGS_H
+ 
+ #include <common.h>
+-#include "linux/types.h"
+ #include "linux/errno.h"
++#include "linux/types.h"
+ 
+ #define EXIT_FAILURE 1
+ 
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c b/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
+index 5f38412b8a..ac6d7c4517 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
+@@ -20,6 +20,38 @@
+ #define XPCS_BASE(xpcs) (((xpcs) == 0)  ? (SERDES_XPCS_0_ADDR2) : \
+ 					  (SERDES_XPCS_1_ADDR2))
+ 
++static struct {
++	u32 start;
++	u32 end;
++} regs[] = {
++	{0x1F0000, 0x1F0006},
++	{0x1F000F, 0x1F000F},
++	{0x1F0708, 0x1F070F},
++	{0x1F0710, 0x1F0710},
++	{0x1F0710, 0x1F0710},
++	{0x1F8000, 0x1F8003},
++	{0x1F8005, 0x1F8005},
++	{0x1F800A, 0x1F800A},
++	{0x1F8010, 0x1F8012},
++	{0x1F8015, 0x1F8015},
++	{0x1F8018, 0x1F8018},
++	{0x1F8020, 0x1F8020},
++	{0x1F8030, 0x1F8037},
++	{0x1F803C, 0x1F803C},
++	{0x1F8040, 0x1F8040},
++	{0x1F8050, 0x1F8058},
++	{0x1F805C, 0x1F805E},
++	{0x1F8060, 0x1F8060},
++	{0x1F8064, 0x1F8064},
++	{0x1F806B, 0x1F806B},
++	{0x1F8070, 0x1F8078},
++	{0x1F8091, 0x1F8092},
++	{0x1F8096, 0x1F8096},
++	{0x1F8098, 0x1F8099},
++	{0x1F80A0, 0x1F80A2},
++	{0x1F80E1, 0x1F80E1},
++};
++
+ static u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
+ {
+ 	u32 ofsleft = (reg >> 8) & 0xffffU;
+@@ -71,6 +103,22 @@ static void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
+ #define PCSBCLRSET(serdes_base, pcs, reg, clr_mask, mask) \
+ 	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, clr_mask, mask)
+ 
++void serdes_pcs_dump_reg(void *base, u32 xpcs)
++{
++	u32 regidx;
++
++	for (regidx = 0; regidx < ARRAY_SIZE(regs); regidx++) {
++		u32 regcurr = regs[regidx].start;
++		u32 regend = regs[regidx].end;
++
++		do {
++			printf("0x%08x => 0x%04x\n",
++			       regcurr, PCSR16(base, xpcs, regcurr));
++			regcurr++;
++		} while (regcurr <= regend);
++	}
++}
++
+ static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
+ 				u16 val, u16 us, u16 cnt)
+ {
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+index 91f6d4945b..c72f713cb7 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+@@ -330,7 +330,10 @@ enum xpcs_cmd {
+ 	S32_XPCS_TRANSIT_TO_2500M,
+ 	S32_XPCS_AN_AUTO_SW_ENABLE,
+ 	S32_XPCS_AN_ENABLE,
+-	S32_XPCS_AN_DISABLE
++	S32_XPCS_AN_DISABLE,
++	S32_XPCS_LO_ENABLE,
++	S32_XPCS_LO_DISABLE,
++	S32_XPCS_DUMP,
+ };
+ 
+ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+@@ -377,6 +380,13 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+ 			cmd = S32_XPCS_AN_ENABLE;
+ 		else if (!strcmp(argv[4], "disable"))
+ 			cmd = S32_XPCS_AN_DISABLE;
++	} else if (!strcmp(argv[3], "lo")) {
++		if (!strcmp(argv[4], "enable"))
++			cmd = S32_XPCS_LO_ENABLE;
++		else if (!strcmp(argv[4], "disable"))
++			cmd = S32_XPCS_LO_DISABLE;
++	} else if (!strcmp(argv[3], "dump")) {
++		cmd = S32_XPCS_DUMP;
+ 	} else {
+ 		return CMD_RET_USAGE;
+ 	}
+@@ -406,6 +416,14 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+ 		serdes_pcs_an_auto_sw_disable(VPTR(serdes->base), pcs_id);
+ 		serdes_pcs_an_disable(VPTR(serdes->base), pcs_id);
+ 		break;
++	case S32_XPCS_LO_ENABLE:
++		serdes_pma_loopback_enable(VPTR(serdes->base), pcs_id);
++		break;
++	case S32_XPCS_LO_DISABLE:
++		serdes_pma_loopback_disable(VPTR(serdes->base), pcs_id);
++		break;
++	case S32_XPCS_DUMP:
++		serdes_pcs_dump_reg(VPTR(serdes->base), pcs_id);
+ 	default:
+ 		return CMD_RET_USAGE;
+ 	}
+@@ -418,7 +436,9 @@ U_BOOT_CMD(xpcs, 6, 0, do_xpcs_cmd,
+ 	   "xpcs <serdes> <xpcs> transit <1000M|2500M> - change serdes mode\n"
+ 	   "xpcs <serdes> <xpcs> ss <10M|100M|1000M|2500M> - change speed and serdes mode when required\n"
+ 	   "xpcs <serdes> <xpcs> an <enable|disable> - auto-negotiation control\n"
+-	   "xpcs <serdes> <xpcs> an_auto <enable|disable> - auto-negotiation control with automatic speed change"
++	   "xpcs <serdes> <xpcs> an_auto <enable|disable> - auto-negotiation control with automatic speed change\n"
++	   "xpcs <serdes> <xpcs> lo <enable|disable> - PMA loopback enable/disable\n"
++	   "xpcs <serdes> <xpcs> dump - dump XPCS indirect registers\n"
+ );
+ 
+ /* Provide UCLASS DRV so SerDes driver can bind to it*/
+-- 
+2.17.1
+

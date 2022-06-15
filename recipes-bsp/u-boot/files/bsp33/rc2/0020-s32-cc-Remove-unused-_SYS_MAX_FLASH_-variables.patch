@@ -1,0 +1,33 @@
+From d7ea5e63e9a9f17439999e5d513bf3f1e56da00b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 13 Apr 2022 15:20:21 +0300
+Subject: [PATCH 20/33] s32-cc: Remove unused *_SYS_MAX_FLASH_* variables
+
+Issue: ALB-8592
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/configs/s32-cc.h | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
+index 361fe03d20..7fa513167a 100644
+--- a/include/configs/s32-cc.h
++++ b/include/configs/s32-cc.h
+@@ -299,11 +299,6 @@
+ #  define I2C_QUIRK_REG
+ #endif
+ 
+-#if defined(CONFIG_QSPI_BOOT)
+-#  define CONFIG_SYS_MAX_FLASH_BANKS	1
+-#  define CONFIG_SYS_MAX_FLASH_SECT	(0x4000000 / CONFIG_ENV_SECT_SIZE)
+-#endif
+-
+ #define CONFIG_BOOTP_BOOTFILESIZE
+ 
+ #define CONFIG_SYS_PCI_64BIT
+-- 
+2.17.1
+

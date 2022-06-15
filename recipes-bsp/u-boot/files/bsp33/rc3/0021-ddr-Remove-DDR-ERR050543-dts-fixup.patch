@@ -1,0 +1,103 @@
+From 45dcfa4725ea2ad64ca2f4aa4da901f2a46a8ac8 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 3 May 2022 09:56:57 +0300
+Subject: [PATCH 21/64] ddr: Remove DDR ERR050543 dts fixup
+
+The mechanism used now is based on DDR reserved-memory regions.
+
+Issue: ALB-8781
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32-cc.dtsi       |  6 -----
+ arch/arm/mach-s32/s32-cc/fdt.c | 48 ----------------------------------
+ 2 files changed, 54 deletions(-)
+
+diff --git a/arch/arm/dts/s32-cc.dtsi b/arch/arm/dts/s32-cc.dtsi
+index 53e631c2f8..2b4af08d3b 100644
+--- a/arch/arm/dts/s32-cc.dtsi
++++ b/arch/arm/dts/s32-cc.dtsi
+@@ -123,12 +123,6 @@
+ 		};
+ 	};
+ 
+-	ddr: ddr@403C0000 {
+-		compatible = "nxp,s32cc-ddr";
+-		/* Will be modified by ATF */
+-		status = "disabled";
+-	};
+-
+ 	uart0:serial@401C8000 {
+ 		device_type = "serial";
+ 		compatible = "nxp,s32cc-linflexuart";
+diff --git a/arch/arm/mach-s32/s32-cc/fdt.c b/arch/arm/mach-s32/s32-cc/fdt.c
+index 2f3f634681..6af7d789b5 100644
+--- a/arch/arm/mach-s32/s32-cc/fdt.c
++++ b/arch/arm/mach-s32/s32-cc/fdt.c
+@@ -183,50 +183,6 @@ static int ft_fixup_cpu(void *blob)
+ 	return 0;
+ }
+ 
+-static int ft_fixup_ddr_polling(const void *old_blob, void *new_blob)
+-{
+-	int off, ret;
+-	const char *status;
+-	const char *exp_compatible = "nxp,s32cc-ddr";
+-
+-	/* Get node offset in U-Boot DT */
+-	off = fdt_node_offset_by_compatible(old_blob, -1, exp_compatible);
+-	if (off < 0) {
+-		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
+-		       exp_compatible, fdt_strerror(off));
+-		return -ENODEV;
+-	}
+-
+-	/* Check "status" property */
+-	status = fdt_getprop(old_blob, off, "status", NULL);
+-	if (!status) {
+-		printf("%s: Node \"%s\" does not have \"status\" set",
+-		       __func__, exp_compatible);
+-		return -EINVAL;
+-	}
+-
+-	if (!strncmp("disabled", status, 8))
+-		return 0;
+-
+-	/* Get node offset in Linux DT */
+-	off = fdt_node_offset_by_compatible(new_blob, -1, exp_compatible);
+-	if (off < 0) {
+-		printf("%s: Couldn't find \"%s\" node: %s\n", __func__,
+-		       exp_compatible, fdt_strerror(off));
+-		return -ENODEV;
+-	}
+-
+-	/* Copy the status from the U-Boot DT */
+-	ret = fdt_setprop_string(new_blob, off, "status", status);
+-	if (ret) {
+-		printf("WARNING: Could not fix up the Linux DT, err=%s\n",
+-		       fdt_strerror(ret));
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+ static int apply_memory_fixups(void *blob, bd_t *bd)
+ {
+ 	u64 start[CONFIG_NR_DRAM_BANKS];
+@@ -754,10 +710,6 @@ int ft_system_setup(void *blob, bd_t *bd)
+ 	if (ret)
+ 		goto exit;
+ 
+-	ret = ft_fixup_ddr_polling(gd->fdt_blob, blob);
+-	if (ret)
+-		goto exit;
+-
+ 	ret = ft_fixup_memory(blob, bd);
+ 	if (ret)
+ 		goto exit;
+-- 
+2.17.1
+

@@ -1,0 +1,95 @@
+From 0a62202230bebcdf22380734664da128668a68a4 Mon Sep 17 00:00:00 2001
+From: Claudiu Manoil <claudiu.manoil@nxp.com>
+Date: Wed, 4 May 2022 18:14:03 +0300
+Subject: [PATCH 12/64] pfe: Fix NULL accesses for platform->memmap
+
+Since the latest firmware exports the '.loadconf' section,
+to signal that it is doing the default configuration
+of the pfe physical and logical interfaces by itself,
+the uboot driver no longer needs the memory map of the
+firmware to do these configurations. Therefore,
+pfeng_hw_pe_load_firmware() no longer updates 'platform->memmap',
+so it remains NULL ('platform' being a static global struct), but
+then pfeng_hw_pe_check_mmap() tries to read it and causes the
+first NULL access and even prints the "Structure length mismatch:..."
+error message without stopping pfe probing however (err code not
+checked by caller).
+Later on, pfeng_hw_init_ifaces() reads again from addr 0, trying to
+extract the heap_base and dmem_base addresses, and uses the garbage
+address values to copy configuration data to the firmware memory space,
+which in turn may corrupt pfe internal state at uboot runtime (Linux resets
+pfe and reloads the firmware, so Linux runtime is not affected).
+
+The fix excludes the above operations when platform->memmap is NULL,
+as the pfe firmware is doing the init by itself (see referenced commit).
+Also, add error check for pfeng_hw_pe_check_mmap().
+
+Issue: ALB-8867
+
+Fixes: 763f6ff8f8 ("s32g: ethernet: add alternative way to init PFE FW")
+Upstream-Status: Pending 
+
+Signed-off-by: Claudiu Manoil <claudiu.manoil@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/net/pfeng/pfeng_hw.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/pfeng/pfeng_hw.c b/drivers/net/pfeng/pfeng_hw.c
+index 722543bd37..f6867da7e5 100644
+--- a/drivers/net/pfeng/pfeng_hw.c
++++ b/drivers/net/pfeng/pfeng_hw.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL 2.0
+ /*
+  *  Copyright (c) 2020 Imagination Technologies Limited
+- *  Copyright 2018-2021 NXP
++ *  Copyright 2018-2022 NXP
+  */
+ 
+ /**
+@@ -596,6 +596,7 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
+ 
+ 	if (lc_found) {
+ 		memcpy(((u8 *)fw + shdr[ii].sh_offset), &lcv, sizeof(lcv));
++		*memmap = NULL;
+ 	} else {
+ 		for (ii = 0; ii < ehdr->e_shnum; ++ii) {
+ 			if (!strcmp(".pfe_pe_mmap", &names[shdr[ii].sh_name])) {
+@@ -654,7 +655,7 @@ static int pfeng_hw_pe_load_firmware(s32 pe_idx, u8 *fw,
+ 	return 0;
+ }
+ 
+-int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
++static int pfeng_hw_pe_check_mmap(struct pfe_ct_pe_mmap *pfe_pe_mmap)
+ {
+ 	if (ntohl(pfe_pe_mmap->size) != sizeof(struct pfe_ct_pe_mmap)) {
+ 		pr_err("Structure length mismatch: found %u required %u\n",
+@@ -1492,7 +1493,13 @@ pfeng_hw_init_class(struct pfe_platform *platform)
+ 			pr_err("Error during upload of CLASS firmware\n");
+ 			return -EIO;
+ 		}
+-		pfeng_hw_pe_check_mmap(platform->memmap);
++
++		if (platform->memmap) {
++			ret = pfeng_hw_pe_check_mmap(platform->memmap);
++			if (ret)
++				return ret;
++		}
++
+ 	} else {
+ 		pr_err("Only ELF format is supported\n");
+ 		return -ENODEV;
+@@ -1770,6 +1777,9 @@ static int pfeng_hw_init_ifaces(struct pfe_platform *platform)
+ 	int ret = 0;
+ 	u32 dmem_base, heap_base;
+ 
++	if (!platform->memmap)
++		return 0; /* init done by firmware */
++
+ 	if ((platform->hif_chnl + PFE_PHY_IF_ID_HIF0) < PFE_PHY_IF_ID_HIF0 ||
+ 	    (platform->hif_chnl + PFE_PHY_IF_ID_HIF0) > PFE_PHY_IF_ID_MAX) {
+ 		pr_err("Invalid HIF channel\n");
+-- 
+2.17.1
+

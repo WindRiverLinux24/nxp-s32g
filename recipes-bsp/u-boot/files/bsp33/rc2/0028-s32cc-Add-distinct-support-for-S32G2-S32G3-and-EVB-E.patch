@@ -1,0 +1,357 @@
+From dc4a120aeac98a6be03b31697c90ee972cc3014b Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 19 Apr 2022 10:18:20 +0300
+Subject: [PATCH 28/33] s32cc: Add distinct support for S32G2/S32G3 and
+ EVB/EVB3
+
+We support S32G2 SoC only on EVB platform
+and both S32G2, S32G3 SoCs on EVB3 platform.
+
+Issue: ALB-8791
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/Makefile                         |  3 ++-
+ .../dts/{s32g274aevb.dts => s32g2xxaevb.dts}  |  4 +++
+ arch/arm/dts/s32g3xxaevb.dts                  |  4 +++
+ arch/arm/dts/s32g3xxaevb3.dts                 | 17 ++++++++++++
+ arch/arm/mach-s32/s32-cc/sgmii/sgmii.c        |  2 +-
+ arch/arm/mach-s32/s32g2/Kconfig               |  7 ++++-
+ arch/arm/mach-s32/s32g3/Kconfig               | 14 ++++++++++
+ board/nxp/s32-cc/MAINTAINERS                  |  2 +-
+ board/nxp/s32-cc/s32g/Kconfig                 |  5 ----
+ board/nxp/s32g2xxaevb/Kconfig                 |  2 +-
+ board/nxp/s32g3xxaevb3/Kconfig                | 27 +++++++++++++++++++
+ board/nxp/s32g3xxaevb3/Makefile               |  7 +++++
+ configs/s32g3xxaevb3_defconfig                |  5 ++++
+ configs/s32g3xxaevb3_qspi_defconfig           |  5 ++++
+ drivers/net/dwc_eth_qos_s32cc.c               |  3 +--
+ drivers/net/pfeng/pfeng_cmd.c                 |  7 +++--
+ include/configs/s32g3xxaevb3.h                | 19 +++++++++++++
+ 17 files changed, 117 insertions(+), 16 deletions(-)
+ rename arch/arm/dts/{s32g274aevb.dts => s32g2xxaevb.dts} (89%)
+ create mode 100644 arch/arm/dts/s32g3xxaevb3.dts
+ create mode 100644 board/nxp/s32g3xxaevb3/Kconfig
+ create mode 100644 board/nxp/s32g3xxaevb3/Makefile
+ create mode 100644 configs/s32g3xxaevb3_defconfig
+ create mode 100644 configs/s32g3xxaevb3_qspi_defconfig
+ create mode 100644 include/configs/s32g3xxaevb3.h
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 6826f55ce2..de6d3e2ee0 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -389,8 +389,9 @@ dtb-$(CONFIG_FSL_LSCH2) += fsl-ls1043a-qds-duart.dtb \
+ 	fsl-ls1012a-frwy.dtb
+ 
+ dtb-$(CONFIG_TARGET_S32G274ABLUEBOX3) += s32g274abluebox3.dtb
+-dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g274aevb.dtb
++dtb-$(CONFIG_TARGET_S32G2XXAEVB) += s32g2xxaevb.dtb
+ dtb-$(CONFIG_TARGET_S32G3XXAEVB) += s32g3xxaevb.dtb
++dtb-$(CONFIG_TARGET_S32G3XXAEVB3) += s32g3xxaevb3.dtb
+ dtb-$(CONFIG_TARGET_S32G274AEMU) += s32g274aemu.dtb
+ dtb-$(CONFIG_TARGET_S32G399AEMU) += s32g399aemu.dtb
+ dtb-$(CONFIG_TARGET_S32G274ARDB2) += s32g274ardb2.dtb
+diff --git a/arch/arm/dts/s32g274aevb.dts b/arch/arm/dts/s32g2xxaevb.dts
+similarity index 89%
+rename from arch/arm/dts/s32g274aevb.dts
+rename to arch/arm/dts/s32g2xxaevb.dts
+index 4751cc3658..bc5a7bc5ae 100644
+--- a/arch/arm/dts/s32g274aevb.dts
++++ b/arch/arm/dts/s32g2xxaevb.dts
+@@ -15,3 +15,7 @@
+ &usdhc0 {
+ 	no-1-8-v;
+ };
++
++&usbotg {
++	status = "okay";
++};
+diff --git a/arch/arm/dts/s32g3xxaevb.dts b/arch/arm/dts/s32g3xxaevb.dts
+index 9fe14e452e..530286ec52 100644
+--- a/arch/arm/dts/s32g3xxaevb.dts
++++ b/arch/arm/dts/s32g3xxaevb.dts
+@@ -15,3 +15,7 @@
+ &usdhc0 {
+ 	no-1-8-v;
+ };
++
++&usbotg {
++	status = "okay";
++};
+diff --git a/arch/arm/dts/s32g3xxaevb3.dts b/arch/arm/dts/s32g3xxaevb3.dts
+new file mode 100644
+index 0000000000..9ab2d1b5bf
+--- /dev/null
++++ b/arch/arm/dts/s32g3xxaevb3.dts
+@@ -0,0 +1,17 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Copyright 2022 NXP
++ */
++
++/dts-v1/;
++#include "s32g.dtsi"
++#include "s32g3.dtsi"
++#include "s32gxxxaevb.dtsi"
++
++/ {
++	model = "NXP S32G3XXX-EVB3";
++};
++
++&usdhc0 {
++	no-1-8-v;
++};
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+index 8178c1005f..3ffd283bf1 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+@@ -38,7 +38,7 @@
+  *	-MAC1 1G to the sja1110 switch/PCIeX1 on lane 0
+  *		pcie1:mode=rc&sgmii,clock=int,fmhz=100,xpcs_mode=1
+  *
+- * Board s32g274aevb:
++ * Board s32g2xxaevb:
+  *	-Default - MAC0 1G to Aqauntia (CPU board)
+  *		pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0 or
+  *		pcie1:mode=sgmii,clock=ext,fmhz=100,xpcs_mode=0 or
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index 955f712051..2b04169372 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -17,11 +17,16 @@ config TARGET_S32G274ARDB2
+ 	select NXP_S32GRDB_BOARD
+ 
+ config TARGET_S32G2XXAEVB
+-	bool "Support S32G274AEVB board"
++	bool "Support S32G2XXAEVB board"
+ 	help
+ 	  This board is based on S32G2 family of SoCs. It is equipped with
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+ 	  I2C and DSPI.
++	imply DM_USB
++	imply SAF1508BET_USB_PHY
++	imply USB
++	imply USB_EHCI_HCD
++	imply USB_ULPI
+ 	select NXP_S32GEVB_BOARD
+ 
+ config TARGET_S32G274ABLUEBOX3
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index cedd9da660..024303a9d8 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -17,6 +17,19 @@ config TARGET_S32G399ARDB3
+ 
+ config TARGET_S32G3XXAEVB
+ 	bool "Support S32G3-EVB board"
++	help
++	  This board is based on S32G3 family of SoCs. It is equipped with
++	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
++	  I2C and DSPI.
++	imply DM_USB
++	imply SAF1508BET_USB_PHY
++	imply USB
++	imply USB_EHCI_HCD
++	imply USB_ULPI
++	select NXP_S32GEVB_BOARD
++
++config TARGET_S32G3XXAEVB3
++	bool "Support S32G3-EVB3 board"
+ 	help
+ 	  This board is based on S32G3 family of SoCs. It is equipped with
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+@@ -35,6 +48,7 @@ config FSL_PFENG
+ source "board/nxp/s32-cc/s32g/Kconfig"
+ source "board/nxp/s32g399ardb3/Kconfig"
+ source "board/nxp/s32g3xxaevb/Kconfig"
++source "board/nxp/s32g3xxaevb3/Kconfig"
+ source "board/nxp/s32g399aemu/Kconfig"
+ 
+ endif
+diff --git a/board/nxp/s32-cc/MAINTAINERS b/board/nxp/s32-cc/MAINTAINERS
+index d34dd52991..2dd2c30c75 100644
+--- a/board/nxp/s32-cc/MAINTAINERS
++++ b/board/nxp/s32-cc/MAINTAINERS
+@@ -8,7 +8,7 @@ F:	arch/arm/include/asm/arch-s32
+ S32G274A-EVB BOARD
+ M:	-
+ S:	Maintained
+-F:	configs/s32g274aevb_defconfig
++F:	configs/s32g2xxaevb_defconfig
+ F:	include/configs/s32g2xxaevb.h
+ 
+ S32G274A-RDB BOARD
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+index 6906ad64be..5565bcea3b 100644
+--- a/board/nxp/s32-cc/s32g/Kconfig
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -28,7 +28,6 @@ config NXP_S32GEVB_BOARD
+ 	imply CMD_PMIC
+ 	imply DM_PMIC
+ 	imply DM_PMIC_VR5510
+-	imply DM_USB
+ 	imply E1000
+ 	imply I2C_EEPROM
+ 	imply NXP_S32CC_BOARD_COMMON
+@@ -37,12 +36,8 @@ config NXP_S32GEVB_BOARD
+ 	imply PHY_MICREL
+ 	imply PHY_MICREL_KSZ90X1
+ 	imply RGMII
+-	imply SAF1508BET_USB_PHY
+ 	imply SARADC_S32CC
+ 	imply SJA1105
+-	imply USB
+-	imply USB_EHCI_HCD
+-	imply USB_ULPI
+ 	select MISC_INIT_R if SJA1105
+ 	select SPI_FLASH_MACRONIX
+ 
+diff --git a/board/nxp/s32g2xxaevb/Kconfig b/board/nxp/s32g2xxaevb/Kconfig
+index 97a7656646..56fec6302d 100644
+--- a/board/nxp/s32g2xxaevb/Kconfig
++++ b/board/nxp/s32g2xxaevb/Kconfig
+@@ -10,7 +10,7 @@ config SYS_BOARD
+ 	default "s32g2xxaevb"
+ 
+ config DEFAULT_DEVICE_TREE
+-	default "s32g274aevb"
++	default "s32g2xxaevb"
+ 
+ config NR_DRAM_BANKS
+ 	default 2
+diff --git a/board/nxp/s32g3xxaevb3/Kconfig b/board/nxp/s32g3xxaevb3/Kconfig
+new file mode 100644
+index 0000000000..3eae37d5ad
+--- /dev/null
++++ b/board/nxp/s32g3xxaevb3/Kconfig
+@@ -0,0 +1,27 @@
++# SPDX-License-Identifier: GPL-2.0+
++# Copyright 2022 NXP
++
++if TARGET_S32G3XXAEVB3
++
++config SYS_CONFIG_NAME
++	default "s32g3xxaevb3"
++
++config SYS_BOARD
++	default "s32g3xxaevb3"
++
++config DEFAULT_DEVICE_TREE
++	default "s32g3xxaevb3"
++
++config NR_DRAM_BANKS
++	default 2
++
++config ENV_SECT_SIZE
++	default 0x10000 if QSPI_BOOT
++
++config SYS_EEPROM_PAGE_WRITE_DELAY_MS
++	default 10
++
++config SYS_EEPROM_SIZE
++	default 128
++
++endif
+diff --git a/board/nxp/s32g3xxaevb3/Makefile b/board/nxp/s32g3xxaevb3/Makefile
+new file mode 100644
+index 0000000000..9bbb5c34ab
+--- /dev/null
++++ b/board/nxp/s32g3xxaevb3/Makefile
+@@ -0,0 +1,7 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier:      GPL-2.0+
++#
++
++obj-y += ../s32-cc/s32g/
+diff --git a/configs/s32g3xxaevb3_defconfig b/configs/s32g3xxaevb3_defconfig
+new file mode 100644
+index 0000000000..461dc7f177
+--- /dev/null
++++ b/configs/s32g3xxaevb3_defconfig
+@@ -0,0 +1,5 @@
++CONFIG_ARM=y
++CONFIG_ARCH_S32G3=y
++# CONFIG_SPI_FLASH_BAR is not set
++CONFIG_TARGET_S32G3XXAEVB3=y
++CONFIG_SD_BOOT=y
+diff --git a/configs/s32g3xxaevb3_qspi_defconfig b/configs/s32g3xxaevb3_qspi_defconfig
+new file mode 100644
+index 0000000000..94a5d43ee8
+--- /dev/null
++++ b/configs/s32g3xxaevb3_qspi_defconfig
+@@ -0,0 +1,5 @@
++CONFIG_ARM=y
++CONFIG_ARCH_S32G3=y
++# CONFIG_SPI_FLASH_BAR is not set
++CONFIG_TARGET_S32G3XXAEVB3=y
++CONFIG_QSPI_BOOT=y
+diff --git a/drivers/net/dwc_eth_qos_s32cc.c b/drivers/net/dwc_eth_qos_s32cc.c
+index 668e7136f3..c2b153a023 100644
+--- a/drivers/net/dwc_eth_qos_s32cc.c
++++ b/drivers/net/dwc_eth_qos_s32cc.c
+@@ -363,8 +363,7 @@ static int check_sgmii_cfg(int gmac_no)
+ 	int xpcs = 0;
+ 	enum serdes_xpcs_mode_gen2 mode, desired_mode1, desired_mode2;
+ 
+-#if defined(CONFIG_TARGET_S32G2XXAEVB) || \
+-	defined(CONFIG_TARGET_S32G3XXAEVB) || \
++#if defined(CONFIG_NXP_S32GEVB_BOARD) || \
+ 	defined(CONFIG_NXP_S32GRDB_BOARD)  || \
+ 	defined(CONFIG_TARGET_S32G399AEMU)
+ 
+diff --git a/drivers/net/pfeng/pfeng_cmd.c b/drivers/net/pfeng/pfeng_cmd.c
+index 0be8d4e685..4b8875d28a 100644
+--- a/drivers/net/pfeng/pfeng_cmd.c
++++ b/drivers/net/pfeng/pfeng_cmd.c
+@@ -22,15 +22,14 @@
+ #include "pfeng.h"
+ 
+ static u32 emac_intf[PFENG_EMACS_COUNT] = {
+-#if CONFIG_IS_ENABLED(TARGET_S32G2XXAEVB) || \
+-	CONFIG_IS_ENABLED(TARGET_S32G3XXAEVB)
++#if CONFIG_IS_ENABLED(NXP_S32GEVB_BOARD)
+ 	PHY_INTERFACE_MODE_SGMII, /* ARQ107 on PROC board */
+-	PHY_INTERFACE_MODE_RGMII, /* KSZ9031 on PROC board */
++	PHY_INTERFACE_MODE_SGMII, /* ARQ107 on PLAT board */
+ 	PHY_INTERFACE_MODE_RGMII  /* SJA1105 on PLAT board */
+ #endif
+ #if CONFIG_IS_ENABLED(NXP_S32GRDB_BOARD)
+ 	PHY_INTERFACE_MODE_SGMII, /* SJA1110A */
+-	PHY_INTERFACE_MODE_NONE,  /* disabled, clashed with GMAC */
++	PHY_INTERFACE_MODE_SGMII, /* ARQ107/ARQ113 */
+ 	PHY_INTERFACE_MODE_RGMII  /* KSZ9031 */
+ #endif
+ #if CONFIG_IS_ENABLED(CONFIG_TARGET_S32G274ABLUEBOX3)
+diff --git a/include/configs/s32g3xxaevb3.h b/include/configs/s32g3xxaevb3.h
+new file mode 100644
+index 0000000000..a4916e218a
+--- /dev/null
++++ b/include/configs/s32g3xxaevb3.h
+@@ -0,0 +1,19 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright 2022 NXP
++ */
++#ifndef __S32G3XXAEVB3_H__
++#define __S32G3XXAEVB3_H__
++
++#include <configs/s32g3.h>
++
++#define EXTRA_BOOTCOMMAND		PFE_INIT_CMD
++#define EXTRA_BOOT_ARGS			PFE_EXTRA_BOOT_ARGS
++#define FDT_FILE			"fsl-s32g3xxa-evb3.dtb"
++
++#ifdef CONFIG_FSL_PFENG
++#  define PFENG_MODE			"enable,sgmii,sgmii,rgmii"
++#  define PFENG_EMAC			"0"
++#endif
++
++#endif
+-- 
+2.17.1
+

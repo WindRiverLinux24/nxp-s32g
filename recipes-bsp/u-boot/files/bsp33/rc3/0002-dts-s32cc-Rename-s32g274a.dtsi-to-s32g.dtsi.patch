@@ -1,0 +1,78 @@
+From a9f73f0d168b43bdfad798757d2f792ed9773693 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 19 Apr 2022 15:15:55 +0300
+Subject: [PATCH 02/64] dts: s32cc: Rename s32g274a.dtsi to s32g.dtsi
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/{s32g274a.dtsi => s32g2.dtsi} | 0
+ arch/arm/dts/s32g274abluebox3.dts          | 2 +-
+ arch/arm/dts/s32g274aemu.dts               | 2 +-
+ arch/arm/dts/s32g274ardb2.dts              | 2 +-
+ arch/arm/dts/s32g2xxaevb.dts               | 2 +-
+ 5 files changed, 4 insertions(+), 4 deletions(-)
+ rename arch/arm/dts/{s32g274a.dtsi => s32g2.dtsi} (100%)
+
+diff --git a/arch/arm/dts/s32g274a.dtsi b/arch/arm/dts/s32g2.dtsi
+similarity index 100%
+rename from arch/arm/dts/s32g274a.dtsi
+rename to arch/arm/dts/s32g2.dtsi
+diff --git a/arch/arm/dts/s32g274abluebox3.dts b/arch/arm/dts/s32g274abluebox3.dts
+index ce92c052bf..ba55361496 100644
+--- a/arch/arm/dts/s32g274abluebox3.dts
++++ b/arch/arm/dts/s32g274abluebox3.dts
+@@ -6,7 +6,7 @@
+ 
+ /dts-v1/;
+ #include <dt-bindings/gpio/gpio.h>
+-#include "s32g274a.dtsi"
++#include "s32g2.dtsi"
+ 
+ / {
+ 	model = "NXP S32G274A BlueBox3";
+diff --git a/arch/arm/dts/s32g274aemu.dts b/arch/arm/dts/s32g274aemu.dts
+index 9d1b4931c3..b47597d5fc 100644
+--- a/arch/arm/dts/s32g274aemu.dts
++++ b/arch/arm/dts/s32g274aemu.dts
+@@ -5,7 +5,7 @@
+ 
+ /dts-v1/;
+ #include <dt-bindings/pinctrl/s32g-pinctrl.h>
+-#include "s32g274a.dtsi"
++#include "s32g2.dtsi"
+ 
+ / {
+ 	model = "ZeBu model for NXP S32G274A";
+diff --git a/arch/arm/dts/s32g274ardb2.dts b/arch/arm/dts/s32g274ardb2.dts
+index 9ac9a13d55..46c9ff7c28 100644
+--- a/arch/arm/dts/s32g274ardb2.dts
++++ b/arch/arm/dts/s32g274ardb2.dts
+@@ -4,7 +4,7 @@
+  */
+ 
+ /dts-v1/;
+-#include "s32g274a.dtsi"
++#include "s32g2.dtsi"
+ #include "s32gxxxardb.dtsi"
+ 
+ / {
+diff --git a/arch/arm/dts/s32g2xxaevb.dts b/arch/arm/dts/s32g2xxaevb.dts
+index bc5a7bc5ae..ce5e1aeb90 100644
+--- a/arch/arm/dts/s32g2xxaevb.dts
++++ b/arch/arm/dts/s32g2xxaevb.dts
+@@ -4,7 +4,7 @@
+  */
+ 
+ /dts-v1/;
+-#include "s32g274a.dtsi"
++#include "s32g2.dtsi"
+ #include "s32gxxxaevb.dtsi"
+ 
+ / {
+-- 
+2.17.1
+

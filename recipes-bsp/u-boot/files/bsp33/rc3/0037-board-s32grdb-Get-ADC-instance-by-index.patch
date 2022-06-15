@@ -1,0 +1,74 @@
+From d84f2c3da98137b532321426a8afb2e0d6d79827 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 9 May 2022 11:07:23 +0300
+Subject: [PATCH 37/64] board: s32grdb: Get ADC instance by index
+
+Refactor the way ADC0 is referenced to keep the DTS
+node definition without DTC warnings.
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32cc.dtsi             | 6 ++++--
+ board/nxp/s32-cc/s32g/s32gxxxardb.c | 4 +---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/dts/s32cc.dtsi b/arch/arm/dts/s32cc.dtsi
+index 6d8c6c3795..552a3580de 100644
+--- a/arch/arm/dts/s32cc.dtsi
++++ b/arch/arm/dts/s32cc.dtsi
+@@ -14,6 +14,8 @@
+ 	#size-cells = <2>;
+ 
+ 	aliases {
++		adc0 = &adc0;
++		adc1 = &adc1;
+ 		i2c0 = &i2c0;
+ 		i2c1 = &i2c1;
+ 		i2c2 = &i2c2;
+@@ -396,7 +398,7 @@
+ 		status = "okay";
+ 	};
+ 
+-	saradc0: saradc0 {
++	adc0: saradc@401f8000 {
+ 		compatible = "nxp,s32cc-adc";
+ 		reg = <0x0 0x401f8000 0x0 0x1000>;
+ 		interrupts = <0 70 IRQ_TYPE_LEVEL_HIGH>;
+@@ -405,7 +407,7 @@
+ 		status = "okay";
+ 	};
+ 
+-	saradc1: saradc1 {
++	adc1: saradc@402e8000 {
+ 		compatible = "nxp,s32cc-adc";
+ 		reg = <0x0 0x402e8000 0x0 0x1000>;
+ 		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>;
+diff --git a/board/nxp/s32-cc/s32g/s32gxxxardb.c b/board/nxp/s32-cc/s32g/s32gxxxardb.c
+index 07103bd8e6..70db010ee7 100644
+--- a/board/nxp/s32-cc/s32g/s32gxxxardb.c
++++ b/board/nxp/s32-cc/s32g/s32gxxxardb.c
+@@ -7,7 +7,6 @@
+ #include <env.h>
+ #include <dm/uclass.h>
+ 
+-#define SARADC0_DEV			"saradc0"
+ #define SARADC0_CH5			5
+ #define SARADC0_TOLERANCE	200
+ 
+@@ -63,8 +62,7 @@ int board_late_init(void)
+ 	struct udevice *saradc0;
+ 	int ret;
+ 
+-	ret = uclass_get_device_by_name(UCLASS_ADC, SARADC0_DEV,
+-					&saradc0);
++	ret = uclass_get_device_by_seq(UCLASS_ADC, 0, &saradc0);
+ 	if (ret) {
+ 		printf("%s: No SARADC0 (err = %d)\n", __func__, ret);
+ 		return ret;
+-- 
+2.17.1
+

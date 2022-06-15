@@ -1,4 +1,4 @@
-From c1dca47f2f7bd0adf09060ad635582c124db819d Mon Sep 17 00:00:00 2001
+From ba15b8ae150af5b0aa6a66434ee57233fa5725c3 Mon Sep 17 00:00:00 2001
 From: Quanyang Wang <quanyang.wang@windriver.com>
 Date: Tue, 3 May 2022 16:43:22 +0800
 Subject: [PATCH] u-boot-s32: Makefile: add scripts_basic dependency to .cfgout
@@ -30,18 +30,18 @@ Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/Makefile b/Makefile
-index 54e23fae35..4d463fdda9 100644
+index c790118a60..408e3235be 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1174,7 +1174,7 @@ endif
+@@ -1171,7 +1171,7 @@ endif
  	$(Q)$(MAKE) $(build)=arch/arm/cpu/armv7/vf610 $@
  
  ifeq ($(CONFIG_NXP_S32CC),y)
 -%.cfgout: FORCE
 +%.cfgout: scripts_basic FORCE
  	$(Q)$(MAKE) $(build)=arch/arm/mach-s32/s32-cc $@
+ endif
  
- u-boot-s32.bin: u-boot.dtb u-boot-nodtb.bin u-boot-s32.cfgout
 -- 
 2.25.1
 

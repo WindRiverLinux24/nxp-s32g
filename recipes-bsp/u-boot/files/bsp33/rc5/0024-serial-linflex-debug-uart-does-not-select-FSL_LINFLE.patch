@@ -1,0 +1,68 @@
+From d445194766365183e924352dd81138c15c4710af Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Thu, 2 Jun 2022 15:03:29 +0300
+Subject: [PATCH 24/30] serial: linflex: debug uart does not select
+ FSL_LINFLEXUART
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+DEBUG_UART_LINFLEXUART must depend on FSL_LINFLEXUART and should
+not select it, otherwise the sandbox defconfig will end up using
+DEBUG_UART_LINFLEXUART
+
+➜  u-boot git:(a6fdec2540) ✗ make sandbox_defconfig
+configuration written to .config
+
+➜  u-boot git:(a6fdec2540) ✗ make -j9
+scripts/kconfig/conf  --syncconfig Kconfig
+.config:54:warning: symbol value '' invalid for DEBUG_UART_BASE
+.config:55:warning: symbol value '' invalid for DEBUG_UART_CLOCK
+*
+* Restart config...
+*
+*
+* Serial
+*
+Serial (SERIAL) [Y/n/?] y
+  Default baudrate (BAUDRATE) [115200] 115200
+  Require a serial port for console (REQUIRE_SERIAL_CONSOLE) [Y/n/?] y
+  Specify the port number used for console (SPECIFY_CONSOLE_INDEX) [N/y/?] n
+  Provide a serial driver (SERIAL_PRESENT) [Y/n/?] y
+  Enable Driver Model for serial drivers (DM_SERIAL) [Y/?] y
+    Enable RX buffer for serial input (SERIAL_RX_BUFFER) [N/y/?] n
+    Search for serial devices after default one failed (SERIAL_SEARCH_ALL) [N/y/?] n
+    Probe all available serial devices (SERIAL_PROBE_ALL) [N/y/?] n
+  Enable an early debug UART for debugging (DEBUG_UART) [Y/n/?] y
+    Select which UART will provide the debug UART
+    > 1. Linflex UART (DEBUG_UART_LINFLEXUART)
+      2. sandbox (DEBUG_UART_SANDBOX)
+    choice[1-2?]: 1
+    Base address of UART (DEBUG_UART_BASE) [] (NEW)
+
+Issue: ALB-8937
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/serial/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
+index 0249abc516..4996be7173 100644
+--- a/drivers/serial/Kconfig
++++ b/drivers/serial/Kconfig
+@@ -307,7 +307,7 @@ config DEBUG_UART_APBUART
+ 
+ config DEBUG_UART_LINFLEXUART
+ 	bool "Linflex UART"
+-	select FSL_LINFLEXUART
++	depends on FSL_LINFLEXUART
+ 	help
+ 	  Select this to enable debug UART for Linflex module found on NXP
+ 	  Automotive SoCs like S32G/S32R.
+-- 
+2.17.1
+

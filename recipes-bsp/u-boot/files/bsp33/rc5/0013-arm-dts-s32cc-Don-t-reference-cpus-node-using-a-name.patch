@@ -1,0 +1,142 @@
+From aecb7588a5e315e04030383e43d53fa4a634a55d Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 16 May 2022 08:14:41 +0300
+Subject: [PATCH 13/30] arm: dts: s32cc: Don't reference 'cpus' node using a
+ name
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/dts/s32cc.dtsi |  2 +-
+ arch/arm/dts/s32g3.dtsi | 92 ++++++++++++++++++++---------------------
+ 2 files changed, 47 insertions(+), 47 deletions(-)
+
+diff --git a/arch/arm/dts/s32cc.dtsi b/arch/arm/dts/s32cc.dtsi
+index ae2b257bc7..77590d9569 100644
+--- a/arch/arm/dts/s32cc.dtsi
++++ b/arch/arm/dts/s32cc.dtsi
+@@ -88,7 +88,7 @@
+ 		};
+ 	};
+ 
+-	cpus: cpus {
++	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		u-boot,dm-pre-reloc;
+diff --git a/arch/arm/dts/s32g3.dtsi b/arch/arm/dts/s32g3.dtsi
+index 3409f7fdd4..0f8605b4fa 100644
+--- a/arch/arm/dts/s32g3.dtsi
++++ b/arch/arm/dts/s32g3.dtsi
+@@ -23,6 +23,52 @@
+ 		reg = <0x8 0x80000000 0 0x80000000>;
+ 	};
+ 
++	cpus {
++		cpu4: cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a53";
++			reg = <0x2>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++				<&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++				"soc_major", "soc_minor", "soc_subminor";
++		};
++
++		cpu5: cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a53";
++			reg = <0x3>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++				<&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++				"soc_major", "soc_minor", "soc_subminor";
++		};
++
++		cpu6: cpu@102 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a53";
++			reg = <0x102>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++				<&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++				"soc_major", "soc_minor", "soc_subminor";
++		};
++
++		cpu7: cpu@103 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a53";
++			reg = <0x103>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++				<&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++				"soc_major", "soc_minor", "soc_subminor";
++		};
++	};
++
+ 	soc {
+ 		gic: interrupt-controller@50800000 {
+ 			compatible = "arm,gic-v3";
+@@ -44,52 +90,6 @@
+ 	compatible = "nxp,s32g3-cmu";
+ };
+ 
+-&cpus {
+-	cpu4: cpu@2 {
+-		device_type = "cpu";
+-		compatible = "arm,cortex-a53";
+-		reg = <0x2>;
+-
+-		nvmem-cells = <&soc_letter>, <&part_no>,
+-			<&soc_major>, <&soc_minor>, <&soc_subminor>;
+-		nvmem-cell-names = "soc_letter", "part_no",
+-			"soc_major", "soc_minor", "soc_subminor";
+-	};
+-
+-	cpu5: cpu@3 {
+-		device_type = "cpu";
+-		compatible = "arm,cortex-a53";
+-		reg = <0x3>;
+-
+-		nvmem-cells = <&soc_letter>, <&part_no>,
+-			<&soc_major>, <&soc_minor>, <&soc_subminor>;
+-		nvmem-cell-names = "soc_letter", "part_no",
+-			"soc_major", "soc_minor", "soc_subminor";
+-	};
+-
+-	cpu6: cpu@102 {
+-		device_type = "cpu";
+-		compatible = "arm,cortex-a53";
+-		reg = <0x102>;
+-
+-		nvmem-cells = <&soc_letter>, <&part_no>,
+-			<&soc_major>, <&soc_minor>, <&soc_subminor>;
+-		nvmem-cell-names = "soc_letter", "part_no",
+-			"soc_major", "soc_minor", "soc_subminor";
+-	};
+-
+-	cpu7: cpu@103 {
+-		device_type = "cpu";
+-		compatible = "arm,cortex-a53";
+-		reg = <0x103>;
+-
+-		nvmem-cells = <&soc_letter>, <&part_no>,
+-			<&soc_major>, <&soc_minor>, <&soc_subminor>;
+-		nvmem-cell-names = "soc_letter", "part_no",
+-			"soc_major", "soc_minor", "soc_subminor";
+-	};
+-};
+-
+ &siul2_0_nvram {
+ 	compatible = "nxp,s32g3-siul2_0-nvram";
+ };
+-- 
+2.17.1
+
