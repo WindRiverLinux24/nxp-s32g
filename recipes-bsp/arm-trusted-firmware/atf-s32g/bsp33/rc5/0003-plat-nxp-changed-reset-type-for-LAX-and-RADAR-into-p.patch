@@ -1,0 +1,41 @@
+From cfbf651e2d19c0e5178c9f86a0c1d5676abb613c Mon Sep 17 00:00:00 2001
+From: Cristian Devan <cristian.devan@nxp.com>
+Date: Wed, 18 May 2022 12:51:06 +0300
+Subject: [PATCH 03/50] plat: nxp: changed reset type for LAX and RADAR into
+ partition reset. Peripheral reset not supported.
+
+Issue: ALB-8895
+Upstream-Status: Pending 
+
+Signed-off-by: Cristian Devan <cristian.devan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32_scmi_rst.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/plat/nxp/s32/s32_scmi_rst.c b/plat/nxp/s32/s32_scmi_rst.c
+index e92721a45..0179079a5 100644
+--- a/plat/nxp/s32/s32_scmi_rst.c
++++ b/plat/nxp/s32/s32_scmi_rst.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2021 NXP */
++/* Copyright 2021-2022 NXP */
+ #include <cdefs.h>
+ #include <clk/s32gen1_scmi_rst.h>
+ #include <common/debug.h>
+@@ -70,8 +70,9 @@ static const struct reset_entry reset_table[] = {
+ 	[S32GEN1_SCMI_RST_A53_1] = PERIPH_RESET(66, "a53_1"),
+ 	[S32GEN1_SCMI_RST_A53_2] = PERIPH_RESET(67, "a53_2"),
+ 	[S32GEN1_SCMI_RST_A53_3] = PERIPH_RESET(68, "a53_3"),
+-	[S32R45_SCMI_RST_LAX] = PERIPH_RESET(128, "lax"),
+-	[S32R45_SCMI_RST_RADAR] = PERIPH_RESET(192, "radar"),
++	/* LAX and RADAR cannot be reset as independent peripherals */
++	[S32R45_SCMI_RST_LAX] = PART_RESET(2, "lax"),
++	[S32R45_SCMI_RST_RADAR] = PART_RESET(3, "radar"),
+ #endif
+ };
+ 
+-- 
+2.17.1
+

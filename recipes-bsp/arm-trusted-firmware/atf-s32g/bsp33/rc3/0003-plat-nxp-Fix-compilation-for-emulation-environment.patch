@@ -1,0 +1,139 @@
+From 200b1fe353a8869658429c09e2c9b663da61eaa0 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 19 Apr 2022 09:28:17 +0300
+Subject: [PATCH 03/18] plat: nxp: Fix compilation for emulation environment
+
+Disable the ECC exclusion mechanism and suspend procedures for emulators.
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32_bl2_el3.c          | 51 ++++++++++++++++-------------
+ plat/nxp/s32/s32g/s32g_plat_funcs.c |  4 +--
+ 2 files changed, 31 insertions(+), 24 deletions(-)
+
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 82216a7c9..567201980 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -367,7 +367,8 @@ static bool is_branch_op(uint32_t op)
+ 	return (op & AARCH64_UNCOND_BRANCH_MASK) == AARCH64_UNCOND_BRANCH_OP;
+ }
+ 
+-#if (ERRATA_S32_050543 == 1 && S32CC_EMU == 0)
++#if S32CC_EMU == 0
++#if ERRATA_S32_050543 == 1
+ static int ft_fixup_ddr_errata(void *blob)
+ {
+ 	int nodeoff, ret;
+@@ -392,22 +393,6 @@ static int ft_fixup_ddr_errata(void *blob)
+ }
+ #endif
+ 
+-static int ft_fixup_resmem_node(void *blob)
+-{
+-	int ret;
+-	char nodename[21];
+-
+-	snprintf(nodename, sizeof(nodename), "atf@%x", BL31_BASE);
+-
+-	ret = fdt_add_reserved_memory(blob, nodename, BL31_BASE, BL31_SIZE);
+-	if (ret) {
+-		ERROR("Failed to add 'atf' /reserved-memory node");
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+ static int ft_fixup_exclude_ecc(void *blob)
+ {
+ 	int ret, nodeoff = -1;
+@@ -465,6 +450,25 @@ static int ft_fixup_exclude_ecc(void *blob)
+ 	return 0;
+ }
+ 
++
++#endif
++
++static int ft_fixup_resmem_node(void *blob)
++{
++	int ret;
++	char nodename[21];
++
++	snprintf(nodename, sizeof(nodename), "atf@%x", BL31_BASE);
++
++	ret = fdt_add_reserved_memory(blob, nodename, BL31_BASE, BL31_SIZE);
++	if (ret) {
++		ERROR("Failed to add 'atf' /reserved-memory node");
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int ft_fixups(void *blob)
+ {
+ 	size_t size = fdt_totalsize(blob);
+@@ -473,19 +477,22 @@ static int ft_fixups(void *blob)
+ 	size += S32_FDT_UPDATES_SPACE;
+ 	fdt_set_totalsize(blob, size);
+ 
+-#if (ERRATA_S32_050543 == 1 && S32CC_EMU == 0)
++#if S32CC_EMU == 0
++	ret = ft_fixup_exclude_ecc(blob);
++	if (ret)
++		goto out;
++
++#if (ERRATA_S32_050543 == 1)
+ 	ret = ft_fixup_ddr_errata(blob);
+ 	if (ret)
+ 		goto out;
+-#endif
++#endif /* ERRATA_S32_050543 */
++#endif /* S32CC_EMU */
+ 
+ 	ret = ft_fixup_resmem_node(blob);
+-
+ 	if (ret)
+ 		goto out;
+ 
+-	ret = ft_fixup_exclude_ecc(blob);
+-
+ out:
+ 	flush_dcache_range((uintptr_t)blob, size);
+ 	return ret;
+diff --git a/plat/nxp/s32/s32g/s32g_plat_funcs.c b/plat/nxp/s32/s32g/s32g_plat_funcs.c
+index 6e6ff187f..04359bb7d 100644
+--- a/plat/nxp/s32/s32g/s32g_plat_funcs.c
++++ b/plat/nxp/s32/s32g/s32g_plat_funcs.c
+@@ -20,6 +20,7 @@
+ #include <plat/nxp/s32g/bl31_ssram/ssram_mailbox.h>
+ #include <plat/common/platform.h>
+ 
++#if S32CC_EMU == 0
+ static void bl31sram_entry(void)
+ {
+ 	bl31_sram_entry_t entry;
+@@ -88,7 +89,6 @@ static void __dead2 platform_suspend(unsigned int current_cpu)
+ 	plat_panic_handler();
+ }
+ 
+-#if S32CC_EMU == 0
+ static void copy_bl31sram_image(void)
+ {
+ 	uint32_t npages;
+@@ -123,6 +123,6 @@ void s32_plat_suspend(unsigned int cpu)
+ {
+ #if S32CC_EMU == 0
+ 	copy_bl31sram_image();
+-#endif
+ 	platform_suspend(cpu);
++#endif
+ }
+-- 
+2.17.1
+

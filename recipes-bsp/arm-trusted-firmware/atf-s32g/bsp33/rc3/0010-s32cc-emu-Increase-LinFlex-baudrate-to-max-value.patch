@@ -1,0 +1,152 @@
+From 8ddc887161c5b9c191c60debe84fbe389495da79 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 4 May 2022 08:58:56 +0300
+Subject: [PATCH 10/18] s32cc: emu: Increase LinFlex baudrate to max value
+
+Increase LinFlex baudrate up to 7MB to get the fastest
+possible print on emulator.
+
+Issue: ALB-8822
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/early_clocks.c |  8 ++------
+ drivers/nxp/uart/linflexuart.c     | 13 -------------
+ plat/nxp/s32/include/s32_pinctrl.h | 11 -----------
+ plat/nxp/s32/s32_linflexuart.c     |  8 ++++++--
+ 4 files changed, 8 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/early_clocks.c b/drivers/nxp/s32/clk/early_clocks.c
+index a8fed149e..37f3386e9 100644
+--- a/drivers/nxp/s32/clk/early_clocks.c
++++ b/drivers/nxp/s32/clk/early_clocks.c
+@@ -62,11 +62,10 @@ static struct clk xbar_2x = CLK_INIT(S32GEN1_CLK_XBAR_2X);
+ /* LINFLEX clock */
+ static struct clk periph_pll_mux = CLK_INIT(S32GEN1_CLK_PERIPH_PLL_MUX);
+ static struct clk periph_pll_vco = CLK_INIT(S32GEN1_CLK_PERIPH_PLL_VCO);
+-#if S32CC_EMU == 0
+ static struct clk periph_pll_phi3 = CLK_INIT(S32GEN1_CLK_PERIPH_PLL_PHI3);
+ static struct clk mc_cgm0_mux8 = CLK_INIT(S32GEN1_CLK_MC_CGM0_MUX8);
+ static struct clk lin_baud = CLK_INIT(S32GEN1_CLK_LIN_BAUD);
+-#endif
++
+ /* SDHC */
+ static struct clk periph_dfs3 = CLK_INIT(S32GEN1_CLK_PERIPH_PLL_DFS3);
+ static struct clk mc_cgm0_mux14 = CLK_INIT(S32GEN1_CLK_MC_CGM0_MUX14);
+@@ -157,7 +156,6 @@ int s32_enable_a53_clock(void)
+ 	return enable_xbar_clock();
+ }
+ 
+-#if S32CC_EMU == 0
+ static int enable_lin_clock(void)
+ {
+ 	int ret;
+@@ -182,7 +180,6 @@ static int enable_lin_clock(void)
+ 
+ 	return s32gen1_enable(&lin_baud, 1);
+ }
+-#endif
+ 
+ static int setup_periph_pll(void)
+ {
+@@ -277,11 +274,10 @@ int s32_plat_clock_init(bool skip_ddr_clk)
+ 	if (ret)
+ 		return ret;
+ 
+-#if S32CC_EMU == 0
+ 	ret = enable_lin_clock();
+ 	if (ret)
+ 		return ret;
+-#endif
++
+ 	ret = setup_periph_pll();
+ 	if (ret)
+ 		return ret;
+diff --git a/drivers/nxp/uart/linflexuart.c b/drivers/nxp/uart/linflexuart.c
+index 858051bb6..922f71047 100644
+--- a/drivers/nxp/uart/linflexuart.c
++++ b/drivers/nxp/uart/linflexuart.c
+@@ -50,18 +50,6 @@ static uint32_t linflex_read(uintptr_t base, uintptr_t reg)
+ 	return mmio_read_32(base + reg);
+ }
+ 
+-#if S32CC_EMU == 1
+-static uint32_t get_ldiv_mult(struct console_linflex *cons)
+-{
+-	return 1;
+-}
+-
+-static uint32_t get_lin_rate(struct console_linflex *cons)
+-{
+-	// Rate in Hz
+-	return 133000;
+-}
+-#else
+ static uint32_t get_ldiv_mult(struct console_linflex *cons)
+ {
+ 	uint32_t mult, cr;
+@@ -80,7 +68,6 @@ static uint32_t get_lin_rate(struct console_linflex *cons)
+ {
+ 	return cons->clock;
+ }
+-#endif
+ 
+ static void linflex_set_brg(struct console_linflex *cons)
+ {
+diff --git a/plat/nxp/s32/include/s32_pinctrl.h b/plat/nxp/s32/include/s32_pinctrl.h
+index 6d7a7e10c..86dd4bf31 100644
+--- a/plat/nxp/s32/include/s32_pinctrl.h
++++ b/plat/nxp/s32/include/s32_pinctrl.h
+@@ -56,23 +56,12 @@
+ #define SIUL2_IMCR_S32G_G1_UART0_RXD_to_pad	\
+ 	(SIUL2_MSCR_MUX_MODE_ALT2)
+ 
+-#if S32CC_EMU == 1
+ #define SIUL2_MSCR_S32G_G1_PORT_CTRL_UART1_TXD	 \
+ 	(SIUL2_MSCR_S32_G1_SRC_100MHz |		 \
+ 	 SIUL2_MSCR_S32_G1_OBE_EN |		 \
+ 	 SIUL2_MSCR_MUX_MODE_ALT1)
+-#else
+-#define SIUL2_MSCR_S32G_G1_PORT_CTRL_UART1_TXD	 \
+-	(SIUL2_MSCR_S32_G1_SRC_100MHz |		 \
+-	 SIUL2_MSCR_S32_G1_OBE_EN |		 \
+-	 SIUL2_MSCR_MUX_MODE_ALT2)
+-#endif
+ 
+-#if S32CC_EMU == 1
+ #define SIUL2_IMCR_S32G_G1_UART1_RXD_to_pad	(SIUL2_MSCR_MUX_MODE_ALT3)
+-#else
+-#define SIUL2_IMCR_S32G_G1_UART1_RXD_to_pad	(SIUL2_MSCR_MUX_MODE_ALT4)
+-#endif
+ 
+ /* LinFLEX 0 */
+ #define SIUL2_PC09_MSCR_S32_G1_UART0		41
+diff --git a/plat/nxp/s32/s32_linflexuart.c b/plat/nxp/s32/s32_linflexuart.c
+index dfcbf14ec..4026e2ce7 100644
+--- a/plat/nxp/s32/s32_linflexuart.c
++++ b/plat/nxp/s32/s32_linflexuart.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -7,7 +7,11 @@
+ #include <platform.h>
+ #include <platform_def.h>
+ 
+-#define S32_UART_BAUDRATE	(115200)
++#if S32CC_EMU == 1
++#  define S32_UART_BAUDRATE	(7812500)
++#else
++#  define S32_UART_BAUDRATE	(115200)
++#endif
+ #define S32_UART_CLOCK_HZ	(125000000)
+ 
+ static struct console_linflex console = {
+-- 
+2.17.1
+

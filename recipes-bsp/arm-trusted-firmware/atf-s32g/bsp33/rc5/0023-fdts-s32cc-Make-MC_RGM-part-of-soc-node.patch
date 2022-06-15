@@ -1,0 +1,45 @@
+From 46674b88c77ef89dbfeb54493295f5a899e5fe90 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 14:54:37 +0300
+Subject: [PATCH 23/50] fdts: s32cc: Make MC_RGM part of soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 0201db726..4d52cda5b 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -105,6 +105,11 @@
+ 				<S32GEN1_PERIPH_DFS3_FREQ>;
+ 		};
+ 
++		rgm: rgm@40078000 {
++			compatible = "nxp,s32cc-rgm";
++			reg = <0x0 0x40078000 0x0 0x3000>;
++		};
++
+ 		mc_me: mc_me@40088000 {
+ 			compatible = "nxp,s32cc-mc_me";
+ 			reg = <0x0 0x40088000 0x0 0x3000>;
+@@ -272,11 +277,6 @@
+ 			<0>, <0>, <0>, <0>,
+ 			<0>, <0>, <100000000>;
+ 
+-		rgm: rgm@40078000 {
+-			compatible = "nxp,s32cc-rgm";
+-			reg = <0x0 0x40078000 0x0 0x3000>;
+-		};
+-
+ 		mc_cgm0: mc_cgm0@40030000 {
+ 			compatible = "nxp,s32cc-mc_cgm0";
+ 			reg = <0x0 0x40030000 0x0 0x3000>;
+-- 
+2.17.1
+

@@ -1,0 +1,56 @@
+From 06e9a232a200d77fcfb62ef0563ec7c7df9bd2f6 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Wed, 11 May 2022 14:47:48 +0300
+Subject: [PATCH 18/18] s32: Increase the number of XLAT Tables
+
+If both OP-TEE and HSE_FW images are built into the fip, BL2 will not
+have enough XLAT Tables to map the contents. Therefore, increase the
+size of MAX_XLAT_TABLES to accomodate this use-case.
+
+Issue: ALB-8884
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32g/include/s32g_platform_def.h | 4 ++--
+ plat/nxp/s32/s32r/include/s32r_platform_def.h | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/plat/nxp/s32/s32g/include/s32g_platform_def.h b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+index 4325e776f..9b664d4d4 100644
+--- a/plat/nxp/s32/s32g/include/s32g_platform_def.h
++++ b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+@@ -65,10 +65,10 @@
+ #if defined IMAGE_BL2
+ #if (ERRATA_S32_050543 == 1)
+ #define MAX_MMAP_REGIONS        18
+-#define MAX_XLAT_TABLES			26
++#define MAX_XLAT_TABLES			27
+ #else
+ #define MAX_MMAP_REGIONS		17
+-#define MAX_XLAT_TABLES			25
++#define MAX_XLAT_TABLES			26
+ #endif
+ #endif /* IMAGE_BL2 */
+ #if defined IMAGE_BL33
+diff --git a/plat/nxp/s32/s32r/include/s32r_platform_def.h b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+index 66ead579f..c8aedba2a 100644
+--- a/plat/nxp/s32/s32r/include/s32r_platform_def.h
++++ b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+@@ -23,10 +23,10 @@
+ #if defined IMAGE_BL2
+ #if (ERRATA_S32_050543 == 1)
+ #define MAX_MMAP_REGIONS		16
+-#define MAX_XLAT_TABLES			24
++#define MAX_XLAT_TABLES			25
+ #else
+ #define MAX_MMAP_REGIONS		15
+-#define MAX_XLAT_TABLES			23
++#define MAX_XLAT_TABLES			24
+ #endif
+ #endif /* IMAGE_BL2 */
+ 
+-- 
+2.17.1
+

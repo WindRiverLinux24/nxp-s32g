@@ -1,0 +1,107 @@
+From 602d5d08c04554e2f033afc9c95bdf9ef348d874 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 13:29:42 +0300
+Subject: [PATCH 04/50] fdts: s32: Use lowercase for addresses
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/fsl-s32-gen1.dtsi  | 20 ++++++++++----------
+ fdts/fsl-s32g3.dtsi     |  4 ++--
+ fdts/fsl-s32r45-evb.dts |  4 ++--
+ 3 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/fdts/fsl-s32-gen1.dtsi b/fdts/fsl-s32-gen1.dtsi
+index bbca6e0da..a5f2ed002 100644
+--- a/fdts/fsl-s32-gen1.dtsi
++++ b/fdts/fsl-s32-gen1.dtsi
+@@ -126,22 +126,22 @@
+ 		#clock-cells = <1>;
+ 	};
+ 
+-	ddr_errata: ddr_errata@403C0000 {
++	ddr_errata: ddr_errata@403c0000 {
+ 		compatible = "nxp,s32cc-ddr";
+-		reg = <0x0 0x403C0000 0x0 0x100>;
++		reg = <0x0 0x403c0000 0x0 0x100>;
+ 		status = "disabled";
+ 	};
+ 
+-	i2c0: i2c@401E4000 {
++	i2c0: i2c@401e4000 {
+ 		compatible = "fsl,vf610-i2c";
+-		reg = <0x0 0x401E4000 0x0 0x10000>;
++		reg = <0x0 0x401e4000 0x0 0x10000>;
+ 	};
+ 
+-	i2c4: i2c@402DC000 {
++	i2c4: i2c@402dc000 {
+ 		compatible = "fsl,vf610-i2c";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+-		reg = <0x0 0x402DC000 0x0 0x10000>;
++		reg = <0x0 0x402dc000 0x0 0x10000>;
+ 	};
+ 
+ 	wkpu: wkpu@40090000 {
+@@ -210,9 +210,9 @@
+ 				<800000000>;
+ 		};
+ 
+-		periphpll: periphpll@4003C000 {
++		periphpll: periphpll@4003c000 {
+ 			compatible = "nxp,s32cc-periphpll";
+-			reg = <0x0 0x4003C000 0x0 0x3000>;
++			reg = <0x0 0x4003c000 0x0 0x3000>;
+ 
+ 			assigned-clocks =
+ 				<&clks S32GEN1_CLK_PERIPH_PLL_MUX>,
+@@ -361,8 +361,8 @@
+ 		};
+ 	};
+ 
+-	ocotp: ocotp@400A4000 {
+-		reg = <0x0 0x400A4000 0x0 0x400>;
++	ocotp: ocotp@400a4000 {
++		reg = <0x0 0x400a4000 0x0 0x400>;
+ 		status = "okay";
+ 	};
+ 
+diff --git a/fdts/fsl-s32g3.dtsi b/fdts/fsl-s32g3.dtsi
+index cfc35cc35..3807e704f 100644
+--- a/fdts/fsl-s32g3.dtsi
++++ b/fdts/fsl-s32g3.dtsi
+@@ -79,9 +79,9 @@
+ 			<&clks S32GEN1_CLK_QSPI_2X>;
+ 	};
+ 
+-	mc_cgm6: mc_cgm0@4053C000 {
++	mc_cgm6: mc_cgm0@4053c000 {
+ 		compatible = "nxp,s32cc-mc_cgm6";
+-		reg = <0x0 0x4053C000 0x0 0x3000>;
++		reg = <0x0 0x4053c000 0x0 0x3000>;
+ 
+ 		assigned-clocks =
+ 			<&clks S32G_CLK_MC_CGM6_MUX0>,
+diff --git a/fdts/fsl-s32r45-evb.dts b/fdts/fsl-s32r45-evb.dts
+index 7258fda1f..aeb676911 100644
+--- a/fdts/fsl-s32r45-evb.dts
++++ b/fdts/fsl-s32r45-evb.dts
+@@ -75,9 +75,9 @@
+ 			<0>, <0>, <0>, <0>,
+ 			<100000000>;
+ 
+-	mc_cgm2: mc_cgm2@440C0000 {
++	mc_cgm2: mc_cgm2@440c0000 {
+ 		compatible = "nxp,s32cc-mc_cgm2";
+-		reg = <0x0 0x440C0000 0x0 0x3000>;
++		reg = <0x0 0x440c0000 0x0 0x3000>;
+ 
+ 		assigned-clocks =
+ 			<&clks S32R45_CLK_MC_CGM2_MUX0>,
+-- 
+2.17.1
+

@@ -1,0 +1,45 @@
+From e38c235f7f263961c21f783c4d0f6e6614d24641 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 14:51:04 +0300
+Subject: [PATCH 21/50] fdts: s32cc: Make MC_ME part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index b9130f22b..6ad22e84e 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -105,6 +105,11 @@
+ 				<S32GEN1_PERIPH_DFS3_FREQ>;
+ 		};
+ 
++		mc_me: mc_me@40088000 {
++			compatible = "nxp,s32cc-mc_me";
++			reg = <0x0 0x40088000 0x0 0x3000>;
++		};
++
+ 		wkpu: wkpu@40090000 {
+ 			compatible = "nxp,s32cc-wkpu";
+ 			reg = <0x0 0x40090000 0x0 0x10000>, /* WKPU */
+@@ -262,11 +267,6 @@
+ 			<0>, <0>, <0>, <0>,
+ 			<0>, <0>, <100000000>;
+ 
+-		mc_me: mc_me@40088000 {
+-			compatible = "nxp,s32cc-mc_me";
+-			reg = <0x0 0x40088000 0x0 0x3000>;
+-		};
+-
+ 		rdc: rdc@440080000 {
+ 			compatible = "nxp,s32cc-rdc";
+ 			reg = <0x0 0x40080000 0x0 0x3000>;
+-- 
+2.17.1
+

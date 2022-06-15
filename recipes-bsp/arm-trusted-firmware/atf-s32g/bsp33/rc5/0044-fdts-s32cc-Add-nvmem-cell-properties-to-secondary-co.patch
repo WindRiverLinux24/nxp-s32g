@@ -1,0 +1,115 @@
+From 74ad67881ce71a5fc7023a92eafceb03722a9c4b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 20 May 2022 08:35:40 +0300
+Subject: [PATCH 44/50] fdts: s32cc: Add 'nvmem-cell' properties to secondary
+ cores
+
+This is required in order for 'CPU_CMD' commands from U-Boot to
+work properly
+
+Issue: ALB-8901, ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 15 +++++++++++++++
+ fdts/s32g3.dtsi | 20 ++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 1c7143ac9..d5f8deb68 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -113,6 +113,11 @@
+ 			reg = <0x1>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster0_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cpu2: cpu@100 {
+@@ -121,6 +126,11 @@
+ 			reg = <0x100>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster1_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cpu3: cpu@101 {
+@@ -129,6 +139,11 @@
+ 			reg = <0x101>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster1_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cluster0_l2_cache: l2-cache0 {
+diff --git a/fdts/s32g3.dtsi b/fdts/s32g3.dtsi
+index a499cf78a..065c8ebbf 100644
+--- a/fdts/s32g3.dtsi
++++ b/fdts/s32g3.dtsi
+@@ -26,6 +26,11 @@
+ 			reg = <0x2>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster0_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cpu5: cpu@3 {
+@@ -34,6 +39,11 @@
+ 			reg = <0x3>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster0_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cpu6: cpu@102 {
+@@ -42,6 +52,11 @@
+ 			reg = <0x102>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster1_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 
+ 		cpu7: cpu@103 {
+@@ -50,6 +65,11 @@
+ 			reg = <0x103>;
+ 			enable-method = "psci";
+ 			next-level-cache = <&cluster1_l2_cache>;
++
++			nvmem-cells = <&soc_letter>, <&part_no>,
++			    <&soc_major>, <&soc_minor>, <&soc_subminor>;
++			nvmem-cell-names = "soc_letter", "part_no",
++			    "soc_major", "soc_minor", "soc_subminor";
+ 		};
+ 	};
+ 
+-- 
+2.17.1
+

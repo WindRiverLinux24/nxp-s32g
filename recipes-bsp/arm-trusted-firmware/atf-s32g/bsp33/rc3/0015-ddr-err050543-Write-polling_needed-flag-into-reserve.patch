@@ -1,0 +1,332 @@
+From 35466895a8733ed2fb9d3c5104ad4fc07961f6ff Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 3 May 2022 11:17:07 +0300
+Subject: [PATCH 15/18] ddr: err050543: Write 'polling_needed' flag into
+ reserved DDR memory
+
+This information will be later used in Linux dedicated driver in order
+to apply certain changes with respect to DDR controller.
+
+Issue: ALB-8781
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/fsl-s32-gen1.dtsi                        | 12 ++++++
+ fdts/fsl-s32g274a.dtsi                        | 14 +++++++
+ fdts/fsl-s32r45-evb.dts                       | 13 +++++++
+ plat/nxp/s32/include/s32_ddr_errata_funcs.h   | 11 ++++++
+ plat/nxp/s32/s32_bl2_el3.c                    | 38 ++++---------------
+ plat/nxp/s32/s32_bl_common.c                  | 11 ++++++
+ plat/nxp/s32/s32g/include/s32g_platform_def.h |  9 ++++-
+ plat/nxp/s32/s32g/s32g_bl2_el3.c              | 11 ++++++
+ plat/nxp/s32/s32r/include/s32r_platform_def.h |  5 +++
+ plat/nxp/s32/s32r/s32r_bl2_el3.c              |  7 ++++
+ 10 files changed, 98 insertions(+), 33 deletions(-)
+ create mode 100644 plat/nxp/s32/include/s32_ddr_errata_funcs.h
+
+diff --git a/fdts/fsl-s32-gen1.dtsi b/fdts/fsl-s32-gen1.dtsi
+index 4ff9cac3b..7e34a1ebf 100644
+--- a/fdts/fsl-s32-gen1.dtsi
++++ b/fdts/fsl-s32-gen1.dtsi
+@@ -17,6 +17,12 @@
+ 		i2c4 = &i2c4;
+ 	};
+ 
++	reserved_memory: reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++	};
++
+ 	fxosc: fxosc@40050000 {
+ 		compatible = "fixed-clock", "nxp,s32cc-fxosc";
+ 		reg = <0x0 0x40050000 0x0 0x3000>;
+@@ -120,6 +126,12 @@
+ 		#clock-cells = <1>;
+ 	};
+ 
++	ddr_errata: ddr_errata@403C0000 {
++		compatible = "nxp,s32cc-ddr";
++		reg = <0x0 0x403C0000 0x0 0x100>;
++		status = "disabled";
++	};
++
+ 	i2c0: i2c@401E4000 {
+ 		compatible = "fsl,vf610-i2c";
+ 		reg = <0x0 0x401E4000 0x0 0x10000>;
+diff --git a/fdts/fsl-s32g274a.dtsi b/fdts/fsl-s32g274a.dtsi
+index cdf6c848f..972e9bea0 100644
+--- a/fdts/fsl-s32g274a.dtsi
++++ b/fdts/fsl-s32g274a.dtsi
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include <dt-bindings/clock/s32g-clock.h>
++#include <dt-bindings/ddr-errata/s32-ddr-errata.h>
+ 
+ /dts-v1/;
+ #include "fsl-s32g.dtsi"
+@@ -29,3 +30,16 @@
+ &ocotp {
+ 	compatible = "nxp,s32g-ocotp";
+ };
++
++&reserved_memory {
++	ddr_errata_reserved: ddr {
++		reg = <0x0 DDR_ERRATA_REGION_BASE
++			   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
++		no-map;
++	};
++};
++
++&ddr_errata {
++	memory-region = <&ddr_errata_reserved>;
++	status = "okay";
++};
+diff --git a/fdts/fsl-s32r45-evb.dts b/fdts/fsl-s32r45-evb.dts
+index 2e185a26f..ef513419c 100644
+--- a/fdts/fsl-s32r45-evb.dts
++++ b/fdts/fsl-s32r45-evb.dts
+@@ -5,6 +5,7 @@
+  */
+ #include <dt-bindings/clock/s32r45-clock.h>
+ #include <dt-bindings/clock/s32r45-scmi-clock.h>
++#include <dt-bindings/ddr-errata/s32-ddr-errata.h>
+ 
+ /dts-v1/;
+ #include "fsl-s32-gen1.dtsi"
+@@ -118,3 +119,15 @@
+ 		<&clks S32R45_CLK_ACCEL3>;
+ };
+ 
++&reserved_memory {
++	ddr_errata_reserved: ddr {
++		reg = <0x0 DDR_ERRATA_REGION_BASE
++			   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
++		no-map;
++	};
++};
++
++&ddr_errata {
++	memory-region = <&ddr_errata_reserved>;
++	status = "okay";
++};
+diff --git a/plat/nxp/s32/include/s32_ddr_errata_funcs.h b/plat/nxp/s32/include/s32_ddr_errata_funcs.h
+new file mode 100644
+index 000000000..6b9d2cc75
+--- /dev/null
++++ b/plat/nxp/s32/include/s32_ddr_errata_funcs.h
+@@ -0,0 +1,11 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++#ifndef S32_DDR_ERRATA_FUNCS_H
++#define S32_DDR_ERRATA_FUNCS_H
++
++void ddr_errata_update_flag(uint8_t flag);
++
++#endif
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 881660fdd..b616542fc 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -21,6 +21,9 @@
+ #include <s32_bl_common.h>
+ #include <tools_share/firmware_image_package.h>
+ 
++#if (ERRATA_S32_050543 == 1)
++#include <dt-bindings/ddr-errata/s32-ddr-errata.h>
++#endif
+ #include "s32_dt.h"
+ #include "s32_clocks.h"
+ #include "s32_mc_me.h"
+@@ -216,6 +219,10 @@ static mmap_region_t s32_mmap[] = {
+ 			MT_NON_CACHEABLE | MT_RW | MT_SECURE),
+ 	MAP_REGION_FLAT(S32_QSPI_BASE, S32_QSPI_SIZE, MT_DEVICE | MT_RW),
+ 	MAP_REGION_FLAT(FIP_BASE, FIP_MAXIMUM_SIZE, MT_RW | MT_SECURE),
++#if (ERRATA_S32_050543 == 1)
++	MAP_REGION_FLAT(DDR_ERRATA_REGION_BASE, DDR_ERRATA_REGION_SIZE,
++			MT_NON_CACHEABLE | MT_RW),
++#endif
+ 	MAP_REGION_FLAT(S32_FLASH_BASE, FIP_MAXIMUM_SIZE, MT_RW | MT_SECURE),
+ 	{0},
+ };
+@@ -368,31 +375,6 @@ static bool is_branch_op(uint32_t op)
+ }
+ 
+ #if S32CC_EMU == 0
+-#if ERRATA_S32_050543 == 1
+-static int ft_fixup_ddr_errata(void *blob)
+-{
+-	int nodeoff, ret;
+-
+-	if (polling_needed != 1) {
+-		return 0;
+-	}
+-
+-	nodeoff = fdt_node_offset_by_compatible(blob, -1, "nxp,s32cc-ddr");
+-	if (nodeoff < 0) {
+-		ERROR("Failed to get offset of 'nxp,s32cc-ddr' node\n");
+-		return nodeoff;
+-	}
+-
+-	ret = fdt_setprop_string(blob, nodeoff, "status", "okay");
+-	if (ret) {
+-		ERROR("Failed to enable 'nxp,s32cc-ddr' node\n");
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-#endif
+-
+ static int ft_fixup_exclude_ecc(void *blob)
+ {
+ 	int ret, nodeoff = -1;
+@@ -479,12 +461,6 @@ static int ft_fixups(void *blob)
+ 	ret = ft_fixup_exclude_ecc(blob);
+ 	if (ret)
+ 		goto out;
+-
+-#if (ERRATA_S32_050543 == 1)
+-	ret = ft_fixup_ddr_errata(blob);
+-	if (ret)
+-		goto out;
+-#endif /* ERRATA_S32_050543 */
+ #endif /* S32CC_EMU */
+ 
+ 	ret = ft_fixup_resmem_node(blob);
+diff --git a/plat/nxp/s32/s32_bl_common.c b/plat/nxp/s32/s32_bl_common.c
+index ffcbeccbe..e1f6a7cc2 100644
+--- a/plat/nxp/s32/s32_bl_common.c
++++ b/plat/nxp/s32/s32_bl_common.c
+@@ -10,6 +10,10 @@
+ #include "platform_def.h"
+ #include "s32_bl_common.h"
+ #include "s32_clocks.h"
++#if (ERRATA_S32_050543 == 1)
++#include <dt-bindings/ddr-errata/s32-ddr-errata.h>
++#include "s32_ddr_errata_funcs.h"
++#endif
+ #include "s32_dt.h"
+ #include "s32_ncore.h"
+ #include "s32_pinctrl.h"
+@@ -25,6 +29,13 @@ bool is_lockstep_enabled(void)
+ 	return false;
+ }
+ 
++#if (ERRATA_S32_050543 == 1)
++void ddr_errata_update_flag(uint8_t flag)
++{
++	mmio_write_32(DDR_ERRATA_REGION_BASE, flag);
++}
++#endif
++
+ void s32_early_plat_init(bool skip_ddr_clk)
+ {
+ 	uint32_t caiutc;
+diff --git a/plat/nxp/s32/s32g/include/s32g_platform_def.h b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+index d1285d69c..4325e776f 100644
+--- a/plat/nxp/s32/s32g/include/s32g_platform_def.h
++++ b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+@@ -63,9 +63,14 @@
+ #endif
+ 
+ #if defined IMAGE_BL2
+-#define MAX_MMAP_REGIONS        17
+-#define MAX_XLAT_TABLES         25
++#if (ERRATA_S32_050543 == 1)
++#define MAX_MMAP_REGIONS        18
++#define MAX_XLAT_TABLES			26
++#else
++#define MAX_MMAP_REGIONS		17
++#define MAX_XLAT_TABLES			25
+ #endif
++#endif /* IMAGE_BL2 */
+ #if defined IMAGE_BL33
+ #pragma warning "BL33 image is being built; you should configure it out."
+ #endif
+diff --git a/plat/nxp/s32/s32g/s32g_bl2_el3.c b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+index 073cc71cd..4bd7b98b2 100644
+--- a/plat/nxp/s32/s32g/s32g_bl2_el3.c
++++ b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+@@ -6,6 +6,9 @@
+ 
+ #include <lib/mmio.h>
+ #include "s32g_clocks.h"
++#if (ERRATA_S32_050543 == 1)
++#include "s32_ddr_errata_funcs.h"
++#endif
+ #include "s32_linflexuart.h"
+ #include "s32_storage.h"
+ #include "s32g_mc_rgm.h"
+@@ -66,6 +69,10 @@ static void resume_bl31(struct s32g_ssram_mailbox *ssram_mb)
+ 	s32_enable_ddr_clock();
+ 	ddrss_to_normal_mode(csr_addr);
+ 
++#if (ERRATA_S32_050543 == 1)
++	ddr_errata_update_flag(polling_needed);
++#endif
++
+ 	resume_entrypoint();
+ #endif
+ }
+@@ -146,4 +153,8 @@ void bl2_el3_plat_arch_setup(void)
+ 	ret = ddr_init();
+ 	if (ret)
+ 		panic();
++
++#if (ERRATA_S32_050543 == 1)
++	ddr_errata_update_flag(polling_needed);
++#endif
+ }
+diff --git a/plat/nxp/s32/s32r/include/s32r_platform_def.h b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+index b97269510..66ead579f 100644
+--- a/plat/nxp/s32/s32r/include/s32r_platform_def.h
++++ b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+@@ -21,9 +21,14 @@
+ #endif
+ 
+ #if defined IMAGE_BL2
++#if (ERRATA_S32_050543 == 1)
++#define MAX_MMAP_REGIONS		16
++#define MAX_XLAT_TABLES			24
++#else
+ #define MAX_MMAP_REGIONS		15
+ #define MAX_XLAT_TABLES			23
+ #endif
++#endif /* IMAGE_BL2 */
+ 
+ #if defined IMAGE_BL33
+ #pragma warning "BL33 image is being built; you should configure it out."
+diff --git a/plat/nxp/s32/s32r/s32r_bl2_el3.c b/plat/nxp/s32/s32r/s32r_bl2_el3.c
+index 4204a370d..731714a11 100644
+--- a/plat/nxp/s32/s32r/s32r_bl2_el3.c
++++ b/plat/nxp/s32/s32r/s32r_bl2_el3.c
+@@ -11,6 +11,9 @@
+ #include "platform_def.h"
+ #include "s32_bl_common.h"
+ #include "s32_bl2_el3.h"
++#if (ERRATA_S32_050543 == 1)
++#include "s32_ddr_errata_funcs.h"
++#endif
+ #include "s32_linflexuart.h"
+ #include "s32_storage.h"
+ #include "s32_sramc.h"
+@@ -80,5 +83,9 @@ void bl2_el3_plat_arch_setup(void)
+ 	ret = ddr_init();
+ 	if (ret)
+ 		panic();
++
++#if (ERRATA_S32_050543 == 1)
++	ddr_errata_update_flag(polling_needed);
++#endif
+ }
+ 
+-- 
+2.17.1
+

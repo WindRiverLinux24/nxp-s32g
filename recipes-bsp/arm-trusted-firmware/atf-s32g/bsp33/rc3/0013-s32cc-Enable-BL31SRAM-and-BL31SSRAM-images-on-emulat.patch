@@ -1,0 +1,273 @@
+From ba1869854eb2711e969d5bde30225acd7eea55ea Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 4 May 2022 09:02:51 +0300
+Subject: [PATCH 13/18] s32cc: Enable BL31SRAM and BL31SSRAM images on emulator
+
+Issue: ALB-8822
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32g/bl31_ssram/bl31ssram_main.c | 20 ++++++--
+ plat/nxp/s32/s32g/s32g_bl2_el3.c              | 47 +++----------------
+ plat/nxp/s32/s32g/s32g_bl31.c                 |  4 --
+ plat/nxp/s32/s32g/s32g_common.mk              |  2 -
+ plat/nxp/s32/s32g/s32g_plat_funcs.c           |  6 +--
+ 5 files changed, 24 insertions(+), 55 deletions(-)
+
+diff --git a/plat/nxp/s32/s32g/bl31_ssram/bl31ssram_main.c b/plat/nxp/s32/s32g/bl31_ssram/bl31ssram_main.c
+index 745f77b1d..45a99c42a 100644
+--- a/plat/nxp/s32/s32g/bl31_ssram/bl31ssram_main.c
++++ b/plat/nxp/s32/s32g/bl31_ssram/bl31ssram_main.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -33,17 +33,29 @@ struct ssram_ivt_sec s32g_ssram_ivt __section(".ssram_ivt1") = {
+ 
+ struct s32g_ssram_mailbox s32g_ssram_mailbox __section(".mailbox");
+ 
+-void bl31ssram_main(void)
++#if S32CC_EMU == 0
++static void ddr_resume(void)
+ {
+-	s32g_warm_entrypoint_t s32g_resume_entrypoint;
+ 	uintptr_t csr_addr;
+ 
+-	s32g_resume_entrypoint = s32g_ssram_mailbox.bl31_warm_entrypoint;
+ 	csr_addr = (uintptr_t)&s32g_ssram_mailbox.csr_settings[0];
+ 
+ 	s32g_plat_ddr_clock_init();
+ 	ddrss_to_normal_mode(csr_addr);
++}
++#else
++static void ddr_resume(void)
++{
++}
++#endif
++
++void bl31ssram_main(void)
++{
++	s32g_warm_entrypoint_t s32g_resume_entrypoint;
++
++	s32g_resume_entrypoint = s32g_ssram_mailbox.bl31_warm_entrypoint;
+ 
++	ddr_resume();
+ 	s32g_resume_entrypoint();
+ 
+ 	/*
+diff --git a/plat/nxp/s32/s32g/s32g_bl2_el3.c b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+index 78698e493..073cc71cd 100644
+--- a/plat/nxp/s32/s32g/s32g_bl2_el3.c
++++ b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+@@ -53,9 +53,9 @@ static enum reset_cause get_reset_cause(void)
+ 	return CAUSE_ERROR;
+ }
+ 
+-#if S32CC_EMU == 0
+ static void resume_bl31(struct s32g_ssram_mailbox *ssram_mb)
+ {
++#if S32CC_EMU == 0
+ 	s32g_warm_entrypoint_t resume_entrypoint;
+ 	uintptr_t csr_addr;
+ 
+@@ -67,24 +67,8 @@ static void resume_bl31(struct s32g_ssram_mailbox *ssram_mb)
+ 	ddrss_to_normal_mode(csr_addr);
+ 
+ 	resume_entrypoint();
+-}
+ #endif
+-
+-#if S32CC_EMU == 1
+-static void skip_emu_images(bl_mem_params_node_t *params, size_t size)
+-{
+-	unsigned int image_id;
+-	size_t i;
+-
+-	for (i = 0; i < size; i++) {
+-		image_id = params[i].image_id;
+-
+-		if (image_id == BL31_IMAGE_ID || image_id == BL33_IMAGE_ID)
+-			params[i].image_info.h.attr |=
+-			    IMAGE_ATTRIB_SKIP_LOADING;
+-	}
+ }
+-#endif
+ 
+ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 				  u_register_t arg2, u_register_t arg3)
+@@ -92,21 +76,17 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 	enum reset_cause reset_cause;
+ 	size_t index = 0;
+ 	bl_mem_params_node_t *params = s32g_bl2_mem_params_descs;
++	struct s32g_ssram_mailbox *ssram_mb = (void *)BL31SSRAM_MAILBOX;
+ 
+ 	reset_cause = get_reset_cause();
+ 	clear_reset_cause();
+ 
+-	/* No resume on emulator */
+-#if S32CC_EMU == 0
+-	struct s32g_ssram_mailbox *ssram_mb = (void *)BL31SSRAM_MAILBOX;
+-
+ 	if ((reset_cause == CAUSE_WAKEUP_DURING_STANDBY) &&
+ 	    !ssram_mb->short_boot) {
+ 		/* Trampoline to bl31_warm_entrypoint */
+ 		resume_bl31(ssram_mb);
+ 		panic();
+ 	}
+-#endif
+ 
+ 	s32_early_plat_init(false);
+ 	console_s32_register();
+@@ -121,26 +101,21 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 	add_bl33_img_to_mem_params_descs(params, &index);
+ 	add_invalid_img_to_mem_params_descs(params, &index);
+ 
+-#if S32CC_EMU == 1
+-	skip_emu_images(params, index);
+-#endif
+-
+ 	bl_mem_params_desc_num = index;
+ }
+ 
+-#if S32CC_EMU == 0
+ static void copy_bl31ssram_image(void)
+ {
++#if S32CC_EMU == 0
+ 	/* Copy bl31 ssram stage. This includes IVT */
+ 	memcpy((void *)S32G_SSRAM_BASE, bl31ssram, bl31ssram_len);
+-}
+ #endif
++}
+ 
+ void bl2_el3_plat_arch_setup(void)
+ {
+ 	uint32_t ret;
+ 
+-#if S32CC_EMU == 0
+ 	ret = s32_el3_mmu_fixup();
+ 	if (ret)
+ 		panic();
+@@ -148,9 +123,11 @@ void bl2_el3_plat_arch_setup(void)
+ 	dt_init_ocotp();
+ 	dt_init_pmic();
+ 
++#if S32CC_EMU == 0
+ 	ret = pmic_setup();
+ 	if (ret)
+ 		ERROR("Failed to disable VR5510 watchdog\n");
++#endif
+ 
+ 	s32_sram_clear(S32_BL33_IMAGE_BASE, get_bl2_dtb_base());
+ 	/* Clear only the necessary part for the FIP header. The rest will
+@@ -164,21 +141,9 @@ void bl2_el3_plat_arch_setup(void)
+ 	copy_bl31ssram_image();
+ 
+ 	clear_swt_faults();
+-#endif
+ 
+ 	/* This will also populate CSR section from bl31ssram */
+ 	ret = ddr_init();
+ 	if (ret)
+ 		panic();
+ }
+-
+-#if S32CC_EMU == 1
+-void bl2_plat_preload_setup(void)
+-{
+-	printf("Now it's time to load the following images:\n");
+-	printf("BL31 @ 0x%x\n", BL31_BASE);
+-	printf("U-Boot @ 0x%x\n", BL33_BASE);
+-
+-	__asm__ volatile("b .");
+-}
+-#endif
+diff --git a/plat/nxp/s32/s32g/s32g_bl31.c b/plat/nxp/s32/s32g/s32g_bl31.c
+index 1f60b6428..61dc37ab6 100644
+--- a/plat/nxp/s32/s32g/s32g_bl31.c
++++ b/plat/nxp/s32/s32g/s32g_bl31.c
+@@ -28,7 +28,6 @@
+ #include "s32g_bl_common.h"
+ #include "clk/clk.h"
+ 
+-#if S32CC_EMU == 0
+ static void dt_init_wkpu(void)
+ {
+ 	void *fdt;
+@@ -57,7 +56,6 @@ static void dt_init_wkpu(void)
+ 		return;
+ 	}
+ }
+-#endif
+ 
+ static int check_clock_node(const void *fdt, int nodeoffset)
+ {
+@@ -116,11 +114,9 @@ void bl31_platform_setup(void)
+ {
+ 	generic_delay_timer_init();
+ 
+-#if S32CC_EMU == 0
+ 	dt_init_pmic();
+ 	dt_init_wkpu();
+ 	dt_init_ocotp();
+-#endif
+ 
+ 	update_core_state(plat_my_core_pos(), 1);
+ 	s32_gic_setup();
+diff --git a/plat/nxp/s32/s32g/s32g_common.mk b/plat/nxp/s32/s32g/s32g_common.mk
+index b60bfac73..ec52cdfb1 100644
+--- a/plat/nxp/s32/s32g/s32g_common.mk
++++ b/plat/nxp/s32/s32g/s32g_common.mk
+@@ -16,10 +16,8 @@ DDR_DRV_SRCS := \
+ 
+ endif
+ 
+-ifeq ($(S32CC_EMU),0)
+ include ${S32_SOC_FAMILY}/bl31_sram/bl31_sram.mk
+ include ${S32_SOC_FAMILY}/bl31_ssram/bl31_ssram.mk
+-endif
+ 
+ PLAT_INCLUDES		+= -I${S32_SOC_FAMILY}/include \
+ 			   -I${S32_SOC_FAMILY}/bl31_sram/include \
+diff --git a/plat/nxp/s32/s32g/s32g_plat_funcs.c b/plat/nxp/s32/s32g/s32g_plat_funcs.c
+index 04359bb7d..dac4e363b 100644
+--- a/plat/nxp/s32/s32g/s32g_plat_funcs.c
++++ b/plat/nxp/s32/s32g/s32g_plat_funcs.c
+@@ -20,7 +20,6 @@
+ #include <plat/nxp/s32g/bl31_ssram/ssram_mailbox.h>
+ #include <plat/common/platform.h>
+ 
+-#if S32CC_EMU == 0
+ static void bl31sram_entry(void)
+ {
+ 	bl31_sram_entry_t entry;
+@@ -91,6 +90,7 @@ static void __dead2 platform_suspend(unsigned int current_cpu)
+ 
+ static void copy_bl31sram_image(void)
+ {
++#if S32CC_EMU == 0
+ 	uint32_t npages;
+ 	int ret;
+ 
+@@ -116,13 +116,11 @@ static void copy_bl31sram_image(void)
+ 			MT_CODE | MT_SECURE);
+ 	if (ret)
+ 		ERROR("Failed to change the attributes of BL31 SRAM memory\n");
+-}
+ #endif
++}
+ 
+ void s32_plat_suspend(unsigned int cpu)
+ {
+-#if S32CC_EMU == 0
+ 	copy_bl31sram_image();
+ 	platform_suspend(cpu);
+-#endif
+ }
+-- 
+2.17.1
+

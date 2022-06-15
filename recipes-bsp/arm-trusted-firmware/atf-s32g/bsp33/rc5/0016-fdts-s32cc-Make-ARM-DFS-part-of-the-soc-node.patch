@@ -1,0 +1,59 @@
+From 92fc9b91c4a95248ef47fb09de955873f57a5289 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 14:38:39 +0300
+Subject: [PATCH 16/50] fdts: s32cc: Make ARM DFS part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 6d4f7df26..52fc5dde6 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -47,6 +47,18 @@
+ 			#clock-cells = <1>;
+ 		};
+ 
++		armdfs: armdfs@40054000 {
++			compatible = "nxp,s32cc-armdfs";
++			reg = <0x0 0x40054000 0x0 0x3000>;
++
++			assigned-clocks =
++				<&plat_clks S32GEN1_CLK_ARM_PLL_DFS1>,
++				<&plat_clks S32GEN1_CLK_ARM_PLL_DFS2>;
++			assigned-clock-rates =
++				<0>,
++				<800000000>;
++		};
++
+ 		wkpu: wkpu@40090000 {
+ 			compatible = "nxp,s32cc-wkpu";
+ 			reg = <0x0 0x40090000 0x0 0x10000>, /* WKPU */
+@@ -204,18 +216,6 @@
+ 			<0>, <0>, <0>, <0>,
+ 			<0>, <0>, <100000000>;
+ 
+-		armdfs: armdfs@40054000 {
+-			compatible = "nxp,s32cc-armdfs";
+-			reg = <0x0 0x40054000 0x0 0x3000>;
+-
+-			assigned-clocks =
+-				<&plat_clks S32GEN1_CLK_ARM_PLL_DFS1>,
+-				<&plat_clks S32GEN1_CLK_ARM_PLL_DFS2>;
+-			assigned-clock-rates =
+-				<0>,
+-				<800000000>;
+-		};
+-
+ 		periphpll: periphpll@4003c000 {
+ 			compatible = "nxp,s32cc-periphpll";
+ 			reg = <0x0 0x4003c000 0x0 0x3000>;
+-- 
+2.17.1
+

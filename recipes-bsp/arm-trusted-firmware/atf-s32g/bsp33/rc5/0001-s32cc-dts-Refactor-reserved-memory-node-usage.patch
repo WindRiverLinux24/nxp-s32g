@@ -1,0 +1,100 @@
+From 9c38ea2613e100f47de92c8a34f8d9cb1e04881e Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Fri, 13 May 2022 11:31:53 +0300
+Subject: [PATCH 01/50] s32cc: dts: Refactor 'reserved-memory' node usage
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/fsl-s32-gen1.dtsi  |  2 +-
+ fdts/fsl-s32g274a.dtsi  | 16 ++++++++--------
+ fdts/fsl-s32r45-evb.dts | 16 ++++++++--------
+ 3 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/fdts/fsl-s32-gen1.dtsi b/fdts/fsl-s32-gen1.dtsi
+index 7e34a1ebf..bbca6e0da 100644
+--- a/fdts/fsl-s32-gen1.dtsi
++++ b/fdts/fsl-s32-gen1.dtsi
+@@ -17,7 +17,7 @@
+ 		i2c4 = &i2c4;
+ 	};
+ 
+-	reserved_memory: reserved-memory {
++	reserved-memory {
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+ 		ranges;
+diff --git a/fdts/fsl-s32g274a.dtsi b/fdts/fsl-s32g274a.dtsi
+index 972e9bea0..6464834db 100644
+--- a/fdts/fsl-s32g274a.dtsi
++++ b/fdts/fsl-s32g274a.dtsi
+@@ -12,6 +12,14 @@
+ / {
+ 	model = "NXP S32G2";
+ 	compatible = "nxp,s32g2";
++
++	reserved-memory {
++		ddr_errata_reserved: ddr@85000000 {
++			reg = <0x0 DDR_ERRATA_REGION_BASE
++				   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
++			no-map;
++		};
++	};
+ };
+ 
+ &mc_cgm0 {
+@@ -31,14 +39,6 @@
+ 	compatible = "nxp,s32g-ocotp";
+ };
+ 
+-&reserved_memory {
+-	ddr_errata_reserved: ddr {
+-		reg = <0x0 DDR_ERRATA_REGION_BASE
+-			   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
+-		no-map;
+-	};
+-};
+-
+ &ddr_errata {
+ 	memory-region = <&ddr_errata_reserved>;
+ 	status = "okay";
+diff --git a/fdts/fsl-s32r45-evb.dts b/fdts/fsl-s32r45-evb.dts
+index ef513419c..7258fda1f 100644
+--- a/fdts/fsl-s32r45-evb.dts
++++ b/fdts/fsl-s32r45-evb.dts
+@@ -14,6 +14,14 @@
+ 	model = "NXP S32R45";
+ 	compatible = "nxp,s32r45";
+ 
++	reserved-memory {
++		ddr_errata_reserved: ddr@85000000 {
++			reg = <0x0 DDR_ERRATA_REGION_BASE
++				   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
++			no-map;
++		};
++	};
++
+ 	gmac1_ext_rx: gmac1_ext_rx {
+ 		compatible = "fixed-clock";
+ 		clock-frequency = <25000000>;
+@@ -119,14 +127,6 @@
+ 		<&clks S32R45_CLK_ACCEL3>;
+ };
+ 
+-&reserved_memory {
+-	ddr_errata_reserved: ddr {
+-		reg = <0x0 DDR_ERRATA_REGION_BASE
+-			   0x0 DDR_ERRATA_REGION_SIZE>; /* 4 KB */
+-		no-map;
+-	};
+-};
+-
+ &ddr_errata {
+ 	memory-region = <&ddr_errata_reserved>;
+ 	status = "okay";
+-- 
+2.17.1
+

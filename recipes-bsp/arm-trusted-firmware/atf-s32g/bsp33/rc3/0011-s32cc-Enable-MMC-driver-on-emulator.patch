@@ -1,0 +1,55 @@
+From c9168a80b72c17e553dcd3504dbd1003099cea07 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 4 May 2022 09:00:19 +0300
+Subject: [PATCH 11/18] s32cc: Enable MMC driver on emulator
+
+This skips CMD13 after data read. This seems to be a limitation
+of the emulator.
+
+Issue: ALB-8822
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/mmc/mmc.c           | 2 ++
+ drivers/nxp/s32/io/io_mmc.c | 4 ----
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index 26dcd1711..713ebf4a2 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -547,12 +547,14 @@ size_t mmc_read_blocks(int lba, uintptr_t buf, size_t size)
+ 	}
+ 
+ 	/* Wait buffer empty */
++#if S32CC_EMU == 0
+ 	do {
+ 		ret = mmc_device_state();
+ 		if (ret < 0) {
+ 			return 0;
+ 		}
+ 	} while ((ret != MMC_STATE_TRAN) && (ret != MMC_STATE_DATA));
++#endif
+ 
+ 	if (!is_cmd23_enabled() && (size > MMC_BLOCK_SIZE)) {
+ 		ret = mmc_send_cmd(MMC_CMD(12), 0, MMC_RESPONSE_R1B, NULL);
+diff --git a/drivers/nxp/s32/io/io_mmc.c b/drivers/nxp/s32/io/io_mmc.c
+index c2e2976bd..5d9152166 100644
+--- a/drivers/nxp/s32/io/io_mmc.c
++++ b/drivers/nxp/s32/io/io_mmc.c
+@@ -90,10 +90,6 @@ static int mmc_block_read(io_entity_t *entity, uintptr_t buffer,
+ 
+ 	*length_read = length;
+ 
+-	/* Skip image loading on emulator */
+-	if (block_spec->length && S32CC_EMU)
+-		return 0;
+-
+ 	offset = block_spec->offset;
+ 	while (length > 0) {
+ 		partial = false;
+-- 
+2.17.1
+

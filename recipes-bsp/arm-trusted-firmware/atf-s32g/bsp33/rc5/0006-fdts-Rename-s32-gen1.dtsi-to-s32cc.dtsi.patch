@@ -1,0 +1,50 @@
+From 04d9382316d2e2475bb53dfedc2275087f69a96e Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 13:42:51 +0300
+Subject: [PATCH 06/50] fdts: Rename 's32-gen1.dtsi' to 's32cc.dtsi'
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/{s32-gen1.dtsi => s32cc.dtsi} | 0
+ fdts/s32g.dtsi                     | 2 +-
+ fdts/s32r45-evb.dts                | 2 +-
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+ rename fdts/{s32-gen1.dtsi => s32cc.dtsi} (100%)
+
+diff --git a/fdts/s32-gen1.dtsi b/fdts/s32cc.dtsi
+similarity index 100%
+rename from fdts/s32-gen1.dtsi
+rename to fdts/s32cc.dtsi
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index 3043b1c44..220c65fae 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -7,7 +7,7 @@
+ #include <dt-bindings/clock/s32g-clock.h>
+ 
+ /dts-v1/;
+-#include "s32-gen1.dtsi"
++#include "s32cc.dtsi"
+ / {
+ 	model = "NXP S32G";
+ };
+diff --git a/fdts/s32r45-evb.dts b/fdts/s32r45-evb.dts
+index ad47c4795..462921bf9 100644
+--- a/fdts/s32r45-evb.dts
++++ b/fdts/s32r45-evb.dts
+@@ -8,7 +8,7 @@
+ #include <dt-bindings/ddr-errata/s32-ddr-errata.h>
+ 
+ /dts-v1/;
+-#include "s32-gen1.dtsi"
++#include "s32cc.dtsi"
+ 
+ /{
+ 	model = "NXP S32R45";
+-- 
+2.17.1
+

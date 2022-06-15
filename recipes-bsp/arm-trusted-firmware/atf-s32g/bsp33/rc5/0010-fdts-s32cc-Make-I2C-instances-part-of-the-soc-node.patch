@@ -1,0 +1,59 @@
+From e0d7f97f77694103e2635e04a477f51000017132 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 13:59:28 +0300
+Subject: [PATCH 10/50] fdts: s32cc: Make I2C instances part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 8bf7da994..234e28e63 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -35,6 +35,18 @@
+ 			#clock-cells = <1>;
+ 		};
+ 
++		i2c0: i2c@401e4000 {
++			compatible = "fsl,vf610-i2c";
++			reg = <0x0 0x401e4000 0x0 0x10000>;
++		};
++
++		i2c4: i2c@402dc000 {
++			compatible = "fsl,vf610-i2c";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <0x0 0x402dc000 0x0 0x10000>;
++		};
++
+ 		ddr_errata: ddr_errata@403c0000 {
+ 			compatible = "nxp,s32cc-ddr";
+ 			reg = <0x0 0x403c0000 0x0 0x100>;
+@@ -138,18 +150,6 @@
+ 		#clock-cells = <1>;
+ 	};
+ 
+-	i2c0: i2c@401e4000 {
+-		compatible = "fsl,vf610-i2c";
+-		reg = <0x0 0x401e4000 0x0 0x10000>;
+-	};
+-
+-	i2c4: i2c@402dc000 {
+-		compatible = "fsl,vf610-i2c";
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		reg = <0x0 0x402dc000 0x0 0x10000>;
+-	};
+-
+ 	wkpu: wkpu@40090000 {
+ 		compatible = "nxp,s32gen1-wkpu";
+ 		reg = <0x0 0x40090000 0x0 0x10000>, /* WKPU */
+-- 
+2.17.1
+

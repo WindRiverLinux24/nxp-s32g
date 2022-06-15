@@ -1,0 +1,45 @@
+From c3a5a81208111ab22004e1b65af0ce7df9fe23a6 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 13 May 2022 14:52:47 +0300
+Subject: [PATCH 22/50] fdts: s32cc: Make RDC part of the soc node
+
+Issue: ALB-8823
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 6ad22e84e..0201db726 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -143,6 +143,11 @@
+ 			reg = <0x0 0x403c0000 0x0 0x100>;
+ 			status = "disabled";
+ 		};
++
++		rdc: rdc@440080000 {
++			compatible = "nxp,s32cc-rdc";
++			reg = <0x0 0x40080000 0x0 0x3000>;
++		};
+ 	};
+ 
+ 	firc: firc {
+@@ -267,11 +272,6 @@
+ 			<0>, <0>, <0>, <0>,
+ 			<0>, <0>, <100000000>;
+ 
+-		rdc: rdc@440080000 {
+-			compatible = "nxp,s32cc-rdc";
+-			reg = <0x0 0x40080000 0x0 0x3000>;
+-		};
+-
+ 		rgm: rgm@40078000 {
+ 			compatible = "nxp,s32cc-rgm";
+ 			reg = <0x0 0x40078000 0x0 0x3000>;
+-- 
+2.17.1
+

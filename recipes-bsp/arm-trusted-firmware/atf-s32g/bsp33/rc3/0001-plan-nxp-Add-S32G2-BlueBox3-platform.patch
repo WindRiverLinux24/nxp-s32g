@@ -1,0 +1,97 @@
+From 3ba2fa9cf0f34f192f7cfd14cc0bdc61a0edd752 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 19 Apr 2022 09:15:32 +0300
+Subject: [PATCH 01/18] plan: nxp: Add S32G2 BlueBox3 platform
+
+Issue: ALB-8797
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/fsl-s32g274a-bluebox3.dts                | 31 +++++++++++++++++++
+ .../s32g274abluebox3/include/platform_def.h   | 11 +++++++
+ .../s32g/s32g2/s32g274abluebox3/platform.mk   | 15 +++++++++
+ 3 files changed, 57 insertions(+)
+ create mode 100644 fdts/fsl-s32g274a-bluebox3.dts
+ create mode 100644 plat/nxp/s32/s32g/s32g2/s32g274abluebox3/include/platform_def.h
+ create mode 100644 plat/nxp/s32/s32g/s32g2/s32g274abluebox3/platform.mk
+
+diff --git a/fdts/fsl-s32g274a-bluebox3.dts b/fdts/fsl-s32g274a-bluebox3.dts
+new file mode 100644
+index 000000000..89e4e8ddf
+--- /dev/null
++++ b/fdts/fsl-s32g274a-bluebox3.dts
+@@ -0,0 +1,31 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++/dts-v1/;
++#include "fsl-s32g274a.dtsi"
++#include "fsl-s32g-rdb.dtsi"
++
++/* PMIC */
++&i2c4 {
++	status = "okay";
++	clock-frequency=<100000>;
++
++	vr5510@20 {
++		compatible = "nxp,vr5510";
++		reg = <0x20>;
++		status = "okay";
++	};
++
++	vr5510_fsu@21 {
++		compatible = "nxp,vr5510";
++		reg = <0x21>;
++		status = "okay";
++	};
++
++};
++
++&wkpu {
++	status = "okay";
++};
+diff --git a/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/include/platform_def.h b/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/include/platform_def.h
+new file mode 100644
+index 000000000..8b2b095e0
+--- /dev/null
++++ b/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/include/platform_def.h
+@@ -0,0 +1,11 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++#ifndef PLATFORM_DEF_H
++#define PLATFORM_DEF_H
++
++#include <s32g2_platform_def.h>
++
++#endif /* PLATFORM_DEF_H */
+diff --git a/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/platform.mk b/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/platform.mk
+new file mode 100644
+index 000000000..c4cee8659
+--- /dev/null
++++ b/plat/nxp/s32/s32g/s32g2/s32g274abluebox3/platform.mk
+@@ -0,0 +1,15 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++
++include plat/nxp/s32/s32g/s32g2/s32g2.mk
++
++S32_BOARD_PATH		:= ${PLAT_SOC_PATH}/s32g274abluebox3
++
++PLAT_INCLUDES          += -I${S32_BOARD_PATH}/include \
++
++PLAT_BL_COMMON_SOURCES +=      ${PLAT_SOC_PATH}/s32g2_vr5510.c \
++
++DTB_FILE_NAME		?= fsl-s32g274a-bluebox3.dtb
+-- 
+2.17.1
+
