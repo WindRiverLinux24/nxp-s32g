@@ -1,6 +1,6 @@
-From 3095cc6cfb89aa9baca53eb1bc423846d29b5496 Mon Sep 17 00:00:00 2001
+From dfa65ca235440cc06e4e2482036da610fe3f9195 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
-Date: Wed, 18 May 2022 09:33:24 +0800
+Date: Wed, 15 Jun 2022 22:33:40 +0800
 Subject: [PATCH] configs: s32g2xx: enable CONFIG_FIT_SIGNATURE for secure boot
  verification
 
@@ -13,53 +13,41 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  4 files changed, 4 insertions(+)
 
 diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
-index bdbb3716da..bd499feee7 100644
+index c2ac1d22cb..8d81194be1 100644
 --- a/configs/s32g274ardb2_defconfig
 +++ b/configs/s32g274ardb2_defconfig
-@@ -5,6 +5,7 @@ CONFIG_ENV_OFFSET=0x1e0000
- CONFIG_NR_DRAM_BANKS=2
- CONFIG_FIT=y
- CONFIG_SD_BOOT=y
+@@ -5,3 +5,4 @@ CONFIG_SD_BOOT=y
+ CONFIG_FAT_WRITE=y
+ CONFIG_MENU=y
+ CONFIG_CMD_BOOTMENU=y
 +CONFIG_FIT_SIGNATURE=y
- CONFIG_USE_BOOTARGS=y
- CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
- CONFIG_CMD_CPU=y
 diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
-index 258246443a..07381ab998 100644
+index 0c744fda5d..eae1af6f92 100644
 --- a/configs/s32g2xxaevb_defconfig
 +++ b/configs/s32g2xxaevb_defconfig
-@@ -26,6 +26,7 @@ CONFIG_CMD_CACHE=y
- CONFIG_CMD_TIMER=y
- CONFIG_CMD_PMIC=y
- CONFIG_CMD_SMC=y
+@@ -7,3 +7,4 @@ CONFIG_USB_ULPI_VIEWPORT=y
+ CONFIG_FAT_WRITE=y
+ CONFIG_MENU=y
+ CONFIG_CMD_BOOTMENU=y
 +CONFIG_FIT_SIGNATURE=y
- CONFIG_DEFAULT_DEVICE_TREE="fsl-s32g274aevb"
- CONFIG_ENV_IS_IN_MMC=y
- CONFIG_NET_RANDOM_ETHADDR=y
 diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
-index 0119026b62..1b7add18a4 100644
+index 5c121f049d..0095d30557 100644
 --- a/configs/s32g399ardb3_defconfig
 +++ b/configs/s32g399ardb3_defconfig
-@@ -6,6 +6,7 @@ CONFIG_NR_DRAM_BANKS=2
- CONFIG_TARGET_S32G399ARDB3=y
- CONFIG_FIT=y
- CONFIG_SD_BOOT=y
+@@ -5,3 +5,4 @@ CONFIG_SD_BOOT=y
+ CONFIG_FAT_WRITE=y
+ CONFIG_MENU=y
+ CONFIG_CMD_BOOTMENU=y
 +CONFIG_FIT_SIGNATURE=y
- CONFIG_USE_BOOTARGS=y
- CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
- CONFIG_CMD_CPU=y
 diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
-index 43ab78e5c2..4c5b5b3134 100644
+index 4f2c9df19c..b263a62d6b 100644
 --- a/configs/s32g3xxaevb_defconfig
 +++ b/configs/s32g3xxaevb_defconfig
-@@ -6,6 +6,7 @@ CONFIG_NR_DRAM_BANKS=2
- CONFIG_TARGET_S32G3XXAEVB=y
- CONFIG_FIT=y
- CONFIG_SD_BOOT=y
+@@ -7,3 +7,4 @@ CONFIG_USB_ULPI_VIEWPORT=y
+ CONFIG_FAT_WRITE=y
+ CONFIG_MENU=y
+ CONFIG_CMD_BOOTMENU=y
 +CONFIG_FIT_SIGNATURE=y
- CONFIG_USE_BOOTARGS=y
- CONFIG_BOOTARGS="root=/dev/ram rw earlycon"
- CONFIG_CMD_CPU=y
 -- 
 2.36.0
 
