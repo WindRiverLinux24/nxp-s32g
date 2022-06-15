@@ -1,4 +1,4 @@
-From d245eaa508f37dd35964b55dba54be1e2c03371e Mon Sep 17 00:00:00 2001
+From 45b2eed9980ccbded96a79800f83c81f78f6ecec Mon Sep 17 00:00:00 2001
 From: Quanyang Wang <quanyang.wang@windriver.com>
 Date: Thu, 10 Mar 2022 19:31:51 +0800
 Subject: [PATCH] pfe: fix compile error
@@ -29,7 +29,7 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  11 files changed, 17 insertions(+), 150 deletions(-)
 
 diff --git a/sw/elf/public/elf.h b/sw/elf/public/elf.h
-index 7033d34..f7183b7 100644
+index b70bfa3..794b618 100644
 --- a/sw/elf/public/elf.h
 +++ b/sw/elf/public/elf.h
 @@ -45,6 +45,7 @@
@@ -40,10 +40,10 @@ index 7033d34..f7183b7 100644
  
  /*==================================================================================================
                                 SOURCE FILE VERSION INFORMATION
-@@ -63,52 +64,6 @@
- ==================================================================================================*/
- #define ELF_NIDENT                  16U
- #define ELF_NAMED_SECT_IDX_FLAG     0x80000000U
+@@ -74,52 +75,6 @@
+                           | (((VAL)&0x0000FF0000000000U)>>24U) | (((VAL)&0x0000000000FF0000U)<<24U) \
+                           | (((VAL)&0x000000FF00000000U)>>8U ) | (((VAL)&0x00000000FF000000U)<<8U ) \
+                           )
 -/*==================================================================================================
 -                                             ENUMS
 -==================================================================================================*/
@@ -93,7 +93,7 @@ index 7033d34..f7183b7 100644
  
  /*==================================================================================================
                                   STRUCTURES AND OTHER TYPEDEFS
-@@ -133,90 +88,6 @@ typedef uint32_t Elf32_Addr;    /* Unsigned address */
+@@ -144,90 +99,6 @@ typedef uint32_t Elf32_Addr;    /* Unsigned address */
  typedef uint64_t Elf64_Off;     /* Unsigned offset */
  typedef uint64_t Elf64_Addr;    /* Unsigned address */
  
@@ -185,7 +185,7 @@ index 7033d34..f7183b7 100644
  typedef struct __attribute__((packed))
  {
 diff --git a/sw/elf/src/elf.c b/sw/elf/src/elf.c
-index f3309c6..feee178 100644
+index 3b5d358..9a41b63 100644
 --- a/sw/elf/src/elf.c
 +++ b/sw/elf/src/elf.c
 @@ -58,7 +58,6 @@
@@ -194,9 +194,9 @@ index f3309c6..feee178 100644
  #define ELF32_HEADER_SIZE 52U
 -#define SHN_UNDEF       0U    /* Undefined/Not present */
  
- /* Macros for change of endianness */
- #define ENDIAN_SW_2B(VAL) ( (((VAL)&0xFF00U)>>8U) | (((VAL)&0x00FFU)<<8U) )
-@@ -88,19 +87,6 @@ enum
+ /*==================================================================================================
+                           LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
+@@ -71,19 +70,6 @@ enum
      ELF_Type_Core = 4U,
  };
  
@@ -217,126 +217,126 @@ index f3309c6..feee178 100644
  /*==================================================================================================
                                         LOCAL CONSTANTS
 diff --git a/sw/fci/src/fci_connections.c b/sw/fci/src/fci_connections.c
-index 8fe91cd..77b0e47 100644
+index dfe8e5d..479ce65 100644
 --- a/sw/fci/src/fci_connections.c
 +++ b/sw/fci/src/fci_connections.c
-@@ -1255,6 +1255,7 @@ free_and_fail:
- 				*fci_ret = FPP_ERR_CT_ENTRY_NOT_FOUND;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+@@ -1192,6 +1192,7 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 						*fci_ret = FPP_ERR_CT_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
  
 diff --git a/sw/fci/src/fci_interfaces.c b/sw/fci/src/fci_interfaces.c
-index c3f7850..8c4906b 100644
+index 0fbb06f..936ce41 100644
 --- a/sw/fci/src/fci_interfaces.c
 +++ b/sw/fci/src/fci_interfaces.c
-@@ -736,6 +736,7 @@ errno_t fci_interfaces_log_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_log_if_cmd
- 				ret = EOK;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
- 		case FPP_ACTION_QUERY_CONT:
-@@ -1272,6 +1273,7 @@ errno_t fci_interfaces_phy_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_phy_if_cmd
- 				*fci_ret = FPP_ERR_IF_ENTRY_NOT_FOUND;
- 				break;
- 			}
-+			fallthrough;
- 		} /* FALLTHRU */
+@@ -745,6 +745,7 @@ errno_t fci_interfaces_log_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_log_if_cmd
+ 						ret = EOK;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
+ 				case FPP_ACTION_QUERY_CONT:
+@@ -1281,6 +1282,7 @@ errno_t fci_interfaces_phy_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_phy_if_cmd
+ 						*fci_ret = FPP_ERR_IF_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				} /* FALLTHRU */
  
- 		case FPP_ACTION_QUERY_CONT:
+ 				case FPP_ACTION_QUERY_CONT:
 diff --git a/sw/fci/src/fci_l2br_domains.c b/sw/fci/src/fci_l2br_domains.c
-index a1114dd..9133deb 100644
+index 3d2cfd5..12ec825 100644
 --- a/sw/fci/src/fci_l2br_domains.c
 +++ b/sw/fci/src/fci_l2br_domains.c
 @@ -135,6 +135,7 @@ errno_t fci_l2br_domain_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_bd_cmd_t *
- 			{
- 				NXP_LOG_DEBUG("Bridge domain %d created\n", oal_ntohs(bd_cmd->vlan));
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+ 						{
+ 							NXP_LOG_DEBUG("Bridge domain %d created\n", oal_ntohs(bd_cmd->vlan));
+ 						}
++						fallthrough;
+ 					}
+ 					/* FALLTHRU */
  
-@@ -343,6 +344,7 @@ finalize_domain_registration:
- 				*fci_ret = FPP_ERR_L2_BD_NOT_FOUND;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+@@ -334,6 +335,7 @@ errno_t fci_l2br_domain_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_bd_cmd_t *
+ 							*fci_ret = FPP_ERR_L2_BD_NOT_FOUND;
+ 							break;
+ 						}
++						fallthrough;
+ 					}
+ 					/* FALLTHRU */
  
-@@ -570,6 +572,7 @@ errno_t fci_l2br_static_entry_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_stat
- 				*fci_ret = FPP_ERR_L2_STATIC_EN_NOT_FOUND;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
- 		case FPP_ACTION_QUERY_CONT:
+@@ -566,6 +568,7 @@ errno_t fci_l2br_static_entry_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_stat
+ 						*fci_ret = FPP_ERR_L2_STATIC_EN_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
+ 				case FPP_ACTION_QUERY_CONT:
 diff --git a/sw/fci/src/fci_mirror.c b/sw/fci/src/fci_mirror.c
-index fea464f..8a16021 100644
+index f7d3091..3a2bb75 100644
 --- a/sw/fci/src/fci_mirror.c
 +++ b/sw/fci/src/fci_mirror.c
 @@ -101,6 +101,7 @@ errno_t fci_mirror_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_mirror_cmd_t *repl
- 				ret = EPERM;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+ 						ret = EPERM;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
  
-@@ -336,6 +337,7 @@ errno_t fci_mirror_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_mirror_cmd_t *repl
- 				ret = EOK;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+@@ -348,6 +349,7 @@ errno_t fci_mirror_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_mirror_cmd_t *repl
+ 						ret = EOK;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
  
 diff --git a/sw/fci/src/fci_routes.c b/sw/fci/src/fci_routes.c
-index 1f255e7..7f9555e 100644
+index 7f14da6..03d2c68 100644
 --- a/sw/fci/src/fci_routes.c
 +++ b/sw/fci/src/fci_routes.c
-@@ -260,6 +260,7 @@ errno_t fci_routes_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_rt_cmd_t *reply_bu
- 				*fci_ret = FPP_ERR_RT_ENTRY_NOT_FOUND;
- 				break;
- 			}
-+			fallthrough;
- 		}
- 		/* FALLTHRU */
+@@ -259,6 +259,7 @@ errno_t fci_routes_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_rt_cmd_t *reply_bu
+ 						*fci_ret = FPP_ERR_RT_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+ 				/* FALLTHRU */
  
 diff --git a/sw/fci/src/fci_spd.c b/sw/fci/src/fci_spd.c
-index 7cda24c..4d13209 100644
+index 78b29c7..2ff98ef 100644
 --- a/sw/fci/src/fci_spd.c
 +++ b/sw/fci/src/fci_spd.c
-@@ -158,6 +158,7 @@ errno_t fci_spd_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_spd_cmd_t *reply_buf,
+@@ -163,6 +163,7 @@ errno_t fci_spd_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_spd_cmd_t *reply_buf,
  
-         case FPP_ACTION_QUERY:
-             search_position = 0U;
-+			fallthrough;
-             /* FALLTHRU */
+                                     case FPP_ACTION_QUERY:
+                                         search_position = 0U;
++					fallthrough;
+                                         /* FALLTHRU */
  
-         case FPP_ACTION_QUERY_CONT:
+                                     case FPP_ACTION_QUERY_CONT:
 diff --git a/sw/linux-pfeng/pfeng-dt.c b/sw/linux-pfeng/pfeng-dt.c
-index 64e36d5..4cb6583 100644
+index e10c0c9..9794011 100644
 --- a/sw/linux-pfeng/pfeng-dt.c
 +++ b/sw/linux-pfeng/pfeng-dt.c
-@@ -248,8 +248,8 @@ int pfeng_dt_create_config(struct pfeng_priv *priv)
- 		dev_dbg(dev, "netif name: %s", netif_cfg->name);
+@@ -274,8 +274,8 @@ int pfeng_dt_create_config(struct pfeng_priv *priv)
+ 		dev_info(dev, "netif name: %s", netif_cfg->name);
  
  		/* MAC eth address */
 -		netif_cfg->macaddr = (u8 *)of_get_mac_address(child);
 -		if (netif_cfg->macaddr)
-+		ret = of_get_mac_address(child, netif_cfg->macaddr);
-+		if (ret)
- 			dev_dbg(dev, "DT mac addr: %pM", netif_cfg->macaddr);
++                ret = of_get_mac_address(child, netif_cfg->macaddr);
++                if (ret)
+ 			dev_info(dev, "DT mac addr: %pM", netif_cfg->macaddr);
  
- 		/* logif mode */
+ 		if (of_find_property(child, "nxp,pfeng-netif-mode-aux", NULL))
 diff --git a/sw/linux-pfeng/pfeng-ethtool.c b/sw/linux-pfeng/pfeng-ethtool.c
-index 738182b..1c6c90b 100644
+index c5ae4ac..771ca26 100644
 --- a/sw/linux-pfeng/pfeng-ethtool.c
 +++ b/sw/linux-pfeng/pfeng-ethtool.c
 @@ -109,7 +109,7 @@ static int pfeng_ethtool_get_ts_info(struct net_device *netdev, struct ethtool_t
@@ -367,10 +367,10 @@ index 738182b..1c6c90b 100644
  		netdev_warn(netdev, "Coalescing not restored\n");
  
 diff --git a/sw/linux-pfeng/pfeng.h b/sw/linux-pfeng/pfeng.h
-index f360e44..39f7bce 100644
+index ba1ef84..53938b2 100644
 --- a/sw/linux-pfeng/pfeng.h
 +++ b/sw/linux-pfeng/pfeng.h
-@@ -121,7 +121,7 @@ struct pfeng_netif_cfg {
+@@ -119,7 +119,7 @@ struct pfeng_netif_cfg {
  	struct list_head		lnode;
  	const char			*name;
  	struct device_node		*dn;
