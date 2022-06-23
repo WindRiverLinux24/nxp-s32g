@@ -10,15 +10,11 @@ DEPENDS = "openssl libp11"
 
 SRC_URI = "https://bitbucket.sw.nxp.com/projects/ALBW/repos/pkcs11-hse/pkcs11-hse.tar.gz"
 
-SRCREV = "2ab4eb6b73f1f1296576e45f333eb0911a2cae00"
-SRC_URI[sha256sum] = "1b8ebaafa247d8cc873d84c3fab70f1e3d05cdb20140910da2d7d6229fdc6de5"
+SRCREV = "9d8a6339f521f009c4df1811b2ba9686d223c31d"
+SRC_URI[sha256sum] = "87acf7f788f954bb4722aad9de02544a257af47349eababe7ed152767573c12c"
 
 SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
-    file://bsp32/rc3/0001-pkcs-fix-unaligned-memcpy-for-ec-keys.patch \
-    file://bsp32/rc3/0002-pkcs-add-error-checks-on-calls-to-getattr_len.patch \
-    file://bsp32/rc3/0003-pkcs-fix-goto-labels-for-consistency.patch \
-    file://bsp32/rc4/0001-examples-add-low-level-libhse-example.patch \
 "
 
 PATCHTOOL = "git"
