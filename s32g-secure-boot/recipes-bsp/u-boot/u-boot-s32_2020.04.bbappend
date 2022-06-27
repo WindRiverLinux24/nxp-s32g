@@ -50,3 +50,8 @@ do_deploy:append:nxp-s32g() {
 	done
 	unset i
 }
+
+python() {
+    if d.getVar('HSE_SEC_ENABLED') == '0':
+        bb.fatal("Please set HSE firmware path for secure boot feature firstly, and then build again.")
+}
