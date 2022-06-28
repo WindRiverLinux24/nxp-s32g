@@ -1,0 +1,36 @@
+From bdd0939c015d45f71ef1567f64c02c9786139cdc Mon Sep 17 00:00:00 2001
+From: Quanyang Wang <quanyang.wang@windriver.com>
+Date: Tue, 28 Jun 2022 14:33:35 +0800
+Subject: [PATCH] plat: nxp: s32: suppress Warning (unique_unit_address)
+
+The device nodes usb_phy@44064000 (using usb controller's ULPI port) and
+usb@44064000 are using the same base register address "0x44064000". This
+will cause dtc reporting warnings as below:
+    Warning (unique_unit_address): /usb@44064000: duplicate unit-address (also used in node /usb_phy@44064000)
+
+Adding "-Wno-unique_unit_address" to DTC_FLAGS can suppress this
+warning.
+
+Upstream-Status: Pending
+
+Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
+---
+ plat/nxp/s32/s32_common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 029d7391c..59346d84d 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -120,7 +120,7 @@ BL31_SOURCES += \
+ 			${S32_PLAT}/s32_svc.c \
+ 			${S32_PLAT}/s32_psci.c \
+ 
+-DTC_FLAGS		+= -Wno-unit_address_vs_reg
++DTC_FLAGS		+= -Wno-unit_address_vs_reg -Wno-unique_unit_address
+ 
+ all: check_dtc_version
+ check_dtc_version:
+-- 
+2.36.1
+
