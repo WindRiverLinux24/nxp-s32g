@@ -1,0 +1,198 @@
+From e2a68681abb5215f4129e7f7c47dd529b9a16ddb Mon Sep 17 00:00:00 2001
+From: Quanyang Wang <quanyang.wang@windriver.com>
+Date: Mon, 4 Jul 2022 17:58:19 +0800
+Subject: [PATCH] s32g: use common ulpi interface to initialize usb phy
+
+For now, s32g is initializing usb controller and usb phy separately. We
+can move the usb phy initialization into usb controller driver so that
+we don't need create a usb phy device node which share the same register
+memory base address.
+
+Upstream-Status: Pending
+
+Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
+---
+ arch/arm/mach-s32/s32g2/Kconfig     |  2 -
+ arch/arm/mach-s32/s32g3/Kconfig     |  1 -
+ board/nxp/s32-cc/s32g/s32gxxxaevb.c | 47 ----------------------
+ drivers/usb/host/ehci-mx6.c         | 61 +++++++++++++++++++++++++++++
+ 4 files changed, 61 insertions(+), 50 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
+index e60bbe9732..b5bac9686d 100644
+--- a/arch/arm/mach-s32/s32g2/Kconfig
++++ b/arch/arm/mach-s32/s32g2/Kconfig
+@@ -38,7 +37,6 @@ config TARGET_S32G2XXAEVB
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+ 	  I2C and DSPI.
+ 	imply DM_USB
+-	imply SAF1508BET_USB_PHY
+ 	imply USB
+ 	imply USB_EHCI_HCD
+ 	imply USB_ULPI
+diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
+index fc0b6f2c5c..4fcf50d0c9 100644
+--- a/arch/arm/mach-s32/s32g3/Kconfig
++++ b/arch/arm/mach-s32/s32g3/Kconfig
+@@ -20,7 +20,6 @@ config TARGET_S32G3XXAEVB
+ 	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
+ 	  I2C and DSPI.
+ 	imply DM_USB
+-	imply SAF1508BET_USB_PHY
+ 	imply USB
+ 	imply USB_EHCI_HCD
+ 	imply USB_ULPI
+diff --git a/board/nxp/s32-cc/s32g/s32gxxxaevb.c b/board/nxp/s32-cc/s32g/s32gxxxaevb.c
+index ba1cdb8b4e..730cc89ea8 100644
+--- a/board/nxp/s32-cc/s32g/s32gxxxaevb.c
++++ b/board/nxp/s32-cc/s32g/s32gxxxaevb.c
+@@ -11,48 +11,6 @@
+ 
+ #define SJA1105_NAME	"ethernet-switch@0"
+ 
+-static int enable_saf1508bet(void)
+-{
+-	int ret = 0;
+-	struct udevice *dev;
+-	struct phy phy;
+-	struct uclass *uc;
+-	struct udevice *bus;
+-
+-	ret = uclass_get_device(UCLASS_USB, 0, &dev);
+-	if (ret) {
+-		pr_err("%s: Cannot find USB device\n", __func__);
+-		return ret;
+-	}
+-	ret = uclass_get(UCLASS_USB, &uc);
+-	if (ret)
+-		return ret;
+-
+-	/* Probe USB controller */
+-	uclass_foreach_dev(bus, uc) {
+-		ret = device_probe(bus);
+-		if (ret == -ENODEV) {	/* No such device. */
+-			puts("Port not available.\n");
+-			continue;
+-		}
+-	}
+-
+-	/* SAF1508BET PHY */
+-	ret = generic_phy_get_by_index(dev, 0, &phy);
+-	if (ret) {
+-		pr_err("failed to get %s USB PHY\n", dev->name);
+-		return ret;
+-	}
+-
+-	ret = generic_phy_power_on(&phy);
+-	if (ret) {
+-		pr_err("failed to get %s USB PHY\n", dev->name);
+-		return ret;
+-	}
+-
+-	return ret;
+-}
+-
+ int misc_init_r(void)
+ {
+ #if CONFIG_IS_ENABLED(NET) && CONFIG_IS_ENABLED(FSL_PFENG) && \
+@@ -68,11 +26,6 @@ int misc_init_r(void)
+ 	 */
+ 	uclass_get_device_by_name(UCLASS_MISC, SJA1105_NAME, &dev);
+ #endif
+-	/* The usb phy must be probed in u-boot in order to have a working USB
+-	 * interface in linux.
+-	 */
+-	if (IS_ENABLED(CONFIG_SAF1508BET_USB_PHY))
+-		enable_saf1508bet();
+ 
+ 	return 0;
+ }
+diff --git a/drivers/usb/host/ehci-mx6.c b/drivers/usb/host/ehci-mx6.c
+index 8afc2db210..2f55f87de8 100644
+--- a/drivers/usb/host/ehci-mx6.c
++++ b/drivers/usb/host/ehci-mx6.c
+@@ -22,6 +22,7 @@
+ #include <asm/mach-types.h>
+ #include <power/regulator.h>
+ #include <linux/usb/otg.h>
++#include <usb/ulpi.h>
+ 
+ #include "ehci.h"
+ 
+@@ -605,6 +606,57 @@ static int ehci_usb_bind(struct udevice *dev)
+ 	return 0;
+ }
+ 
++#if defined(CONFIG_TARGET_S32G2XXAEVB) || \
++	defined(CONFIG_TARGET_S32G3XXAEVB)
++static int nxp_phy_ulpi_init(struct usb_ehci *ehci)
++{
++	int ret;
++	struct ulpi_viewport vp;
++
++	vp.port_num = 0;
++	vp.viewport_addr = (phys_addr_t)&ehci->ulpi_viewpoint;
++
++	ret = ulpi_init(&vp);
++	if (ret) {
++		pr_err("Failed to initialize ulpi PHY\n");
++		return ret;
++	}
++
++	ret = ulpi_select_transceiver(&vp, ULPI_FC_FULL_SPEED);
++	if (ret) {
++		pr_err("Failed to set speed of ulpi PHY\n");
++		return ret;
++	}
++
++	ret = ulpi_set_pd(&vp, 1);
++	if (ret) {
++		pr_err("Failed to set pull-up resitors\n");
++		return ret;
++	}
++
++	ret = ulpi_set_vbus_indicator(&vp, 1, 1, 1);
++	if (ret) {
++		pr_err("Failed to set VBUS indicator\n");
++		return ret;
++	}
++
++	ret = ulpi_set_vbus(&vp, 1, 1);
++	if (ret) {
++		pr_err("Failed to set VBUS\n");
++		return ret;
++	}
++
++	/* Clear ULPI_OTG_DRVVBUS */
++	ret = ulpi_set_vbus(&vp, 0, 0);
++	if (ret) {
++		pr_err("Failed to set VBUS\n");
++		return ret;
++	}
++
++	return 0;
++}
++#endif
++
+ static int ehci_usb_probe(struct udevice *dev)
+ {
+ 	struct usb_platdata *plat = dev_get_platdata(dev);
+@@ -653,6 +705,15 @@ static int ehci_usb_probe(struct udevice *dev)
+ 	hcor = (struct ehci_hcor *)((uintptr_t)hccr +
+ 			HC_LENGTH(ehci_readl(&(hccr)->cr_capbase)));
+ 
++#if defined(CONFIG_TARGET_S32G2XXAEVB) || \
++	defined(CONFIG_TARGET_S32G3XXAEVB)
++	ret = nxp_phy_ulpi_init(ehci);
++	if (ret) {
++		puts("Error nxp_phy_ulpi_init\n");
++		return ret;
++	}
++#endif
++
+ 	return ehci_register(dev, hccr, hcor, &mx6_ehci_ops, 0, priv->init_type);
+ }
+ 
+-- 
+2.36.1
+

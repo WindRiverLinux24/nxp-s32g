@@ -25,6 +25,7 @@ SRC_URI += " \
     file://0001-u-boot-s32-Makefile-add-scripts_basic-dependency-to-.patch \
     file://0001-configs-Enable-commands-for-ostree.patch \
     file://0001-include-config_distro_bootcmd.h-Check-go-before-boot.patch \
+    file://0001-s32g-remove-SAF1508-phy-driver-and-use-common-ulpi-i.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g2xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
 "
 
