@@ -1,6 +1,11 @@
 PROVIDES = "atf-s32g"
 FILES:${PN} = "/boot ${datadir}"
 
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI:append:nxp-s32g = " \
+    file://0001-s32-extend-the-DTB-size-for-BL33.patch \
+"
+
 do_install:append:nxp-s32g() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 

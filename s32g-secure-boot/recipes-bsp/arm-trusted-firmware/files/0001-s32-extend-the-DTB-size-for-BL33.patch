@@ -1,0 +1,30 @@
+From 2cc2d7abcc095cbd3e50e11f1350f2a08d9a239e Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Mon, 4 Jul 2022 17:35:21 +0800
+Subject: [PATCH] s32: extend the DTB size for BL33
+
+When enable secure boot feature, public key is saved in the dtb file.
+But the of dtb file with  public key exceeds the current max dtb file size
+0x7000, so extend to 0x9000.
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ plat/nxp/s32/include/s32_platform_def.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
+index 09a11bc4d..ee715fe29 100644
+--- a/plat/nxp/s32/include/s32_platform_def.h
++++ b/plat/nxp/s32/include/s32_platform_def.h
+@@ -103,7 +103,7 @@
+ #define BL33_BASE		        (S32_DDR0_END - S32_BL33_IMAGE_SIZE - \
+ 						SIZE_1M + 1)
+ /* U-Boot: CONFIG_S32GEN1_MAX_DTB_SIZE */
+-#define BL33_MAX_DTB_SIZE	    (0x7000)
++#define BL33_MAX_DTB_SIZE	    (0x9000)
+ /* U-Boot: CONFIG_SYS_TEXT_BASE  */
+ #define BL33_ENTRYPOINT		    (BL33_BASE + 0xa0000)
+ #define BL33_DTB		    (BL33_ENTRYPOINT - BL33_MAX_DTB_SIZE)
+-- 
+2.36.1
+
