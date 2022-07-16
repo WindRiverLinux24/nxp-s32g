@@ -368,6 +368,13 @@ NOTICE:
     because the RDB2 board does not include the HSE related configurations
     and dts node in U-Boot. And this will be fixed in future.
 
+6.2.4 Known issue
+-----------------
+
+There is an known issue that, if the HSE feature is enabled, the EVB board
+can not bootup with the output WIC image, we have submit a ticket to NXP to
+track the progress of this issue. This issue will be fixed later.
+
 
 6.3 PFE
 -------
@@ -441,6 +448,21 @@ If the s32g_pfe_class.fw is not loaded, u-boot will print the following failure 
 	Failed to enable clock: 20005
 	Failed to enable 93 clock
 	Failed to enable mac2_rx_rgmii clock
+
+6.3.3 Known issue
+-----------------
+
+On EVB/EVB3 boards, there have an known issue that the pfe1 phy can't work.
+Because the NXP SDK bsp33 changed the pfe1 to sgmii mode, then pfe1 will use
+an AQR107 phy, but when the pfe1 up to work, the RX count of pfe1 is allways
+0, so the pfe1 port can not get any packets from network. And this issue can
+be reproduced on SDK pre-built image.
+
+We have submit the issue to NXP to track the progress, and the ticket url
+is:
+  https://community.nxp.com/t5/Wind-River-S32G-Support/PFE-driver-update-in-BSP33-RC8/m-p/1488518/highlight/false#M182
+
+This issue will be fixed later.
 
 6.4 LLCE
 --------
