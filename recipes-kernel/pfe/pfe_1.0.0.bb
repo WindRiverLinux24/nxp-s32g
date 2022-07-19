@@ -15,16 +15,13 @@ FW_INSTALL_CLASS_NAME ?= "s32g_pfe_class.fw"
 FW_INSTALL_UTIL_NAME ?= "s32g_pfe_util.fw"
 
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https;branch=master \
-        file://bsp33/0001-version-PFE_S32G_A53_LNX_RTM_1.0.0-RC1.patch \
-        file://bsp33/0002-version-PFE_S32G_A53_LNX_RTM_1.0.0-RC2.patch \
-        file://bsp33/0003-version-PFE_S32G_A53_LNX_RTM_1.0.0-RC3.patch \
 	file://0001-pfe_compiler-add-GCC-version-10.2.0-support.patch \
 	file://0001-fix-hwts-kmemleak.patch \
 	file://0001-pfe-fix-compile-error.patch \
 	file://0001-pfe-sw-drop-the-unneeded-codes-to-fix-build-errors.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
-SRCREV = "d6aac63e29e1dd06db925f200846937f78db327a"
+SRCREV = "0669f53e2cc0b3c133406e3db2ae72f5b3934e5f"
 
 PATCHTOOL = "git"
 
