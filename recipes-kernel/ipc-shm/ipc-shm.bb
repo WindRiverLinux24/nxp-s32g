@@ -11,9 +11,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec
 inherit module deploy
 
 URL ?= "git://source.codeaurora.org/external/autobsps32/ipcf/ipc-shm;protocol=https"
-BRANCH ?= "release/bsp32.0"
+BRANCH ?= "release/bsp33.0"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV = "79164a0b055c759557a00f2ce3ec73a90361937c"
+SRCREV = "d80b27e5fc6c3d6a9d53de6ae23fa84a17560fd3"
 
 
 S = "${WORKDIR}/git"
