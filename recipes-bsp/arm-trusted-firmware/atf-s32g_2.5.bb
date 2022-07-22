@@ -45,6 +45,8 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
+EXTRA_OEMAKE += "S32_HAS_HV=1"
+
 do_compile() {
 	unset LDFLAGS
 	unset CFLAGS
