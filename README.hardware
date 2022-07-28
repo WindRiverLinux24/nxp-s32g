@@ -20,6 +20,11 @@ This BSP supports the following boards:
                        CPU: NXP S32G274A rev. 2.1.0
    + NXP S32G274A-RDB2: Board: S32G274A-VNP-RDB2 (SCH-47440 REV C1, 700-47440 REV X2)
                        CPU: NXP S32G274A rev. 2.1.0
+   + NXP S32G399A-EVB: Board: S32GRV-PLATEVB (SCH-30081 REV B, 700-30081 REV B)
+                              S32G-PROCEVB-S
+                       CPU: NXP S32G399A rev. 1.0
+   + NXP S32G399A-RDB3: Board: S32G399A-VNP-RDB3 (SCH-53060 REV E1, 700-53060 REV X2)
+                       CPU: NXP S32G399A rev. 1.0
 
 2. Change History
 =================
@@ -45,7 +50,9 @@ This BSP supports the following boards:
   - 2022/03 (LINUXPG-1034): WindRiver CI/CD branch support. Standard support based on NXP
                            pre-released SDK bsp32.0-5.10.90-rt.
   - 2022/07 (LINUXPG-1218): WindRiver CI/CD branch support. Standard support based on NXP
-                           pre-released SDK bsp32.0-5.10.109-rt.
+                           pre-released SDK bsp33.0-5.10.109-rt.
+  - 2022/07 (LINUXPG-1146): WindRiver Linux 10.22 RCPL1. Standard and preempt-rt support based on NXP
+                           pre-released SDK bsp33.0-5.10.109-rt.
 
 3. BSP Features
 ===============
@@ -114,3 +121,20 @@ S32G274A-RDB2:
 	Board Serial:           NXP S32G27x
 	BootLoader:		U-Boot
 	BootLoader Version:	U-Boot 2020.04+g9cdfca686e (Jun 10 2022 - 11:46:41 +0000)
+
+
+S32G399A-EVB:
+        Processor::             NXP S32G399A
+        CPU Revision:           rev. 1.0
+        Board Serial:           NXP S32G3xx
+        BootLoader:             U-Boot
+        BootLoader Version:     U-Boot 2020.04+g9cdfca686e (Jun 10 2022 - 11:46:41 +0000)
+
+
+S32G399A-RDB3:
+        Processor::             NXP S32G399A
+        CPU Revision:           rev. 1.0
+        Board Serial:           NXP S32G3xx
+        BootLoader:             U-Boot
+        BootLoader Version:     U-Boot 2020.04+g9cdfca686e (Jun 10 2022 - 11:46:41 +0000)
+

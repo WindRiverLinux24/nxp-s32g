@@ -137,10 +137,17 @@ ipaddr=192.168.1.100
 serverip=192.168.1.2
 netdev=eth0
 bootfile=Image
-fdtfile=s32g2xxa-evb.dtb or s32g274a-rdb2.dtb
+fdtfile=<fdt-file-name>
 rootpath=/tftpboot/rootfs
 consoledev=ttyLF0
 baudrate=115200
+
+The fdt-file-name includes the following dtbs:
+	s32g2xxa-evb.dtb
+	s32g274a-rdb2.dtb
+	s32g3xxa-evb.dtb
+	s32g399a-rdb3.dtb
+Please use the right one for different board.
 
 Note:
 By default, in u-boot eth0 is occupied by PFE mode. When in non-PFE mode
@@ -173,25 +180,32 @@ Then user can write the output image to a SD card:
 --------------------------
 
 To burn WIC image to SD card, user only need to execute the below command:
+  # dd if=<wic-image-name> of=/dev/your_sd_dev
 
-For S32G274A-EVB:
-# dd if=wrlinux-image-small-nxp-s32g-evb.wic of=/dev/your_sd_dev
+The above wic-image-name includes:
+  wrlinux-image-std-nxp-s32g-evb.wic  for S32G274A-EVB
+  wrlinux-image-std-nxp-s32g-rdb2.wic for S32G274A-RDB2
+  wrlinux-image-std-nxp-s32g-evb3.wic for S32G399A-EVB
+  wrlinux-image-std-nxp-s32g-rdb3.wic for S32G399A-RDB3
 
-For S32G274A-RDB2:
-# dd if=wrlinux-image-small-nxp-s32g-rdb2.wic of=/dev/your_sd_dev
+Please use the right one for different board.
 
 5.2 Set uboot env
 -----------------
 
 Board can boot automatically by set the below uboot environment variables:
 
-=> setenv bootfile Image; setenv fdtfile <s32g2xxa-evb.dtb or s32g274a-rdb2.dtb>; setenv loadaddr 0x8A080000; setenv fdtaddr 0x8FE00000;
+=> setenv bootfile Image; setenv fdtfile <fdt-file-name>; setenv loadaddr 0x8A080000; setenv fdtaddr 0x8FE00000;
 
 => setenv bootargs console=ttyLF0,115200n8 root=/dev/mmcblk0p2 rw
 
 => setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr'
 
 => saveenv; run bootcmd;
+
+The above fdt-file-name includes s32g2xxa-evb.dtb, s32g274a-rdb2.dtb,
+s32g3xxa-evb.dtb and s32g399a-rdb3.dtb, please use the right fdt file for
+different board.
 
 Note:
 Because PFE and Ethernet GMAC ports are mutually exclusive, in order to enable
