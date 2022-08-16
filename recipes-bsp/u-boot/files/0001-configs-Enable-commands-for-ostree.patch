@@ -1,4 +1,4 @@
-From e0fcd6c01fcc0655bc921188577733ba6c371749 Mon Sep 17 00:00:00 2001
+From f6ae85073d31d8ad5aa3bde3af5fa089f79e47e0 Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
 Date: Wed, 8 Jun 2022 11:18:47 +0000
 Subject: [PATCH] configs: Enable commands for ostree
@@ -6,13 +6,23 @@ Subject: [PATCH] configs: Enable commands for ostree
 Upstream-Status: Pending
 
 Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
+
+Check go after running bootscript
+
+The go is set by ostree's boot.scr, this can make "U-Boot console" menu
+stop immediately and go into the u-boot shell, otherwise, it will try other
+boot targets and cause wild errors when select "U-Boot console".
+
+Upstream-Status: Inappropriate [ ostree's boot.scr specific ]
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
 ---
  configs/s32g274ardb2_defconfig | 3 +++
  configs/s32g2xxaevb_defconfig  | 3 +++
  configs/s32g399ardb3_defconfig | 3 +++
  configs/s32g3xxaevb_defconfig  | 3 +++
- include/configs/s32-cc.h       | 3 +++
- 5 files changed, 15 insertions(+)
+ include/configs/s32-cc.h       | 6 ++++++
+ 5 files changed, 18 insertions(+)
 
 diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
 index a48db2d8d4..c2ac1d22cb 100644
@@ -59,19 +69,22 @@ index c76cb29858..4f2c9df19c 100644
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 23bdb66430..816f7623dd 100644
+index a719b68646..4ffa79fc67 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -292,6 +292,9 @@
+@@ -276,6 +276,12 @@
  	"mmc dev ${mmcdev}; " \
  	"if mmc rescan; " \
  	"then " \
 +		"if run loadbootscript; then " \
-+                        "run loadfdt; run bootscript; " \
-+                "fi; " \
++			"run loadfdt; run bootscript; " \
++			"if test ${go} = 0; then " \
++				"exit; " \
++			"fi; " \
++		"fi; " \
  		"if run loadimage; "\
  		"then " \
  			"run mmcboot; " \
 -- 
-2.17.1
+2.27.0
 
