@@ -12,5 +12,6 @@ SRCREV_meta:nxp-s32g ?= "${AUTOREV}"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g = " \
         file://0001-Revert-modpost-turn-missing-MODULE_LICENSE-into-erro.patch \
+        file://0001-drivers-serdes-use-get_lane_id-to-get-the-right-id-f.patch \
 "
 
