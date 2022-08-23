@@ -27,6 +27,9 @@ SRC_URI += " \
     file://0001-include-config_distro_bootcmd.h-Check-go-before-boot.patch \
     file://0001-s32g-remove-SAF1508-phy-driver-and-use-common-ulpi-i.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g2xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
+    ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g274ardb2-add-HSE_SECBOOT-config.patch', '', d)} \
+    ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0002-configs-s32g399ardb3-add-HSE_SECBOOT-config.patch', '', d)} \
+    ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0003-configs-s32g3xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
 "
 
 SRCREV = "9cdfca686e27add82d8f23e2ef9bd86c1270e137"
@@ -42,9 +45,18 @@ S = '${@oe.utils.conditional("USRC", "", "${WORKDIR}/git", "${USRC}", d)}'
 
 
 do_compile:append() {
-    cfgout="${B}/s32g2xxaevb_defconfig/u-boot-s32.cfgout"
-    if [ "${HSE_SEC_ENABLED}" = "1"  -a -e $cfgout ]; then
-        sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
+    plats="s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
+    if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+        for plat in $plats; do
+            cfgout="${B}/${plat}_defconfig/u-boot-s32.cfgout"
+            if [ -e $cfgout ]; then
+                if [ $plat = "s32g2xxaevb" ] || [ $plat = "s32g274ardb2" ]; then
+                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
+                else
+                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G3}|g' $cfgout
+                fi
+            fi
+        done
     fi
 }
 
