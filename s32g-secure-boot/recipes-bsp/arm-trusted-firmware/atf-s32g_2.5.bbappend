@@ -24,8 +24,10 @@ do_install:append:nxp-s32g() {
 	unset i
 }
 
-do_deploy:append:nxp-s32g() {
+do_deploy:prepend:nxp-s32g() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
+
+	install -d ${DEPLOY_DIR_IMAGE}
 
 	unset LDFLAGS
 	unset CFLAGS
@@ -33,34 +35,25 @@ do_deploy:append:nxp-s32g() {
 
 	unset i j
 	for plat in ${PLATFORM}; do
+		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+		bl33_bin="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}"
+		uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}"
 		i=$(expr $i + 1);
 		for dtb in ${ATF_DTB}; do
 			j=$(expr $j + 1)
 			if  [ $j -eq $i ]; then
 				cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${plat}/${BUILD_TYPE}/fdts/${dtb}
-				if [ "${plat}" = "s32g2xxaevb" ] && [ "${HSE_SEC_ENABLED}" = "1" ]; then
-					oe_runmake -C ${S} PLAT=${plat} BL33="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}" \
-						MKIMAGE_CFG="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}" FIP_MEMORY_OFFSET=0x3407e910 HSE_SECBOOT=1 all
-				else
-					oe_runmake -C ${S} PLAT=${plat} BL33="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}" \
-					MKIMAGE_CFG="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}" all
-				fi
+				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg HSE_SECBOOT=1 all
+				#get layout of fip.s32
+				${DEPLOY_DIR_IMAGE}/${plat}/tools/mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
+				#get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
+				fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
+				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
 			fi
 		done
 		unset j
 	done
 	unset i
-
-	for plat in ${PLATFORM}; do
-		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
-		cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
-
-		if [ "${plat}" = "s32g2xxaevb" ] && [ "${HSE_SEC_ENABLED}" = "1" ]; then
-			openssl dgst -sha1 -sign ${ATF_BINARIES}/${HSE_SEC_KEYS}/${HSE_SEC_PRI_KEY} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/${HSE_SEC_SIGN_SRC}
-			cp -v ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
-		fi
-		cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
-	done
 }
 
 KERNEL_PN = "${@d.getVar('PREFERRED_PROVIDER_virtual/kernel')}"
