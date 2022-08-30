@@ -12,9 +12,4 @@ SRCREV_meta:nxp-s32g ?= "${AUTOREV}"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g = " \
         file://0001-Revert-modpost-turn-missing-MODULE_LICENSE-into-erro.patch \
-        file://0001-drivers-serdes-use-get_lane_id-to-get-the-right-id-f.patch \
-        file://0001-gpio-s32-force-regmap-use-raw-spinlock.patch \
-        file://0002-gpio-s32-switch-the-spinlock-of-siul2_gpio_dev-to-ra.patch \
-        file://0003-gpio-s32-don-t-run-callbacks-in-some-callbacks.patch \
 "
-
