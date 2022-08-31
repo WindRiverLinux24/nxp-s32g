@@ -1,0 +1,38 @@
+From f9e0a22ace4a392da32530f26e4464421c27fd2d Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Mon, 29 Aug 2022 13:58:25 +0800
+Subject: [PATCH] secboot: move bl2 base address to 0x34100000 when secure boot
+ is enabled
+
+When building atf code, the LOAD_ADDRESS is calculated as below:
+LOAD_ADDRESS = BL2_BASE - FIP_HDR_SIZE - DTB_SIZE.
+After nxp-sdk rc5 release, the dtb is moved to into atf code.
+When secure boot is enabled, the public key used to verify kernel
+is saved in dtb file and cause dtb becomes bigger. In this way,
+the LOAD_ADDRESS becomes lower than before, and enters the
+address range 0x34008000~0x34078000 that is used by BootROM
+for internal operation. So, move BL2_BASE to another address so
+that there is no conflict with reversed sram memory even if dtb
+file is extended when secure boot feature is enabed.
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ plat/nxp/s32/s32_common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index f396d508a..12b220f0f 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -413,7 +413,7 @@ endif
+ 	fi
+ 
+ ifneq (${HSE_SECBOOT},)
+-BL2_BASE		:= 0x34080000
++BL2_BASE		:= 0x34100000
+ else
+ BL2_BASE		:= 0x34302000
+ endif
+-- 
+2.36.1
+

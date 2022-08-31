@@ -4,6 +4,7 @@ FILES:${PN} = "/boot ${datadir}"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append:nxp-s32g = " \
     file://0001-s32-extend-the-DTB-size-for-BL33.patch \
+    file://0001-secboot-move-bl2-base-address-to-0x34100000-when-sec.patch \
 "
 
 do_install:append:nxp-s32g() {
