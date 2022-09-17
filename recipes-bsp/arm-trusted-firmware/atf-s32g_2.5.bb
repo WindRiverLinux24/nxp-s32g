@@ -23,6 +23,8 @@ SRC_URI += " \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
+    file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
+    file://0002-fdts-s32g-Change-the-ptp-clock-name-to-ptp_ref.patch \
 "
 
 PATCHTOOL = "git"

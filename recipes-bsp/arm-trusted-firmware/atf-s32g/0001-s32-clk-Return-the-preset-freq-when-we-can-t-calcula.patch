@@ -1,0 +1,41 @@
+From 88faedb3ec97e0aeeb00fe1d17115e40b5902f0e Mon Sep 17 00:00:00 2001
+From: Kevin Hao <kexin.hao@windriver.com>
+Date: Sat, 17 Sep 2022 20:55:30 +0800
+Subject: [PATCH 1/2] s32: clk: Return the preset freq when we can't calculate
+ the clock freq correctly
+
+On s32g platform, the freq of some clocks (such as gmac_ts_clk) are
+initialized by using the info in dts (assigned-clocks). But due to the
+limitation in the s32gen1_scmi_set_rate(), some clock's parents are not
+initialized because the clock ID passed to s32gen1_scmi_set_rate() is
+not the SCMI clock id and only the frequency of the leaf clock is set.
+And in the s32gen1_scmi_get_rate(), some clock frequencies are
+calculated via the frequency of its parent clock and the div value in
+its registers. So when we try to get the clock frequency via the SCMI
+interface from either u-boot or linux, the wrong value is returned
+due to the missing of the clock's parent. In this case, we choose to
+return the preset frequency for these clocks to fix the getting rate
+error in u-boot and linux.
+
+Signed-off-by: Kevin Hao <kexin.hao@windriver.com>
+---
+ drivers/nxp/s32/clk/get_rate.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
+index 3cecc1ebf5d1..c2c7aea3967a 100644
+--- a/drivers/nxp/s32/clk/get_rate.c
++++ b/drivers/nxp/s32/clk/get_rate.c
+@@ -267,8 +267,7 @@ static unsigned long get_cgm_div_freq(struct s32gen1_clk_obj *module,
+ 
+ 	pfreq = get_module_rate(div->parent, priv);
+ 	if (!pfreq) {
+-		ERROR("Failed to get the frequency of CGM MUX\n");
+-		return 0;
++		return div->freq;
+ 	}
+ 
+ 	mux = get_cgm_div_mux(div);
+-- 
+2.34.1
+
