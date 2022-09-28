@@ -1,0 +1,89 @@
+From 3bb350052665954330e868dcf61a12c0699587c9 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 15 Jul 2022 09:41:17 +0300
+Subject: [PATCH 034/102] arm: s32cc: Make SerDes phy mode validation part of
+ the platform code
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c |  5 ++---
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c | 10 ++++++++++
+ drivers/pci/serdes_s32gen1.c               |  8 --------
+ 3 files changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index 1da7b23594..73f1efe0fb 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -781,9 +781,8 @@ static int apply_hwconfig_fixups(bool fdt, void *blob)
+ 			continue;
+ 
+ 		ret = prepare_pcie_node(&root, id);
+-		if (ret) {
+-			pr_err("Failed to PCIe ofnode%d\n", id);
+-		}
++		if (ret)
++			pr_warn("Failed to prepare PCIe node%d\n", id);
+ 
+ 		ret = set_serdes_clk(&root, id);
+ 		if (ret)
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index d0653ada75..6d52a41ff8 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -245,6 +245,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 	enum serdes_clock_fmhz freq;
+ 	enum serdes_mode mode;
+ 	enum serdes_clock clktype;
++	enum serdes_phy_mode phy_mode;
+ 	bool mode5;
+ 
+ 	clktype = s32_serdes_get_clock_from_hwconfig(id);
+@@ -252,6 +253,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 	devtype = s32_serdes_get_mode_from_hwconfig(id);
+ 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
+ 	mode = s32_serdes_get_op_mode_from_hwconfig(id);
++	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
+ 
+ 	if (devtype == SERDES_INVALID) {
+ 		printf("Invalid SerDes%d configuration\n", id);
+@@ -312,5 +314,13 @@ bool s32_serdes_is_cfg_valid(int id)
+ 		}
+ 	}
+ 
++	if (clktype == CLK_INT) {
++		if (phy_mode == CRSS || phy_mode == SRIS) {
++			printf("SerDes%d: CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
++			       id, id);
++			return false;
++		}
++	}
++
+ 	return true;
+ }
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index aaa40a273a..f03aec9f02 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -414,14 +414,6 @@ static int s32_serdes_probe(struct udevice *dev)
+ 
+ 	pcie->phy_mode = s32_serdes_get_phy_mode_from_hwconfig(pcie->id);
+ 
+-	if (pcie->clktype == CLK_INT) {
+-		if (pcie->phy_mode == CRSS || pcie->phy_mode == SRIS) {
+-			printf("CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
+-			       pcie->id);
+-			return -EINVAL;
+-		}
+-	}
+-
+ 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(pcie);
+ 	printf("Using %s clock for PCIe%d, %s\n",
+ 	       SERDES_CLK_MODE(pcie->clktype),
+-- 
+2.17.1
+

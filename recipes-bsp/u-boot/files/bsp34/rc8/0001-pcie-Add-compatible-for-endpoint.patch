@@ -1,0 +1,31 @@
+From 38b762292f2b63496b7ff073adf1f444ec85cf5b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 24 Jun 2022 09:29:49 +0300
+Subject: [PATCH 001/102] pcie: Add compatible for endpoint
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/pcie_s32gen1.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/pcie_s32gen1.c b/drivers/pci/pcie_s32gen1.c
+index 3382cb945d..2d6a38a220 100644
+--- a/drivers/pci/pcie_s32gen1.c
++++ b/drivers/pci/pcie_s32gen1.c
+@@ -1114,7 +1114,8 @@ static const struct dm_pci_ops s32_pcie_ops = {
+ };
+ 
+ static const struct udevice_id s32_pcie_ids[] = {
+-	{ .compatible = "nxp,s32cc-pcie" },
++	{ .compatible = "nxp,s32cc-pcie", .data = PCIE_RC },
++	{ .compatible = "nxp,s32cc-pcie-ep", .data = PCIE_EP },
+ 	{ }
+ };
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,1869 @@
+From 1edf6230dc47a2925f64c2d9b90c6b9a89cb98b1 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 19 Jul 2022 10:33:31 +0300
+Subject: [PATCH 038/102] pci: serdes: Use the same binding for registers as in
+ Linux
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+
+fixup! pci: serdes: Use the same binding for registers as in Linux
+---
+ .../include/asm/arch-s32/s32-cc/serdes_regs.h | 121 ------
+ .../asm/arch-s32/s32-cc/serdes_xpcs_regs.h    |  57 +--
+ arch/arm/include/asm/arch-s32/s32-cc/sgmii.h  |   8 +-
+ arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c  | 397 +++++++++---------
+ arch/arm/mach-s32/s32-cc/sgmii/sgmii.c        | 106 +++--
+ drivers/pci/serdes_s32gen1.c                  | 236 ++++++++---
+ 6 files changed, 470 insertions(+), 455 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch-s32/s32-cc/serdes_regs.h b/arch/arm/include/asm/arch-s32/s32-cc/serdes_regs.h
+index d87f52f329..ddb4366962 100644
+--- a/arch/arm/include/asm/arch-s32/s32-cc/serdes_regs.h
++++ b/arch/arm/include/asm/arch-s32/s32-cc/serdes_regs.h
+@@ -19,30 +19,8 @@
+ 
+ #define SERDES_SS_BASE				0x80000
+ 
+-/*
+- * SS Registers
+- */
+-
+-/* PHY General Control */
+-#define SS_PHY_GEN_CTRL				(SERDES_SS_BASE + 0x0U)
+-
+-#define SS_PHY_LPBK_CTRL			(SERDES_SS_BASE + 0x4U)
+-#define SS_PHY_SRAM_CSR				(SERDES_SS_BASE + 0x8U)
+-
+-/* PHY MPLLA Control */
+-#define SS_PHY_MPLLA_CTRL			(SERDES_SS_BASE + 0x10U)
+-/* PHY MPLLB Control */
+-#define SS_PHY_MPLLB_CTRL			(SERDES_SS_BASE + 0x14U)
+-
+-#define SS_PHY_EXT_CTRL_SEL			(SERDES_SS_BASE + 0x18U)
+-#define SS_PHY_EXT_BS_CTRL			(SERDES_SS_BASE + 0x1cU)
+-#define SS_PHY_REF_CLK_CTRL			(SERDES_SS_BASE + 0x20U)
+-#define SS_PHY_EXT_MPLLA_CTRL_1			(SERDES_SS_BASE + 0x30U)
+ #define SS_PHY_EXT_MPLLA_CTRL_2			(SERDES_SS_BASE + 0x34U)
+ #define SS_PHY_EXT_MPLLA_CTRL_3			(SERDES_SS_BASE + 0x38U)
+-#define SS_PHY_EXT_MPLLB_CTRL_1			(SERDES_SS_BASE + 0x40U)
+-#define SS_PHY_EXT_MPLLB_CTRL_2			(SERDES_SS_BASE + 0x44U)
+-#define SS_PHY_EXT_MPLLB_CTRL_3			(SERDES_SS_BASE + 0x48U)
+ #define SS_PHY_EXT_RX_EQ_CTRL_1A		(SERDES_SS_BASE + 0x50U)
+ #define SS_PHY_EXT_RX_EQ_CTRL_1B		(SERDES_SS_BASE + 0x54U)
+ #define SS_PHY_EXT_RX_EQ_CTRL_1C		(SERDES_SS_BASE + 0x58U)
+@@ -58,13 +36,10 @@
+ #define SS_PHY_EXT_CALI_CTRL_2			(SERDES_SS_BASE + 0x94U)
+ #define SS_PHY_EXT_CALI_CTRL_3			(SERDES_SS_BASE + 0x98U)
+ #define SS_PHY_EXT_CALI_CTRL_4			(SERDES_SS_BASE + 0x9cU)
+-#define SS_PHY_EXT_MISC_CTRL_1			(SERDES_SS_BASE + 0xa0U)
+-#define SS_PHY_EXT_MISC_CTRL_2			(SERDES_SS_BASE + 0xa4U)
+ #define SS_PHY_EXT_TX_EQ_CTRL_1			(SERDES_SS_BASE + 0xb0U)
+ #define SS_PHY_EXT_TX_EQ_CTRL_2			(SERDES_SS_BASE + 0xb4U)
+ #define SS_PHY_EXT_TX_EQ_CTRL_3			(SERDES_SS_BASE + 0xb8U)
+ #define SS_PHY_XPCS0_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xc0U)
+-#define SS_PHY_XPCS1_RX_OVRD_CTRL		(SERDES_SS_BASE + 0xd0U)
+ 
+ /* Subsystem Read Only Registers 0-3 */
+ #define SS_SS_RO_REG_0				(SERDES_SS_BASE + 0xe0U)
+@@ -73,7 +48,6 @@
+ #define SS_SS_RO_REG_3				(SERDES_SS_BASE + 0xecU)
+ 
+ /* Subsystem Read Write Registers 0-5 */
+-#define SS_SS_RW_REG_0				(SERDES_SS_BASE + 0xf0U)
+ #define SS_SS_RW_REG_1				(SERDES_SS_BASE + 0xf4U)
+ #define SS_SS_RW_REG_2				(SERDES_SS_BASE + 0xf8U)
+ #define SS_SS_RW_REG_3				(SERDES_SS_BASE + 0xfcU)
+@@ -121,27 +95,12 @@
+ #define SS_PE0_FSM_TRACK_2			(SERDES_SS_BASE + 0x10f4U)
+ #define SS_APB_BRIDGE_TO_CTRL			(SERDES_SS_BASE + 0x3000U)
+ 
+-/* PHY Register Address Register */
+-#define SS_PHY_REG_ADDR				(SERDES_SS_BASE + 0x3008U)
+-/* PHY Register Data Register */
+-#define SS_PHY_REG_DATA				(SERDES_SS_BASE + 0x300cU)
+ /* RESET CONTROL Register */
+ #define SS_RST_CTRL				(SERDES_SS_BASE + 0x3010U)
+ 
+ /* Field definitions for SS_RST_CTRL */
+ #define COLD_RST				BIT(1)
+ 
+-/* Field definitions for PHY_GEN_CTRL */
+-
+-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN_BIT	(16)
+-#define PHY_GEN_CTRL_REF_REPEAT_CLK_EN		BIT(REF_REPEAT_CLK_EN_BIT)
+-
+-#define PHY_GEN_CTRL_REF_USE_PAD_BIT	(17)
+-#define PHY_GEN_CTRL_REF_USE_PAD	BIT(PHY_GEN_CTRL_REF_USE_PAD_BIT)
+-
+-#define PHY_GEN_CTRL_RX_SRIS_MODE_BIT	(9)
+-#define PHY_GEN_CTRL_RX_SRIS_MODE_MASK	BIT(PHY_GEN_CTRL_RX_SRIS_MODE_BIT)
+-
+ /* Field definitions for PHY_EXT_MPLLA/B Registers */
+ 
+ #define MPLLA_DIV8_CLK_EN			(1U << 8)
+@@ -159,46 +118,17 @@
+ #define MPLLB_CTRL2_MPLLB_DIV_CLK_EN		(1U << 10)
+ #define MPLLB_TX_CLK_DIV(n)		(((n) & 0x7U) << 11)
+ 
+-#define MPLL_STATE_BIT         (30)
+-#define MPLL_STATE             BIT(MPLL_STATE_BIT)
+-
+ #define MPLLA_STATE_BIT        (31)
+ #define MPLLA_STATE            BIT(MPLLA_STATE_BIT)
+ 
+-/* Field definitions for PHY_EXT_MPLLB EXT control Registers */
+-
+-#define EXT_MPLLB_FRACN_CTRL(x)			(((x) & 0x7ffU) << 12)
+-#define EXT_MPLLB_WORD_DIV2_EN			BIT(31)
+-#define EXT_MPLLB_TX_CLK_DIV(x)			(((x) & 0x7U) << 28)
+-#define EXT_MPLLB_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
+-#define EXT_MPLLB_DIV_MULTIPLIER(x)		(((x) & 0xffU) << 24)
+-#define EXT_MPLLB_DIV10_CLK_EN			BIT(16)
+-#define EXT_MPLLB_DIV8_CLK_EN			BIT(18)
+-#define EXT_MPLLB_DIV_CLK_EN			BIT(19)
+-
+-#define EXT_MPLLA_BANDWIDTH(x)			(((x) & 0xffffU) << 0)
+-
+ /* Field definitions for PCIE_PHY_MPLLB_CTRL */
+ 
+ #define MPLLB_FORCE_EN_BIT      (0)
+ #define MPLLB_FORCE_EN          BIT(MPLLB_FORCE_EN_BIT)
+ 
+-#define MPLLB_SSC_EN_BIT       (1)
+-#define MPLLB_SSC_EN           BIT(MPLLB_SSC_EN_BIT)
+-
+ #define MPLLB_STATE_BIT        (31)
+ #define MPLLB_STATE            BIT(MPLLB_STATE_BIT)
+ 
+-/* Field definitions for SS_RW_REG_0 */
+-
+-#define SUBSYS_MODE_LSB		(0)
+-#define SUBSYS_MODE_MASK	(0x7)
+-#define SUBSYS_MODE		((SUBSYS_MODE_MASK) << \
+-		(SUBSYS_MODE_LSB))
+-
+-#define PHY0_CR_PARA_SEL_BIT		(9)
+-#define PHY0_CR_PARA_SEL		BIT(PHY0_CR_PARA_SEL_BIT)
+-
+ /* Field definitions for PE0_GEN_CTRL_1 */
+ 
+ #define DEVICE_TYPE_OVERRIDE       0x10
+@@ -227,56 +157,5 @@
+ #define RATE_MASK          (0x00000003)
+ #define RATE               ((RATE_MASK) << (RATE_LSB))
+ 
+-/* Field definitions for PHY_REG_ADDR */
+-
+-#define PHY_REG_ADDR_FIELD_LSB       (0)
+-#define PHY_REG_ADDR_FIELD_MASK      (0x0000FFFF)
+-#define PHY_REG_ADDR_FIELD           ((PHY_REG_ADDR_FIELD_MASK) << \
+-		(PHY_REG_ADDR_FIELD_LSB))
+-
+-#define PHY_REG_EN_BIT         (31)
+-#define PHY_REG_EN             BIT(PHY_REG_EN_BIT)
+-
+-/* Field definitions for PHY_REG_DATA */
+-
+-#define PHY_REG_DATA_FIELD_LSB       (0)
+-#define PHY_REG_DATA_FIELD_MASK      (0x0000FFFF)
+-#define PHY_REG_DATA_FIELD           ((PHY_REG_DATA_FIELD_MASK) << \
+-		(PHY_REG_DATA_FIELD_LSB))
+-
+-/* Field definitions for SS_PHY_EXT_MISC_CTRL_2 */
+-
+-#define EXT_TX_VBOOST_LVL(x)	(((x) & 0x7U) << 16)
+-#define EXT_TX_TERM_CTRL(x)		(((x) & 0x7U) << 24)
+-
+-/* Field definitions for SS_PHY_EXT_CTRL_SEL */
+-
+-#define EXT_PHY_CTRL_SEL BIT(0)
+-
+-/* Field definitions for SS_PHY_REF_CLK_CTRL */
+-
+-#define REF_CLK_DIV2_EN		BIT(2)
+-#define REF_CLK_MPLLB_DIV2_EN	BIT(1)
+-#define REF_CLK_DIV2_EN		BIT(2)
+-#define EXT_REF_RANGE(x)	(((x) & 0x7U) << 3)
+-
+-/* Field definitions for XPCS external control */
+-#define XPCS1_RX_VCO_LD_VAL(x)(((x) & 0x1fffU) << 16)
+-#define XPCS1_RX_REF_LD_VAL(x)(((x) & 0x3fU) << 8)
+-
+-/* Field definitions for SS_PHY_EXT_BS_CTRL */
+-#define EXT_BS_RX_LEVEL(x)(((x) & 0x1fU) << 0)
+-#define EXT_BS_RX_BIGSWING BIT(5)
+-#define EXT_BS_TX_LOWSWING BIT(6)
+-
+-/* Field definitions for SS_PHY_EXT_MISC_CTRL_1 */
+-#define EXT_RX_LOS_THRESHOLD(x) (((x) & 0x3fU) << 1)
+-#define EXT_RX_VREF_CTRL(x) (((x) & 0x1fU) << 24)
+-
+-/* PHY registers */
+-
+-#define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
+-#define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
+-
+ #endif
+ 
+diff --git a/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h b/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
+index bd952e7fb4..57149abafb 100644
+--- a/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
++++ b/arch/arm/include/asm/arch-s32/s32-cc/serdes_xpcs_regs.h
+@@ -171,46 +171,47 @@
+ #define PHY_CTRL_XPCS_OWNED	(PHY_CTRL_XPCS0_OWNED | PHY_CTRL_XPCS1_OWNED)
+ 
+ /* Init */
+-void serdes_pcs_pma_init_gen2(void *base, enum serdes_clock_fmhz fmhz,
++void serdes_pcs_pma_init_gen2(void __iomem *xpcs0, void __iomem *xpcs1,
++			      enum serdes_clock_fmhz fmhz,
+ 			      u32 init_flags);
+-void serdes_pcs_issue_vreset(void *base, u32 xpcs);
+-int serdes_pcs_wait_for_vreset(void *base, u32 xpcs);
++void serdes_pcs_issue_vreset(void __iomem *base);
++int serdes_pcs_wait_for_vreset(void __iomem *base);
+ int serdes_pcs_reset_seqence(void *serdes_base, u32 xpcs0_base, u32 xpcs1_base);
+-int serdes_pcs_wait_for_power_good(void *base, u32 xpcs);
++int serdes_pcs_wait_for_power_good(void __iomem *base);
+ 
+ /* Bifurcation PMA control */
+-int serdes_bifurcation_pll_transit_to_3125mhz(void *base, u32 xpcs,
++int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
+ 					      enum serdes_clock_fmhz fmhz);
+-int serdes_bifurcation_pll_transit_to_1250mhz(void *base, u32 xpcs,
++int serdes_bifurcation_pll_transit_to_1250mhz(void __iomem *base,
+ 					      enum serdes_clock_fmhz fmhz);
+-void serdes_testing_stage1(void *base, u32 xpcs);
++void serdes_testing_stage1(void __iomem *base);
+ 
+ /* PMA control */
+-void serdes_pma_lane_disable(void *base, u32 xpcs);
+-void serdes_pma_lane_enable(void *base, u32 xpcs);
+-void serdes_pma_issue_rx_reset(void *base, u32 xpcs);
+-void serdes_pma_loopback_enable(void *base, u32 xpcs);
+-void serdes_pma_loopback_disable(void *base, u32 xpcs);
+-int  serdes_pma_wait_link(void *base, u32 xpcs, u8 sec);
++void serdes_pma_lane_disable(void __iomem *base);
++void serdes_pma_lane_enable(void __iomem *base);
++void serdes_pma_issue_rx_reset(void __iomem *base);
++void serdes_pma_loopback_enable(void __iomem *base);
++void serdes_pma_loopback_disable(void __iomem *base);
++int  serdes_pma_wait_link(void __iomem *base, u8 sec);
+ 
+ /* PCS control */
+-int  serdes_pcs_speed_select(void *base, u32 xpcs, u32 div);
+-void serdes_pcs_mii_bus_control_disable(void *base, u32 xpcs);
+-void serdes_pcs_mii_bus_control_enable(void *base, u32 xpcs);
+-void serdes_pcs_an_enable(void *base, u32 xpcs);
+-void serdes_pcs_an_disable(void *base, u32 xpcs);
+-void serdes_pcs_an_restart(void *base, u32 xpcs);
+-void serdes_pcs_an_auto_sw_enable(void *base, u32 xpcs);
+-void serdes_pcs_an_auto_sw_disable(void *base, u32 xpcs);
+-void serdes_pcs_an_set_link_timer(void *base, u32 xpcs, u16 link_timer);
+-int  serdes_pcs_an_decode(void *base, u32 xpcs, bool *link, bool *fduplex,
++int  serdes_pcs_speed_select(void __iomem *base, u32 div);
++void serdes_pcs_mii_bus_control_disable(void __iomem *base);
++void serdes_pcs_mii_bus_control_enable(void __iomem *base);
++void serdes_pcs_an_enable(void __iomem *base);
++void serdes_pcs_an_disable(void __iomem *base);
++void serdes_pcs_an_restart(void __iomem *base);
++void serdes_pcs_an_auto_sw_enable(void __iomem *base);
++void serdes_pcs_an_auto_sw_disable(void __iomem *base);
++void serdes_pcs_an_set_link_timer(void __iomem *base, u16 link_timer);
++int  serdes_pcs_an_decode(void __iomem *base, bool *link, bool *fduplex,
+ 			  u16 *speed);
+-void serdes_pcs_set_fd(void *base, u32 xpcs);
+-void serdes_pcs_set_hd(void *base, u32 xpcs);
+-void serdes_pcs_loopback_enable(void *base, u32 xpcs);
+-void serdes_pcs_loopback_disable(void *base, u32 xpcs);
++void serdes_pcs_set_fd(void __iomem *base);
++void serdes_pcs_set_hd(void __iomem *base);
++void serdes_pcs_loopback_enable(void __iomem *base);
++void serdes_pcs_loopback_disable(void __iomem *base);
+ 
+-void serdes_pcs_dump_reg(void *base, u32 xpcs);
++void serdes_pcs_dump_reg(void __iomem *base);
+ 
+ enum serdes_xpcs_mode_gen2 s32_get_xpcs_mode(int serd, int xpcs);
+ int s32_sgmii_wait_link(int serdes, int xpcs);
+diff --git a/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h b/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
+index 63867fb37c..54f60265f7 100644
+--- a/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
++++ b/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
+@@ -14,11 +14,11 @@ enum serdes_clock;
+ enum serdes_clock_fmhz;
+ enum serdes_xpcs_mode_gen2;
+ 
+-void serdes_pma_mode5(void *base, u32 xpcs);
+-void serdes_pcs_mode5(void *base, u32 xpcs);
++void serdes_pma_mode5(void __iomem *base);
++void serdes_pcs_mode5(void __iomem *base);
+ 
+-int s32_eth_xpcs_init(void __iomem *serdes_base, int id,
+-		      enum serdes_mode ss_mode,
++int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
++		      int platform_serdes_id, enum serdes_mode ss_mode,
+ 		      enum serdes_xpcs_mode xpcs_mode,
+ 		      enum serdes_clock clktype,
+ 		      enum serdes_clock_fmhz fmhz,
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c b/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
+index ac6d7c4517..677d065b5a 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/serdes_xpcs.c
+@@ -17,8 +17,6 @@
+ #include <sgmii.h>
+ 
+ #define VPTR(a)		((void *)(uintptr_t)(a))
+-#define XPCS_BASE(xpcs) (((xpcs) == 0)  ? (SERDES_XPCS_0_ADDR2) : \
+-					  (SERDES_XPCS_1_ADDR2))
+ 
+ static struct {
+ 	u32 start;
+@@ -52,27 +50,25 @@ static struct {
+ 	{0x1F80E1, 0x1F80E1},
+ };
+ 
+-static u16 serdes_xpcs_read_gen2(void *base, u32 xpcs, u32 reg)
++static u16 serdes_xpcs_read_gen2(void __iomem *base, u32 reg)
+ {
+ 	u32 ofsleft = (reg >> 8) & 0xffffU;
+ 	u32 ofsright = (reg & 0xffU);
+-	u32 pcs_off = XPCS_BASE(xpcs);
+ 
+-	writel(ofsleft, base + pcs_off + 0x3fc);
+-	return readl(base + pcs_off + 4 * ofsright) & 0xffffU;
++	writel(ofsleft, VPTR(base + 0x3fc));
++	return readl(VPTR(base + 4 * ofsright)) & 0xffffU;
+ }
+ 
+-static void serdes_xpcs_write_gen2(void *base, u32 xpcs, u32 reg, u16 val)
++static void serdes_xpcs_write_gen2(void __iomem *base, u32 reg, u16 val)
+ {
+ 	u32 ofsleft = (reg >> 8) & 0xffffU;
+ 	u32 ofsright = (reg & 0xffU);
+-	u32 pcs_off = XPCS_BASE(xpcs);
+ 
+-	writel(ofsleft, base + pcs_off + 0x3fc);
+-	writel(val, base + pcs_off + 4 * ofsright);
++	writel(ofsleft, VPTR(base + 0x3fc));
++	writel(val, VPTR(base + 4 * ofsright));
+ }
+ 
+-static void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
++static void serdes_xpcs_clr_setb_gen2(void __iomem *base, u32 reg,
+ 				      u16 clr_mask, u16 mask)
+ {
+ 	u16 tmp_rd =  0;
+@@ -81,29 +77,29 @@ static void serdes_xpcs_clr_setb_gen2(void *base, u32 xpcs, u32 reg,
+ 		return;
+ 
+ 	if (mask || clr_mask)
+-		tmp_rd = serdes_xpcs_read_gen2(base, xpcs, reg);
++		tmp_rd = serdes_xpcs_read_gen2(base, reg);
+ 
+-	serdes_xpcs_write_gen2(base, xpcs, reg, (tmp_rd & ~clr_mask) | mask);
++	serdes_xpcs_write_gen2(base, reg, (tmp_rd & ~clr_mask) | mask);
+ }
+ 
+-#define PCSW16(serdes_base, pcs, reg, val) ({\
+-	serdes_xpcs_write_gen2(serdes_base, pcs, reg, val);\
++#define PCSW16(xpcs_base, reg, val) ({\
++	serdes_xpcs_write_gen2(xpcs_base, reg, val);\
+ })
+ 
+-#define PCSR16(serdes_base, pcs, reg) ({\
+-	serdes_xpcs_read_gen2(serdes_base, pcs, reg);\
++#define PCSR16(xpcs_base, reg) ({\
++	serdes_xpcs_read_gen2(xpcs_base, reg);\
+ })
+ 
+-#define PCSBCLR(serdes_base, pcs, reg, mask) \
+-	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, mask, 0)
++#define PCSBCLR(xpcs_base, reg, mask) \
++	serdes_xpcs_clr_setb_gen2(xpcs_base, reg, mask, 0)
+ 
+-#define PCSBSET(serdes_base, pcs, reg, mask) \
+-	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, 0, mask)
++#define PCSBSET(xpcs_base, reg, mask) \
++	serdes_xpcs_clr_setb_gen2(xpcs_base, reg, 0, mask)
+ 
+-#define PCSBCLRSET(serdes_base, pcs, reg, clr_mask, mask) \
+-	serdes_xpcs_clr_setb_gen2(VPTR(serdes_base), pcs, reg, clr_mask, mask)
++#define PCSBCLRSET(xpcs_base, reg, clr_mask, mask) \
++	serdes_xpcs_clr_setb_gen2(xpcs_base, reg, clr_mask, mask)
+ 
+-void serdes_pcs_dump_reg(void *base, u32 xpcs)
++void serdes_pcs_dump_reg(void __iomem *base)
+ {
+ 	u32 regidx;
+ 
+@@ -113,18 +109,18 @@ void serdes_pcs_dump_reg(void *base, u32 xpcs)
+ 
+ 		do {
+ 			printf("0x%08x => 0x%04x\n",
+-			       regcurr, PCSR16(base, xpcs, regcurr));
++			       regcurr, PCSR16(base, regcurr));
+ 			regcurr++;
+ 		} while (regcurr <= regend);
+ 	}
+ }
+ 
+-static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
++static int serdes_pcs_wait_bits(void __iomem *base, u32 reg, u16 mask,
+ 				u16 val, u16 us, u16 cnt)
+ {
+ 	u32 tmp = cnt; /* Take care so this is not optimized out */
+ 
+-	while ((((serdes_xpcs_read_gen2(base, xpcs, reg) & mask) != val) &&
++	while ((((serdes_xpcs_read_gen2(base, reg) & mask) != val) &&
+ 		(tmp > 0))) {
+ 		udelay(us);
+ 		tmp--;
+@@ -133,51 +129,51 @@ static int serdes_pcs_wait_bits(void *base, u32 xpcs, u32 reg, u16 mask,
+ 	return ((tmp > 0)) ? (0) : (-ETIMEDOUT);
+ }
+ 
+-static void serdes_pma_high_freq_recovery(void *base, u32 xpcs)
++static void serdes_pma_high_freq_recovery(void __iomem *base)
+ {
+ 	/* PCS signal protection, PLL railout recovery */
+-	PCSBSET(base, xpcs, VR_MII_DBG_CTRL, SUPPRESS_LOS_DET | RX_DT_EN_CTL);
+-	PCSBSET(base, xpcs, VR_MII_Gen5_12G_16G_MISC_CTRL0, PLL_CTRL);
++	PCSBSET(base, VR_MII_DBG_CTRL, SUPPRESS_LOS_DET | RX_DT_EN_CTL);
++	PCSBSET(base, VR_MII_Gen5_12G_16G_MISC_CTRL0, PLL_CTRL);
+ }
+ 
+-void serdes_pcs_loopback_enable(void *base, u32 xpcs)
++void serdes_pcs_loopback_enable(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, R2TLBE);
++	PCSBSET(base, VR_MII_DIG_CTRL1, R2TLBE);
+ }
+ 
+-void serdes_pcs_loopback_disable(void *base, u32 xpcs)
++void serdes_pcs_loopback_disable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, R2TLBE);
++	PCSBCLR(base, VR_MII_DIG_CTRL1, R2TLBE);
+ }
+ 
+-int serdes_pcs_wait_for_power_good(void *base, u32 xpcs)
++int serdes_pcs_wait_for_power_good(void __iomem *base)
+ {
+-	return serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_STS,
++	return serdes_pcs_wait_bits(base, VR_MII_DIG_STS,
+ 				    0x7U << 2, 0x4U << 2, 1000U, 1000U);
+ }
+ 
+-void serdes_pcs_issue_vreset(void *base, u32 xpcs)
++void serdes_pcs_issue_vreset(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, VR_RST);
++	PCSBSET(base, VR_MII_DIG_CTRL1, VR_RST);
+ }
+ 
+-int serdes_pcs_wait_for_vreset(void *base, u32 xpcs)
++int serdes_pcs_wait_for_vreset(void __iomem *base)
+ {
+-	return serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_CTRL1,
++	return serdes_pcs_wait_bits(base, VR_MII_DIG_CTRL1,
+ 				    VR_RST, 0, 1000U, 1000U);
+ }
+ 
+-static void serdes_pcs_set_2500M_mode(void *base, u32 xpcs)
++static void serdes_pcs_set_2500M_mode(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
++	PCSBSET(base, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
+ }
+ 
+-static void serdes_pcs_set_1000M_mode(void *base, u32 xpcs)
++static void serdes_pcs_set_1000M_mode(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
++	PCSBCLR(base, VR_MII_DIG_CTRL1, EN_2_5G_MODE);
+ }
+ 
+-int serdes_pcs_speed_select(void *base, u32 xpcs, u32 div)
++int serdes_pcs_speed_select(void __iomem *base, u32 div)
+ {
+ 	u16 reg16 = 0;
+ 
+@@ -198,80 +194,80 @@ int serdes_pcs_speed_select(void *base, u32 xpcs, u32 div)
+ 		return -EINVAL;
+ 	}
+ 
+-	PCSBCLRSET(base, xpcs, SR_MII_CTRL,
++	PCSBCLRSET(base, SR_MII_CTRL,
+ 		   MII_CTRL_SS13 | MII_CTRL_SS6,
+ 		   reg16);
+ 
+ 	return 0;
+ }
+ 
+-void serdes_pcs_set_fd(void *base, u32 xpcs)
++void serdes_pcs_set_fd(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
++	PCSBSET(base, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
+ }
+ 
+-void serdes_pcs_set_hd(void *base, u32 xpcs)
++void serdes_pcs_set_hd(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
++	PCSBCLR(base, SR_MII_CTRL, MII_CTRL_DUPLEX_MODE);
+ }
+ 
+ /* Call in case MII bus is in all speeds 8bit */
+-void serdes_pcs_mii_bus_control_disable(void *base, u32 xpcs)
++void serdes_pcs_mii_bus_control_disable(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
++	PCSBSET(base, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
+ }
+ 
+ /* Call in case MII bus is in 1G 8bit and other speeds 4bit */
+-void serdes_pcs_mii_bus_control_enable(void *base, u32 xpcs)
++void serdes_pcs_mii_bus_control_enable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
++	PCSBCLR(base, VR_MII_AN_CTRL, MII_AN_CTRL_MII_CTRL);
+ }
+ 
+-void serdes_pcs_an_enable(void *base, u32 xpcs)
++void serdes_pcs_an_enable(void __iomem *base)
+ {
+ 	/* Select SGMII type AN, enable interrupt */
+-	PCSBCLRSET(base, xpcs, VR_MII_AN_CTRL,
++	PCSBCLRSET(base, VR_MII_AN_CTRL,
+ 		   MII_AN_CTRL_PCS_MODE(0x3),
+ 		   MII_AN_CTRL_PCS_MODE(PCS_MODE_SGMII) |
+ 		   MII_AN_INTR_EN);
+ 	/* Enable SGMII AN */
+-	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
++	PCSBSET(base, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
+ }
+ 
+-void serdes_pcs_an_disable(void *base, u32 xpcs)
++void serdes_pcs_an_disable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
++	PCSBCLR(base, SR_MII_CTRL, MII_CTRL_AN_ENABLE);
+ 	/* Disable interrupt */
+-	PCSBCLR(base, xpcs, VR_MII_AN_CTRL, MII_AN_INTR_EN);
++	PCSBCLR(base, VR_MII_AN_CTRL, MII_AN_INTR_EN);
+ }
+ 
+-void serdes_pcs_an_restart(void *base, u32 xpcs)
++void serdes_pcs_an_restart(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, SR_MII_CTRL, MII_CTRL_RESTART_AN);
++	PCSBSET(base, SR_MII_CTRL, MII_CTRL_RESTART_AN);
+ }
+ 
+-void serdes_pcs_an_auto_sw_enable(void *base, u32 xpcs)
++void serdes_pcs_an_auto_sw_enable(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
++	PCSBSET(base, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
+ }
+ 
+-void serdes_pcs_an_auto_sw_disable(void *base, u32 xpcs)
++void serdes_pcs_an_auto_sw_disable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
++	PCSBCLR(base, VR_MII_DIG_CTRL1, MAC_AUTO_SW);
+ }
+ 
+-void serdes_pcs_an_set_link_timer(void *base, u32 xpcs, u16 link_timer)
++void serdes_pcs_an_set_link_timer(void __iomem *base, u16 link_timer)
+ {
+-	PCSW16(base, xpcs, VR_MII_LINK_TIMER_CTRL, link_timer);
+-	PCSBCLR(base, xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
++	PCSW16(base, VR_MII_LINK_TIMER_CTRL, link_timer);
++	PCSBCLR(base, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
++	PCSBSET(base, VR_MII_DIG_CTRL1, CL37_TMR_OVR_RIDE);
+ }
+ 
+ /* This is intended to be called from AN interrupt to resolve the AN result */
+-int serdes_pcs_an_decode(void *base, u32 xpcs, bool *link,
++int serdes_pcs_an_decode(void __iomem *base, bool *link,
+ 			 bool *fduplex, u16 *speed)
+ {
+-	u16 reg16 = PCSR16(base, xpcs, VR_MII_AN_INTR_STS);
++	u16 reg16 = PCSR16(base, VR_MII_AN_INTR_STS);
+ 
+ 	if (reg16 & CL37_ANSGM_STS_LINK) {
+ 		*link = true;
+@@ -303,61 +299,61 @@ int serdes_pcs_an_decode(void *base, u32 xpcs, bool *link,
+ 	return 0;
+ }
+ 
+-int serdes_pma_wait_link(void *base, u32 xpcs, u8 sec)
++int serdes_pma_wait_link(void __iomem *base, u8 sec)
+ {
+-	return serdes_pcs_wait_bits(base, xpcs, SR_MII_STS,
++	return serdes_pcs_wait_bits(base, SR_MII_STS,
+ 				    MII_STS_LINK_STS, MII_STS_LINK_STS,
+ 				    1000U, 1000U * sec);
+ }
+ 
+-void serdes_pma_issue_rx_reset(void *base, u32 xpcs)
++void serdes_pma_issue_rx_reset(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_RX_GENCTRL1, RX_RST_0);
+ }
+ 
+-void serdes_pma_lane_disable(void *base, u32 xpcs)
++void serdes_pma_lane_disable(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
++	PCSBSET(base, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
+ 		TX_DISABLE_0);
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
++	PCSBSET(base, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
+ 		RX_DISABLE_0);
+ }
+ 
+-void serdes_pma_lane_enable(void *base, u32 xpcs)
++void serdes_pma_lane_enable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_TX_POWER_STATE_CTRL,
+ 		TX_DISABLE_0);
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_RX_POWER_STATE_CTRL,
+ 		RX_DISABLE_0);
+ }
+ 
+-void serdes_pma_loopback_enable(void *base, u32 xpcs)
++void serdes_pma_loopback_enable(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, SR_MII_CTRL, LBE);
++	PCSBSET(base, SR_MII_CTRL, LBE);
+ }
+ 
+-void serdes_pma_loopback_disable(void *base, u32 xpcs)
++void serdes_pma_loopback_disable(void __iomem *base)
+ {
+-	PCSBCLR(base, xpcs, SR_MII_CTRL, LBE);
++	PCSBCLR(base, SR_MII_CTRL, LBE);
+ }
+ 
+-static void serdes_pma_configure_tx_eq_post(void *base, u32 xpcs)
++static void serdes_pma_configure_tx_eq_post(void __iomem *base)
+ {
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL1, 1u << 6U);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_TX_EQ_CTRL1, 1u << 6U);
+ }
+ 
+-static void serdes_pma_configure_tx_ctr(void *base, u32 xpcs)
++static void serdes_pma_configure_tx_ctr(void __iomem *base)
+ {
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_EQ_CTRL0,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_TX_EQ_CTRL0,
+ 		   0x3fU << 8U,
+ 		   0xCU << 8U);
+-	PCSBCLRSET(base, xpcs, VR_MII_CONSUMER_10G_TX_TERM_CTRL,
++	PCSBCLRSET(base, VR_MII_CONSUMER_10G_TX_TERM_CTRL,
+ 		   0x7U,
+ 		   0x4U);
+ }
+ 
+-static void serdes_pma_1250Mhz_prepare(void *base, u32 xpcs,
++static void serdes_pma_1250Mhz_prepare(void __iomem *base,
+ 				       enum serdes_clock_fmhz fmhz)
+ {
+ 	u16 vco_cal_ld, vco_cal_ref;
+@@ -370,31 +366,31 @@ static void serdes_pma_1250Mhz_prepare(void *base, u32 xpcs,
+ 		vco_cal_ref = 17U;
+ 	}
+ 	/* RX VCO calibration value */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
+ 		   0x1fff,
+ 		   vco_cal_ld);
+ 
+ 	/* VCO calibration reference */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_VCO_CAL_REF0,
+ 		   0x3f,
+ 		   vco_cal_ref);
+ 
+ 	/* TX rate baud/4 (baud 1250Mhz) */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+ 		   0x7,
+ 		   0x2U); /* b010 */
+ 
+ 	/* Rx rate baud/8 (baud 1250Mhz) */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+ 		   0x3U,
+ 		   0x3U); /* b11 */
+ 
+ 	/* Clear low-frequency operating band */
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
+ }
+ 
+ /* Call only with 125mhz ref clk */
+-static void serdes_pma_3125Mhz_prepare(void *base, u32 xpcs,
++static void serdes_pma_3125Mhz_prepare(void __iomem *base,
+ 				       enum serdes_clock_fmhz fmhz)
+ {
+ 	u16 vco_cal_ld, vco_cal_ref;
+@@ -407,185 +403,185 @@ static void serdes_pma_3125Mhz_prepare(void *base, u32 xpcs,
+ 		vco_cal_ref = 27U;
+ 	}
+ 	/* RX VCO calibration value */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_VCO_CAL_LD0,
+ 		   0x1fff,
+ 		   vco_cal_ld);
+ 
+ 	/* VCO calibration reference */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_VCO_CAL_REF0,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_VCO_CAL_REF0,
+ 		   0x3f,
+ 		   vco_cal_ref);
+ 
+ 	/* TX rate baud  */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+ 		   0x7,
+ 		   0x0U);
+ 
+ 	/* Rx rate baud/2 */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+ 		   0x3U,
+ 		   0x1U);
+ 
+ 	/* Set low-frequency operating band */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_CDR_CTRL, VCO_LOW_FREQ_0);
+ }
+ 
+-static void serdes_pma_mplla_start_cal(void *base, u32 xpcs,
++static void serdes_pma_mplla_start_cal(void __iomem *base,
+ 				       enum serdes_clock_fmhz fmhz)
+ {
+ 	if (fmhz == CLK_100MHZ) {
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLA_DIV2,
+ 			   REF_RANGE(0x3U) | REF_CLK_EN);
+ 
+ 		/* Clear multiplier and set it to 25 and enable PPL cal */
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
+ 			   MPLLA_MULTIPLIER_VALUE(0xff) |
+ 			   MPLLA_CAL_DISABLE,
+ 			   MPLLA_MULTIPLIER_VALUE(25U));
+ 
+ 	} else {
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			   REF_RANGE(0x7U),
+ 			   REF_RANGE(0x2U) | REF_CLK_DIV2 |
+ 			   REF_MPLLA_DIV2 | REF_CLK_EN);
+ 
+ 		/* Clear multiplier and set it to 80 and enable PPL cal */
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLA_CTRL0,
+ 			   MPLLA_MULTIPLIER_VALUE(0xff) | MPLLA_CAL_DISABLE,
+ 			   MPLLA_MULTIPLIER_VALUE(80U));
+ 	}
+ 
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL1, 0xffe0U);
++	PCSBCLR(base, VR_MII_GEN5_12G_MPLLA_CTRL1, 0xffe0U);
+ 
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLA_CTRL2,
+ 		   MPLLA_TX_CLK_DIV(0x7U),
+ 		   MPLLA_TX_CLK_DIV(1U) | MPLLA_DIV10_CLK_EN);
+ 
+ 	if (fmhz == CLK_100MHZ)
+-		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3, 357U);
++		PCSW16(base, VR_MII_GEN5_12G_MPLLA_CTRL3, 357U);
+ 	else
+-		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLA_CTRL3, 43U);
++		PCSW16(base, VR_MII_GEN5_12G_MPLLA_CTRL3, 43U);
+ }
+ 
+ /* Configure PLLB and start calibration
+  * Note: Enable this only with 125Mhz ref !!
+  */
+-static void serdes_pma_mpllb_start_cal(void *base, u32 xpcs,
++static void serdes_pma_mpllb_start_cal(void __iomem *base,
+ 				       enum serdes_clock_fmhz fmhz)
+ {
+ 	if (fmhz == CLK_100MHZ) {
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			   REF_RANGE(0x7U) | REF_CLK_DIV2 | REF_MPLLB_DIV2,
+ 			   REF_RANGE(0x3U) | REF_CLK_EN);
+ 
+ 		/* Clear multiplier and set it to 25 and enable PPL cal */
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
+ 			   MPLLB_MULTIPLIER(0xffU) | MPPLB_CAL_DISABLE,
+ 			   MPLLB_MULTIPLIER(0x27U));
+ 
+ 	} else {
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			   REF_RANGE(0x7U),
+ 			   REF_RANGE(0x2U) | REF_MPLLB_DIV2 |
+ 			   REF_CLK_DIV2 | REF_CLK_EN);
+ 
+ 		/* Clear multiplier and set it to 125 and enable PPL cal */
+-		PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
++		PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLB_CTRL0,
+ 			   MPLLB_MULTIPLIER(0xffU) | MPPLB_CAL_DISABLE,
+ 			   MPLLB_MULTIPLIER(125U));
+ 	}
+ 
+ 	/* Clear the fraction divider */
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1, 0xffe0U);
++	PCSBCLR(base, VR_MII_GEN5_12G_MPLLB_CTRL1, 0xffe0U);
+ 
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL2,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_MPLLB_CTRL2,
+ 		   MPLLB_TX_CLK_DIV(0x7U),
+ 		   MPLLB_TX_CLK_DIV(0x5U) | MPLLB_DIV10_CLK_EN);
+ 
+ 	if (fmhz == CLK_100MHZ) {
+ 		/* Set fraction divider */
+-		PCSBSET(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL1, 0x414U << 5U);
++		PCSBSET(base, VR_MII_GEN5_12G_MPLLB_CTRL1, 0x414U << 5U);
+ 
+ 		/* PLL bandwidth */
+-		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL3, 0x66U);
++		PCSW16(base, VR_MII_GEN5_12G_MPLLB_CTRL3, 0x66U);
+ 	} else {
+ 		/* PLL bandwidth */
+-		PCSW16(base, xpcs, VR_MII_GEN5_12G_MPLLB_CTRL3, 68U);
++		PCSW16(base, VR_MII_GEN5_12G_MPLLB_CTRL3, 68U);
+ 	}
+ }
+ 
+-static void serdes_pma_mplla_stop_cal(void *base, u32 xpcs)
++static void serdes_pma_mplla_stop_cal(void __iomem *base)
+ {
+ 	/* Disable PLLB calibration */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLA_CTRL0, MPLLA_CAL_DISABLE);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_MPLLA_CTRL0, MPLLA_CAL_DISABLE);
+ }
+ 
+-static void serdes_pma_mpllb_stop_cal(void *base, u32 xpcs)
++static void serdes_pma_mpllb_stop_cal(void __iomem *base)
+ {
+ 	/* Disable PLLB calibration */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLLB_CTRL0, MPPLB_CAL_DISABLE);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_MPLLB_CTRL0, MPPLB_CAL_DISABLE);
+ }
+ 
+-static void serdes_pma_select_plla_ref(void *base, u32 xpcs)
++static void serdes_pma_select_plla_ref(void __iomem *base)
+ {
+ 	/* Select PLLA */
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
+ 	/* Enable PLL */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
+ }
+ 
+-static void serdes_pma_select_pllb_ref(void *base, u32 xpcs)
++static void serdes_pma_select_pllb_ref(void __iomem *base)
+ {
+ 	/* Select PLLB */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLLB_SEL_0);
+ 	/* Enable PLL */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_MPLL_CMN_CTRL, MPLL_EN_0);
+ }
+ 
+-static int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
++static int serdes_bifurcation_pll_transit(void __iomem *base, bool plla)
+ {
+ 	int ret = 0;
+ 
+ 	/* Signal that clock are not available */
+-	PCSBCLR(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
++	PCSBCLR(base, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
+ 
+ 	if (plla) {
+ 		/* Request PLLA */
+-		serdes_pma_select_plla_ref(base, xpcs);
++		serdes_pma_select_plla_ref(base);
+ 	} else {
+ 		/* Request PLLB */
+-		serdes_pma_select_pllb_ref(base, xpcs);
++		serdes_pma_select_pllb_ref(base);
+ 	}
+ 
+ 	/* Initiate transmitter TX reconfiguration request */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL2, TX_REQ_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_TX_GENCTRL2, TX_REQ_0);
+ 
+ 	/* Wait for transmitter to reconfigure */
+-	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL2,
++	ret = serdes_pcs_wait_bits(base, VR_MII_GEN5_12G_16G_TX_GENCTRL2,
+ 				   TX_REQ_0, 0,
+ 				   100U, 100U);
+ 	if (ret)
+ 		pr_err("TX_REQ_0 failed\n");
+ 
+ 	/* Initiate transmitter RX reconfiguration request */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL2, RX_REQ_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_RX_GENCTRL2, RX_REQ_0);
+ 
+ 	/* Wait for transmitter to reconfigure */
+-	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_GEN5_12G_16G_RX_GENCTRL2,
++	ret = serdes_pcs_wait_bits(base, VR_MII_GEN5_12G_16G_RX_GENCTRL2,
+ 				   RX_REQ_0, 0,
+ 				   100U, 100U);
+ 	if (ret)
+ 		pr_err("RX_REQ_0 failed\n");
+ 
+ 	/* Signal that clock are available */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_TX_GENCTRL1, TX_CLK_RDY_0);
+ 
+ 	/* Flush internal logic */
+-	PCSBSET(base, xpcs, VR_MII_DIG_CTRL1, INIT);
++	PCSBSET(base, VR_MII_DIG_CTRL1, INIT);
+ 
+ 	/* Wait for init */
+-	ret = serdes_pcs_wait_bits(base, xpcs, VR_MII_DIG_CTRL1,
++	ret = serdes_pcs_wait_bits(base, VR_MII_DIG_CTRL1,
+ 				   INIT, 0,
+ 				   100U, 100U);
+ 	if (ret)
+@@ -595,68 +591,68 @@ static int serdes_bifurcation_pll_transit(void *base, u32 xpcs, bool plla)
+ }
+ 
+ /* Transit to PLLB */
+-int serdes_bifurcation_pll_transit_to_3125mhz(void *base, u32 xpcs,
++int serdes_bifurcation_pll_transit_to_3125mhz(void __iomem *base,
+ 					      enum serdes_clock_fmhz fmhz)
+ {
+ 	/* Switch PCS logic to 2.5G */
+-	serdes_pcs_set_2500M_mode(base, xpcs);
++	serdes_pcs_set_2500M_mode(base);
+ 
+ 	/* Switch PMA logic to 3.125Ghz */
+-	serdes_pma_3125Mhz_prepare(base, xpcs, fmhz);
++	serdes_pma_3125Mhz_prepare(base, fmhz);
+ 
+ 	/* Do the transit to PLLB */
+-	return serdes_bifurcation_pll_transit(base, xpcs, false);
++	return serdes_bifurcation_pll_transit(base, false);
+ }
+ 
+ /* Transit to PLLA */
+-int serdes_bifurcation_pll_transit_to_1250mhz(void *base, u32 xpcs,
++int serdes_bifurcation_pll_transit_to_1250mhz(void __iomem *base,
+ 					      enum serdes_clock_fmhz fmhz)
+ {
+ 	/* Switch PCS logic to 1G */
+-	serdes_pcs_set_1000M_mode(base, xpcs);
++	serdes_pcs_set_1000M_mode(base);
+ 
+ 	/* Switch PMA logic to 1.250Ghz */
+-	serdes_pma_1250Mhz_prepare(base, xpcs, fmhz);
++	serdes_pma_1250Mhz_prepare(base, fmhz);
+ 
+ 	/* Do the transit PLLA */
+-	return serdes_bifurcation_pll_transit(base, xpcs, true);
++	return serdes_bifurcation_pll_transit(base, true);
+ }
+ 
+-void serdes_pma_mode5(void *base, u32 xpcs)
++void serdes_pma_mode5(void __iomem *base)
+ {
+-	if (serdes_pcs_wait_for_power_good(base, xpcs))
+-		pr_err("XPCS%d power-up failed\n", xpcs);
++	if (serdes_pcs_wait_for_power_good(base))
++		pr_err("XPCS (%p) power-up failed\n", base);
+ 	/* Configure equlaization */
+-	serdes_pma_configure_tx_eq_post(base, xpcs);
++	serdes_pma_configure_tx_eq_post(base);
+ 	/* Configure transmit eq and termination */
+-	serdes_pma_configure_tx_ctr(base, xpcs);
++	serdes_pma_configure_tx_ctr(base);
+ 	/* Reconfigure PCS to 2.5Gbps */
+-	serdes_pcs_set_2500M_mode(base, xpcs);
++	serdes_pcs_set_2500M_mode(base);
+ 	/* Enable receiver recover */
+-	serdes_pma_high_freq_recovery(base, xpcs);
++	serdes_pma_high_freq_recovery(base);
+ }
+ 
+-void serdes_pcs_mode5(void *base, u32 xpcs)
++void serdes_pcs_mode5(void __iomem *base)
+ {
+ 	/* Enable volatge boost */
+-	PCSBSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0);
++	PCSBSET(base, VR_MII_GEN5_12G_16G_TX_GENCTRL1, VBOOST_EN_0);
+ 
+ 	/* TX rate baud  */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_TX_RATE_CTRL,
+ 		   0x7,
+ 		   0x0U);
+ 
+ 	/* Rx rate baud/2 */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_RX_RATE_CTRL,
+ 		   0x3U,
+ 		   0x1U);
+ 
+ 	/* Set low-frequency operating band */
+-	PCSBCLRSET(base, xpcs, VR_MII_GEN5_12G_16G_CDR_CTRL,
++	PCSBCLRSET(base, VR_MII_GEN5_12G_16G_CDR_CTRL,
+ 		   CDR_SSC_EN_0, VCO_LOW_FREQ_0);
+ 
+ 	/* Reconfigure PHY */
+-	serdes_bifurcation_pll_transit(base, xpcs, false);
++	serdes_bifurcation_pll_transit(base, false);
+ 
+ 	/* Now do cold reset */
+ 	/* Issue PCIe cold reset to restart PHY and
+@@ -667,116 +663,117 @@ void serdes_pcs_mode5(void *base, u32 xpcs)
+ 	BCLR32(UPTR(base) + SS_RST_CTRL, COLD_RST);
+ 
+ 	/* Wait for vendor specific reset */
+-	serdes_pcs_wait_for_vreset(base, xpcs);
++	serdes_pcs_wait_for_vreset(base);
+ }
+ 
+-void serdes_pcs_pma_init_gen2(void *base, enum serdes_clock_fmhz fmhz,
++void serdes_pcs_pma_init_gen2(void __iomem *xpcs0, void __iomem *xpcs1,
++			      enum serdes_clock_fmhz fmhz,
+ 			      u32 init_flags)
+ {
+-	u32 xpcs_phy_ctr = 0;
++	void __iomem *selected_xpcs = xpcs0;
+ 
+ 	if ((init_flags & PHY_CTRL_XPCS_OWNED) != 0) {
+ 		if ((init_flags & PHY_CTRL_XPCS0_OWNED) != 0)
+-			xpcs_phy_ctr = 0;
++			selected_xpcs = xpcs0;
+ 		else if ((init_flags & PHY_CTRL_XPCS1_OWNED) != 0)
+-			xpcs_phy_ctr = 1;
++			selected_xpcs = xpcs1;
+ 	}
+ 
+ 	/* Set bypass flag in case of internal clocks */
+ 	if (((init_flags & PHY_CLK_INT) != 0) &&
+ 	    ((init_flags & (XPCS0_OWNED)) != 0)) {
+-		PCSBSET(base, 0, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
++		PCSBSET(xpcs0, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
+ 	} else if ((init_flags & (XPCS0_OWNED)) != 0) {
+-		PCSBCLRSET(base, 0, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
++		PCSBCLRSET(xpcs0, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
+ 	}
+ 
+ 	if (((init_flags & PHY_CLK_INT) != 0) &&
+ 	    ((init_flags & (XPCS1_OWNED)) != 0)) {
+-		PCSBSET(base, 1, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
++		PCSBSET(xpcs1, VR_MII_DIG_CTRL1, EN_VSMMD1 | BYP_PWRUP);
+ 	} else if ((init_flags & (XPCS1_OWNED)) != 0) {
+-		PCSBCLRSET(base, 1, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
++		PCSBCLRSET(xpcs1, VR_MII_DIG_CTRL1, BYP_PWRUP, EN_VSMMD1);
+ 	}
+ 
+ 	if ((init_flags & XPCS0_2500M) != 0) {
+-		serdes_pma_configure_tx_ctr(base, 0U);
+-		serdes_pcs_set_2500M_mode(base, 0);
+-		serdes_pma_select_pllb_ref(base, 0);
++		serdes_pma_configure_tx_ctr(xpcs0);
++		serdes_pcs_set_2500M_mode(xpcs0);
++		serdes_pma_select_pllb_ref(xpcs0);
+ 	} else if ((init_flags & XPCS0_1000M) != 0) {
+-		serdes_pma_configure_tx_ctr(base, 0U);
+-		serdes_pcs_set_1000M_mode(base, 0);
+-		serdes_pma_select_plla_ref(base, 0);
++		serdes_pma_configure_tx_ctr(xpcs0);
++		serdes_pcs_set_1000M_mode(xpcs0);
++		serdes_pma_select_plla_ref(xpcs0);
+ 	}
+ 
+ 	if ((init_flags & XPCS1_2500M) != 0) {
+-		serdes_pma_configure_tx_ctr(base, 1);
+-		serdes_pcs_set_2500M_mode(base, 1);
+-		serdes_pma_select_pllb_ref(base, 1);
++		serdes_pma_configure_tx_ctr(xpcs1);
++		serdes_pcs_set_2500M_mode(xpcs1);
++		serdes_pma_select_pllb_ref(xpcs1);
+ 	} else if ((init_flags & XPCS1_1000M) != 0) {
+-		serdes_pma_configure_tx_ctr(base, 1);
+-		serdes_pcs_set_1000M_mode(base, 1);
+-		serdes_pma_select_plla_ref(base, 1);
++		serdes_pma_configure_tx_ctr(xpcs1);
++		serdes_pcs_set_1000M_mode(xpcs1);
++		serdes_pma_select_plla_ref(xpcs1);
+ 	}
+ 
+ 	/* Using external clock reference */
+ 	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+ 	    (init_flags & PHY_CLK_INT) == 0)
+-		PCSBSET(base, xpcs_phy_ctr, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBSET(selected_xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			REF_USE_PAD);
+ 	else if ((init_flags & PHY_CTRL_XPCS_OWNED) != 0)
+-		PCSBCLR(base, xpcs_phy_ctr, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
++		PCSBCLR(selected_xpcs, VR_MII_GEN5_12G_16G_REF_CLK_CTRL,
+ 			REF_USE_PAD);
+ 
+ 	/* Start PLLA cal */
+ 	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+ 	    (init_flags & PLLA_CAL_EN) != 0) {
+ 		/* Configure PLLA and start calibration */
+-		serdes_pma_mplla_start_cal(base, xpcs_phy_ctr, fmhz);
++		serdes_pma_mplla_start_cal(selected_xpcs, fmhz);
+ 	}
+ 
+ 	/* Start PLLB cal */
+ 	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+ 	    (init_flags & PLLB_CAL_EN) != 0) {
+-		serdes_pma_mpllb_start_cal(base, xpcs_phy_ctr, fmhz);
++		serdes_pma_mpllb_start_cal(selected_xpcs, fmhz);
+ 	}
+ 
+ 	/* Disable PLLA, if requested */
+ 	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+ 	    (init_flags & PLLA_CAL_DIS) != 0) {
+-		serdes_pma_mplla_stop_cal(base, xpcs_phy_ctr);
++		serdes_pma_mplla_stop_cal(selected_xpcs);
+ 	}
+ 
+ 	/* Disable PLLB, if requested */
+ 	if (((init_flags & PHY_CTRL_XPCS_OWNED) != 0) &&
+ 	    (init_flags & PLLB_CAL_DIS) != 0) {
+-		serdes_pma_mpllb_stop_cal(base, xpcs_phy_ctr);
++		serdes_pma_mpllb_stop_cal(selected_xpcs);
+ 	}
+ 
+ 	if ((init_flags & XPCS0_2500M) != 0)
+-		serdes_pma_3125Mhz_prepare(base, 0, fmhz);
++		serdes_pma_3125Mhz_prepare(xpcs0, fmhz);
+ 	else if ((init_flags & XPCS0_1000M) != 0)
+-		serdes_pma_1250Mhz_prepare(base, 0, fmhz);
++		serdes_pma_1250Mhz_prepare(xpcs0, fmhz);
+ 
+ 	if ((init_flags & XPCS1_2500M) != 0)
+-		serdes_pma_3125Mhz_prepare(base, 1, fmhz);
++		serdes_pma_3125Mhz_prepare(xpcs1, fmhz);
+ 	else if ((init_flags & XPCS1_1000M) != 0)
+-		serdes_pma_1250Mhz_prepare(base, 1, fmhz);
++		serdes_pma_1250Mhz_prepare(xpcs1, fmhz);
+ 
+ 	if ((init_flags & XPCS0_DIS) != 0)
+-		serdes_pma_lane_disable(base, 0);
++		serdes_pma_lane_disable(xpcs0);
+ 
+ 	if ((init_flags & XPCS1_DIS) != 0)
+-		serdes_pma_lane_disable(base, 1);
++		serdes_pma_lane_disable(xpcs1);
+ 
+ 	/* Clear bypass flag in case of internal clocks */
+ 	if (((init_flags & PHY_CLK_INT) != 0U) &&
+ 	    ((init_flags & (XPCS0_OWNED)) != 0U) &&
+ 	    ((init_flags & XPCS0_DIS) == 0U)) {
+-		PCSBCLR(base, 0U, VR_MII_DIG_CTRL1, BYP_PWRUP);
++		PCSBCLR(xpcs0, VR_MII_DIG_CTRL1, BYP_PWRUP);
+ 	}
+ 
+ 	if (((init_flags & PHY_CLK_INT) != 0U) &&
+ 	    ((init_flags & (XPCS1_OWNED)) != 0U) &&
+ 	    ((init_flags & XPCS1_DIS) == 0U)) {
+-		PCSBCLR(base, 1U, VR_MII_DIG_CTRL1, BYP_PWRUP);
++		PCSBCLR(xpcs1, VR_MII_DIG_CTRL1, BYP_PWRUP);
+ 	}
+ }
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+index c72f713cb7..152b01ee55 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+@@ -18,9 +18,6 @@
+ #include <serdes_xpcs_regs.h>
+ #include <sgmii.h>
+ 
+-#define S32G_SERDES_0_BASE			0x40400000U
+-#define S32G_SERDES_1_BASE			0x44100000U
+-#define S32G_SERDES_BASE_LEN			0x100000
+ #define S32G_SERDES_COUNT			2
+ #define S32G_SERDES_XPCS_COUNT			2
+ 
+@@ -49,7 +46,7 @@
+  */
+ 
+ struct s32_xpcs_cfg {
+-	void __iomem *base;
++	void __iomem *xpcs0, *xpcs1;
+ 	enum serdes_xpcs_mode xpcs_mode;
+ 	enum serdes_xpcs_mode_gen2 mode[2];
+ 	enum serdes_mode ss_mode;
+@@ -71,15 +68,20 @@ static struct s32_xpcs_cfg *s32_get_serdes_priv(int platform_serdes_id)
+ 
+ int s32_sgmii_wait_link(int serdes_id, int xpcs)
+ {
++	void __iomem *xpcs_base;
+ 	struct s32_xpcs_cfg *serdes = s32_get_serdes_priv(serdes_id);
+ 	int ret;
+ 
+ 	if (!serdes || xpcs >= S32G_SERDES_XPCS_COUNT)
+ 		return -EINVAL;
+ 
++	if (xpcs == 1)
++		xpcs_base = serdes->xpcs1;
++	else
++		xpcs_base = serdes->xpcs0;
+ 
+ 	debug("Waiting for link (SerDes%d XPCS%i)...\n", serdes_id, xpcs);
+-	ret = serdes_pma_wait_link(VPTR(serdes->base), xpcs, 1U);
++	ret = serdes_pma_wait_link(xpcs_base, 1U);
+ 
+ 	if (ret)
+ 		printf("SerDes%d XPCS%i link timed-out\n", serdes_id, xpcs);
+@@ -136,18 +138,18 @@ static void s32_serdes_issue_reset(struct s32_xpcs_cfg *serdes)
+ {
+ 	switch (serdes->ss_mode) {
+ 	case SERDES_MODE_PCIE_SGMII0:
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
++		serdes_pcs_issue_vreset(serdes->xpcs0);
+ 		break;
+ 	case SERDES_MODE_PCIE_SGMII1:
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
++		serdes_pcs_issue_vreset(serdes->xpcs1);
+ 		break;
+ 	case SERDES_MODE_SGMII_SGMII:
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
++		serdes_pcs_issue_vreset(serdes->xpcs1);
++		serdes_pcs_issue_vreset(serdes->xpcs0);
+ 		break;
+ 	case SERDES_MODE_SGMII_SGMII_ALT:
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 0);
+-		serdes_pcs_issue_vreset(VPTR(serdes->base), 1);
++		serdes_pcs_issue_vreset(serdes->xpcs0);
++		serdes_pcs_issue_vreset(serdes->xpcs1);
+ 		break;
+ 	default:
+ 		break;
+@@ -184,26 +186,33 @@ static void s32_serdes_init_flags(struct s32_xpcs_cfg *serdes,
+ 
+ static void s32_serdes_post_init(struct s32_xpcs_cfg *serdes, u32 xpcs)
+ {
+-	if (serdes_pcs_wait_for_vreset(VPTR(serdes->base), xpcs))
++	void __iomem *xpcs_base = NULL;
++
++	if (xpcs == 1)
++		xpcs_base = serdes->xpcs1;
++	else
++		xpcs_base = serdes->xpcs0;
++
++	if (serdes_pcs_wait_for_vreset(xpcs_base))
+ 		pr_err("XPCS%d pre power-up soft reset failed\n", xpcs);
+ 
+-	if (serdes_pcs_wait_for_power_good(VPTR(serdes->base), xpcs))
++	if (serdes_pcs_wait_for_power_good(xpcs_base))
+ 		pr_err("XPCS%d power-up failed\n", xpcs);
+ 
+-	serdes_pma_issue_rx_reset(VPTR(serdes->base), xpcs);
++	serdes_pma_issue_rx_reset(xpcs_base);
+ 
+ 	/* Disable automatic MII width change */
+-	serdes_pcs_mii_bus_control_disable(VPTR(serdes->base), xpcs);
++	serdes_pcs_mii_bus_control_disable(xpcs_base);
+ 	/* Disable AN */
+-	serdes_pcs_an_disable(VPTR(serdes->base), xpcs);
++	serdes_pcs_an_disable(xpcs_base);
+ 	/* Full duplex */
+-	serdes_pcs_set_fd(VPTR(serdes->base), xpcs);
++	serdes_pcs_set_fd(xpcs_base);
+ 	/* Speed select */
+-	serdes_pcs_speed_select(VPTR(serdes->base), xpcs, 1);
++	serdes_pcs_speed_select(xpcs_base, 1);
+ }
+ 
+-int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
+-		      enum serdes_mode ss_mode,
++int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
++		      int platform_serdes_id, enum serdes_mode ss_mode,
+ 		      enum serdes_xpcs_mode xpcs_mode,
+ 		      enum serdes_clock clktype,
+ 		      enum serdes_clock_fmhz fmhz,
+@@ -219,7 +228,8 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
+ 		return -EINVAL;
+ 	}
+ 
+-	serdes->base = serdes_base;
++	serdes->xpcs0 = xpcs0;
++	serdes->xpcs1 = xpcs1;
+ 	serdes->xpcs_mode = SGMII_INAVALID;
+ 	serdes->clktype = clktype;
+ 	serdes->ss_mode = ss_mode;
+@@ -271,8 +281,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
+ 	if (serdes->mode[0] != SGMII_XPCS_PCIE) {
+ 		/* Bypass power up in case of pcie combo or internal clock*/
+ 		if (serdes->clktype != CLK_INT && shared != true) {
+-			ret = serdes_pcs_wait_for_power_good(VPTR(serdes->base),
+-							     0);
++			ret = serdes_pcs_wait_for_power_good(xpcs0);
+ 			if (!ret)
+ 				pr_info("XPCS0 power-up good success\n");
+ 			else
+@@ -286,8 +295,7 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
+ 	if (serdes->mode[1] != SGMII_XPCS_PCIE) {
+ 		/* Bypass power up in case of pcie combo or internal clock*/
+ 		if (serdes->clktype != CLK_INT && shared != true) {
+-			ret = serdes_pcs_wait_for_power_good(VPTR(serdes->base),
+-							     1);
++			ret = serdes_pcs_wait_for_power_good(xpcs1);
+ 			if (!ret)
+ 				pr_info("XPCS1 power-up good success\n");
+ 			else
+@@ -305,7 +313,8 @@ int s32_eth_xpcs_init(void __iomem *serdes_base, int platform_serdes_id,
+ 	if (serdes->clktype == CLK_INT)
+ 		init_flags |= PHY_CLK_INT;
+ 
+-	serdes_pcs_pma_init_gen2(VPTR(serdes->base), fmhz,  init_flags);
++	serdes_pcs_pma_init_gen2(serdes->xpcs0, serdes->xpcs1, fmhz,
++				 init_flags);
+ 
+ 	/* Issue ss mode dependent reset */
+ 	s32_serdes_issue_reset(serdes);
+@@ -339,7 +348,8 @@ enum xpcs_cmd {
+ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+ 		       int argc, char * const argv[])
+ {
+-	struct s32_xpcs_cfg *serdes;
++	void __iomem *xpcs_base;
++	struct s32_xpcs_cfg *serdes = NULL;
+ 	u8 serdes_id, pcs_id;
+ 	enum xpcs_cmd cmd = S32_XPCS_INVALID;
+ 	u8 cmd_ss = 0;
+@@ -351,8 +361,18 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+ 	pcs_id = simple_strtoul(argv[2], NULL, 10);
+ 	serdes = s32_get_serdes_priv(serdes_id);
+ 
++	if (!serdes) {
++		printf("Invalid SerDes instance: %u\n", serdes_id);
++		return CMD_RET_USAGE;
++	}
++
++	if (pcs_id == 1)
++		xpcs_base = serdes->xpcs1;
++	else
++		xpcs_base = serdes->xpcs0;
++
+ 	if (!serdes || !serdes->is_init ||
+-	    pcs_id >= S32G_SERDES_XPCS_COUNT)
++	    pcs_id >= S32G_SERDES_XPCS_COUNT || !xpcs_base)
+ 		return CMD_RET_USAGE;
+ 
+ 	if (!strcmp(argv[3], "transit")) {
+@@ -393,37 +413,35 @@ static int do_xpcs_cmd(cmd_tbl_t *cmdtp, int flag,
+ 
+ 	switch (cmd) {
+ 	case S32_XPCS_TRANSIT_TO_1000M:
+-		serdes_bifurcation_pll_transit_to_1250mhz(VPTR(serdes->base),
+-							  pcs_id, serdes->fmhz);
++		serdes_bifurcation_pll_transit_to_1250mhz(xpcs_base,
++							  serdes->fmhz);
+ 		if (cmd_ss != 0)
+-			serdes_pcs_speed_select(VPTR(serdes->base),
+-						pcs_id, cmd_ss);
++			serdes_pcs_speed_select(xpcs_base, cmd_ss);
+ 		break;
+ 	case S32_XPCS_TRANSIT_TO_2500M:
+-		serdes_bifurcation_pll_transit_to_3125mhz(VPTR(serdes->base),
+-							  pcs_id, serdes->fmhz);
+-		serdes_pcs_speed_select(VPTR(serdes->base), pcs_id, 1);
++		serdes_bifurcation_pll_transit_to_3125mhz(xpcs_base,
++							  serdes->fmhz);
++		serdes_pcs_speed_select(xpcs_base, 1);
+ 		break;
+ 	case S32_XPCS_AN_AUTO_SW_ENABLE:
+-		serdes_pcs_an_auto_sw_enable(VPTR(serdes->base), pcs_id);
++		serdes_pcs_an_auto_sw_enable(xpcs_base);
+ 		/*fall through*/
+ 	case S32_XPCS_AN_ENABLE:
+-		serdes_pcs_an_set_link_timer(VPTR(serdes->base), pcs_id,
+-					     0x2faf);
+-		serdes_pcs_an_enable(VPTR(serdes->base), pcs_id);
++		serdes_pcs_an_set_link_timer(xpcs_base, 0x2faf);
++		serdes_pcs_an_enable(xpcs_base);
+ 		break;
+ 	case S32_XPCS_AN_DISABLE:
+-		serdes_pcs_an_auto_sw_disable(VPTR(serdes->base), pcs_id);
+-		serdes_pcs_an_disable(VPTR(serdes->base), pcs_id);
++		serdes_pcs_an_auto_sw_disable(xpcs_base);
++		serdes_pcs_an_disable(xpcs_base);
+ 		break;
+ 	case S32_XPCS_LO_ENABLE:
+-		serdes_pma_loopback_enable(VPTR(serdes->base), pcs_id);
++		serdes_pma_loopback_enable(xpcs_base);
+ 		break;
+ 	case S32_XPCS_LO_DISABLE:
+-		serdes_pma_loopback_disable(VPTR(serdes->base), pcs_id);
++		serdes_pma_loopback_disable(xpcs_base);
+ 		break;
+ 	case S32_XPCS_DUMP:
+-		serdes_pcs_dump_reg(VPTR(serdes->base), pcs_id);
++		serdes_pcs_dump_reg(xpcs_base);
+ 	default:
+ 		return CMD_RET_USAGE;
+ 	}
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index 3f1a60aa16..1f6e1e292d 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -24,7 +24,6 @@
+ 
+ #include "serdes_regs.h"
+ #include "serdes_s32gen1_io.h"
+-#include "serdes_xpcs_regs.h"
+ #include "sgmii.h"
+ #include "ss_pcie_regs.h"
+ 
+@@ -36,18 +35,74 @@
+ #define SERDES_CLK_FMHZ(clk_type) \
+ 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
+ 
++#define PCIE_PHY_GEN_CTRL	(0x0)
++#define  REF_USE_PAD_MASK	BIT(17)
++#define  RX_SRIS_MODE_MASK	BIT(9)
++#define PCIE_PHY_MPLLA_CTRL	(0x10)
++#define  MPLL_STATE_MASK	BIT(30)
++#define PCIE_PHY_MPLLB_CTRL	(0x14U)
++#define  MPLLB_SSC_EN_MASK	BIT(1)
++#define PCIE_PHY_EXT_CTRL_SEL	(0x18U)
++#define  EXT_PHY_CTRL_SEL	BIT(0)
++#define PCIE_PHY_EXT_BS_CTRL	(0x1cU)
++#define  EXT_BS_TX_LOWSWING	BIT(6)
++#define  EXT_BS_RX_BIGSWING	BIT(5)
++#define  EXT_BS_RX_LEVEL(x)	(((x) & 0x1fU) << 0)
++#define PCIE_PHY_REF_CLK_CTRL	(0x20U)
++#define  EXT_REF_RANGE(x)	(((x) & 0x7U) << 3)
++#define  REF_CLK_DIV2_EN	BIT(2)
++#define  REF_CLK_MPLLB_DIV2_EN	BIT(1)
++#define PCIE_PHY_EXT_MPLLA_CTRL_1	(0x30U)
++#define  EXT_MPLLA_BANDWIDTH(x)		(((x) & 0xffffU) << 0)
++#define PCIE_PHY_EXT_MPLLB_CTRL_1	(0x40U)
++#define  EXT_MPLLB_DIV_MULTIPLIER(x)	(((x) & 0xffU) << 24)
++#define  EXT_MPLLB_DIV_CLK_EN	BIT(19)
++#define  EXT_MPLLB_DIV8_CLK_EN	BIT(18)
++#define  EXT_MPLLB_DIV10_CLK_EN	BIT(16)
++#define  EXT_MPLLB_BANDWIDTH(x)	(((x) & 0xffffU) << 0)
++#define PCIE_PHY_EXT_MPLLB_CTRL_2	(0x44U)
++#define  EXT_MPLLB_FRACN_CTRL(x)	(((x) & 0x7ffU) << 12)
++#define PCIE_PHY_EXT_MPLLB_CTRL_3	(0x48U)
++#define  EXT_MPLLB_WORD_DIV2_EN		BIT(31)
++#define  EXT_MPLLB_TX_CLK_DIV(x)	(((x) & 0x7U) << 28)
++#define PCIE_PHY_EXT_MISC_CTRL_1	(0xa0U)
++#define  EXT_RX_LOS_THRESHOLD(x)	(((x) & 0x3fU) << 1)
++#define  EXT_RX_VREF_CTRL(x)		(((x) & 0x1fU) << 24)
++#define PCIE_PHY_EXT_MISC_CTRL_2	(0xa4U)
++#define  EXT_TX_VBOOST_LVL(x)		(((x) & 0x7U) << 16)
++#define  EXT_TX_TERM_CTRL(x)		(((x) & 0x7U) << 24)
++#define PCIE_PHY_XPCS1_RX_OVRD_CTRL	(0xd0U)
++#define  XPCS1_RX_VCO_LD_VAL(x)		(((x) & 0x1fffU) << 16)
++#define  XPCS1_RX_REF_LD_VAL(x)		(((x) & 0x3fU) << 8)
++#define SS_RW_REG_0		(0xf0)
++#define  SUBMODE_MASK		(0x7)
++#define  PHY0_CR_PARA_SEL_MASK	BIT(9)
++
++#define PHY_REG_ADDR		(0x0)
++#define  PHY_REG_EN		BIT(31)
++#define PHY_REG_DATA		(0x4)
++
++#define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
++#define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
++
+ struct pcie_ctrl {
+ 	struct reset_ctl *rst;
++	void __iomem *phy_base;
+ };
+ 
+ struct serdes_ctrl {
+ 	struct reset_ctl *rst;
+-	void __iomem *dbi;
++	void __iomem *ss_base;
++};
++
++struct xpcs_ctrl {
++	void __iomem *base0, *base1;
+ };
+ 
+ struct serdes {
+ 	struct pcie_ctrl pcie;
+ 	struct serdes_ctrl ctrl;
++	struct xpcs_ctrl xpcs;
+ 	struct udevice *bus;
+ 	enum serdes_mode ss_mode;
+ 
+@@ -60,7 +115,7 @@ struct serdes {
+ };
+ 
+ static int wait_read32(void __iomem *address, u32 expected,
+-		       u32 mask, int read_attempts)
++		       u32 mask, unsigned long read_attempts)
+ {
+ 	unsigned long maxtime = read_attempts * DELAY_QUANTUM;
+ 	int ret;
+@@ -78,9 +133,9 @@ static int wait_read32(void __iomem *address, u32 expected,
+ 	return 0;
+ }
+ 
+-static int s32_serdes_set_mode(void __iomem *dbi, enum serdes_mode mode)
++static int s32_serdes_set_mode(void __iomem *ss_base, enum serdes_mode mode)
+ {
+-	BSET32(UPTR(dbi) + SS_SS_RW_REG_0, BUILD_MASK_VALUE(SUBSYS_MODE, mode));
++	BSET32(UPTR(ss_base) + SS_RW_REG_0, SUBMODE_MASK & mode);
+ 
+ 	/* small delay for stabilizing the signals */
+ 	udelay(100);
+@@ -138,13 +193,13 @@ static void s32_serdes_phy_reg_write(struct serdes *serdes, u16 addr,
+ {
+ 	u32 temp_data = wdata & wmask;
+ 
+-	W32(UPTR(serdes->ctrl.dbi) + SS_PHY_REG_ADDR,
+-	    BUILD_MASK_VALUE(PHY_REG_ADDR_FIELD, addr) | PHY_REG_EN);
++	writel(PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
++	writel(addr | PHY_REG_EN, UPTR(serdes->pcie.phy_base) + PHY_REG_ADDR);
+ 	udelay(100);
+ 	if (wmask == 0xFFFF)
+-		W32(UPTR(serdes->ctrl.dbi) + SS_PHY_REG_DATA, temp_data);
++		W32(UPTR(serdes->pcie.phy_base) + PHY_REG_DATA, temp_data);
+ 	else
+-		RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_REG_DATA, temp_data, wmask);
++		RMW32(UPTR(serdes->pcie.phy_base) + PHY_REG_DATA, temp_data, wmask);
+ 
+ 	udelay(100);
+ }
+@@ -152,7 +207,7 @@ static void s32_serdes_phy_reg_write(struct serdes *serdes, u16 addr,
+ static void s32_serdes_phy_init(struct serdes *serdes)
+ {
+ 	/* Select the CR parallel interface */
+-	BSET32(UPTR(serdes->ctrl.dbi) + SS_SS_RW_REG_0, PHY0_CR_PARA_SEL);
++	BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, PHY0_CR_PARA_SEL_MASK);
+ 
+ 	/* Address erratum TKT0527889:
+ 	 * PCIe Gen3 Receiver Long Channel Stressed Voltage Test Failing
+@@ -177,49 +232,51 @@ static void s32_serdes_phy_init(struct serdes *serdes)
+ static void s32_serdes_xpcs1_pma_config(struct serdes *serdes)
+ {
+ 	/* Configure TX_VBOOST_LVL and TX_TERM_CTRL */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MISC_CTRL_2,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_2,
+ 	      EXT_TX_VBOOST_LVL(0x3) | EXT_TX_TERM_CTRL(0x4),
+ 	      EXT_TX_VBOOST_LVL(0x7) | EXT_TX_TERM_CTRL(0x7));
+ 	/* Enable phy external control */
+-	BSET32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_CTRL_SEL, EXT_PHY_CTRL_SEL);
++	BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_CTRL_SEL,
++	       EXT_PHY_CTRL_SEL);
+ 	/* Configure ref range, disable PLLB/ref div2 */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_REF_CLK_CTRL,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_REF_CLK_CTRL,
+ 	      EXT_REF_RANGE(0x3),
+ 	      REF_CLK_DIV2_EN | REF_CLK_MPLLB_DIV2_EN | EXT_REF_RANGE(0x7));
+ 	/* Configure multiplier */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MPLLB_CTRL_2,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_2,
+ 	      MPLLB_MULTIPLIER(0x27U) | EXT_MPLLB_FRACN_CTRL(0x414),
+ 	      MPLLB_MULTIPLIER(0xffU) | EXT_MPLLB_FRACN_CTRL(0x7ff) |
+ 	      1 << 24U | 1 << 28U);
+ 
+-	BCLR32(UPTR(serdes->ctrl.dbi) + SS_PHY_MPLLB_CTRL, 1 << 1);
++	BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLB_CTRL,
++	       MPLLB_SSC_EN_MASK);
+ 
+ 	/* Configure tx lane division, disable word clock div2*/
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MPLLB_CTRL_3,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_3,
+ 	      EXT_MPLLB_TX_CLK_DIV(0x5),
+ 	      EXT_MPLLB_WORD_DIV2_EN | EXT_MPLLB_TX_CLK_DIV(0x7));
+ 
+ 	/* Configure configure bandwidth for filtering and div10*/
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MPLLB_CTRL_1,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLB_CTRL_1,
+ 	      EXT_MPLLB_BANDWIDTH(0x5f) | EXT_MPLLB_DIV10_CLK_EN,
+ 	      EXT_MPLLB_BANDWIDTH(0xffff) | EXT_MPLLB_DIV_CLK_EN |
+ 	      EXT_MPLLB_DIV8_CLK_EN | EXT_MPLLB_DIV_MULTIPLIER(0xff));
+ 
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MPLLA_CTRL_1,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MPLLA_CTRL_1,
+ 	      EXT_MPLLA_BANDWIDTH(0xc5), EXT_MPLLA_BANDWIDTH(0xffff));
+ 
+ 	/* Configure VCO */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_XPCS1_RX_OVRD_CTRL,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_XPCS1_RX_OVRD_CTRL,
+ 	      XPCS1_RX_VCO_LD_VAL(0x540U) | XPCS1_RX_REF_LD_VAL(0x2bU),
+ 	      XPCS1_RX_VCO_LD_VAL(0x1fffU) | XPCS1_RX_REF_LD_VAL(0x3fU));
+ 
+ 	/* Boundary scan control */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_BS_CTRL,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_BS_CTRL,
+ 	      EXT_BS_RX_LEVEL(0xb) | EXT_BS_RX_BIGSWING,
+ 	      EXT_BS_RX_LEVEL(0x1f) | EXT_BS_TX_LOWSWING);
+ 
+ 	/* Rx loss threshold */
+-	RMW32(UPTR(serdes->ctrl.dbi) + SS_PHY_EXT_MISC_CTRL_1,
++	RMW32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_EXT_MISC_CTRL_1,
+ 	      EXT_RX_LOS_THRESHOLD(0x3U) | EXT_RX_VREF_CTRL(0x11U),
+ 	      EXT_RX_LOS_THRESHOLD(0x3fU) | EXT_RX_VREF_CTRL(0x1fU));
+ }
+@@ -232,11 +289,11 @@ static void s32_serdes_start_mode5(struct serdes *serdes,
+ 
+ 	printf("SerDes%d: Enabling serdes mode5\n", serdes->id);
+ 	/* Initialize PMA */
+-	serdes_pma_mode5((void *)UPTR(serdes->ctrl.dbi), 1);
++	serdes_pma_mode5(serdes->xpcs.base1);
+ 	/* Initialize PHY */
+ 	s32_serdes_xpcs1_pma_config(serdes);
+ 	/* Initialize PCS */
+-	serdes_pcs_mode5((void *)UPTR(serdes->ctrl.dbi), 1);
++	serdes_pcs_mode5(serdes->xpcs.base1);
+ 	/* mode5 representation */
+ 	xpcs[0] = SGMII_XPCS_PCIE;
+ 	xpcs[1] = SGMII_XPCS_2G5_OP;
+@@ -257,20 +314,20 @@ static bool s32_serdes_init(struct serdes *serdes)
+ 	if (ret)
+ 		return false;
+ 
+-	if (s32_serdes_set_mode(serdes->ctrl.dbi, serdes->ss_mode))
++	if (s32_serdes_set_mode(serdes->ctrl.ss_base, serdes->ss_mode))
+ 		return false;
+ 
+ 	/* Set the clock for the Serdes module */
+ 	if (serdes->clktype == CLK_INT) {
+ 		debug("Set internal clock\n");
+-		BCLR32(UPTR(serdes->ctrl.dbi) + SS_PHY_GEN_CTRL,
+-		       PHY_GEN_CTRL_REF_USE_PAD);
+-		BSET32(UPTR(serdes->ctrl.dbi) + SS_SS_RW_REG_0, 1 << 23);
++		BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
++		       REF_USE_PAD_MASK);
++		BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 1 << 23);
+ 	} else {
+ 		debug("Set external clock\n");
+-		BSET32(UPTR(serdes->ctrl.dbi) + SS_PHY_GEN_CTRL,
+-		       PHY_GEN_CTRL_REF_USE_PAD);
+-		BCLR32(UPTR(serdes->ctrl.dbi) + SS_SS_RW_REG_0, 1 << 23);
++		BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
++		       REF_USE_PAD_MASK);
++		BCLR32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 1 << 23);
+ 	}
+ 
+ 	/* Deassert SerDes reset */
+@@ -280,8 +337,8 @@ static bool s32_serdes_init(struct serdes *serdes)
+ 
+ 	/* Enable PHY's SRIS mode in PCIe mode*/
+ 	if (serdes->phy_mode == SRIS)
+-		BSET32(UPTR(serdes->ctrl.dbi) + SS_PHY_GEN_CTRL,
+-		       PHY_GEN_CTRL_RX_SRIS_MODE_MASK);
++		BSET32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
++		       RX_SRIS_MODE_MASK);
+ 
+ 	if (IS_SERDES_PCIE(serdes->devtype)) {
+ 
+@@ -290,9 +347,9 @@ static bool s32_serdes_init(struct serdes *serdes)
+ 		 * MPLLB is 1 (for Gen3)
+ 		 */
+ 		if (wait_read32((void __iomem *)
+-				(UPTR(serdes->ctrl.dbi) + SS_PHY_MPLLA_CTRL),
+-				MPLL_STATE,
+-				MPLL_STATE,
++				(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_MPLLA_CTRL),
++				MPLL_STATE_MASK,
++				MPLL_STATE_MASK,
+ 				PCIE_MPLL_LOCK_COUNT)) {
+ 			printf("WARNING: Failed to lock PCIe%d MPLLs\n",
+ 				serdes->id);
+@@ -300,22 +357,22 @@ static bool s32_serdes_init(struct serdes *serdes)
+ 		}
+ 
+ 		/* Set PHY register access to CR interface */
+-		BSET32(UPTR(serdes->ctrl.dbi) + SS_SS_RW_REG_0, 0x200);
++		BSET32(UPTR(serdes->ctrl.ss_base) + SS_RW_REG_0, 0x200);
+ 		s32_serdes_phy_init(serdes);
+ 	}
+ 
+ 	return true;
+ }
+ 
+-__weak int s32_eth_xpcs_init(void __iomem *dbi, int id,
+-			     enum serdes_mode ss_mode,
++__weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
++			     int id, enum serdes_mode ss_mode,
+ 			     enum serdes_xpcs_mode xpcs_mode,
+ 			     enum serdes_clock clktype,
+ 			     enum serdes_clock_fmhz fmhz,
+ 			     enum serdes_xpcs_mode_gen2 xpcs[2])
+ {
+ 	/* Configure SereDes XPCS for PFE/GMAC*/
+-	printf("PCIe%d disabled\n", id);
++	printf("SerDes%d: XPCS is disabled\n", id);
+ 	return -ENODEV;
+ }
+ 
+@@ -350,10 +407,10 @@ static int get_serdes_alias_id(struct udevice *dev, int *devnump)
+ 	return ret;
+ }
+ 
+-static int ss_dt_init(struct serdes *serdes)
++static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
+ {
+-	struct resource res;
+-	struct udevice *dev = serdes->bus;
++	struct serdes_ctrl *ctrl = &serdes->ctrl;
++	struct resource res = {};
+ 	int ret = 0;
+ 
+ 	ret = get_serdes_alias_id(dev, &serdes->id);
+@@ -362,32 +419,86 @@ static int ss_dt_init(struct serdes *serdes)
+ 		return ret;
+ 	}
+ 
+-	ret = dev_read_resource_byname(dev, "dbi", &res);
++	ret = ofnode_read_resource_byname(node, "ss_pcie", &res);
+ 	if (ret) {
+-		printf("s32-serdes: resource \"dbi\" not found\n");
+-		return ret;
++		dev_err(dev, "Missing 'ss_pcie' reg region.\n");
++		return -EIO;
+ 	}
+ 
+-	serdes->ctrl.dbi = devm_ioremap(dev, res.start, resource_size(&res));
+-	if (!serdes->ctrl.dbi) {
+-		printf("PCIe%d: Failed to map 'dbi' resource\n", serdes->id);
++	ctrl->ss_base = devm_ioremap(dev, res.start, resource_size(&res));
++	if (!ctrl->ss_base) {
++		dev_err(dev, "Failed to map 'ss_pcie'\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	serdes->pcie.rst = devm_reset_control_get(dev, "pcie");
+-	if (IS_ERR(serdes->pcie.rst)) {
+-		dev_err(dev, "Failed to get 'pcie' reset control\n");
+-		return PTR_ERR(serdes->pcie.rst);
+-	}
+-
+ 	serdes->ctrl.rst = devm_reset_control_get(dev, "serdes");
+ 	if (IS_ERR(serdes->ctrl.rst)) {
+ 		dev_err(dev, "Failed to get 'serdes' reset control\n");
+ 		return PTR_ERR(serdes->ctrl.rst);
+ 	}
+ 
+-	debug("%s: dbi: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
+-	      serdes->ctrl.dbi);
++	debug("%s: ss_base: 0x%lx (0x%p)\n", __func__, (uintptr_t)res.start,
++	      serdes->ctrl.ss_base);
++
++	return 0;
++}
++
++static int pcie_dt_init(struct udevice *dev, struct serdes *serdes)
++{
++	struct pcie_ctrl *pcie = &serdes->pcie;
++	struct resource res = {};
++	int ret;
++
++	ret = dev_read_resource_byname(dev, "pcie_phy", &res);
++	if (ret) {
++		dev_err(dev, "Missing 'pcie_phy' reg region.\n");
++		return ret;
++	}
++
++	pcie->phy_base = devm_ioremap(dev, res.start, resource_size(&res));
++	if (!pcie->phy_base) {
++		dev_err(dev, "Failed to map 'ss_pcie'\n");
++		return -ENOMEM;
++	}
++
++	pcie->rst = devm_reset_control_get(dev, "pcie");
++	if (IS_ERR(pcie->rst)) {
++		dev_err(dev, "Failed to get 'pcie' reset control\n");
++		return PTR_ERR(pcie->rst);
++	}
++
++	return 0;
++}
++
++static int xpcs_dt_init(struct udevice *dev, struct serdes *serdes)
++{
++	struct xpcs_ctrl *xpcs = &serdes->xpcs;
++	struct resource res = {};
++	int ret;
++
++	ret = dev_read_resource_byname(dev, "xpcs0", &res);
++	if (ret) {
++		dev_err(dev, "Missing 'xpcs0' reg region.\n");
++		return -EIO;
++	}
++
++	xpcs->base0 = devm_ioremap(dev, res.start, resource_size(&res));
++	if (!xpcs->base0) {
++		dev_err(dev, "Failed to map 'xpcs0'\n");
++		return -ENOMEM;
++	}
++
++	ret = dev_read_resource_byname(dev, "xpcs1", &res);
++	if (ret) {
++		dev_err(dev, "Missing 'xpcs1' reg region.\n");
++		return -EIO;
++	}
++
++	xpcs->base1 = devm_ioremap(dev, res.start, resource_size(&res));
++	if (!xpcs->base1) {
++		dev_err(dev, "Failed to map 'xpcs1'\n");
++		return -ENOMEM;
++	}
+ 
+ 	return 0;
+ }
+@@ -425,7 +536,15 @@ static int s32_serdes_probe(struct udevice *dev)
+ 
+ 	serdes->bus = dev;
+ 
+-	ret = ss_dt_init(serdes);
++	ret = ss_dt_init(dev, serdes);
++	if (ret)
++		return ret;
++
++	ret = pcie_dt_init(dev, serdes);
++	if (ret)
++		return ret;
++
++	ret = xpcs_dt_init(dev, serdes);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -464,7 +583,8 @@ static int s32_serdes_probe(struct udevice *dev)
+ 		/* Check, if mode5 demo is requested */
+ 		s32_serdes_start_mode5(serdes, xpcs);
+ 
+-		ret = s32_eth_xpcs_init(serdes->ctrl.dbi, serdes->id,
++		ret = s32_eth_xpcs_init(serdes->xpcs.base0, serdes->xpcs.base1,
++					serdes->id,
+ 					serdes->ss_mode,
+ 					serdes->xpcs_mode,
+ 					serdes->clktype,
+-- 
+2.17.1
+

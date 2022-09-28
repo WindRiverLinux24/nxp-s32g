@@ -1,0 +1,108 @@
+From d3d798e093daf8fc484a6716f06b463f0729e902 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 15 Jul 2022 09:16:26 +0300
+Subject: [PATCH 033/102] arm: s32cc: Make SerDes mode5 validations part of the
+ platform code
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c | 31 ++++++++++++++++++++++
+ drivers/pci/serdes_s32gen1.c               | 14 ++--------
+ 2 files changed, 33 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index cc55715b6a..d0653ada75 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -15,6 +15,8 @@
+ #define SERDES_EP_MODE_STR "EndPoint"
+ #define SERDES_SGMII_MODE_STR "SGMII"
+ #define SERDES_SGMII_MODE_NONE_STR "None"
++#define MODE5_TOKEN "mode5"
++
+ #define SERDES_NAME_SIZE 32
+ 
+ bool is_pcie_enabled_in_hwconfig(int id)
+@@ -220,13 +222,32 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
+ 	return SERDES_MODE_INVAL;
+ }
+ 
++bool s32_serdes_has_mode5_enabled(int id)
++{
++	size_t demo_len = 0;
++	char *demo;
++
++	demo = s32_serdes_get_hwconfig_subarg(id, "demo", &demo_len);
++
++	if (!demo || !demo_len)
++		return false;
++
++	if (strncmp(demo, MODE5_TOKEN, sizeof(MODE5_TOKEN) - 1))
++		return false;
++
++	return true;
++}
++
+ bool s32_serdes_is_cfg_valid(int id)
+ {
+ 	enum serdes_dev_type devtype;
+ 	enum serdes_xpcs_mode xpcs_mode;
+ 	enum serdes_clock_fmhz freq;
+ 	enum serdes_mode mode;
++	enum serdes_clock clktype;
++	bool mode5;
+ 
++	clktype = s32_serdes_get_clock_from_hwconfig(id);
+ 	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
+ 	devtype = s32_serdes_get_mode_from_hwconfig(id);
+ 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
+@@ -281,5 +302,15 @@ bool s32_serdes_is_cfg_valid(int id)
+ 		return false;
+ 	}
+ 
++	mode5 = s32_serdes_has_mode5_enabled(id);
++	if (mode5) {
++		if (!(clktype == CLK_EXT && freq == CLK_100MHZ &&
++		      xpcs_mode == SGMII_XPCS1)) {
++			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
++			       id);
++			return false;
++		}
++	}
++
+ 	return true;
+ }
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index 48f4eff31b..aaa40a273a 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -198,20 +198,10 @@ static void s32_serdes_xpcs1_pma_config(struct s32_serdes *pcie)
+ static void s32_serdes_start_mode5(struct s32_serdes *pcie,
+ 				   enum serdes_xpcs_mode_gen2 xpcs[2])
+ {
+-	char pcie_name[10];
+-
+-	sprintf(pcie_name, "pcie%d", pcie->id);
+-	if (!hwconfig_subarg_cmp(pcie_name, "demo", "mode5"))
+-		return;
+-
+-	if (!(hwconfig_subarg_cmp(pcie_name, "clock", "ext") &&
+-	      hwconfig_subarg_cmp(pcie_name, "fmhz", "100") &&
+-	      hwconfig_subarg_cmp(pcie_name, "xpcs_mode", "1"))) {
+-		pr_err("serdes: invalid mode5 demo configuration\n");
++	if (!s32_serdes_has_mode5_enabled(pcie->id))
+ 		return;
+-	}
+ 
+-	printf("Enabling serdes mode5\n");
++	printf("SerDes%d: Enabling serdes mode5\n", pcie->id);
+ 	/* Initialize PMA */
+ 	serdes_pma_mode5((void *)UPTR(pcie->dbi), 1);
+ 	/* Initialize PHY */
+-- 
+2.17.1
+

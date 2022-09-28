@@ -1,0 +1,165 @@
+From 7ba64c15ca6fef1063ac876009bba5e3f9fd9847 Mon Sep 17 00:00:00 2001
+From: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Date: Thu, 11 Aug 2022 11:19:22 +0300
+Subject: [PATCH 095/102] s32cc:pcie: Limit PCIe width and speed for combo
+ modes by device tree fixups
+
+PCIe width and speed for combo modes (including mode5) is
+done by ammending the device tree via hwconfig fixups.
+
+Issue: ALB-9065
+
+Upstream-Status: Pending 
+
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../mach-s32/include/s32-cc/serdes_hwconfig.h | 18 +++++++++
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c    | 38 +++++++++++++++++++
+ drivers/pci/pcie_s32gen1.c                    |  8 ----
+ drivers/pci/pcie_s32gen1.h                    | 18 ---------
+ 4 files changed, 56 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+index eb14f0c0e9..05e6fa8f35 100644
+--- a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
++++ b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+@@ -103,6 +103,24 @@ enum serdes_mode {
+ 	SERDES_MODE_MAX = SERDES_MODE_SGMII_SGMII_ALT
+ };
+ 
++/* Supported link speeds for PCIe on S32CC
++ * Maximum supported value is in sync with field
++ * PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR of register LINK_CAPABILITIES2_REG
++ */
++enum pcie_link_speed {
++	GEN1 = 0x1,
++	GEN2 = 0x2,
++	GEN3 = 0x3,
++	GEN_MAX = GEN3
++};
++
++/* Supported link widths for PCIe on S32CC */
++enum pcie_link_width {
++	X1 = 0x1,
++	X2 = 0x2,
++	X_MAX = X2
++};
++
+ enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
+ bool s32_serdes_is_external_clk_in_hwconfig(int i);
+ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index ce35075c29..c139aec5d0 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -555,6 +555,40 @@ static int skip_dts_nodes_config(struct dts_node *root, int id, bool *skip)
+ 	return 0;
+ }
+ 
++static int set_pcie_width_and_speed(struct dts_node *root, int id)
++{
++	int ret;
++	struct dts_node node;
++	u32 linkwidth = X_MAX, linkspeed = GEN_MAX;
++
++	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
++	if (ret) {
++		pr_err("Failed to get 'pcie%u' alias\n", id);
++		return ret;
++	}
++
++	if (s32_serdes_is_combo_mode_enabled_in_hwconfig(id)) {
++		linkwidth = X1;
++
++		if (s32_serdes_is_mode5_enabled_in_hwconfig(id))
++			linkspeed = GEN2;
++	}
++
++	if (linkwidth < X_MAX) {
++		ret = node_set_prop_u32(&node, "num-lanes", linkwidth);
++		if (ret)
++			pr_err("Failed to set 'num-lanes'\n");
++	}
++
++	if (linkspeed < GEN_MAX) {
++		ret = node_set_prop_u32(&node, "max-link-speed", linkspeed);
++		if (ret)
++			pr_err("Failed to set 'max-link-speed'\n");
++	}
++
++	return ret;
++}
++
+ static int prepare_pcie_node(struct dts_node *root, int id)
+ {
+ 	int ret;
+@@ -589,6 +623,10 @@ static int prepare_pcie_node(struct dts_node *root, int id)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = set_pcie_width_and_speed(&node, id);
++	if (ret)
++		return ret;
++
+ 	ret = node_by_alias(root, &node, PCIE_ALIAS_FMT, id);
+ 	if (ret) {
+ 		pr_err("Failed to get 'pcie%u' alias\n", id);
+diff --git a/drivers/pci/pcie_s32gen1.c b/drivers/pci/pcie_s32gen1.c
+index 269ae9eec3..6e70abc447 100644
+--- a/drivers/pci/pcie_s32gen1.c
++++ b/drivers/pci/pcie_s32gen1.c
+@@ -24,7 +24,6 @@
+ #include <s32-cc/nvmem.h>
+ #include <s32-cc/pcie.h>
+ #include <s32-cc/serdes_hwconfig.h>
+-#include <s32-cc/serdes_hwconfig.h>
+ #include <dt-bindings/nvmem/s32cc-siul2-nvmem.h>
+ #include <dt-bindings/phy/phy.h>
+ 
+@@ -1134,13 +1133,6 @@ static int init_controller(struct s32_pcie *pcie)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (s32_serdes_is_combo_mode_enabled_in_hwconfig(pcie->id)) {
+-		pcie->linkwidth = X1;
+-
+-		if (s32_serdes_is_mode5_enabled_in_hwconfig(pcie->id))
+-			pcie->linkspeed = GEN2;
+-	}
+-
+ 	if (!s32_pcie_init(pcie->dbi, pcie->id, !pcie->ep_mode,
+ 			   pcie->linkwidth, pcie->linkspeed,
+ 			   pcie->phy_mode))
+diff --git a/drivers/pci/pcie_s32gen1.h b/drivers/pci/pcie_s32gen1.h
+index de58f982ca..3c34662679 100644
+--- a/drivers/pci/pcie_s32gen1.h
++++ b/drivers/pci/pcie_s32gen1.h
+@@ -243,24 +243,6 @@ do { \
+ #define CLKEN_MASK	0x1
+ #define CLKEN_LSB	23
+ 
+-/* Supported link speeds for PCIe on S32Gen1
+- * Maximum supported value is in sync with field
+- * PCIE_CAP_SUPPORT_LINK_SPEED_VECTOR of register LINK_CAPABILITIES2_REG
+- */
+-enum pcie_link_speed {
+-	GEN1 = 0x1,
+-	GEN2 = 0x2,
+-	GEN3 = 0x3,
+-	GEN_MAX = GEN3
+-};
+-
+-/* Supported link widths for PCIe on S32Gen1 */
+-enum pcie_link_width {
+-	X1 = 0x1,
+-	X2 = 0x2,
+-	X_MAX = X2
+-};
+-
+ struct s32_pcie {
+ 	struct list_head list;
+ 	struct phy phy0, phy1;
+-- 
+2.17.1
+

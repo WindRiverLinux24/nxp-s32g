@@ -1,0 +1,152 @@
+From ca97b774170840d02b688cab2ecae45d36d9b424 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 15 Jul 2022 14:51:22 +0300
+Subject: [PATCH 036/102] pci: s32cc: Replace wait_read32 with
+ readl_poll_timeout
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pci/pcie_s32gen1.c   | 19 +++++++++++++------
+ drivers/pci/pcie_s32gen1.h   |  2 --
+ drivers/pci/serdes_s32gen1.c | 27 ++++++++++++++-------------
+ drivers/pci/serdes_s32gen1.h | 15 ---------------
+ 4 files changed, 27 insertions(+), 36 deletions(-)
+ delete mode 100644 drivers/pci/serdes_s32gen1.h
+
+diff --git a/drivers/pci/pcie_s32gen1.c b/drivers/pci/pcie_s32gen1.c
+index 5f4c1e9d44..e4deac46ee 100644
+--- a/drivers/pci/pcie_s32gen1.c
++++ b/drivers/pci/pcie_s32gen1.c
+@@ -17,7 +17,9 @@
+ #include <dm/device-internal.h>
+ #include <dm/uclass.h>
+ #include <linux/io.h>
++#include <linux/iopoll.h>
+ #include <linux/sizes.h>
++#include <linux/time.h>
+ #include <s32-cc/nvmem.h>
+ #include <s32-cc/pcie.h>
+ #include <s32-cc/serdes_hwconfig.h>
+@@ -54,8 +56,7 @@
+ #define PCI_UPPER_ADDR_SHIFT 32
+ 
+ #define PCI_DEVICE_ID_S32GEN1	0x4002
+-
+-#define PCIE_LINK_UP_COUNT 100
++#define LINK_UP_TIMEOUT		(50 * USEC_PER_MSEC)
+ 
+ LIST_HEAD(s32_pcie_list);
+ 
+@@ -875,11 +876,17 @@ static int s32_pcie_get_dev_id_variant(struct udevice *dev)
+ 
+ static bool s32_pcie_wait_link_up(void __iomem *dbi)
+ {
+-	int count = PCIE_LINK_UP_COUNT;
++	uintptr_t addr = UPTR(dbi) + SS_PE0_LINK_DBG_2;
++	int ret;
++	u32 val;
+ 
+-	return (wait_read32((void __iomem *)(UPTR(dbi) + SS_PE0_LINK_DBG_2),
+-			    SERDES_LINKUP_EXPECT, SERDES_LINKUP_MASK,
+-			    count) == 0);
++	ret = readl_poll_timeout(addr, val,
++				 (val & SERDES_LINKUP_MASK) == SERDES_LINKUP_EXPECT,
++				 LINK_UP_TIMEOUT);
++	if (ret)
++		return false;
++
++	return true;
+ }
+ 
+ static int s32_pcie_probe_rc(struct s32_pcie *pcie)
+diff --git a/drivers/pci/pcie_s32gen1.h b/drivers/pci/pcie_s32gen1.h
+index e6fc732b2a..916df345df 100644
+--- a/drivers/pci/pcie_s32gen1.h
++++ b/drivers/pci/pcie_s32gen1.h
+@@ -11,8 +11,6 @@
+ #include <asm/io.h>
+ #include <linux/ioport.h>
+ 
+-#include "serdes_s32gen1.h"
+-
+ #define SERDES_LINKUP_MASK	(SMLH_LINK_UP | RDLH_LINK_UP | \
+ 		SMLH_LTSSM_STATE)
+ #define SERDES_LINKUP_EXPECT	(SMLH_LINK_UP | RDLH_LINK_UP | \
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index a6da8b3c3a..de1df5ee17 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -18,11 +18,11 @@
+ #include <dm/device_compat.h>
+ #include <dm/of_access.h>
+ #include <linux/io.h>
++#include <linux/iopoll.h>
+ #include <linux/ioport.h>
+ #include <linux/sizes.h>
+ 
+ #include "serdes_regs.h"
+-#include "serdes_s32gen1.h"
+ #include "serdes_s32gen1_io.h"
+ #include "serdes_xpcs_regs.h"
+ #include "sgmii.h"
+@@ -50,19 +50,20 @@ struct serdes {
+ 	enum serdes_phy_mode phy_mode;
+ };
+ 
+-int wait_read32(void __iomem *address, u32 expected,
+-		u32 mask, int read_attempts)
++static int wait_read32(void __iomem *address, u32 expected,
++		       u32 mask, int read_attempts)
+ {
+-	__maybe_unused u32 tmp;
+-
+-	while ((tmp = (s32_dbi_readl(UPTR(address)) & (mask))) != (expected)) {
+-		udelay(DELAY_QUANTUM); read_attempts--;
+-		if (read_attempts < 0) {
+-			debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
+-				 tmp, UPTR(address));
+-			debug_wr(" expected 0x%x\n", expected);
+-			return -ETIMEDOUT;
+-		}
++	unsigned long maxtime = read_attempts * DELAY_QUANTUM;
++	int ret;
++	u32 val;
++
++	ret = readl_poll_timeout(UPTR(address), val, (val & mask) != expected,
++				 maxtime);
++	if (ret) {
++		debug_wr("WARNING: timeout read 0x%x from 0x%lx,",
++			 val, UPTR(address));
++		debug_wr(" expected 0x%x\n", expected);
++		return -ETIMEDOUT;
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/pci/serdes_s32gen1.h b/drivers/pci/serdes_s32gen1.h
+deleted file mode 100644
+index 33eafb7b98..0000000000
+--- a/drivers/pci/serdes_s32gen1.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0+ */
+-/*
+- * Copyright 2019-2022 NXP
+- * S32Gen1 SerDes driver
+- */
+-
+-#ifndef SERDES_S32GEN1_H
+-#define SERDES_S32GEN1_H
+-
+-#include <compiler.h>
+-
+-int wait_read32(void __iomem *address, u32 expected,
+-		u32 mask, int read_attempts);
+-
+-#endif /* SERDES_S32GEN1_H */
+-- 
+2.17.1
+

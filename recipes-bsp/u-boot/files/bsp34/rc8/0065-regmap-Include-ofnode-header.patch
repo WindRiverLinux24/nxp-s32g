@@ -1,0 +1,32 @@
+From d4565351143046191df7c10b79025a0e682459a4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 3 Aug 2022 08:38:24 +0300
+Subject: [PATCH 065/102] regmap: Include ofnode header
+
+This is needed because dm/ofnode.h is a dependency of regmap.h
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/regmap.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/regmap.h b/include/regmap.h
+index 9ada1af5ef..d4bc8f03e0 100644
+--- a/include/regmap.h
++++ b/include/regmap.h
+@@ -7,6 +7,8 @@
+ #ifndef __REGMAP_H
+ #define __REGMAP_H
+ 
++#include <dm/ofnode.h>
++
+ /**
+  * DOC: Overview
+  *
+-- 
+2.17.1
+

@@ -1,0 +1,69 @@
+From 3e6c6e1c2453b391acebdcff219c645151db4fc1 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 4 Aug 2022 11:15:09 +0300
+Subject: [PATCH 069/102] s32cc: Add fixup for SerDes demo mode5
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c | 11 ++++++++++-
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c |  8 +++++++-
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index f7df391dc9..d7c79cdde8 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -722,6 +722,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
+ {
+ 	int ret;
+ 	enum serdes_mode mode;
++	u32 mode_num;
+ 	struct dts_node node;
+ 
+ 	mode = s32_serdes_get_op_mode_from_hwconfig(id);
+@@ -736,7 +737,15 @@ static int set_serdes_mode(struct dts_node *root, int id)
+ 		return ret;
+ 	}
+ 
+-	ret = node_set_prop_u32(&node, "fsl,sys-mode", mode);
++	mode_num = (u32)mode;
++	if (s32_serdes_has_mode5_enabled(id)) {
++		if (root->fdt)
++			mode_num = 2;
++		else
++			mode_num = 5;
++	}
++
++	ret = node_set_prop_u32(&node, "fsl,sys-mode", mode_num);
+ 	if (ret)
+ 		pr_err("Failed to set 'fsl,sys-mode'\n");
+ 
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index dc080722b4..a91ad70fba 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -368,10 +368,16 @@ int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
+ 	switch (xpcs_mode) {
+ 	/* XPCS is on lane1 when using ss mode = 1 or 2 */
+ 	case SGMII_XPCS0:
+-	case SGMII_XPCS1:
+ 		if (lane)
+ 			return SPEED_1000;
+ 		break;
++	case SGMII_XPCS1:
++		if (lane) {
++			if (s32_serdes_has_mode5_enabled(serdes_id))
++				return SPEED_2500;
++			return SPEED_1000;
++		}
++		break;
+ 	case SGMII_XPCS0_XPCS1:
+ 		if (!lane || lane == 1)
+ 			return SPEED_1000;
+-- 
+2.17.1
+

@@ -1,0 +1,50 @@
+From 920b7380e31bf61924cbff5633fea255e742857d Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Wed, 20 Jul 2022 14:51:27 +0300
+Subject: [PATCH 011/102] s32cc: mp: get cpu by index
+
+Issue: ALB-9011
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/mp.c | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/mp.c b/arch/arm/mach-s32/s32-cc/mp.c
+index fde2c11979..9e84be940d 100644
+--- a/arch/arm/mach-s32/s32-cc/mp.c
++++ b/arch/arm/mach-s32/s32-cc/mp.c
+@@ -21,25 +21,12 @@ struct cpu_desc {
+ static struct cpu_desc *cpus;
+ static u32 n_cpus;
+ 
+-static struct cpu_desc *get_cpu(unsigned int cpu_id)
++static struct cpu_desc *get_cpu(const unsigned int cpu_id)
+ {
+-	/* S32CC SoCs have 2 clusters */
+-	u32 cluster_cores = n_cpus / 2;
+-	u32 i, cluster;
+-
+ 	if (cpu_id >= n_cpus)
+ 		return NULL;
+ 
+-	cluster = cpu_id / cluster_cores;
+-	cpu_id %= cluster_cores;
+-	cpu_id += (cluster << CLUSTER_SHIFT);
+-
+-	for (i = 0u; i < n_cpus; i++) {
+-		if (cpus[i].psci_id == cpu_id)
+-			return &cpus[i];
+-	}
+-
+-	return NULL;
++	return &cpus[cpu_id];
+ }
+ 
+ static int add_cpu(u32 psci_id)
+-- 
+2.17.1
+

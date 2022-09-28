@@ -1,0 +1,114 @@
+From fa03fb052e7eaac9c2f72606d8c09ebffdf87499 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Beh=C3=BAn?= <marek.behun@nic.cz>
+Date: Wed, 26 May 2021 14:08:17 +0200
+Subject: [PATCH 02/33] dm: core: add non-translating version of
+ ofnode_get_addr_size_index()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add functions ofnode_get_addr_size_index_notrans(), which is a
+non-translating version of ofnode_get_addr_size_index().
+
+Some addresses are not meant to be translated, for example those of MTD
+fixed-partitions.
+
+Upstream-Status: Pending 
+
+Signed-off-by: Marek Behún <marek.behun@nic.cz>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+Reviewed-by: Miquel Raynal <miquel.raynal@bootlin.com>
+Tested-by: Patrice Chotard <patrice.chotard@foss.st.com>
+Reviewed-by: Jagan Teki <jagan@amarulasolutions.com>
+
+This is a backport of U-Boot upstream commit id: '31a7b719d07' with
+some minor changes in order to apply to version 'v2020.04' of U-Boot.
+
+Issue: ALB-9014
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/core/ofnode.c | 19 ++++++++++++++++---
+ include/dm/ofnode.h   | 17 +++++++++++++++++
+ 2 files changed, 33 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/core/ofnode.c b/drivers/core/ofnode.c
+index 7f35d2bbd7..bfbd66268d 100644
+--- a/drivers/core/ofnode.c
++++ b/drivers/core/ofnode.c
+@@ -306,7 +306,8 @@ ofnode ofnode_get_by_phandle(uint phandle)
+ 	return node;
+ }
+ 
+-fdt_addr_t ofnode_get_addr_size_index(ofnode node, int index, fdt_size_t *size)
++static fdt_addr_t __ofnode_get_addr_size_index(ofnode node, int index,
++					       fdt_size_t *size, bool translate)
+ {
+ 	int na, ns;
+ 
+@@ -324,7 +325,7 @@ fdt_addr_t ofnode_get_addr_size_index(ofnode node, int index, fdt_size_t *size)
+ 
+ 		ns = of_n_size_cells(ofnode_to_np(node));
+ 
+-		if (IS_ENABLED(CONFIG_OF_TRANSLATE) && ns > 0) {
++		if (translate && IS_ENABLED(CONFIG_OF_TRANSLATE) && ns > 0) {
+ 			return of_translate_address(ofnode_to_np(node), prop_val);
+ 		} else {
+ 			na = of_n_addr_cells(ofnode_to_np(node));
+@@ -335,12 +336,24 @@ fdt_addr_t ofnode_get_addr_size_index(ofnode node, int index, fdt_size_t *size)
+ 		ns = ofnode_read_simple_size_cells(ofnode_get_parent(node));
+ 		return fdtdec_get_addr_size_fixed(gd->fdt_blob,
+ 						  ofnode_to_offset(node), "reg",
+-						  index, na, ns, size, true);
++						  index, na, ns, size,
++						  translate);
+ 	}
+ 
+ 	return FDT_ADDR_T_NONE;
+ }
+ 
++fdt_addr_t ofnode_get_addr_size_index(ofnode node, int index, fdt_size_t *size)
++{
++	return __ofnode_get_addr_size_index(node, index, size, true);
++}
++
++fdt_addr_t ofnode_get_addr_size_index_notrans(ofnode node, int index,
++					      fdt_size_t *size)
++{
++	return __ofnode_get_addr_size_index(node, index, size, false);
++}
++
+ fdt_addr_t ofnode_get_addr_index(ofnode node, int index)
+ {
+ 	fdt_size_t size;
+diff --git a/include/dm/ofnode.h b/include/dm/ofnode.h
+index 7962386c64..e937090c74 100644
+--- a/include/dm/ofnode.h
++++ b/include/dm/ofnode.h
+@@ -406,6 +406,23 @@ int ofnode_read_size(ofnode node, const char *propname);
+ phys_addr_t ofnode_get_addr_size_index(ofnode node, int index,
+ 				       fdt_size_t *size);
+ 
++/**
++ * ofnode_get_addr_size_index_notrans() - get an address/size from a node
++ *					  based on index, without address
++ *					  translation
++ *
++ * This reads the register address/size from a node based on index.
++ * The resulting address is not translated. Useful for example for on-disk
++ * addresses.
++ *
++ * @node: node to read from
++ * @index: Index of address to read (0 for first)
++ * @size: Pointer to size of the address
++ * @return address, or FDT_ADDR_T_NONE if not present or invalid
++ */
++phys_addr_t ofnode_get_addr_size_index_notrans(ofnode node, int index,
++					       fdt_size_t *size);
++
+ /**
+  * ofnode_get_addr_index() - get an address from a node
+  *
+-- 
+2.17.1
+

@@ -1,0 +1,87 @@
+From 8b526d707c7444150d2b5ddcfbc208ef160039b3 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 28 Jun 2022 10:45:47 +0300
+Subject: [PATCH 13/33] net: introduce helpers to get PHY ofnode from MAC
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add helpers ofnode_get_phy_node() and dev_get_phy_node() and use it in
+net/mdio-uclass.c function dm_eth_connect_phy_handle(). Also add
+corresponding UT test.
+
+This is useful because other part's of U-Boot may want to get PHY ofnode
+without connecting a PHY.
+
+This is a partial backport of:
+commit f3dd213e151e ("net: introduce helpers to get PHY ofnode from
+		     MAC")
+
+Issue: ALB-9010
+Upstream-Status: Pending 
+
+Signed-off-by: Marek Behún <marek.behun@nic.cz>
+Reviewed-by: Ramon Fried <rfried.dev@gmail.com>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/core/ofnode.c | 21 +++++++++++++++++++++
+ include/dm/ofnode.h   | 14 ++++++++++++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/drivers/core/ofnode.c b/drivers/core/ofnode.c
+index 6641f5c5a4..aa22744e99 100644
+--- a/drivers/core/ofnode.c
++++ b/drivers/core/ofnode.c
+@@ -987,3 +987,24 @@ int ofnode_set_enabled(ofnode node, bool value)
+ 	else
+ 		return ofnode_write_string(node, "status", "disabled");
+ }
++
++ofnode ofnode_get_phy_node(ofnode node)
++{
++	/* DT node properties that reference a PHY node */
++	static const char * const phy_handle_str[] = {
++		"phy-handle", "phy", "phy-device",
++	};
++	struct ofnode_phandle_args args = {
++		.node = ofnode_null()
++	};
++	int i;
++
++	assert(ofnode_valid(node));
++
++	for (i = 0; i < ARRAY_SIZE(phy_handle_str); i++)
++		if (!ofnode_parse_phandle_with_args(node, phy_handle_str[i],
++						    NULL, 0, 0, &args))
++			break;
++
++	return args.node;
++}
+diff --git a/include/dm/ofnode.h b/include/dm/ofnode.h
+index 7a18699fca..0f9822dfd9 100644
+--- a/include/dm/ofnode.h
++++ b/include/dm/ofnode.h
+@@ -931,4 +931,18 @@ int ofnode_write_string(ofnode node, const char *propname, const char *value);
+  */
+ int ofnode_set_enabled(ofnode node, bool value);
+ 
++/**
++ * ofnode_get_phy_node() - Get PHY node for a MAC (if not fixed-link)
++ *
++ * This function parses PHY handle from the Ethernet controller's ofnode
++ * (trying all possible PHY handle property names), and returns the PHY ofnode.
++ *
++ * Before this is used, ofnode_phy_is_fixed_link() should be checked first, and
++ * if the result to that is true, this function should not be called.
++ *
++ * @eth_node:	ofnode belonging to the Ethernet controller
++ * Return: ofnode of the PHY, if it exists, otherwise an invalid ofnode
++ */
++ofnode ofnode_get_phy_node(ofnode eth_node);
++
+ #endif
+-- 
+2.17.1
+

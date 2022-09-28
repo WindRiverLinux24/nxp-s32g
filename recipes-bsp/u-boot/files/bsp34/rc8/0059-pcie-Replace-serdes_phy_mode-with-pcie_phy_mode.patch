@@ -1,0 +1,153 @@
+From 2fef377db3eeb794f5b319e04d5ee8d5d730b53c Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 22 Jul 2022 09:47:31 +0300
+Subject: [PATCH 059/102] pcie: Replace serdes_phy_mode with pcie_phy_mode
+
+This is needed to be in sync with Linux enum.
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../arm/mach-s32/include/s32-cc/serdes_hwconfig.h | 10 ++--------
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c        |  4 ++--
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c        | 10 ++++------
+ drivers/pci/serdes_s32gen1.c                      |  2 +-
+ include/fsl-s32gen1-pcie-phy-submode.h            | 15 +++++++++++++++
+ 5 files changed, 24 insertions(+), 17 deletions(-)
+ create mode 100644 include/fsl-s32gen1-pcie-phy-submode.h
+
+diff --git a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+index cd6f32c7ca..1619c0638e 100644
+--- a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
++++ b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+@@ -4,6 +4,7 @@
+ #ifndef SERDES_HWCONFIG_H
+ #define SERDES_HWCONFIG_H
+ 
++#include <fsl-s32gen1-pcie-phy-submode.h>
+ #include <linux/types.h>
+ 
+ #define SERDES_CLK_SUBARG	"clock"
+@@ -15,13 +16,6 @@
+ #define MHZ_100			(100 * MHZ)
+ #define MHZ_125			(125 * MHZ)
+ 
+-enum serdes_phy_mode {
+-	PHY_MODE_INVALID = -1,
+-	CRNS = 0, /* Common Reference Clock, No Spread Spectrum */
+-	CRSS = 1, /* Common Reference Clock, Spread Spectrum */
+-	SRIS = 2  /* Separate Reference Clock, Spread Spectrum */
+-};
+-
+ enum serdes_dev_type {
+ 	SERDES_INVALID = 0,
+ 	PCIE_EP = 0x1, /* EP mode is 0x0, use 0x1 to allow us to use masks */
+@@ -113,7 +107,7 @@ bool s32_serdes_is_external_clk_in_hwconfig(int i);
+ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id);
+ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
+ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
+-enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
++enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
+ bool s32_serdes_is_cfg_valid(int id);
+ bool s32_serdes_has_mode5_enabled(int id);
+ bool is_pcie_enabled_in_hwconfig(int id);
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index bf50e2a09f..f7df391dc9 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -365,10 +365,10 @@ static int set_pcie_phy_mode(struct dts_node *node, int id)
+ {
+ 	int ret = 0;
+ 	const char *mode;
+-	enum serdes_phy_mode phy_mode;
++	enum pcie_phy_mode phy_mode;
+ 
+ 	phy_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
+-	if (phy_mode == PHY_MODE_INVALID) {
++	if (phy_mode == PCIE_PHY_MODE_INVALID) {
+ 		pr_err("Invalid PCIe%d PHY mode", id);
+ 		return -EINVAL;
+ 	}
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index aef81a6279..f3dd441bba 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -7,8 +7,6 @@
+ #include <asm/arch/s32-cc/serdes_regs.h>
+ #include <s32-cc/serdes_hwconfig.h>
+ 
+-#define PCIE_DEFAULT_PHY_MODE		CRNS
+-
+ #define SERDES_RC_MODE_STR "RootComplex"
+ #define SERDES_EP_MODE_STR "EndPoint"
+ #define SERDES_SGMII_MODE_STR "SGMII"
+@@ -159,9 +157,9 @@ unsigned long s32_serdes_get_clock_fmhz_from_hwconfig(int id)
+ 	return MHZ_100;
+ }
+ 
+-enum serdes_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
++enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id)
+ {
+-	enum serdes_phy_mode phy_mode = PCIE_DEFAULT_PHY_MODE;
++	enum pcie_phy_mode phy_mode = CRNS;
+ 	size_t subarg_len = 0;
+ 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "phy_mode",
+ 		&subarg_len);
+@@ -181,7 +179,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
+ {
+ 	enum serdes_dev_type mode;
+ 	enum serdes_xpcs_mode xpcs_mode;
+-	enum serdes_phy_mode ss_mode;
++	enum pcie_phy_mode ss_mode;
+ 
+ 	mode = s32_serdes_get_mode_from_hwconfig(id);
+ 	ss_mode = s32_serdes_get_phy_mode_from_hwconfig(id);
+@@ -239,7 +237,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 	enum serdes_dev_type devtype;
+ 	enum serdes_xpcs_mode xpcs_mode;
+ 	enum serdes_mode mode;
+-	enum serdes_phy_mode phy_mode;
++	enum pcie_phy_mode phy_mode;
+ 	unsigned long freq;
+ 	bool mode5, ext_clk;
+ 
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index fd3d6310b7..37eee7412c 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -117,7 +117,7 @@ struct serdes {
+ 	int id;
+ 	enum serdes_dev_type devtype;
+ 	enum serdes_xpcs_mode xpcs_mode;
+-	enum serdes_phy_mode phy_mode;
++	enum pcie_phy_mode phy_mode;
+ };
+ 
+ static const char * const serdes_clk_names[] = {
+diff --git a/include/fsl-s32gen1-pcie-phy-submode.h b/include/fsl-s32gen1-pcie-phy-submode.h
+new file mode 100644
+index 0000000000..6a393122a1
+--- /dev/null
++++ b/include/fsl-s32gen1-pcie-phy-submode.h
+@@ -0,0 +1,15 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/**
++ * Copyright 2021-2022 NXP
++ */
++#ifndef FSL_S32GEN1_PCIE_PHY_SUBMODE_H
++#define FSL_S32GEN1_PCIE_PHY_SUBMODE_H
++
++enum pcie_phy_mode {
++	PCIE_PHY_MODE_INVALID = -1,
++	CRNS = 0, /* Common Reference Clock, No Spread Spectrum */
++	CRSS = 1, /* Common Reference Clock, Spread Spectrum */
++	SRIS = 2  /* Separate Reference Clock, Spread Spectrum */
++};
++
++#endif
+-- 
+2.17.1
+

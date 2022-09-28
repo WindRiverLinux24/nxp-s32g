@@ -1,0 +1,109 @@
+From e7538db31ce7990aef9d32e40bc13701783025a8 Mon Sep 17 00:00:00 2001
+From: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Date: Tue, 9 Aug 2022 21:53:47 +0300
+Subject: [PATCH 092/102] s32cc:serdes: Rename a few functions to follow naming
+ convention in source file
+
+Issue: ALB-9065
+
+Upstream-Status: Pending 
+
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../mach-s32/include/s32-cc/serdes_hwconfig.h    |  4 ++--
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c       |  4 ++--
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c       | 16 +++++++---------
+ 3 files changed, 11 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+index 552e9e1048..2547bd038d 100644
+--- a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
++++ b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+@@ -110,8 +110,8 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
+ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
+ enum pcie_phy_mode s32_serdes_get_phy_mode_from_hwconfig(int id);
+ bool s32_serdes_is_cfg_valid(int id);
+-bool s32_serdes_has_mode5_enabled(int id);
+-bool is_pcie_enabled_in_hwconfig(int id);
++bool s32_serdes_is_pcie_enabled_in_hwconfig(int id);
++bool s32_serdes_is_mode5_enabled_in_hwconfig(int id);
+ int apply_dm_hwconfig_fixups(void);
+ int apply_fdt_hwconfig_fixups(void *blob);
+ int s32_serdes_get_alias_id(struct udevice *serdes_dev, int *devnump);
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index a2b82480cc..ce35075c29 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -566,7 +566,7 @@ static int prepare_pcie_node(struct dts_node *root, int id)
+ 		return ret;
+ 	}
+ 
+-	if (!is_pcie_enabled_in_hwconfig(id)) {
++	if (!s32_serdes_is_pcie_enabled_in_hwconfig(id)) {
+ 		ret = disable_node(&node);
+ 		if (ret) {
+ 			pr_err("Failed to disable PCIe%d\n", id);
+@@ -741,7 +741,7 @@ static int set_serdes_mode(struct dts_node *root, int id)
+ 	}
+ 
+ 	mode_num = (u32)mode;
+-	if (s32_serdes_has_mode5_enabled(id)) {
++	if (s32_serdes_is_mode5_enabled_in_hwconfig(id)) {
+ 		if (root->fdt)
+ 			mode_num = 2;
+ 		else
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index 831c5178f2..fc9fa8c6d0 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -24,15 +24,13 @@
+ 
+ #define SERDES_NAME_SIZE 32
+ 
+-bool is_pcie_enabled_in_hwconfig(int id)
++bool s32_serdes_is_pcie_enabled_in_hwconfig(int id)
+ {
+-	enum serdes_dev_type pcie_mode;
++	enum serdes_dev_type ss_mode;
+ 
+-	pcie_mode = s32_serdes_get_mode_from_hwconfig(id);
+-	if ((pcie_mode & PCIE_EP) || (pcie_mode & PCIE_RC))
+-		return true;
++	ss_mode = s32_serdes_get_mode_from_hwconfig(id);
++	return IS_SERDES_PCIE(ss_mode);
+ 
+-	return false;
+ }
+ 
+ static inline
+@@ -225,7 +223,7 @@ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id)
+ 	return SERDES_MODE_INVAL;
+ }
+ 
+-bool s32_serdes_has_mode5_enabled(int id)
++bool s32_serdes_is_mode5_enabled_in_hwconfig(int id)
+ {
+ 	size_t demo_len = 0;
+ 	char *demo;
+@@ -311,7 +309,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 		return false;
+ 	}
+ 
+-	mode5 = s32_serdes_has_mode5_enabled(id);
++	mode5 = s32_serdes_is_mode5_enabled_in_hwconfig(id);
+ 	if (mode5) {
+ 		if (!(ext_clk && freq == MHZ_100 &&
+ 		      xpcs_mode == SGMII_XPCS1)) {
+@@ -377,7 +375,7 @@ int s32_serdes_get_lane_speed(struct udevice *serdes_dev, u32 lane)
+ 		break;
+ 	case SGMII_XPCS1:
+ 		if (lane) {
+-			if (s32_serdes_has_mode5_enabled(serdes_id))
++			if (s32_serdes_is_mode5_enabled_in_hwconfig(serdes_id))
+ 				return SPEED_2500;
+ 			return SPEED_1000;
+ 		}
+-- 
+2.17.1
+

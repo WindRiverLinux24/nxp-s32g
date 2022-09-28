@@ -1,0 +1,38 @@
+From 1c09d74a0bfe10590550e4db8e2e26a18e0628ce Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Mon, 29 Aug 2022 14:43:40 +0300
+Subject: [PATCH 098/102] net: pfeng: initialize ret variable
+
+Coverity complained about the use of an un-initialized `ret` variable.
+The variable's value is only set inside a for. Moreover, the variable's
+type should be `int` because it should be able to store negative error
+codes.
+
+Initialize it with 0 when it's declared.
+
+Issue: ALB-9225
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/net/pfeng/pfeng_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/pfeng/pfeng_hw.c b/drivers/net/pfeng/pfeng_hw.c
+index 2119aa64c0..be6b98cada 100644
+--- a/drivers/net/pfeng/pfeng_hw.c
++++ b/drivers/net/pfeng/pfeng_hw.c
+@@ -1395,7 +1395,7 @@ static int
+ pfeng_hw_init_class(struct pfe_platform *platform)
+ {
+ 	void *base = platform->cbus_baseaddr;
+-	u32 ret;
++	int ret = 0;
+ 	int ii;
+ 	u8 *fw;
+ 	Elf32_Shdr *shdr = NULL;
+-- 
+2.17.1
+

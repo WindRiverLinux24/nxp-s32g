@@ -1,0 +1,41 @@
+From 2bb0126854b806d3d946c70d2b1e15e6856de096 Mon Sep 17 00:00:00 2001
+From: Michal Simek <michal.simek@xilinx.com>
+Date: Wed, 22 Jul 2020 13:58:54 +0200
+Subject: [PATCH 055/102] dt-bindings: Sync include/dt-bindings/phy/phy.h from
+ Linux
+
+Add 4 new phy types which are present in Linux kernel.
+DP and SGMII types are used on Xilinx ZynqMP devices.
+
+This is a chery-pick of:
+commit a965f4dfb522 ("dt-bindings: Sync include/dt-bindings/phy/phy.h
+		     from Linux")
+
+Upstream-Status: Pending 
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+Issue: ALB-8357
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/dt-bindings/phy/phy.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/include/dt-bindings/phy/phy.h b/include/dt-bindings/phy/phy.h
+index 6c901930eb..7e657da454 100644
+--- a/include/dt-bindings/phy/phy.h
++++ b/include/dt-bindings/phy/phy.h
+@@ -15,5 +15,9 @@
+ #define PHY_TYPE_PCIE		2
+ #define PHY_TYPE_USB2		3
+ #define PHY_TYPE_USB3		4
++#define PHY_TYPE_UFS		5
++#define PHY_TYPE_DP		6
++#define PHY_TYPE_XPCS		7
++#define PHY_TYPE_SGMII		8
+ 
+ #endif /* _DT_BINDINGS_PHY */
+-- 
+2.17.1
+

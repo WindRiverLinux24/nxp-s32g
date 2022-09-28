@@ -1,0 +1,90 @@
+From 91378906f6d34658937026a64a12c58bd19430de Mon Sep 17 00:00:00 2001
+From: Neil Armstrong <narmstrong@baylibre.com>
+Date: Tue, 29 Dec 2020 14:58:59 +0100
+Subject: [PATCH 056/102] generic-phy: add configure op
+
+Add the PHY configure op callback to the generic PHY uclass to permit
+configuring the PHY.
+
+It's useful for MIPI DSI PHYs to setup the link timings.
+
+This is a backport of:
+commit f8da8a82c576 ("generic-phy: add configure op")
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/phy/phy-uclass.c | 11 +++++++++++
+ include/generic-phy.h    | 23 +++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/drivers/phy/phy-uclass.c b/drivers/phy/phy-uclass.c
+index e201a90c8c..22f682fe4a 100644
+--- a/drivers/phy/phy-uclass.c
++++ b/drivers/phy/phy-uclass.c
+@@ -161,6 +161,17 @@ int generic_phy_power_off(struct phy *phy)
+ 	return ops->power_off ? ops->power_off(phy) : 0;
+ }
+ 
++int generic_phy_configure(struct phy *phy, void *params)
++{
++	struct phy_ops const *ops;
++
++	if (!generic_phy_valid(phy))
++		return 0;
++	ops = phy_dev_ops(phy->dev);
++
++	return ops->configure ? ops->configure(phy, params) : 0;
++}
++
+ UCLASS_DRIVER(phy) = {
+ 	.id		= UCLASS_PHY,
+ 	.name		= "phy",
+diff --git a/include/generic-phy.h b/include/generic-phy.h
+index 95caf58341..f44526d582 100644
+--- a/include/generic-phy.h
++++ b/include/generic-phy.h
+@@ -120,6 +120,20 @@ struct phy_ops {
+ 	* @return 0 if OK, or a negative error code
+ 	*/
+ 	int	(*power_off)(struct phy *phy);
++
++	/**
++	* configure - configure a PHY device
++	*
++	* @phy:	PHY port to be configured
++	* @params: PHY Parameters, underlying data is specific to the PHY function
++	*
++	* During runtime, the PHY may need to be configured for it's main function.
++	* This function configures the PHY for it's main function following
++	* power_on/off() after beeing initialized.
++	*
++	* @return 0 if OK, or a negative error code
++	*/
++	int	(*configure)(struct phy *phy, void *params);
+ };
+ 
+ #ifdef CONFIG_PHY
+@@ -164,6 +178,15 @@ int generic_phy_power_on(struct phy *phy);
+  */
+ int generic_phy_power_off(struct phy *phy);
+ 
++/**
++ * generic_phy_configure() - configure a PHY device
++ *
++ * @phy:	PHY port to be configured
++ * @params: 	PHY Parameters, underlying data is specific to the PHY function
++ * @return 0 if OK, or a negative error code
++ */
++int generic_phy_configure(struct phy *phy, void *params);
++
+ 
+ /**
+  * generic_phy_get_by_index() - Get a PHY device by integer index.
+-- 
+2.17.1
+

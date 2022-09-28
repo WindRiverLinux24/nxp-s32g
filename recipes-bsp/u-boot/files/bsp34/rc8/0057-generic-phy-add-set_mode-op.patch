@@ -1,0 +1,84 @@
+From ef7eacc26bc0e2a49b2616a354d034ea7e53a3db Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 22 Jun 2022 14:26:48 +0300
+Subject: [PATCH 057/102] generic-phy: add set_mode op
+
+Add the PHY set_mode op callback to the generic PHY uclass to permit
+the mode and submode set.
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/phy/phy-uclass.c | 11 +++++++++++
+ include/generic-phy.h    | 23 +++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/drivers/phy/phy-uclass.c b/drivers/phy/phy-uclass.c
+index 22f682fe4a..5cef8ef9e8 100644
+--- a/drivers/phy/phy-uclass.c
++++ b/drivers/phy/phy-uclass.c
+@@ -172,6 +172,17 @@ int generic_phy_configure(struct phy *phy, void *params)
+ 	return ops->configure ? ops->configure(phy, params) : 0;
+ }
+ 
++int generic_phy_set_mode_ext(struct phy *phy, int mode, int submode)
++{
++	struct phy_ops const *ops;
++
++	if (!generic_phy_valid(phy))
++		return 0;
++	ops = phy_dev_ops(phy->dev);
++
++	return ops->set_mode ? ops->set_mode(phy, mode, submode) : 0;
++}
++
+ UCLASS_DRIVER(phy) = {
+ 	.id		= UCLASS_PHY,
+ 	.name		= "phy",
+diff --git a/include/generic-phy.h b/include/generic-phy.h
+index f44526d582..c3236eb005 100644
+--- a/include/generic-phy.h
++++ b/include/generic-phy.h
+@@ -134,6 +134,20 @@ struct phy_ops {
+ 	* @return 0 if OK, or a negative error code
+ 	*/
+ 	int	(*configure)(struct phy *phy, void *params);
++
++	/**
++	 * set_mode - set mode of a PHY device
++	 *
++	 * @phy:	PHY port to be configured
++	 * @mode: PHY mode
++	 * @submode: PHY submode
++	 *
++	 * This function sets PHY's mode following power_on/off() after
++	 * being initialized.
++	 *
++	 * @return 0 if OK, or a negative error code
++	 */
++	int	(*set_mode)(struct phy *phy, int mode, int submode);
+ };
+ 
+ #ifdef CONFIG_PHY
+@@ -187,6 +201,15 @@ int generic_phy_power_off(struct phy *phy);
+  */
+ int generic_phy_configure(struct phy *phy, void *params);
+ 
++/**
++ * generic_phy_set_mode_ext() - set mode and extended mode of a PHY device
++ *
++ * @phy:	PHY port to be configured
++ * @mode:	PHY mode
++ * @submode:	PHY submode
++ * @return 0 if OK, or a negative error code
++ */
++int generic_phy_set_mode_ext(struct phy *phy, int mode, int submode);
+ 
+ /**
+  * generic_phy_get_by_index() - Get a PHY device by integer index.
+-- 
+2.17.1
+

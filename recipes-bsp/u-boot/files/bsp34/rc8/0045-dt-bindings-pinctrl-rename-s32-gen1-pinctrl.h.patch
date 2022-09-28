@@ -1,0 +1,25 @@
+From de94858c0fa143fc997b4a462003aa4e490ff931 Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Tue, 26 Jul 2022 17:26:52 +0300
+Subject: [PATCH 045/102] dt-bindings: pinctrl: rename s32-gen1-pinctrl.h
+
+Rename s32-gen1-pinctrl.h to s32cc-pinctrl.h.
+
+Issue: ALB-8868
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../dt-bindings/pinctrl/{s32-gen1-pinctrl.h => s32cc-pinctrl.h}   | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename include/dt-bindings/pinctrl/{s32-gen1-pinctrl.h => s32cc-pinctrl.h} (100%)
+
+diff --git a/include/dt-bindings/pinctrl/s32-gen1-pinctrl.h b/include/dt-bindings/pinctrl/s32cc-pinctrl.h
+similarity index 100%
+rename from include/dt-bindings/pinctrl/s32-gen1-pinctrl.h
+rename to include/dt-bindings/pinctrl/s32cc-pinctrl.h
+-- 
+2.17.1
+

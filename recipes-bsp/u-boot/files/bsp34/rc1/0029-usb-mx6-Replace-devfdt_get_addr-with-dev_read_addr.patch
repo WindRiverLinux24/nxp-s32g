@@ -1,0 +1,30 @@
+From 39434dadb99c16e68267a4038cdf6ee8e7c5ca97 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 28 Jun 2022 11:42:57 +0300
+Subject: [PATCH 29/33] usb: mx6: Replace devfdt_get_addr with dev_read_addr
+
+Issue: ALB-9010
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/usb/host/ehci-mx6.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/ehci-mx6.c b/drivers/usb/host/ehci-mx6.c
+index 490b0b7bcf..11c88ff958 100644
+--- a/drivers/usb/host/ehci-mx6.c
++++ b/drivers/usb/host/ehci-mx6.c
+@@ -600,7 +600,7 @@ static int ehci_usb_bind(struct udevice *dev)
+ static int ehci_usb_probe(struct udevice *dev)
+ {
+ 	struct usb_platdata *plat = dev_get_platdata(dev);
+-	struct usb_ehci *ehci = (struct usb_ehci *)devfdt_get_addr(dev);
++	struct usb_ehci *ehci = (struct usb_ehci *)dev_read_addr(dev);
+ 	struct ehci_mx6_priv_data *priv = dev_get_priv(dev);
+ 	enum usb_init_type type = plat->init_type;
+ 	struct ehci_hccr *hccr;
+-- 
+2.17.1
+

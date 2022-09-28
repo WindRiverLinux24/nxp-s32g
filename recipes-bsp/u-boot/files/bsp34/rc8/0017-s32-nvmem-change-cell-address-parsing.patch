@@ -1,0 +1,36 @@
+From 3655e983f4070a1e826581c566754e2b73f9a7b8 Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Fri, 27 May 2022 11:36:39 +0300
+Subject: [PATCH 017/102] s32: nvmem: change cell address parsing
+
+After unifying the SIUL2 modules, the address parsing for nvmem returned
+an absolute value. This commit uses the `ofnode_get_addr_size_notrnsl`
+which doesn't translate the cell address.
+
+Issue: ALB-8868
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/nvmem.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/nvmem.c b/arch/arm/mach-s32/s32-cc/nvmem.c
+index 91d2c74cb7..0c1f3d64c5 100644
+--- a/arch/arm/mach-s32/s32-cc/nvmem.c
++++ b/arch/arm/mach-s32/s32-cc/nvmem.c
+@@ -74,7 +74,8 @@ int nvmem_cell_get_by_index(struct udevice *dev, int index,
+ 		return ret;
+ 	}
+ 
+-	cell_addr = ofnode_get_addr_size_index(args.node, 0, &cell_size);
++	cell_addr = ofnode_get_addr_size_index_notrans(args.node, 0,
++						       &cell_size);
+ 	if (cell_addr == FDT_ADDR_T_NONE)
+ 		return -ENOENT;
+ 
+-- 
+2.17.1
+

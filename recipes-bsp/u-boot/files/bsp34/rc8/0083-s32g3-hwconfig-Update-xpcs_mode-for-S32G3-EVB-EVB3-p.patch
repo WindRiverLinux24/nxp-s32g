@@ -1,0 +1,30 @@
+From 8dcaecc43a2a7656967c10f1d256f75ec127c0db Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Fri, 26 Aug 2022 11:12:05 +0300
+Subject: [PATCH 083/102] s32g3: hwconfig: Update 'xpcs_mode' for
+ S32G3-EVB/EVB3 platforms
+
+Issue: ALB-8997
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ board/nxp/s32-cc/s32g/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/nxp/s32-cc/s32g/Kconfig b/board/nxp/s32-cc/s32g/Kconfig
+index 5565bcea3b..2c17c3c47a 100644
+--- a/board/nxp/s32-cc/s32g/Kconfig
++++ b/board/nxp/s32-cc/s32g/Kconfig
+@@ -42,5 +42,5 @@ config NXP_S32GEVB_BOARD
+ 	select SPI_FLASH_MACRONIX
+ 
+ config S32GEN1_HWCONFIG
+-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GRDB_BOARD
+-	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) && NXP_S32GEVB_BOARD
++	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=2G5" if (PCIE_S32GEN1 && FSL_PFENG) && (NXP_S32GRDB_BOARD || TARGET_S32G3XXAEVB || TARGET_S32G3XXAEVB3)
++	default "pcie0:mode=rc,clock=ext;pcie1:mode=sgmii,clock=ext,fmhz=125,xpcs_mode=0" if (PCIE_S32GEN1 && FSL_PFENG) && TARGET_S32G2XXAEVB
+-- 
+2.17.1
+

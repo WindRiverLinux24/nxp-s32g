@@ -1,0 +1,331 @@
+From 56b444928e5004e70b466c88e1c7037e4c545cc9 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Fri, 5 Aug 2022 13:12:25 +0300
+Subject: [PATCH 067/102] net: pfeng: Initialize XPCS using generic phy API
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/net/pfeng/pfeng.h     |   6 +-
+ drivers/net/pfeng/pfeng_cmd.c |  64 +-------------
+ drivers/net/pfeng/pfeng_drv.c | 151 ++++++++++++++++++++++++++++++++--
+ 3 files changed, 148 insertions(+), 73 deletions(-)
+
+diff --git a/drivers/net/pfeng/pfeng.h b/drivers/net/pfeng/pfeng.h
+index cff0811872..bf720df851 100644
+--- a/drivers/net/pfeng/pfeng.h
++++ b/drivers/net/pfeng/pfeng.h
+@@ -8,6 +8,7 @@
+ #ifndef _PFENG_H_
+ #define _PFENG_H_
+ 
++#include <generic-phy.h>
+ #include "pfe_hif_ring.h"
+ #include "pfeng_hw.h"
+ 
+@@ -120,6 +121,7 @@ struct pfeng_priv {
+ 
+ 	struct mii_dev *mii[PFENG_EMACS_COUNT];
+ 	struct phy_device *phy[PFENG_EMACS_COUNT];
++	struct phy xpcs[PFENG_EMACS_COUNT];
+ 
+ 	struct udevice *dev;
+ 	const struct pfeng_config *config;
+@@ -168,10 +170,6 @@ u32 pfeng_cfg_emac_get_interface(u32 idx);
+ void pfeng_apply_clocks(struct udevice *pfe_dev);
+ unsigned long long get_pfe_axi_clk_f(struct udevice *pfe_dev);
+ 
+-/* SGMII/XPCS */
+-int pfeng_serdes_wait_link(int emac);
+-int pfeng_serdes_emac_is_init(int emac);
+-
+ /* cmd debug calls */
+ void pfeng_debug(void);
+ 
+diff --git a/drivers/net/pfeng/pfeng_cmd.c b/drivers/net/pfeng/pfeng_cmd.c
+index 204a2df1be..93fa3d8d5d 100644
+--- a/drivers/net/pfeng/pfeng_cmd.c
++++ b/drivers/net/pfeng/pfeng_cmd.c
+@@ -13,11 +13,10 @@
+ 
+ #include <clk.h>
+ #include <s32gen1_clk_utils.h>
+-#include <asm/arch/s32-cc/serdes_regs.h>
+-#include <asm/arch/s32-cc/serdes_xpcs_regs.h>
+ #include <dm/device_compat.h>
+ #include <dm/pinctrl.h>
+ #include <linux/string.h>
++#include <s32-cc/serdes_hwconfig.h>
+ 
+ #include "pfeng.h"
+ 
+@@ -138,67 +137,6 @@ static void disable_partition_2(void)
+ 		;
+ }
+ 
+-/* Get xpcs and SerDes from MAC*/
+-int pfeng_map_emac_to_serdes_xpcs(int emac, int *serdes, int *xpcs)
+-{
+-	int emac_to_serdes[] = {1, 1, 0};
+-	int emac_to_pcs[] = {0, 1, 1};
+-	enum serdes_xpcs_mode_gen2 mode;
+-	bool check;
+-
+-	if (emac >= ARRAY_SIZE(emac_intf)) {
+-		pr_err("invalid emac index %d\n", emac);
+-		return -ENXIO;
+-	}
+-
+-	mode = s32_get_xpcs_mode(emac_to_serdes[emac], emac_to_pcs[emac]);
+-
+-	if (mode == SGMII_XPCS_PCIE) {
+-		pr_err("Emac %d not initialized\n", emac);
+-		return -ENXIO;
+-	}
+-
+-	if (mode == SGMII_XPCS_DISABLED) {
+-		pr_err("PCS for emac %d was disabled\n", emac);
+-		return -ENXIO;
+-	}
+-#if defined(CONFIG_ARCH_S32G2)
+-	check = (emac == 0 && mode == SGMII_XPCS_2G5_OP);
+-#else
+-	check = (mode == SGMII_XPCS_2G5_OP);
+-#endif
+-	if (!(check || mode == SGMII_XPCS_1G_OP))
+-		return -ENXIO;
+-
+-	*serdes = emac_to_serdes[emac];
+-	*xpcs = emac_to_pcs[emac];
+-
+-	return 0;
+-}
+-
+-/* Get link status for sgmii EMAC */
+-int pfeng_serdes_wait_link(int emac)
+-{
+-	int serdes, xpcs;
+-
+-	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
+-		return s32_sgmii_wait_link(serdes, xpcs);
+-
+-	return -ENXIO;
+-}
+-
+-/* Check if SerDes is initialized for emac operation */
+-int pfeng_serdes_emac_is_init(int emac)
+-{
+-	int serdes, xpcs;
+-
+-	if (!pfeng_map_emac_to_serdes_xpcs(emac, &serdes, &xpcs))
+-		return 0;
+-
+-	pr_err("Invalid sgmii configuration for emac index %d\n", emac);
+-	return -ENXIO;
+-}
+-
+ static void switch_pfe0_clock(int intf)
+ {
+ 	u32 csel = 0;
+diff --git a/drivers/net/pfeng/pfeng_drv.c b/drivers/net/pfeng/pfeng_drv.c
+index de37283a0c..c027bd3f59 100644
+--- a/drivers/net/pfeng/pfeng_drv.c
++++ b/drivers/net/pfeng/pfeng_drv.c
+@@ -17,12 +17,17 @@
+ #include <phy.h>
+ #include <spi_flash.h>
+ #include <linux/ioport.h>
++#include <linux/time.h>
++#include <s32-cc/serdes_hwconfig.h>
++#include <s32-cc/xpcs.h>
+ 
+ #include "pfeng.h"
+ 
+ #include <dm/device_compat.h>
+ #include <dm/platform_data/pfeng_dm_eth.h>
+ 
++#define XPCS_PHY_FORMAT		"emac%d_xpcs"
++
+ static struct pfeng_priv *pfeng_drv_priv = NULL;
+ /* firmware */
+ 
+@@ -427,6 +432,52 @@ static void pfeng_stop(struct udevice *dev)
+ 		pr_err("PFE HW stop failed\n");
+ }
+ 
++static int pfeng_serdes_wait_link(struct pfeng_priv *priv, int emac)
++{
++	__maybe_unused struct udevice *dev = priv->dev;
++	const struct s32cc_xpcs_ops *xpcs_ops;
++	struct s32cc_xpcs *xpcs;
++	struct phylink_link_state state;
++	unsigned long timeout;
++	int ret;
++
++	if (emac < 0 || emac >= ARRAY_SIZE(priv->xpcs))
++		return -EINVAL;
++
++	/* Check if SerDes is configured for SGMII */
++	xpcs_ops = s32cc_xpcs_get_ops();
++	if (!xpcs_ops) {
++		printf("Failed to get XPCS ops\n");
++		return -EIO;
++	}
++
++	xpcs = s32cc_phy2xpcs(&priv->xpcs[emac]);
++	if (!xpcs) {
++		dev_err(dev, "Failed to get XPCS attached to PFE%d\n", emac);
++		return -EINVAL;
++	}
++
++	timeout = timer_get_us() + USEC_PER_SEC;
++	for (state.link = 0; state.link == 0;) {
++		ret = xpcs_ops->xpcs_get_state(xpcs, &state);
++		if (ret) {
++			dev_err(dev, "Failed to get link state of emac%d\n",
++				emac);
++			return ret;
++		}
++
++		if (time_after(timer_get_us(), timeout))
++			break;
++	}
++
++	if (!state.link) {
++		printf("Failed to establish XPCS link on PFE%d\n", emac);
++		return -EIO;
++	}
++
++	return 0;
++}
++
+ static int pfeng_start(struct udevice *dev)
+ {
+ 	struct pfeng_priv *priv = dev_get_priv(dev);
+@@ -456,7 +507,7 @@ static int pfeng_start(struct udevice *dev)
+ 
+ 	/* check if the interface is up */
+ 	if (pfeng_cfg_emac_get_interface(clid) == PHY_INTERFACE_MODE_SGMII)
+-		pfeng_serdes_wait_link(clid);
++		pfeng_serdes_wait_link(priv, clid);
+ 
+ 	/* Get address of current interface */
+ 	ret = pfeng_write_hwaddr(dev);
+@@ -594,6 +645,94 @@ static int pfeng_ofdata_to_platdata(struct udevice *dev)
+ }
+ #endif /* OF_CONTROL */
+ 
++static u32 get_speed_advertised(int speed)
++{
++	switch (speed) {
++	case SPEED_10:
++		return ADVERTISED_10baseT_Full;
++	case SPEED_100:
++		return ADVERTISED_100baseT_Full;
++	default:
++	case SPEED_1000:
++		return ADVERTISED_1000baseT_Full;
++	case SPEED_2500:
++		return ADVERTISED_2500baseT_Full;
++	}
++}
++
++static int init_xpcs(struct pfeng_priv *priv)
++{
++	char xpcs_name[sizeof(XPCS_PHY_FORMAT)];
++	const struct s32cc_xpcs_ops *xpcs_ops;
++	struct s32cc_xpcs *xpcs;
++	struct phylink_link_state state;
++	int ret, i, phy_speed;
++
++	xpcs_ops = s32cc_xpcs_get_ops();
++	if (!xpcs_ops) {
++		printf("Failed to get XPCS ops\n");
++		return -EIO;
++	}
++
++	for (i = 0; i < PFENG_EMACS_COUNT; i++) {
++		snprintf(xpcs_name, sizeof(xpcs_name), XPCS_PHY_FORMAT, i);
++		if (pfeng_cfg_emac_get_interface(i) != PHY_INTERFACE_MODE_SGMII)
++			continue;
++
++		ret = generic_phy_get_by_name(priv->dev, xpcs_name,
++					      &priv->xpcs[i]);
++		if (ret) {
++			printf("Failed to get '%s' PHY\n", xpcs_name);
++			return ret;
++		}
++
++		phy_speed = s32_serdes_get_lane_speed(priv->xpcs[i].dev,
++						      priv->xpcs[i].id);
++		if (phy_speed < 0) {
++			printf("Failed to get speed of XPCS for %s", xpcs_name);
++			return ret;
++		}
++
++		ret = generic_phy_init(&priv->xpcs[i]);
++		if (ret) {
++			printf("Failed to init '%s' PHY\n", xpcs_name);
++			return ret;
++		}
++
++		ret = generic_phy_power_on(&priv->xpcs[i]);
++		if (ret) {
++			printf("Failed to power on '%s' PHY\n", xpcs_name);
++			return ret;
++		}
++
++		ret = generic_phy_configure(&priv->xpcs[i], NULL);
++		if (ret) {
++			printf("Failed to configure '%s' PHY\n", xpcs_name);
++			return ret;
++		}
++
++		xpcs = s32cc_phy2xpcs(&priv->xpcs[i]);
++		if (!xpcs) {
++			printf("Failed to get XPCS instance of '%s'\n",
++			       xpcs_name);
++			return -EINVAL;
++		}
++
++		state.speed = phy_speed;
++		state.duplex = true;
++		state.advertising = get_speed_advertised(phy_speed);
++		state.an_enabled = 0;
++		state.an_complete = 0;
++		ret = xpcs_ops->xpcs_config(xpcs, &state);
++		if (ret) {
++			printf("Failed to configure '%s' PHY\n", xpcs_name);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
+ static int pfeng_probe(struct udevice *dev)
+ {
+ 	struct pfeng_pdata *pdata = dev_get_platdata(dev);
+@@ -628,11 +767,11 @@ static int pfeng_probe(struct udevice *dev)
+ 	if (env_mode && ((env_mode = strchr(env_mode, ','))) && *env_mode)
+ 		pfeng_set_emacs_from_env(++env_mode);
+ 
+-	/* Check if SerDes is configured for SGMII */
+-	for (i = 0; i < PFENG_EMACS_COUNT; i++)
+-		if (pfeng_cfg_emac_get_interface(i) == PHY_INTERFACE_MODE_SGMII)
+-			if (pfeng_serdes_emac_is_init(i))
+-				return -ENODEV;
++	ret = init_xpcs(priv);
++	if (ret) {
++		dev_err(dev, "Failed to initialize PFE XPCS phys\n");
++		return ret;
++	}
+ 
+ 	/* enable PFE IP support */
+ 	pfeng_cfg_set_mode(PFENG_MODE_ENABLE, dev);
+-- 
+2.17.1
+

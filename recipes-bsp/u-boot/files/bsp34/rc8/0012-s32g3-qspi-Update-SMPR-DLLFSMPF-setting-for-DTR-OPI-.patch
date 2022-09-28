@@ -1,0 +1,102 @@
+From 4660417b4142d98014dabe8372d04c678cc94971 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Mon, 25 Jul 2022 15:03:20 +0300
+Subject: [PATCH 012/102] s32g3: qspi: Update SMPR[DLLFSMPF] setting for
+ DTR-OPI from 4 to 3
+
+Issue: ALB-9080
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/spi/fsl_qspi.c   | 14 ++++++++++++++
+ drivers/spi/fsl_qspi.h   |  1 +
+ drivers/spi/s32cc_qspi.c | 10 +++++++---
+ 3 files changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/spi/fsl_qspi.c b/drivers/spi/fsl_qspi.c
+index 84250004af..7a02c0d788 100644
+--- a/drivers/spi/fsl_qspi.c
++++ b/drivers/spi/fsl_qspi.c
+@@ -156,6 +156,14 @@ static const struct fsl_qspi_devtype_data s32cc_data = {
+ 	.driver_data = 0,
+ };
+ 
++static const struct fsl_qspi_devtype_data s32g3_data = {
++	.devtype = FSL_QUADSPI_S32CC,
++	.rxfifo = 128,
++	.txfifo = 256,
++	.ahb_buf_size = 1024,
++	.driver_data = 0,
++};
++
+ u32 qspi_read32(u32 flags, u32 *addr)
+ {
+ 	return flags & QSPI_FLAG_REGMAP_ENDIAN_BIG ?
+@@ -168,6 +176,11 @@ void qspi_write32(u32 flags, u32 *addr, u32 val)
+ 		out_be32(addr, val) : out_le32(addr, val);
+ }
+ 
++int is_s32g3_qspi(struct fsl_qspi_priv *priv)
++{
++	return priv->devtype_data == &s32g3_data;
++}
++
+ static inline int is_controller_busy(const struct fsl_qspi_priv *priv)
+ {
+ 	u32 val;
+@@ -1282,6 +1295,7 @@ static const struct udevice_id fsl_qspi_ids[] = {
+ 	{ .compatible = "fsl,imx7d-qspi", .data = (ulong)&imx6ul_7d_data },
+ 	{ .compatible = "fsl,imx7ulp-qspi", .data = (ulong)&imx7ulp_data },
+ 	{ .compatible = "nxp,s32g-qspi", .data = (ulong)&s32cc_data },
++	{ .compatible = "nxp,s32g3-qspi", .data = (ulong)&s32g3_data },
+ 	{ .compatible = "nxp,s32r45-qspi", .data = (ulong)&s32cc_data },
+ 	{ }
+ };
+diff --git a/drivers/spi/fsl_qspi.h b/drivers/spi/fsl_qspi.h
+index 52d9a039fc..becdcaf4e7 100644
+--- a/drivers/spi/fsl_qspi.h
++++ b/drivers/spi/fsl_qspi.h
+@@ -340,6 +340,7 @@ struct qspi_config {
+ 	u32 dlpr;
+ };
+ 
++int is_s32g3_qspi(struct fsl_qspi_priv *q);
+ void s32cc_reset_bootrom_settings(struct fsl_qspi_priv *q);
+ void qspi_init_ahb_read(struct fsl_qspi_priv *priv);
+ int s32cc_enable_spi(struct fsl_qspi_priv *q, bool force);
+diff --git a/drivers/spi/s32cc_qspi.c b/drivers/spi/s32cc_qspi.c
+index 3a55425261..67661c3f8a 100644
+--- a/drivers/spi/s32cc_qspi.c
++++ b/drivers/spi/s32cc_qspi.c
+@@ -2,12 +2,12 @@
+ /*
+  * Copyright 2020-2022 NXP
+  */
+-#include "fsl_qspi.h"
+ #include <cpu_func.h>
++#include <inttypes.h>
++#include <spi-mem.h>
+ #include <asm/io.h>
+ #include <linux/mtd/spi-nor.h>
+-#include <spi-mem.h>
+-#include <inttypes.h>
++#include "fsl_qspi.h"
+ 
+ #define LUT_INVALID_INDEX -1
+ #define LUT_STOP_CMD 0x00
+@@ -654,6 +654,10 @@ static int enable_ddr(struct fsl_qspi_priv *priv)
+ 	mcr |= ddr_config.mcr;
+ 	qspi_write32(priv->flags, &regs->mcr, mcr);
+ 
++	if (is_s32g3_qspi(priv))
++		ddr_config.smpr = QSPI_SMPR_DLLFSMPFA_NTH(3) |
++			QSPI_SMPR_DLLFSMPFB_NTH(3);
++
+ 	qspi_write32(priv->flags, &regs->flshcr, ddr_config.flshcr);
+ 	qspi_write32(priv->flags, &regs->sfacr, ddr_config.sfacr);
+ 	qspi_write32(priv->flags, &regs->smpr, ddr_config.smpr);
+-- 
+2.17.1
+

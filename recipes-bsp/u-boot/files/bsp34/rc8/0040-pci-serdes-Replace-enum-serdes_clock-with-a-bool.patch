@@ -1,0 +1,339 @@
+From 23c4937ed533e6f9b21cad7ce9bc0a2f852bad2a Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 20 Jul 2022 14:57:18 +0300
+Subject: [PATCH 040/102] pci: serdes: Replace 'enum serdes_clock' with a bool
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/include/asm/arch-s32/s32-cc/sgmii.h  |  3 +-
+ .../mach-s32/include/s32-cc/serdes_hwconfig.h |  7 +---
+ arch/arm/mach-s32/s32-cc/hwconfig_fixups.c    |  6 ++--
+ arch/arm/mach-s32/s32-cc/serdes_hwconfig.c    | 21 +++++-------
+ arch/arm/mach-s32/s32-cc/sgmii/sgmii.c        | 12 +++----
+ drivers/pci/serdes_s32gen1.c                  | 33 ++++++++++++++-----
+ 6 files changed, 45 insertions(+), 37 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h b/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
+index 54f60265f7..847254a5ea 100644
+--- a/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
++++ b/arch/arm/include/asm/arch-s32/s32-cc/sgmii.h
+@@ -10,7 +10,6 @@
+ 
+ enum serdes_mode;
+ enum serdes_xpcs_mode;
+-enum serdes_clock;
+ enum serdes_clock_fmhz;
+ enum serdes_xpcs_mode_gen2;
+ 
+@@ -20,7 +19,7 @@ void serdes_pcs_mode5(void __iomem *base);
+ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 		      int platform_serdes_id, enum serdes_mode ss_mode,
+ 		      enum serdes_xpcs_mode xpcs_mode,
+-		      enum serdes_clock clktype,
++		      bool ext_clk,
+ 		      enum serdes_clock_fmhz fmhz,
+ 		      enum serdes_xpcs_mode_gen2 xpcs[2]);
+ 
+diff --git a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+index 3eac84e2d6..9da84d5761 100644
+--- a/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
++++ b/arch/arm/mach-s32/include/s32-cc/serdes_hwconfig.h
+@@ -10,11 +10,6 @@
+ #define   SERDES_EXT_CLK	"ext"
+ #define   SERDES_INT_CLK	"int"
+ 
+-enum serdes_clock {
+-	CLK_EXT = 0,
+-	CLK_INT
+-};
+-
+ enum serdes_clock_fmhz {
+ 	CLK_100MHZ = 0,		/* Default */
+ 	CLK_125MHZ		/* For 2.5G mode */
+@@ -114,7 +109,7 @@ enum serdes_mode {
+ };
+ 
+ enum serdes_dev_type s32_serdes_get_mode_from_hwconfig(int id);
+-enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id);
++bool s32_serdes_is_external_clk_in_hwconfig(int i);
+ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id);
+ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id);
+ enum serdes_mode s32_serdes_get_op_mode_from_hwconfig(int id);
+diff --git a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+index 73f1efe0fb..c94c2f1bb8 100644
+--- a/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
++++ b/arch/arm/mach-s32/s32-cc/hwconfig_fixups.c
+@@ -691,7 +691,7 @@ static int add_ext_clk(struct dts_node *node, int id)
+ 
+ static int set_serdes_clk(struct dts_node *root, int id)
+ {
+-	enum serdes_clock clk = s32_serdes_get_clock_from_hwconfig(id);
++	bool ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
+ 	int prop_pos, ret;
+ 	struct dts_node node;
+ 
+@@ -703,10 +703,10 @@ static int set_serdes_clk(struct dts_node *root, int id)
+ 
+ 	prop_pos = node_stringlist_search(&node, "clock-names", SERDES_EXT_CLK);
+ 
+-	if (clk == CLK_INT && prop_pos >= 0)
++	if (!ext_clk && prop_pos >= 0)
+ 		return rename_ext_clk(&node, prop_pos);
+ 
+-	if (clk == CLK_EXT && prop_pos <= 0)
++	if (ext_clk && prop_pos <= 0)
+ 		return add_ext_clk(&node, id);
+ 
+ 	return 0;
+diff --git a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+index 6d52a41ff8..ad4cca03b2 100644
+--- a/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
++++ b/arch/arm/mach-s32/s32-cc/serdes_hwconfig.c
+@@ -7,7 +7,6 @@
+ #include <asm/arch/s32-cc/serdes_regs.h>
+ #include <s32-cc/serdes_hwconfig.h>
+ 
+-#define PCIE_DEFAULT_INTERNAL_CLK	CLK_INT
+ #define PCIE_DEFAULT_INTERNAL_CLK_FMHZ	CLK_100MHZ
+ #define PCIE_DEFAULT_PHY_MODE		CRNS
+ 
+@@ -127,22 +126,21 @@ enum serdes_xpcs_mode s32_serdes_get_xpcs_cfg_from_hwconfig(int id)
+ 	return xpcs_mode;
+ }
+ 
+-enum serdes_clock s32_serdes_get_clock_from_hwconfig(int id)
++bool s32_serdes_is_external_clk_in_hwconfig(int id)
+ {
+-	enum serdes_clock clk = PCIE_DEFAULT_INTERNAL_CLK;
+ 	size_t subarg_len = 0;
+ 	char *option_str = s32_serdes_get_hwconfig_subarg(id, "clock",
+ 		&subarg_len);
+ 
+ 	if (!option_str || !subarg_len)
+-		return clk;
++		return false;
+ 
+ 	if (!strncmp(option_str, "ext", subarg_len))
+-		clk = CLK_EXT;
++		return true;
+ 	else if (!strncmp(option_str, "int", subarg_len))
+-		clk = CLK_INT;
++		return false;
+ 
+-	return clk;
++	return false;
+ }
+ 
+ enum serdes_clock_fmhz s32_serdes_get_clock_fmhz_from_hwconfig(int id)
+@@ -244,11 +242,10 @@ bool s32_serdes_is_cfg_valid(int id)
+ 	enum serdes_xpcs_mode xpcs_mode;
+ 	enum serdes_clock_fmhz freq;
+ 	enum serdes_mode mode;
+-	enum serdes_clock clktype;
+ 	enum serdes_phy_mode phy_mode;
+-	bool mode5;
++	bool mode5, ext_clk;
+ 
+-	clktype = s32_serdes_get_clock_from_hwconfig(id);
++	ext_clk = s32_serdes_is_external_clk_in_hwconfig(id);
+ 	freq = s32_serdes_get_clock_fmhz_from_hwconfig(id);
+ 	devtype = s32_serdes_get_mode_from_hwconfig(id);
+ 	xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(id);
+@@ -306,7 +303,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 
+ 	mode5 = s32_serdes_has_mode5_enabled(id);
+ 	if (mode5) {
+-		if (!(clktype == CLK_EXT && freq == CLK_100MHZ &&
++		if (!(ext_clk && freq == CLK_100MHZ &&
+ 		      xpcs_mode == SGMII_XPCS1)) {
+ 			pr_err("SerDes%d: Invalid mode5 demo configuration\n",
+ 			       id);
+@@ -314,7 +311,7 @@ bool s32_serdes_is_cfg_valid(int id)
+ 		}
+ 	}
+ 
+-	if (clktype == CLK_INT) {
++	if (!ext_clk) {
+ 		if (phy_mode == CRSS || phy_mode == SRIS) {
+ 			printf("SerDes%d: CRSS or SRIS for PCIe%d PHY mode cannot be used with internal clock\n",
+ 			       id, id);
+diff --git a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+index 152b01ee55..e6962edd49 100644
+--- a/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
++++ b/arch/arm/mach-s32/s32-cc/sgmii/sgmii.c
+@@ -50,8 +50,8 @@ struct s32_xpcs_cfg {
+ 	enum serdes_xpcs_mode xpcs_mode;
+ 	enum serdes_xpcs_mode_gen2 mode[2];
+ 	enum serdes_mode ss_mode;
+-	enum serdes_clock clktype;
+ 	enum serdes_clock_fmhz fmhz;
++	bool ext_clk;
+ 	bool is_init;
+ };
+ 
+@@ -214,7 +214,7 @@ static void s32_serdes_post_init(struct s32_xpcs_cfg *serdes, u32 xpcs)
+ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 		      int platform_serdes_id, enum serdes_mode ss_mode,
+ 		      enum serdes_xpcs_mode xpcs_mode,
+-		      enum serdes_clock clktype,
++		      bool ext_clk,
+ 		      enum serdes_clock_fmhz fmhz,
+ 		      enum serdes_xpcs_mode_gen2 xpcs[2])
+ {
+@@ -231,7 +231,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 	serdes->xpcs0 = xpcs0;
+ 	serdes->xpcs1 = xpcs1;
+ 	serdes->xpcs_mode = SGMII_INAVALID;
+-	serdes->clktype = clktype;
++	serdes->ext_clk = ext_clk;
+ 	serdes->ss_mode = ss_mode;
+ 	serdes->fmhz = fmhz;
+ 
+@@ -280,7 +280,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 
+ 	if (serdes->mode[0] != SGMII_XPCS_PCIE) {
+ 		/* Bypass power up in case of pcie combo or internal clock*/
+-		if (serdes->clktype != CLK_INT && shared != true) {
++		if (serdes->ext_clk && !shared) {
+ 			ret = serdes_pcs_wait_for_power_good(xpcs0);
+ 			if (!ret)
+ 				pr_info("XPCS0 power-up good success\n");
+@@ -294,7 +294,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 
+ 	if (serdes->mode[1] != SGMII_XPCS_PCIE) {
+ 		/* Bypass power up in case of pcie combo or internal clock*/
+-		if (serdes->clktype != CLK_INT && shared != true) {
++		if (serdes->ext_clk && !shared) {
+ 			ret = serdes_pcs_wait_for_power_good(xpcs1);
+ 			if (!ret)
+ 				pr_info("XPCS1 power-up good success\n");
+@@ -310,7 +310,7 @@ int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 	if (!init_flags)
+ 		return 0;
+ 
+-	if (serdes->clktype == CLK_INT)
++	if (!serdes->ext_clk)
+ 		init_flags |= PHY_CLK_INT;
+ 
+ 	serdes_pcs_pma_init_gen2(serdes->xpcs0, serdes->xpcs1, fmhz,
+diff --git a/drivers/pci/serdes_s32gen1.c b/drivers/pci/serdes_s32gen1.c
+index 707ab4e702..158211a19e 100644
+--- a/drivers/pci/serdes_s32gen1.c
++++ b/drivers/pci/serdes_s32gen1.c
+@@ -30,8 +30,8 @@
+ #define PCIE_MPLL_LOCK_COUNT 10
+ #define DELAY_QUANTUM 1000
+ 
+-#define SERDES_CLK_MODE(clk_type) \
+-			((clk_type == CLK_INT) ? "internal" : "external")
++#define SERDES_CLK_MODE(EXT_CLK) \
++			((EXT_CLK) ? "external" : "internal")
+ #define SERDES_CLK_FMHZ(clk_type) \
+ 			((clk_type == CLK_100MHZ) ? "100Mhz" : "125Mhz")
+ 
+@@ -85,6 +85,8 @@
+ #define RAWLANE0_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3019)
+ #define RAWLANE1_DIG_PCS_XF_RX_EQ_DELTA_IQ_OVRD_IN	(0x3119)
+ 
++#define EXTERNAL_CLK_NAME	"ext"
++
+ struct pcie_ctrl {
+ 	struct reset_ctl *rst;
+ 	void __iomem *phy_base;
+@@ -97,6 +99,7 @@ struct serdes_ctrl {
+ 		struct clk clk;
+ 		bool enabled;
+ 	} clks[5];
++	bool ext_clk;
+ };
+ 
+ struct xpcs_ctrl {
+@@ -113,7 +116,6 @@ struct serdes {
+ 	int id;
+ 	enum serdes_dev_type devtype;
+ 	enum serdes_xpcs_mode xpcs_mode;
+-	enum serdes_clock clktype;
+ 	enum serdes_clock_fmhz fmhz;
+ 	enum serdes_phy_mode phy_mode;
+ };
+@@ -122,6 +124,19 @@ static const char * const serdes_clk_names[] = {
+ 	"axi", "aux", "apb", "ref", "ext"
+ };
+ 
++static struct clk *get_serdes_clk(struct serdes *serdes, const char *name)
++{
++	size_t i;
++
++	for (i = 0; i < ARRAY_SIZE(serdes->ctrl.clks); i++) {
++		if (!strcmp(serdes_clk_names[i], name) &&
++		    serdes->ctrl.clks[i].enabled)
++			return &serdes->ctrl.clks[i].clk;
++	}
++
++	return NULL;
++}
++
+ static int wait_read32(void __iomem *address, u32 expected,
+ 		       u32 mask, unsigned long read_attempts)
+ {
+@@ -326,7 +341,7 @@ static bool s32_serdes_init(struct serdes *serdes)
+ 		return false;
+ 
+ 	/* Set the clock for the Serdes module */
+-	if (serdes->clktype == CLK_INT) {
++	if (!serdes->ctrl.ext_clk) {
+ 		debug("Set internal clock\n");
+ 		BCLR32(UPTR(serdes->ctrl.ss_base) + PCIE_PHY_GEN_CTRL,
+ 		       REF_USE_PAD_MASK);
+@@ -375,7 +390,7 @@ static bool s32_serdes_init(struct serdes *serdes)
+ __weak int s32_eth_xpcs_init(void __iomem *xpcs0, void __iomem *xpcs1,
+ 			     int id, enum serdes_mode ss_mode,
+ 			     enum serdes_xpcs_mode xpcs_mode,
+-			     enum serdes_clock clktype,
++			     bool ext_clk,
+ 			     enum serdes_clock_fmhz fmhz,
+ 			     enum serdes_xpcs_mode_gen2 xpcs[2])
+ {
+@@ -463,6 +478,9 @@ static int ss_dt_init(struct udevice *dev, struct serdes *serdes)
+ 		ctrl->clks[i].enabled = true;
+ 	}
+ 
++	if (get_serdes_clk(serdes, EXTERNAL_CLK_NAME))
++		ctrl->ext_clk = true;
++
+ 	return 0;
+ }
+ 
+@@ -570,7 +588,6 @@ static int serdes_probe(struct udevice *dev)
+ 		goto disable_clks;
+ 
+ 	serdes->devtype = s32_serdes_get_mode_from_hwconfig(serdes->id);
+-	serdes->clktype = s32_serdes_get_clock_from_hwconfig(serdes->id);
+ 	/* Get XPCS configuration */
+ 	serdes->xpcs_mode = s32_serdes_get_xpcs_cfg_from_hwconfig(serdes->id);
+ 	serdes->fmhz = s32_serdes_get_clock_fmhz_from_hwconfig(serdes->id);
+@@ -579,7 +596,7 @@ static int serdes_probe(struct udevice *dev)
+ 
+ 	pcie_phy_mode = s32_serdes_get_pcie_phy_mode(serdes);
+ 	printf("Using %s clock for PCIe%d, %s\n",
+-	       SERDES_CLK_MODE(serdes->clktype),
++	       SERDES_CLK_MODE(serdes->ctrl.ext_clk),
+ 	       serdes->id, pcie_phy_mode);
+ 	if (IS_SERDES_SGMII(serdes->devtype) &&
+ 	    serdes->xpcs_mode != SGMII_INAVALID)
+@@ -602,7 +619,7 @@ static int serdes_probe(struct udevice *dev)
+ 					serdes->id,
+ 					serdes->ss_mode,
+ 					serdes->xpcs_mode,
+-					serdes->clktype,
++					serdes->ctrl.ext_clk,
+ 					serdes->fmhz,
+ 					xpcs);
+ 		if (ret) {
+-- 
+2.17.1
+

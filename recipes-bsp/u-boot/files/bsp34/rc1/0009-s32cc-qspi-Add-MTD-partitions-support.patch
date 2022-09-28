@@ -1,0 +1,53 @@
+From 96f743a01b18ab5ad14106bc8b8e2b1c0896c1a1 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 28 Jun 2022 12:02:44 +0300
+Subject: [PATCH 09/33] s32cc: qspi: Add MTD partitions support
+
+Issue: ALB-9014
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/Kconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 39a2780066..18e1401513 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -23,6 +23,7 @@ config NXP_S32CC
+ 	imply CMD_FAT
+ 	imply CMD_MDIO
+ 	imply CMD_MII
++	imply CMD_MTD
+ 	imply CMD_PART
+ 	imply CMD_PING
+ 	imply DM_ETH
+@@ -52,6 +53,7 @@ config NXP_S32CC
+ 	select CPU
+ 	select DM_GPIO
+ 	select DM_MMC
++	select DM_MTD
+ 	select DM_SERIAL
+ 	select FSL_LINFLEXUART
+ 	select FSL_USDHC
+@@ -59,6 +61,7 @@ config NXP_S32CC
+ 	select MACH_S32
+ 	select MMC_HS400_ES_SUPPORT
+ 	select MMC_HS400_SUPPORT
++	select MTD
+ 	select OF_CONTROL
+ 	select OF_SEPARATE
+ 	select OF_SYSTEM_SETUP
+@@ -67,6 +70,7 @@ config NXP_S32CC
+ 	select PINCTRL_S32CC
+ 	select S32CC_GPIO
+ 	select SCMI_FIRMWARE
++	select SPI_FLASH_MTD
+ 	select SYSRESET
+ 	select SYSRESET_PSCI
+ 	select SYS_MALLOC_F
+-- 
+2.17.1
+

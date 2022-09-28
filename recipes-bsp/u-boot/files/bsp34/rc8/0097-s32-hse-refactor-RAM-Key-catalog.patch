@@ -1,0 +1,41 @@
+From 8ac931c309a22c723e08c05a344ab263663f34da Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Wed, 31 Aug 2022 16:51:04 +0300
+Subject: [PATCH 097/102] s32: hse: refactor RAM Key catalog
+
+Refactor RAM Key Catalog to fit Key Groups for both Linux and OP-tee
+dirvers. First two groups are accessed by the Linux Driver and
+the last two by the OP-TEE Driver.
+
+Issue: ALB-9074
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/hse_adv_secboot.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
+index a4d1562d53..18d8768ac3 100644
+--- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
++++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
+@@ -42,13 +42,11 @@ DECLARE_GLOBAL_DATA_PTR;
+ /* hse ram key catalog configuration */
+ #define  HSE_RAM_KEY_CATALOG_CFG \
+ {HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+-	HSE_KEY_TYPE_RSA_PUB, 1u, HSE_KEY2048_BITS }, \
+-{HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+-	HSE_KEY_TYPE_AES, 11u, HSE_KEY256_BITS }, \
++	HSE_KEY_TYPE_AES, 6u, HSE_KEY256_BITS }, \
+ {HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+ 	HSE_KEY_TYPE_HMAC, 6u, HSE_KEY512_BITS}, \
+ {HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+-	HSE_KEY_TYPE_ECC_PUB, 1u, HSE_KEY256_BITS}, \
++	HSE_KEY_TYPE_AES, 7u, HSE_KEY256_BITS }, \
+ {HSE_ALL_MU_MASK, HSE_KEY_OWNER_ANY, \
+ 	HSE_KEY_TYPE_SHARED_SECRET, 1u, HSE_KEY256_BITS}, \
+ {0u, 0u, 0u, 0u, 0u}
+-- 
+2.17.1
+

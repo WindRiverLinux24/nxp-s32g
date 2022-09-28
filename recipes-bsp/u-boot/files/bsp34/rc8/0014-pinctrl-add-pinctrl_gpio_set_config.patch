@@ -1,0 +1,88 @@
+From 57237016d1b1b54097ac87169eb230f24eb129bf Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Thu, 19 May 2022 10:11:36 +0300
+Subject: [PATCH 014/102] pinctrl: add `pinctrl_gpio_set_config`
+
+Some GPIO drivers need to interact with the pinctrl drivers in order to
+configure the pin's properties.
+
+Issue: ALB-8868
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/pinctrl/pinctrl-uclass.c | 31 +++++++++++++++++++++++++++++++
+ include/dm/pinctrl.h             | 13 +++++++++++++
+ 2 files changed, 44 insertions(+)
+
+diff --git a/drivers/pinctrl/pinctrl-uclass.c b/drivers/pinctrl/pinctrl-uclass.c
+index aba8810474..d50f810fa8 100644
+--- a/drivers/pinctrl/pinctrl-uclass.c
++++ b/drivers/pinctrl/pinctrl-uclass.c
+@@ -214,6 +214,37 @@ pinctrl_gpio_get_pinctrl_and_offset(struct udevice *dev, unsigned offset,
+ 	return 0;
+ }
+ 
++/**
++ * pinctrl_gpio_set_config() - change the pinconf of a single GPIO
++ *
++ * @dev: GPIO peripheral device
++ * @offset: the GPIO pin offset from the GPIO controller
++ * @param: the config to be changed
++ * @argument: an argument with special meaning depending on the
++ *	      config
++ * @return: 0 on success, or negative error code on failure
++ */
++int pinctrl_gpio_set_config(struct udevice *dev, unsigned offset,
++			    enum pin_config_param param, unsigned argument)
++{
++	const struct pinctrl_ops *ops;
++	struct udevice *pctldev;
++	unsigned int pin_selector;
++	int ret;
++
++	ret = pinctrl_gpio_get_pinctrl_and_offset(dev, offset,
++						  &pctldev, &pin_selector);
++	if (ret)
++		return ret;
++
++	ops = pinctrl_get_ops(pctldev);
++	if (!ops || !ops->pinconf_set)
++		return -ENOTSUPP;
++
++	return ops->pinconf_set(pctldev, pin_selector, (unsigned)param,
++				argument);
++}
++
+ /**
+  * pinctrl_gpio_request() - request a single pin to be used as GPIO
+  *
+diff --git a/include/dm/pinctrl.h b/include/dm/pinctrl.h
+index 692e5fc8cb..bc41ec40a7 100644
+--- a/include/dm/pinctrl.h
++++ b/include/dm/pinctrl.h
+@@ -423,6 +423,19 @@ int pinctrl_get_pins_count(struct udevice *dev);
+ int pinctrl_get_pin_name(struct udevice *dev, int selector, char *buf,
+ 			 int size);
+ 
++/**
++ * pinctrl_gpio_set_config() - change the pinconf of a single GPIO
++ *
++ * @dev: GPIO peripheral device
++ * @offset: the GPIO pin offset from the GPIO controller
++ * @param: the config to be changed
++ * @argument: an argument with special meaning depending on the
++ *	      config
++ * @return: 0 on success, or negative error code on failure
++ */
++int pinctrl_gpio_set_config(struct udevice *dev, unsigned offset,
++			    enum pin_config_param param, unsigned argument);
++
+ /**
+  * pinctrl_gpio_request() - request a single pin to be used as GPIO
+  *
+-- 
+2.17.1
+
