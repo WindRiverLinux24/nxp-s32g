@@ -19,12 +19,58 @@ SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
-    file://0001-Fix-fiptool-build-error.patch \
+    file://bsp34/rc1/0001-fdts-s32-change-the-clock-name-from-ts-to-ptp_ref-fo.patch \
+    file://bsp34/rc1/0002-s32cc-dts-qspi-Add-QSPI-partitions.patch \
+    file://bsp34/rc1/0003-fdts-s32r45-Add-missing-SDHC-clock.patch \
+    file://bsp34/rc1/0004-fdts-s32cc-Remove-the-usage-of-device_id-property.patch \
+    file://bsp34/rc1/0005-s32cc-Remove-address-from-ATF-reserved-region.patch \
+    file://bsp34/rc1/0006-s32cc-cpu-Define-cluster-topology.patch \
+    file://bsp34/rc8/0001-dts-qspi-Remove-unnecessary-address-cells-size-cells.patch \
+    file://bsp34/rc8/0002-clk-s32-Panic-if-failed-to-initialize-clocks.patch \
+    file://bsp34/rc8/0003-clk-s32-Add-more-space-for-fixed-clocks.patch \
+    file://bsp34/rc8/0004-fdts-s32cc-Add-SerDes-external-clocks.patch \
+    file://bsp34/rc8/0005-fdts-s32g3-move-cpu-clusters-in-cpu-map-node.patch \
+    file://bsp34/rc8/0006-fdts-s32cc-probe-a53_gpr-before-relocation.patch \
+    file://bsp34/rc8/0007-s32g3-dts-Define-new-QSPI-compatible-string-binding.patch \
+    file://bsp34/rc8/0008-fdts-s32cc-remove-unnecessary-gmac-bindings-changes.patch \
+    file://bsp34/rc8/0009-s32-mmc-Call-s32_mmc_init-before-sending-MMC-command.patch \
+    file://bsp34/rc8/0010-s32-mmc-Use-only-the-TC-bit-to-check-for-transaction.patch \
+    file://bsp34/rc8/0011-s32-mmc-Touch-only-the-relevant-INT_STATUS-_EN-bits.patch \
+    file://bsp34/rc8/0012-s32-mmc-Set-INT_SIGNAL_EN-in-s32_mmc_init-not-on-eac.patch \
+    file://bsp34/rc8/0013-s32-mmc-Set-DTOCV-to-1101b-the-recommended-value.patch \
+    file://bsp34/rc8/0014-s32-mmc-Poll-SDSTB-when-changing-the-clock.patch \
+    file://bsp34/rc8/0015-s32-mmc-Refactor-logic-for-differentiating-data-tran.patch \
+    file://bsp34/rc8/0016-s32-mmc-Use-a-device-data-structure.patch \
+    file://bsp34/rc8/0017-dt-bindings-memory-add-s32-siul2.h.patch \
+    file://bsp34/rc8/0018-fdts-s32-unify-SIUL2-modules.patch \
+    file://bsp34/rc8/0019-clk-s32-Add-more-space-for-fixed-clocks.patch \
+    file://bsp34/rc8/0020-fdts-s32cc-Add-reset-line-for-SerDes-nodes.patch \
+    file://bsp34/rc8/0021-mk-use-gawk-instead-of-mawk.patch \
+    file://bsp34/rc8/0022-fdts-s32cc-serdes-Use-the-same-register-bindings-as-.patch \
+    file://bsp34/rc8/0023-fdts-s32cc-serdes-Use-the-same-clock-bindings-as-in-.patch \
+    file://bsp34/rc8/0024-fdts-s32-rename-pinctrl_-nodes-and-add-grp-subnode.patch \
+    file://bsp34/rc8/0025-dts-s32-switch-to-generic-pinconf-pinmux-interface.patch \
+    file://bsp34/rc8/0026-dt-bindings-pinctrl-s32-remove-old-bindings.patch \
+    file://bsp34/rc8/0027-fdts-s32-remove-old-dt-bindings-includes.patch \
+    file://bsp34/rc8/0028-fdts-s32cc-Use-nvmem-cells-instead-of-links-to-nvmem.patch \
+    file://bsp34/rc8/0029-ddr-Update-to-S32CT-DDR-Tool-1.6.patch \
+    file://bsp34/rc8/0030-fdts-Add-SerDes-phys-to-PFE-node.patch \
+    file://bsp34/rc8/0031-s32gen1-pcie-dts-Sync-max-link-speed-attribute-name-.patch \
+    file://bsp34/rc8/0032-clk-s32-initialize-struct-clk.data-member.patch \
+    file://bsp34/rc8/0033-s32cc-vr5510-Don-t-keep-PWRON1-as-wake-up-pin-during.patch \
+    file://bsp34/rc8/0034-clk-Keep-the-reserved-fields-of-PLLDV-registers.patch \
+    file://bsp34/rc8/0035-ddr-Drop-_mmio-suffix-for-ddr_lp.c-and-ddr_utils.c.patch \
+    file://bsp34/rc8/0036-ddr-Move-s32cc-platform-includes-to-ddr_plat.h.patch \
+    file://bsp34/rc8/0037-ddr-Move-code-to-separate-makefile.patch \
+    file://bsp34/rc8/0038-ddr-Add-CUSTOM_DDR_DRV-make-parameter-for-external-d.patch \
+    file://bsp34/rc8/0039-s32-Increase-DTB-max-size-to-0x8000.patch \
+    file://bsp34/rc8/0040-plat-s32-Replace-ECHO-macro-with-echo-command.patch \
+    file://bsp34/rc8/0041-plat-s32-Add-build-folder-as-dependency-to-generated.patch \
+    file://bsp34/rc8/0042-fix-fiptool-respect-OPENSSL_DIR.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
     file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
-    file://0002-fdts-s32g-Change-the-ptp-clock-name-to-ptp_ref.patch \
 "
 
 PATCHTOOL = "git"

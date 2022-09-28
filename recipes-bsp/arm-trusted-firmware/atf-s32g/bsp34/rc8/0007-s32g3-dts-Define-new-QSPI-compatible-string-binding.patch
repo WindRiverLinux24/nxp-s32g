@@ -1,0 +1,32 @@
+From b0311cc8d205151df4e9e4a7b40a26a56069152e Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Mon, 25 Jul 2022 15:04:29 +0300
+Subject: [PATCH 07/42] s32g3: dts: Define new QSPI compatible string binding
+
+Issue: ALB-9080
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32g3.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fdts/s32g3.dtsi b/fdts/s32g3.dtsi
+index a4bfa3376..dedebcb2b 100644
+--- a/fdts/s32g3.dtsi
++++ b/fdts/s32g3.dtsi
+@@ -198,6 +198,10 @@
+ 	compatible = "nxp,s32g3-cmu";
+ };
+ 
++&qspi {
++	compatible = "nxp,s32g3-qspi", "nxp,s32cc-qspi";
++};
++
+ &siul2_0_nvram {
+ 	compatible = "nxp,s32g3-siul2_0-nvram";
+ };
+-- 
+2.17.1
+

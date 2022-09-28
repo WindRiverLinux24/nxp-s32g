@@ -1,0 +1,73 @@
+From 8f372a522732180a19645cb977b7a2defc07494a Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Mon, 29 Aug 2022 14:22:31 +0300
+Subject: [PATCH 32/42] clk: s32: initialize `struct clk.data` member
+
+This commit fixes a Coverity complaint. The member `data` was not
+initialized. It didn't seem to be used which is why it didn't cause a
+crash.
+
+Initialize the member variable with NULL.
+
+Issue: ALB-9218
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/clk.c   | 1 +
+ plat/nxp/s32/s32_scmi_clk.c | 4 ++++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/nxp/s32/clk/clk.c b/drivers/nxp/s32/clk/clk.c
+index 4f31ecb2d..da4f35ea1 100644
+--- a/drivers/nxp/s32/clk/clk.c
++++ b/drivers/nxp/s32/clk/clk.c
+@@ -111,6 +111,7 @@ int get_clk(uint32_t drv_id, uint32_t clk_id, struct clk *clock)
+ 	}
+ 
+ 	clock->drv = clk_drv;
++	clock->data = NULL;
+ 	clock->id = clk_id;
+ 
+ 	if (clk_drv->ops->request)
+diff --git a/plat/nxp/s32/s32_scmi_clk.c b/plat/nxp/s32/s32_scmi_clk.c
+index ea7d02f69..ce1f65699 100644
+--- a/plat/nxp/s32/s32_scmi_clk.c
++++ b/plat/nxp/s32/s32_scmi_clk.c
+@@ -127,6 +127,7 @@ int32_t plat_scmi_clock_rates_array(unsigned int agent_id, unsigned int scmi_id,
+ 
+ 	drv = get_clk_driver_by_name(S32GEN1_CLK_DRV_NAME);
+ 	clk.drv = drv;
++	clk.data = NULL;
+ 	clk.id = scmi_id;
+ 
+ 	ret = s32gen1_scmi_clk_get_rates(&clk, rates, nb_elts);
+@@ -154,6 +155,7 @@ unsigned long plat_scmi_clock_get_rate(unsigned int agent_id,
+ 
+ 	drv = get_clk_driver_by_name(S32GEN1_CLK_DRV_NAME);
+ 	clk.drv = drv;
++	clk.data = NULL;
+ 	clk.id = scmi_id;
+ 
+ 	return s32gen1_scmi_clk_get_rate(&clk);
+@@ -176,6 +178,7 @@ int32_t plat_scmi_clock_set_rate(unsigned int agent_id, unsigned int scmi_id,
+ 
+ 	drv = get_clk_driver_by_name(S32GEN1_CLK_DRV_NAME);
+ 	clk.drv = drv;
++	clk.data = NULL;
+ 	clk.id = scmi_id;
+ 
+ 	/**
+@@ -221,6 +224,7 @@ int32_t plat_scmi_clock_set_state(unsigned int agent_id, unsigned int scmi_id,
+ 
+ 	drv = get_clk_driver_by_name(S32GEN1_CLK_DRV_NAME);
+ 	clk.drv = drv;
++	clk.data = NULL;
+ 	clk.id = scmi_id;
+ 
+ 	if (!can_set_clk_state(agent_id, scmi_id, enable_not_disable))
+-- 
+2.17.1
+

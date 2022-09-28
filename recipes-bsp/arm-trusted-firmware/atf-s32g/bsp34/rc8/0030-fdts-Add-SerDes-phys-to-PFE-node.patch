@@ -1,0 +1,32 @@
+From 4dd6b704850a5fb09f3a5eef66d45135e588bd6b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 27 Jul 2022 10:46:31 +0300
+Subject: [PATCH 30/42] fdts: Add SerDes phys to PFE node
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32g.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index 3352e6b09..61290cbdc 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -226,6 +226,10 @@
+ 				"mac1_rx_rgmii", "mac1_tx_rgmii",
+ 				"mac2_rx_sgmii", "mac2_tx_sgmii",
+ 				"mac2_rx_rgmii", "mac2_tx_rgmii";
++			phys = <&serdes1 PHY_TYPE_XPCS 0 0>,
++			     <&serdes1 PHY_TYPE_XPCS 1 1>,
++			     <&serdes0 PHY_TYPE_XPCS 1 1>;
++			phy-names = "emac0_xpcs", "emac1_xpcs", "emac2_xpcs";
+ 			pinctrl-0 = <&pfe0_pins &pfe0_mdio_pins>;
+ 			pinctrl-1 = <&pfe0_mdio_pins &pfe0_mdio_pins>;
+ 			pinctrl-2 = <&pfe1_pins &pfe1_mdio_pins>;
+-- 
+2.17.1
+

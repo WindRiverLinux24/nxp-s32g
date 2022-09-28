@@ -1,0 +1,59 @@
+From dfc13b7f0b1543c1b6637a4bd8766f0d677c05e5 Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Tue, 26 Jul 2022 17:21:35 +0300
+Subject: [PATCH 08/42] fdts: s32cc: remove unnecessary gmac bindings changes
+
+Use the same bindings for gmac in linux and u-boot.
+
+Issue: ALB-8326
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32g.dtsi      | 8 --------
+ fdts/s32r45-evb.dts | 8 --------
+ 2 files changed, 16 deletions(-)
+
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index 98160fdcd..43de288c3 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -272,14 +272,6 @@
+ };
+ 
+ &gmac0 {
+-	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_TS>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_SGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_RGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_AXI>;
+-	clock-names = "ptp_ref", "rx_sgmii", "tx_sgmii",
+-		      "rx_rgmii", "tx_rgmii", "axi";
+ 	pinctrl-0 = <&pinctrl0_gmac0 &pinctrl0_gmac0_mdio>;
+ 	pinctrl-1 = <&pinctrl0_gmac0_mdio>;
+ 	pinctrl-names = "gmac_rgmii", "gmac_sgmii";
+diff --git a/fdts/s32r45-evb.dts b/fdts/s32r45-evb.dts
+index 95c09733b..903c50b0e 100644
+--- a/fdts/s32r45-evb.dts
++++ b/fdts/s32r45-evb.dts
+@@ -40,14 +40,6 @@
+ };
+ 
+ &gmac0 {
+-	clocks = <&clks S32GEN1_SCMI_CLK_GMAC0_TS>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_SGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_SGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_RX_RGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_TX_RGMII>,
+-		 <&clks S32GEN1_SCMI_CLK_GMAC0_AXI>;
+-	clock-names = "ptp_ref", "rx_sgmii", "tx_sgmii",
+-		      "rx_rgmii", "tx_rgmii", "axi";
+ 	pinctrl-0 = <&pinctrl0_gmac0 &pinctrl0_gmac0_mdio>;
+ 	pinctrl-1 = <&pinctrl0_gmac0_mdio>;
+ 	pinctrl-names = "gmac_rgmii", "gmac_sgmii";
+-- 
+2.17.1
+

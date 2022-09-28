@@ -1,0 +1,31 @@
+From b29c7123d68caf8a60cbd2da96ed2af4b8136310 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Wed, 20 Jul 2022 12:37:29 +0300
+Subject: [PATCH 01/42] dts: qspi: Remove unnecessary
+ 'address-cells'/'size-cells' from memory node
+
+Issue: ALB-9076
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc-nxp-flash-macronix.dtsi | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/fdts/s32cc-nxp-flash-macronix.dtsi b/fdts/s32cc-nxp-flash-macronix.dtsi
+index 7072f58cc..4b5a66ea6 100644
+--- a/fdts/s32cc-nxp-flash-macronix.dtsi
++++ b/fdts/s32cc-nxp-flash-macronix.dtsi
+@@ -5,8 +5,6 @@
+ 
+ &qspi {
+ 	macronix_memory: mx25uw51245g@0 {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+ 		compatible = "jedec,spi-nor";
+ 		spi-max-frequency = <200000000>;
+ 		spi-tx-bus-width = <8>;
+-- 
+2.17.1
+

@@ -1,0 +1,43 @@
+From 7404d7eafa9308db91059b22eec7e21e4e598fd5 Mon Sep 17 00:00:00 2001
+From: Dan Nica <dan.nica@nxp.com>
+Date: Thu, 21 Jul 2022 07:27:38 +0300
+Subject: [PATCH 10/42] s32: mmc: Use only the TC bit to check for transaction
+ completion
+
+The correct approach to check for a read/write transaction completion is to
+wait for the TC bit, as per the Reference Manual.  Using the DINT bit is
+unnecessary at best.
+
+Issue: ALB-9078
+Upstream-Status: Pending 
+
+Signed-off-by: Dan Nica <dan.nica@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/mmc/s32_mmc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/nxp/s32/mmc/s32_mmc.c b/drivers/nxp/s32/mmc/s32_mmc.c
+index 5533e268f..185300677 100644
+--- a/drivers/nxp/s32/mmc/s32_mmc.c
++++ b/drivers/nxp/s32/mmc/s32_mmc.c
+@@ -66,7 +66,6 @@
+ #define INT_STATUS_CEBE			BIT(18)
+ #define INT_STATUS_CCE			BIT(17)
+ #define INT_STATUS_CTOE			BIT(16)
+-#define INT_STATUS_DINT			BIT(3)
+ #define INT_STATUS_TC			BIT(1)
+ #define INT_STATUS_CC			BIT(0)
+ #define INT_STATUS_CMD_ERROR		(INT_STATUS_CIE | INT_STATUS_CEBE | \
+@@ -279,7 +278,7 @@ static int s32_mmc_send_cmd(struct mmc_cmd *cmd)
+ 			regdata = mmio_read_32(USDHC_INT_STATUS);
+ 			if (regdata & (INT_STATUS_DATA_ERROR))
+ 				goto data_error;
+-		} while (!(regdata & (INT_STATUS_TC | INT_STATUS_DINT)));
++		} while (!(regdata & INT_STATUS_TC));
+ 
+ 	return 0;
+ 
+-- 
+2.17.1
+

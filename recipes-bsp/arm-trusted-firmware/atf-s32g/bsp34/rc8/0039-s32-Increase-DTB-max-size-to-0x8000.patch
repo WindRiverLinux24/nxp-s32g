@@ -1,0 +1,32 @@
+From 7754b778a4d677eb6a6082c74ce24ba47a9b6d29 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 5 Sep 2022 11:32:49 +0300
+Subject: [PATCH 39/42] s32: Increase DTB max size to 0x8000
+
+S32G3 dtb became big enough to not fit into 0x7000 bytes.
+
+Issue: ALB-9269
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_platform_def.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
+index 09a11bc4d..5170c902d 100644
+--- a/plat/nxp/s32/include/s32_platform_def.h
++++ b/plat/nxp/s32/include/s32_platform_def.h
+@@ -103,7 +103,7 @@
+ #define BL33_BASE		        (S32_DDR0_END - S32_BL33_IMAGE_SIZE - \
+ 						SIZE_1M + 1)
+ /* U-Boot: CONFIG_S32GEN1_MAX_DTB_SIZE */
+-#define BL33_MAX_DTB_SIZE	    (0x7000)
++#define BL33_MAX_DTB_SIZE	    (0x8000)
+ /* U-Boot: CONFIG_SYS_TEXT_BASE  */
+ #define BL33_ENTRYPOINT		    (BL33_BASE + 0xa0000)
+ #define BL33_DTB		    (BL33_ENTRYPOINT - BL33_MAX_DTB_SIZE)
+-- 
+2.17.1
+

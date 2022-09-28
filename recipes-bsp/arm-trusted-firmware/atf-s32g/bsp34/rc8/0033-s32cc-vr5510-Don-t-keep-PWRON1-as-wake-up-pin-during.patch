@@ -1,0 +1,68 @@
+From c616ad260d662b7ea52afd587f9bf82a716fb759 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 31 Aug 2022 15:59:42 +0300
+Subject: [PATCH 33/42] s32cc: vr5510: Don't keep PWRON1 as wake-up pin during
+ power off
+
+Set M_MODE[PWRON1DIS] to 1 in order to disable wake-up function
+on PWRON1 pin when requesting the system power off.
+
+Issue: ALB-9249
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/drivers/nxp/s32/pmic/vr5510.h |  4 +++-
+ plat/nxp/s32/s32g/s32g_vr5510.c       | 13 +++++++++++++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/include/drivers/nxp/s32/pmic/vr5510.h b/include/drivers/nxp/s32/pmic/vr5510.h
+index 362a4b188..d88f8256d 100644
+--- a/include/drivers/nxp/s32/pmic/vr5510.h
++++ b/include/drivers/nxp/s32/pmic/vr5510.h
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  */
+ #ifndef VR5510_PMIC_H
+ #define VR5510_PMIC_H
+@@ -12,7 +12,9 @@
+ #define VR5510_FSU_NAME		"vr5510_fsu"
+ 
+ #define VR5510_M_FLAG		0
++
+ #define VR5510_M_MODE		1
++#define VR5510_MODE_PWRON1DIS	BIT(1)
+ 
+ /* Main Unit */
+ #define VR5510_M_SM_CTRL1	2
+diff --git a/plat/nxp/s32/s32g/s32g_vr5510.c b/plat/nxp/s32/s32g/s32g_vr5510.c
+index 81eb999aa..f5ccb7029 100644
+--- a/plat/nxp/s32/s32g/s32g_vr5510.c
++++ b/plat/nxp/s32/s32g/s32g_vr5510.c
+@@ -188,6 +188,19 @@ void pmic_system_off(void)
+ 		return;
+ 	}
+ 
++	ret = vr5510_read(mu, VR5510_M_MODE, regp, sizeof(reg));
++	if (ret) {
++		ERROR("Failed to read VR5510_M_MODE register\n");
++		return;
++	}
++
++	reg |= VR5510_MODE_PWRON1DIS;
++	ret = vr5510_write(mu, VR5510_M_MODE, regp, sizeof(reg));
++	if (ret) {
++		ERROR("Failed to write VR5510_M_MODE register\n");
++		return;
++	}
++
+ 	reg = VR5510_CTRL1_GOTO_OFF;
+ 	ret = vr5510_write(mu, VR5510_M_SM_CTRL1, regp, sizeof(reg));
+ 	if (ret)
+-- 
+2.17.1
+

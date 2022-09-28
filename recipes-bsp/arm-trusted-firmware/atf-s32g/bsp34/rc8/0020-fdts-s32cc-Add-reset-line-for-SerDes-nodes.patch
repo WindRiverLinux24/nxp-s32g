@@ -1,0 +1,61 @@
+From 1ffbb536977f2a89c87c85dd965428a1ee490ff5 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 13 Jul 2022 14:21:27 +0300
+Subject: [PATCH 20/42] fdts: s32cc: Add reset line for SerDes nodes
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index 2e84af757..5e7b957e3 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -10,6 +10,7 @@
+ #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/phy/phy.h>
++#include <dt-bindings/reset/s32gen1-scmi-reset.h>
+ #include <dt-bindings/reset/s32gen1-wkpu.h>
+ 
+ / {
+@@ -83,6 +84,11 @@
+ 				reg = <0x14>;
+ 				#clock-cells = <1>;
+ 			};
++
++			reset: protocol@16 {
++				reg = <0x16>;
++				#reset-cells = <1>;
++			};
+ 		};
+ 
+ 		psci {
+@@ -881,6 +887,9 @@
+ 			#address-cells = <3>;
+ 			#size-cells = <2>;
+ 			num-lanes = <2>; /* supports max 2 lanes */
++			resets = <&reset S32GEN1_SCMI_RST_SERDES0>,
++				 <&reset S32GEN1_SCMI_RST_PCIE0>;
++			reset-names = "serdes", "pcie";
+ 			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+ 		};
+ 
+@@ -925,6 +934,9 @@
+ 			#address-cells = <3>;
+ 			#size-cells = <2>;
+ 			num-lanes = <1>; /* supports 1 lane */
++			resets = <&reset S32GEN1_SCMI_RST_SERDES1>,
++				 <&reset S32GEN1_SCMI_RST_PCIE1>;
++			reset-names = "serdes", "pcie";
+ 			clocks = <&clks S32GEN1_SCMI_CLK_SERDES_REF>;
+ 			status = "okay";
+ 		};
+-- 
+2.17.1
+

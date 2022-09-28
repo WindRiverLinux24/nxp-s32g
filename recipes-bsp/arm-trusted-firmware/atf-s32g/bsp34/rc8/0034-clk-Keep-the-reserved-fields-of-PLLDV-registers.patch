@@ -1,0 +1,47 @@
+From 008784ba1b403f67b259577f7f97eab2e11b2a18 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 31 Aug 2022 14:19:04 +0300
+Subject: [PATCH 34/42] clk: Keep the reserved fields of PLLDV registers
+
+Keep the reserved fields of PLLDV untouched while programming
+the PLL.
+
+Issue: ALB-5187
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/enable_clk.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/enable_clk.c b/drivers/nxp/s32/clk/enable_clk.c
+index 3ea183008..1a1a2b9b3 100644
+--- a/drivers/nxp/s32/clk/enable_clk.c
++++ b/drivers/nxp/s32/clk/enable_clk.c
+@@ -888,7 +888,7 @@ static int program_pll(struct s32gen1_pll *pll, void *pll_addr,
+ 	struct s32gen1_clk *sclk = get_clock(clk_src);
+ 	uint32_t rdiv = 1, mfi, mfn;
+ 	int ret;
+-	uint32_t odivs_mask;
++	uint32_t odivs_mask, plldv;
+ 	unsigned long old_vco;
+ 
+ 	if (!sclk)
+@@ -921,8 +921,11 @@ static int program_pll(struct s32gen1_pll *pll, void *pll_addr,
+ 	mmio_write_32(PLLDIG_PLLCLKMUX(pll_addr), clk_src);
+ 
+ 	/* Program VCO */
+-	mmio_write_32(PLLDIG_PLLDV(pll_addr),
+-		      PLLDIG_PLLDV_RDIV_SET(rdiv) | PLLDIG_PLLDV_MFI(mfi));
++	plldv = mmio_read_32(PLLDIG_PLLDV(pll_addr));
++	plldv &= ~(PLLDIG_PLLDV_RDIV_MASK | PLLDIG_PLLDV_MFI_MASK);
++	plldv |= PLLDIG_PLLDV_RDIV_SET(rdiv) | PLLDIG_PLLDV_MFI(mfi);
++	mmio_write_32(PLLDIG_PLLDV(pll_addr), plldv);
++
+ 	mmio_write_32(PLLDIG_PLLFD(pll_addr),
+ 		      PLLDIG_PLLFD_MFN_SET(mfn) | PLLDIG_PLLFD_SMDEN);
+ 
+-- 
+2.17.1
+
