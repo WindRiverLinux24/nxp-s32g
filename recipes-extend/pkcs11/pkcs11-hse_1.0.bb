@@ -14,6 +14,9 @@ SRCREV = "9d8a6339f521f009c4df1811b2ba9686d223c31d"
 SRC_URI[sha256sum] = "87acf7f788f954bb4722aad9de02544a257af47349eababe7ed152767573c12c"
 
 SRC_URI += " \
+    file://bsp34/rc8/0001-libpkcs-add-simple-key-provisioning-example.patch \
+    file://bsp34/rc8/0002-pkcs-change-pkcs11.h-to-v3.0-of-spec.patch \
+    file://bsp34/rc8/0003-pkcs-add-support-for-CKA_UNIQUE_ID-and-CKA_LABEL.patch \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
 "
 

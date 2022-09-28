@@ -1,0 +1,263 @@
+From 4be61dbaa14b6383abb11fad46a8371966606b82 Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Tue, 16 Aug 2022 16:37:19 +0300
+Subject: [PATCH 3/3] pkcs: add support for CKA_UNIQUE_ID and CKA_LABEL
+
+Upstream-Status: Pending
+
+Issue: ALB-9177
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/pkcs-key-provision.c |  4 ++-
+ libpkcs/pkcs11.c              | 66 +++++++++++++++++++++--------------
+ libpkcs/pkcs11_context.h      | 12 +++++--
+ libpkcs/pkcs11_object.c       | 15 ++++++++
+ 4 files changed, 66 insertions(+), 31 deletions(-)
+
+diff --git a/examples/pkcs-key-provision.c b/examples/pkcs-key-provision.c
+index 11e2f6c..35317a5 100644
+--- a/examples/pkcs-key-provision.c
++++ b/examples/pkcs-key-provision.c
+@@ -124,8 +124,10 @@ static CK_OBJECT_HANDLE util_lib_create_object(CK_FUNCTION_LIST_PTR flist, CK_SE
+ 	 */
+ 	CK_OBJECT_CLASS key_class = CKO_PUBLIC_KEY;
+ 	CK_KEY_TYPE key_type = CKK_RSA;
++	CK_UTF8CHAR label[] = {"HSE-RSA2048-PUB"};
+ 	CK_BYTE key_id[] = { 0x00, 0x07, 0x01 };
+ 	CK_ATTRIBUTE keyTemplate[] = {
++		{ CKA_LABEL, label, sizeof(label)-1 },
+ 		{ CKA_CLASS, &key_class, sizeof(key_class) },
+ 		{ CKA_KEY_TYPE, &key_type, sizeof(key_type) },
+ 		{ CKA_ID, &key_id, sizeof(key_id) },
+@@ -153,7 +155,7 @@ static CK_OBJECT_HANDLE util_lib_find_objects(CK_FUNCTION_LIST_PTR flist, CK_SES
+ 	do {
+ 		rv = flist->C_FindObjects(session, &key_match, 1, &num_keys);
+ 		/* no extra processing required, just return last key found */
+-	} while (rv == CKR_OK || num_keys != 0);
++	} while (rv == CKR_OK && num_keys != 0);
+ 
+ 	rv = flist->C_FindObjectsFinal(session);
+ 	if (rv != CKR_OK)
+diff --git a/libpkcs/pkcs11.c b/libpkcs/pkcs11.c
+index 62bc29a..f6721d5 100644
+--- a/libpkcs/pkcs11.c
++++ b/libpkcs/pkcs11.c
+@@ -69,17 +69,13 @@ static CK_FUNCTION_LIST gFunctionList = {
+  * PKCS11 standard: char buffers MUST be padded with the blank character (‘ ‘).
+  * MUST NOT be null-terminated.
+  */
+-static void strcpyPKCS11padding(
+-	unsigned char *dest,
+-	const char *source,
+-	size_t destSize
+-)
++static void strcpy_pkcs11_padding(unsigned char *dest, const char *source, size_t dest_len)
+ {
+-	size_t sLen = strlen(source);
+-	strncpy((char *)dest, source, destSize);
++	size_t src_len = strlen(source);
++	strncpy((char *)dest, source, dest_len);
+ 
+-	if (sLen < destSize)
+-		memset(dest + sLen, ' ', destSize - sLen);
++	if (src_len < dest_len)
++		memset(dest + src_len, ' ', dest_len - src_len);
+ }
+ 
+ /* simclist helper to serialize an element */
+@@ -90,6 +86,8 @@ static void *object_list_serializer(const void *el, uint32_t *packed_len)
+ 
+ 	serialized = malloc(sizeof(*serialized));
+ 
++	strcpy_pkcs11_padding((unsigned char *)serialized->key_label, object->key_label, MAX_LABEL_LEN);
++	serialized->key_uid = object->key_uid;
+ 	serialized->key_handle = object->key_handle;
+ 	serialized->key_type = object->key_type;
+ 	serialized->key_class = object->key_class;
+@@ -104,14 +102,18 @@ static void *object_list_serializer(const void *el, uint32_t *packed_len)
+ static void *object_list_unserializer(const void *data, uint32_t *data_len)
+ {
+ 	struct hse_keyObject *object;
+-	uint8_t *s_key_handle, *s_key_type, *s_key_class;
++	uint8_t *s_key_label, *s_key_uid, *s_key_handle, *s_key_type, *s_key_class;
+ 
+-	s_key_handle = (uint8_t *)data;
++	s_key_label = (uint8_t *)data;
++	s_key_uid = s_key_label + MAX_LABEL_LEN;
++	s_key_handle = s_key_uid + sizeof(CK_ULONG);
+ 	s_key_type = s_key_handle + sizeof(CK_OBJECT_HANDLE);
+ 	s_key_class = s_key_type + sizeof(CK_KEY_TYPE);
+ 
+ 	object = (struct hse_keyObject *)hse_intl_mem_alloc(sizeof(struct hse_keyObject));
+ 
++	strcpy_pkcs11_padding((unsigned char *)object->key_label, (char *)s_key_label, MAX_LABEL_LEN);
++	object->key_uid = *(CK_ULONG *)s_key_uid;
+ 	object->key_handle = *(CK_OBJECT_HANDLE *)s_key_handle;
+ 	object->key_type = *(CK_KEY_TYPE *)s_key_type;
+ 	object->key_class = *(CK_OBJECT_CLASS *)s_key_class;
+@@ -171,10 +173,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+ 	if (gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_ALREADY_INITIALIZED;
+ 
+-	strcpyPKCS11padding(pSlot->slotDescription, SLOT_DESC,
+-	                    sizeof(pSlot->slotDescription));
+-	strcpyPKCS11padding(pSlot->manufacturerID, MANUFACTURER,
+-	                    sizeof(pSlot->manufacturerID));
++	strcpy_pkcs11_padding(pSlot->slotDescription, SLOT_DESC,
++			      sizeof(pSlot->slotDescription));
++	strcpy_pkcs11_padding(pSlot->manufacturerID, MANUFACTURER,
++			      sizeof(pSlot->manufacturerID));
+ 	pSlot->flags = CKF_TOKEN_PRESENT | CKF_HW_SLOT;
+ 
+ 	/* rev2 */
+@@ -184,15 +186,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+ 	pSlot->firmwareVersion.major = 0;
+ 	pSlot->firmwareVersion.minor = 9;
+ 
+-	strcpyPKCS11padding(pToken->label, TOKEN_DESC,
+-	                    sizeof(pToken->label));
+-	strcpyPKCS11padding(pToken->manufacturerID, MANUFACTURER,
+-	                    sizeof(pToken->manufacturerID));
++	strcpy_pkcs11_padding(pToken->label, TOKEN_DESC,
++			      sizeof(pToken->label));
++	strcpy_pkcs11_padding(pToken->manufacturerID, MANUFACTURER,
++			      sizeof(pToken->manufacturerID));
+ 
+-	strcpyPKCS11padding(pToken->model, "N/A",
+-	                    sizeof(pToken->model));
+-	strcpyPKCS11padding(pToken->serialNumber, "N/A",
+-	                    sizeof(pToken->serialNumber));
++	strcpy_pkcs11_padding(pToken->model, "N/A", sizeof(pToken->model));
++	strcpy_pkcs11_padding(pToken->serialNumber, "N/A", sizeof(pToken->serialNumber));
+ 
+ 	pToken->flags = CKF_TOKEN_INITIALIZED;
+ 	pToken->ulMaxSessionCount = MAX_SESSIONS;
+@@ -276,11 +276,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetInfo)(
+ 
+ 	pInfo->cryptokiVersion.major = CRYPTOKI_VERSION_MAJOR;
+ 	pInfo->cryptokiVersion.minor = CRYPTOKI_VERSION_MINOR;
+-	strcpyPKCS11padding(pInfo->manufacturerID, MANUFACTURER,
+-	                    sizeof(pInfo->manufacturerID));
++	strcpy_pkcs11_padding(pInfo->manufacturerID, MANUFACTURER,
++			      sizeof(pInfo->manufacturerID));
+ 	pInfo->flags = 0;
+-	strcpyPKCS11padding(pInfo->libraryDescription, LIBRARY_DESC,
+-	                    sizeof(pInfo->libraryDescription));
++	strcpy_pkcs11_padding(pInfo->libraryDescription, LIBRARY_DESC,
++			      sizeof(pInfo->libraryDescription));
+ 	pInfo->libraryVersion.major = LIBRARY_VERSION_MAJOR;
+ 	pInfo->libraryVersion.minor = LIBRARY_VERSION_MINOR;
+ 
+@@ -477,6 +477,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)(
+ 
+ 	for (i = 0; i < ulCount; i++) {
+ 		switch (pTemplate[i].type) {
++			case CKA_LABEL:
++				if (pTemplate[i].pValue == NULL)
++					pTemplate[i].ulValueLen = MAX_LABEL_LEN;
++				else
++					strcpy_pkcs11_padding(pTemplate[i].pValue, pkey->key_label, MAX_LABEL_LEN);
++				break;
++			case CKA_UNIQUE_ID:
++				if (pTemplate[i].pValue == NULL)
++					pTemplate[i].ulValueLen = sizeof(CK_ULONG);
++				else
++					memcpy(pTemplate[i].pValue, &pkey->key_uid, sizeof(CK_ULONG));
++				break;
+ 			case CKA_CLASS:
+ 				if (pTemplate[i].pValue == NULL)
+ 					pTemplate[i].ulValueLen = sizeof(CK_OBJECT_CLASS);
+diff --git a/libpkcs/pkcs11_context.h b/libpkcs/pkcs11_context.h
+index b9c9314..7c4c1f7 100644
+--- a/libpkcs/pkcs11_context.h
++++ b/libpkcs/pkcs11_context.h
+@@ -24,9 +24,12 @@
+ #define SESSION_ID      0
+ 
+ #define MAX_SESSIONS    1
++#define MAX_LABEL_LEN   32
+ 
+-/* missing mechanisms from the PKCS11 interface header */
+-#define CKM_AES_GCM        0x1087ul
++/* add missing CKA_UNIQUE_ID from pkcs11.h */
++#ifndef CKA_UNIQUE_ID
++#define CKA_UNIQUE_ID 0x04ul
++#endif
+ 
+ #ifndef ARRAY_SIZE
+ #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+@@ -72,15 +75,18 @@ struct hse_findCtx {
+ /*
+  * struct hse_keyObject - internal key object
+  *
++ * @key_label:  user-provided identifier for the object
++ * @key_uid:    read-only unique object ID
+  * @key_handle: hse-provided key handle
+  * @key_type:   private/pair or public key
+  * @key_class:  rsa or ecc
+  */
+ struct hse_keyObject {
++	char key_label[MAX_LABEL_LEN];
++	CK_ULONG key_uid;
+ 	CK_OBJECT_HANDLE key_handle;
+ 	CK_KEY_TYPE key_type;
+ 	CK_OBJECT_CLASS key_class;
+-
+ };
+ 
+ /*
+diff --git a/libpkcs/pkcs11_object.c b/libpkcs/pkcs11_object.c
+index 02331f1..c85742e 100644
+--- a/libpkcs/pkcs11_object.c
++++ b/libpkcs/pkcs11_object.c
+@@ -108,6 +108,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 	struct hse_keyObject *key;
+ 	CK_BYTE *idtemp;
+ 	CK_ULONG id_len;
++	char *label = NULL;
+ 	CK_RV rc = CKR_OK;
+ 	int err;
+ 
+@@ -120,10 +121,17 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 	if (hSession != SESSION_ID)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (getattr_pval(pTemplate, CKA_UNIQUE_ID, ulCount))
++		return CKR_ATTRIBUTE_READ_ONLY;
++
+ 	/* error if id_len doesn't conform to hse expectations */
+ 	if (getattr_len(pTemplate, CKA_ID, ulCount) > 3)
+ 		return CKR_ARGUMENTS_BAD;
+ 
++	if (getattr_len(pTemplate, CKA_LABEL, ulCount) <= 0 ||
++	    getattr_len(pTemplate, CKA_LABEL, ulCount) > 32)
++		return CKR_ARGUMENTS_BAD;
++
+ 	key_info = (hseKeyInfo_t *)hse_mem_alloc(sizeof(hseKeyInfo_t));
+ 	if (key_info == NULL)
+ 		return CKR_HOST_MEMORY;
+@@ -146,6 +154,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 
+ 	/* get key data and create key object struct */
+ 	key->key_handle = GET_KEY_HANDLE(idtemp[2], idtemp[1], idtemp[0]);
++	/* key handles are unique in HSE; use them for UID */
++	key->key_uid = key->key_handle;
+ 
+ 	if ((CK_KEY_TYPE *)getattr_pval(pTemplate, CKA_KEY_TYPE, ulCount) == NULL) {
+ 		rc = CKR_ARGUMENTS_BAD;
+@@ -171,6 +181,11 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 		}
+ 	}
+ 
++	label = (char *)getattr_pval(pTemplate, CKA_LABEL, ulCount);
++	if (label != NULL) {
++		memcpy(key->key_label, label, getattr_len(pTemplate, CKA_LABEL, ulCount));
++	}
++
+ 	key_info->keyCounter = 0;
+ 	key_info->smrFlags = 0ul;
+ 
+-- 
+2.17.1
+
