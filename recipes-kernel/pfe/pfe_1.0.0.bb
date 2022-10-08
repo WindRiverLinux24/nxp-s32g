@@ -18,7 +18,6 @@ SRC_URI:append = " \
 	file://0001-pfe-netif-use-the-correct-ndo_eth_ioctl-to-fix-the-p.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
-SRCREV = "0669f53e2cc0b3c133406e3db2ae72f5b3934e5f"
 
 PATCHTOOL = "git"
 

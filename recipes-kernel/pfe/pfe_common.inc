@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://LICENSE-GPL2.txt;md5=5dcdfe25f21119aa5435eab9d0256af7
 URL ?= "git://source.codeaurora.org/external/autobsps32/extra/pfeng;protocol=https;branch=master"
 SRC_URI = "${URL}"
 
-SRCREV = "0669f53e2cc0b3c133406e3db2ae72f5b3934e5f"
+SRCREV = "e7cce64f125892f41cd1695ba5d08e3b5d3e2704"
 
 PATCHTOOL = "git"
 
