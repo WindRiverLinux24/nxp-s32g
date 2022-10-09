@@ -1,0 +1,30 @@
+From 45fab5e01e6a606f7899efaeba799e38291274ef Mon Sep 17 00:00:00 2001
+From: Robert Yang <liezhi.yang@windriver.com>
+Date: Mon, 5 Sep 2022 06:54:42 +0000
+Subject: [PATCH] s32_common.mk: Print error message for debugging
+
+There might be an race issue:
+| make: *** [plat/nxp/s32/s32_common.mk:279: /path/to/atf-s32g/2.5-r0/build/s32g2xxaevb/release/dummy_fip.s32] Error 127
+
+Print error message to help debug it.
+
+Upstream-Status: Pending
+
+Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
+---
+ plat/nxp/s32/s32_common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index d32e65b28..1e8e0564e 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -267,7 +267,7 @@ endif
+ 
+ ${DUMMY_FIP_S32}: ${DUMMY_FIP}
+ 	${ECHO} "  MKIMAGE $@"
+-	${Q}$(call run_mkimage, ${BL2_BASE}, ${BL2_BASE}, ${MKIMAGE_CFG}, $<, $@) 2> /dev/null
++	${Q}$(call run_mkimage, ${BL2_BASE}, ${BL2_BASE}, ${MKIMAGE_CFG}, $<, $@)
+ 
+ ${IVT_LOCATION_FILE}: ${DUMMY_FIP_S32}
+ 	${ECHO} "  MKIMAGE $@"
