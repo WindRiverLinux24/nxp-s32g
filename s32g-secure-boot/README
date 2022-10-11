@@ -3,8 +3,9 @@
 1. About this document
 ======================
 This document provides detail description about how to enable secure
-boot on S32G274A-EVB board. It includes the implementation principles
-of secure boot, implementation example step by step and so on.
+boot on S32G2-EVB, S32G274A-RDB2, S32G3-EVB and S32G399A-RDB3 boards.
+It includes the implementation principles of secure boot, implementation
+example step by step and so on.
 
 Dependencies
 ------------
@@ -85,7 +86,7 @@ Apply for assess right with NXP and then download HSE firmware from below link
 https://nxp.flexnetoperations.com/control/frse/product?child_plneID=820667
 
 S32G2 HSE FW Standard 0.1.0.5 is for S32G274A plarform 
-The HSE firmware file is s32g3xx_hse_fw_0.20.0_0.21.0_pb220520.bin.pink
+The HSE firmware file is s32g2xx_hse_fw_0.1.0_1.0.5_pb220413.bin.pink
 
 HSE FW 0.0.21.0 BETA Release is for S32G399A plarform
 The HSE firmware file is s32g3xx_hse_fw_0.20.0_0.21.0_pb220520.bin.pink
