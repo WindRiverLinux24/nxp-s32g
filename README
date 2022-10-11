@@ -856,3 +856,14 @@ By default, the u-boot image is compiled and installed. If you want u-boot to be
 compiled separately, use the following command：
 
         # bitbake u-boot-s32
+
+6.8 Templates
+-------------
+
+6.8.1 Omit_atf
+--------------
+
+This template is to skip the operation that installing fip.s32 to wic image.
+To build a wic image without fip.s32, enable omit_atf template in your local.conf file:
+
+	WRTEMPLATE = "feature/omit_atf"
