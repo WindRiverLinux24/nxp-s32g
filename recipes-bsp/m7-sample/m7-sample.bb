@@ -16,6 +16,7 @@ BOOT_TYPE = "sdcard"
 #IVT_FILE_BASE = "fip.s32"
 
 do_compile() {
+	mkdir -p "${BUILD}"
 	for suffix in ${BOOT_TYPE}
 	do
 		for plat in ${UBOOT_CONFIG}; do
@@ -33,7 +34,6 @@ do_compile() {
 				BUILD="${BDIR}" \
 				A53_BOOTLOADER="${BDIR}/${ivt_file}"
 
-			mkdir -p "${BUILD}"
 			cp  "${BDIR}/${ivt_file}.m7" "${BUILD}"
 		done
 	done
