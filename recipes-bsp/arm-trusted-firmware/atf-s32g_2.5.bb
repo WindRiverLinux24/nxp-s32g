@@ -43,6 +43,7 @@ EXTRA_OEMAKE += " \
 #        during the build process.
 EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  HOSTLD="${BUILD_LD}" \
+                 OPENSSL_DIR="${STAGING_DIR_NATIVE}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
