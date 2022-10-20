@@ -4,8 +4,7 @@ DESCRIPTION = "ARM Trusted Firmware"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://license.rst;md5=1dd070c98a281d18d9eefd938729b031"
 
-DEPENDS += "dtc-native xxd-native bc-native"
-DEPENDS += "openssl-native"
+DEPENDS += "dtc-native xxd-native bc-native u-boot-s32-tools-native openssl-native"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -58,14 +57,14 @@ do_compile() {
 		uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}"
 
 		if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg HSE_SECBOOT=1 all
+			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
 			#get layout of fip.s32
-			${DEPLOY_DIR_IMAGE}/${plat}/tools/mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
+			mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
 			#get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
 			fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
+			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
 		else
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg all
+			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
 		fi
 	done
 }
@@ -117,7 +116,7 @@ do_deploy() {
 	done
 }
 
-addtask deploy after do_compile
+addtask deploy after do_compile before do_build
 
 do_compile[depends] = "virtual/bootloader:do_deploy"
 

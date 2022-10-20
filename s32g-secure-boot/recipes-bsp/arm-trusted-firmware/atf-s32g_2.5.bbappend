@@ -44,12 +44,12 @@ do_deploy:prepend:nxp-s32g() {
 			j=$(expr $j + 1)
 			if  [ $j -eq $i ]; then
 				cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${plat}/${BUILD_TYPE}/fdts/${dtb}
-				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg HSE_SECBOOT=1 all
+				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
 				#get layout of fip.s32
-				${DEPLOY_DIR_IMAGE}/${plat}/tools/mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
+				mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
 				#get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
 				fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
-				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
+				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
 			fi
 		done
 		unset j

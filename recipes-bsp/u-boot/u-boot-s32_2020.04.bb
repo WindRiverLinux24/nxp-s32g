@@ -35,7 +35,6 @@ do_deploy:append() {
                 install -d ${DEPLOYDIR}/${type}/tools
                 install -m 0644 ${B}/${config}/${UBOOT_BINARY} ${DEPLOYDIR}/${type}/${UBOOT_BINARY}
                 install -m 0644 ${B}/${config}/${UBOOT_CFGOUT} ${DEPLOYDIR}/${type}/tools/${UBOOT_CFGOUT}
-                install -m 0755 ${B}/${config}/tools/mkimage ${DEPLOYDIR}/${type}/tools/mkimage
             fi
         done
         unset j
