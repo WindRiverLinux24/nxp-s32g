@@ -16,6 +16,7 @@ SRC_URI:append = " \
 	file://0001-pfe-fix-compile-error.patch \
 	file://0001-pfe-sw-drop-the-unneeded-codes-to-fix-build-errors.patch \
 	file://0001-pfe-netif-use-the-correct-ndo_eth_ioctl-to-fix-the-p.patch \
+	file://0001-pfe-set-mac_managed_pm-to-true-to-fix-mdio-resume-wa.patch \
 	file://${PFE_LOCAL_FIRMWARE_DIR}\
 	"
 

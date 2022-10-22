@@ -1,0 +1,80 @@
+From 7d00a7cb39d837bc5342a44ea9c45919679ad8e2 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Fri, 21 Oct 2022 21:39:13 +0800
+Subject: [PATCH] pfe: set mac_managed_pm to true to fix mdio resume warning
+
+This patch is to fix the following warning:
+
+WARNING: CPU: 3 PID: 961 at drivers/net/phy/phy_device.c:322 mdio_bus_phy_resume+0x10c/0x11c
+
+ CPU: 3 PID: 961 Comm: rtcwake Tainted: G        W         5.15.68-yocto-standard #1
+ Hardware name: NXP S32G399A-RDB3 (DT)
+ pstate: 20000005 (nzCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+ pc : mdio_bus_phy_resume+0x10c/0x11c
+ lr : dpm_run_callback+0x74/0xc0
+ sp : ffffffc00dbe3a40
+ x29: ffffffc00dbe3a40 x28: ffffff880344d260 x27: ffffffc009f24558
+ x26: ffffffc009506828 x25: ffffffc009da6594 x24: ffffffc009fc3948
+ x23: 0000000000000010 x22: ffffff880bf04120 x21: 0000000000000010
+ x20: ffffff880bf04000 x19: ffffff880bf04000 x18: ffffffffffffffff
+ x17: 0000000000000001 x16: 00006554f77f3812 x15: ffffffc00aaf1601
+ x14: 0000000000000000 x13: ffffffc00aaf15fe x12: ffffffffffffffff
+ x11: 00000000000000f4 x10: 00000000074d40f7 x9 : ffffffc008af1ce4
+ x8 : ffffffc00dbe3710 x7 : 0000000000000000 x6 : 0000000000000001
+ x5 : ffffffc009d81000 x4 : 0000000000000001 x3 : ffffffc0097bc008
+ x2 : ffffff880a055a40 x1 : 0000000000000005 x0 : 0000000000000004
+ Call trace:
+  mdio_bus_phy_resume+0x10c/0x11c
+  dpm_run_callback+0x74/0xc0
+  device_resume+0xa0/0x1f4
+  dpm_resume+0x11c/0x290
+  dpm_resume_end+0x20/0x40
+  suspend_devices_and_enter+0x1a8/0x20c
+  enter_state+0x148/0x1dc
+  pm_suspend+0x60/0xf0
+  state_store+0x94/0x120
+  kobj_attr_store+0x18/0x30
+  sysfs_kf_write+0x54/0x80
+  kernfs_fop_write_iter+0x128/0x1c0
+  new_sync_write+0xf0/0x190
+  vfs_write+0x1c4/0x220
+  ksys_write+0x70/0x100
+  __arm64_sys_write+0x24/0x30
+  invoke_syscall+0x5c/0x130
+  el0_svc_common.constprop.0+0x68/0x124
+  do_el0_svc+0x4c/0xb0
+  el0_svc+0x54/0x130
+  el0t_64_sync_handler+0xa4/0x130
+  el0t_64_sync+0x1a0/0x1a4
+
+The reason is that, the commit 47ac7b2f6a1f ("net: phy: Warn about incorrect
+mdio_bus_phy_resume() state") introduced a WARN when phy state is not in the
+states: PHY_HALTED, PHY_READY and PHY_UP. When pfe resumes, there have port
+in PHY_NOLINK state, so the above warning comes out. So set mac_managed_pm
+be true to tell mdio that the phy resume/suspend is managed by the mac, then
+the issue will be fixed.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/linux-pfeng/pfeng-netif.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/sw/linux-pfeng/pfeng-netif.c b/sw/linux-pfeng/pfeng-netif.c
+index 331f0eb..8cdde80 100644
+--- a/sw/linux-pfeng/pfeng-netif.c
++++ b/sw/linux-pfeng/pfeng-netif.c
+@@ -159,6 +159,9 @@ static int pfeng_netif_logif_open(struct net_device *netdev)
+ 			netdev_err(netdev, "Error connecting to the phy: %d\n", ret);
+ 			goto err_pl_con;
+ 		} else {
++                        /* Indicate that the MAC is responsible for PHY PM */
++                        netdev->phydev->mac_managed_pm = true;
++
+ 			/* Start PHY */
+ 			ret = pfeng_phylink_start(netif);
+ 			if (ret) {
+-- 
+2.25.1
+
