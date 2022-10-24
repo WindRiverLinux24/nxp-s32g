@@ -1,0 +1,107 @@
+From cd12cbca80ccfd7294ffd1a86e5a0bd42dd3e20d Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Mon, 24 Oct 2022 14:43:30 +0800
+Subject: [PATCH] pfe: fix the lock inconsistent warning when rmmod the kernel
+ driver
+
+Issue: LIN1022-2085
+
+This patch is to fix the following warning:
+
+================================
+ WARNING: inconsistent lock state
+ 5.15.74-yocto-standard #1 Tainted: G           O
+ --------------------------------
+ inconsistent {IN-HARDIRQ-R} -> {HARDIRQ-ON-W} usage.
+ rmmod/725 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ ffffff881504d738 (&irq->lock){+-..}-{2:2}, at: oal_irq_del_handler+0x30/0x120 [pfeng]
+ {IN-HARDIRQ-R} state was registered at:
+   __lock_acquire+0x398/0x920
+   lock_acquire.part.0+0xf0/0x260
+   lock_acquire+0xb0/0x1f4
+   __raw_read_lock_irqsave+0x88/0x17c
+   _raw_read_lock_irqsave+0x18/0x24
+   linux_irq_handler+0x2c/0x94 [pfeng]
+   __handle_irq_event_percpu+0x12c/0x454
+   handle_irq_event+0x6c/0x110
+   handle_fasteoi_irq+0xc8/0x230
+   handle_domain_irq+0xa0/0xec
+   gic_handle_irq+0xf4/0x168
+   call_on_irq_stack+0x28/0x58
+   do_interrupt_handler+0x5c/0x70
+   el1_interrupt+0x30/0x124
+   el1h_64_irq_handler+0x18/0x24
+   el1h_64_irq+0x78/0x7c
+   arch_local_irq_restore+0x8/0x10
+   _raw_spin_unlock+0x40/0xb0
+   torture_spin_lock_write_unlock+0x20/0x30
+   lock_torture_writer+0xec/0x1b4
+   kthread+0x148/0x15c
+   ret_from_fork+0x10/0x20
+ irq event stamp: 38917
+ hardirqs last  enabled at (38917): [<ffffffc0082ff73c>] cmpxchg_double_slab.constprop.0+0x238/0x24c
+ hardirqs last disabled at (38916): [<ffffffc0082ff690>] cmpxchg_double_slab.constprop.0+0x18c/0x24c
+ softirqs last  enabled at (37074): [<ffffffc0080106b4>] __do_softirq+0x454/0x6f4
+ softirqs last disabled at (37069): [<ffffffc008050754>] __irq_exit_rcu+0x114/0x1b4
+
+ other info that might help us debug this:
+  Possible unsafe locking scenario:
+
+        CPU0
+        ----
+   lock(&irq->lock);
+   <Interrupt>
+     lock(&irq->lock);
+
+  *** DEADLOCK ***
+
+ 1 lock held by rmmod/725:
+  #0: ffffff88034221a0 (&dev->mutex){....}-{3:3}, at: driver_detach+0xb0/0x110
+
+ ... ...
+
+The reason is that, the pfe driver uses unproper write_lock()/write_unlock()
+when rmmod, these lock/unlock operations does not disable the irqs of current
+cpu, so may cause deadlock, and the above warning shows. So correct the driver
+to use write_lock_irqsave()/write_unlock_irqrestore() will fix it.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/oal/src/oal_irq_linux.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/sw/oal/src/oal_irq_linux.c b/sw/oal/src/oal_irq_linux.c
+index d8d61c4..cd146ee 100644
+--- a/sw/oal/src/oal_irq_linux.c
++++ b/sw/oal/src/oal_irq_linux.c
+@@ -232,6 +232,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+ 	errno_t ret;
+ 	oal_irq_list_entry_t *entry = NULL;
+ 	LLIST_t *item, *aux;
++	unsigned long flags;
+ 
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+ 	if (unlikely(NULL == irq))
+@@ -243,7 +244,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+ 
+ 	/*	Search the handle */
+ 	ret = ENOENT;
+-	write_lock(&irq->lock);
++	write_lock_irqsave(&irq->lock, flags);
+ 
+ 	LLIST_ForEachRemovable(item, aux, &irq->handlers)
+ 	{
+@@ -258,7 +259,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+ 
+ 	} /* ForEachRemovable */
+ 
+-	write_unlock(&irq->lock);
++	write_unlock_irqrestore(&irq->lock, flags);
+ 
+ 	if (entry && entry->handle == handle)
+ 	{
+-- 
+2.25.1
+
