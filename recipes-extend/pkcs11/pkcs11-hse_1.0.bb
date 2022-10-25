@@ -15,6 +15,7 @@ SRC_URI[sha256sum] = "d864f6c2e0e238362f5e56e692da61eda2cee27c1383c77c90fa2be6fc
 
 SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
+    file://0002-pkcs-fix-QA-error.patch \
 "
 
 PATCHTOOL = "git"
@@ -47,6 +48,9 @@ do_install() {
 
     install -d ${D}${bindir}
     install -m 0755 ${S}/examples/pkcs-keyop ${D}${bindir}
+    install -m 0755 ${S}/examples/hse-encrypt ${D}${bindir}
+    install -m 0755 ${S}/examples/hse-sysimg ${D}${bindir}
+    install -m 0755 ${S}/examples/pkcs-key-provision ${D}${bindir}
 }
 
 PACKAGES =+ "${PN}-examples "

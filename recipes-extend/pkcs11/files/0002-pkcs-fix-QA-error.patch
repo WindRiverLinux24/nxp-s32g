@@ -1,0 +1,47 @@
+From 64b45cf64d692e10530e68682db505ba937800a5 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Thu, 27 Oct 2022 09:30:01 +0800
+Subject: [PATCH 2/2] pkcs: fix QA error
+
+This patch is to fix the following QA error:
+
+ ERROR: pkcs11-hse-1.0-r0 do_package_qa: QA Issue: File /usr/bin/hse-encrypt in package pkcs11-hse-examples doesn't have GNU_HASH (didn't pass LDFLAGS?)
+ *File /usr/bin/hse-encrypt in package pkcs11-hse-examples doesn't have GNU_HASH (didn't pass LDFLAGS?)**
+ **File /usr/bin/hse-sysimg in package pkcs11-hse-examples doesn't have GNU_HASH (didn't pass LDFLAGS?)*
+ File /usr/bin/hse-sysimg in package pkcs11-hse-examples doesn't have GNU_HASH (didn't pass LDFLAGS?) [ldflags]
+ ERROR: pkcs11-hse-1.0-r0 do_package_qa: Fatal QA errors were found, failing task.
+
+Because the new added demo apps not use the LDFLAGS when compiling, so add
+LDFLAGS for them can fix the QA error.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/examples/Makefile b/examples/Makefile
+index 9f926cc..a07b2ea 100644
+--- a/examples/Makefile
++++ b/examples/Makefile
+@@ -50,13 +50,13 @@ pkcs-keyop: pkcs-keyop.c
+ 	$(CROSS_COMPILE)gcc $(LIBS) $(INCLUDE_KEYOP) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+ 
+ pkcs-key-provision: pkcs-key-provision.c
+-	$(CROSS_COMPILE)gcc -L$(OPENSSL_DIR)/lib $(INCLUDE_LIBPKCS) $(CFLAGS) $^ -o $@ -lcrypto -ldl
++	$(CROSS_COMPILE)gcc -L$(OPENSSL_DIR)/lib $(INCLUDE_LIBPKCS) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lcrypto -ldl
+ 
+ hse-encrypt: hse-encrypt.c
+-	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ -lhse
++	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lhse
+ 
+ hse-sysimg: hse-sysimg.c
+-	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ -lhse
++	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lhse
+ 
+ clean:
+ 	rm -f pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg
+-- 
+2.25.1
+
