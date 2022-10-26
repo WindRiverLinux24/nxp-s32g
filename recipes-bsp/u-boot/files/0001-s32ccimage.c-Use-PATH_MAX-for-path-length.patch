@@ -1,0 +1,40 @@
+From 6e792117cd98f8484f87a480f8a5b948fc64fdd5 Mon Sep 17 00:00:00 2001
+From: Robert Yang <liezhi.yang@windriver.com>
+Date: Wed, 26 Oct 2022 09:42:18 +0000
+Subject: [PATCH] s32ccimage.c: Use PATH_MAX for path length
+
+Fixed when build atf-s32g in long directory ( >256):
+| Failed to parse line: 32/s32-cc/s32cc.cfg"
+
+Upstream-Status: Pending
+
+Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
+---
+ tools/s32ccimage.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/s32ccimage.c b/tools/s32ccimage.c
+index 854354cc2a..f77e07ea2c 100644
+--- a/tools/s32ccimage.c
++++ b/tools/s32ccimage.c
+@@ -902,7 +902,7 @@ static int parse_secboot_cmd(char *line)
+ 	int ret;
+ 	char *path;
+ 
+-	path = calloc(strnlen(line, 256), sizeof(*path));
++	path = calloc(strnlen(line, PATH_MAX), sizeof(*path));
+ 	if (!path)
+ 		return -ENOMEM;
+ 
+@@ -1199,7 +1199,7 @@ static int build_conf(FILE *fconf)
+ {
+ 	int ret;
+ 	char *line;
+-	char buffer[256];
++	char buffer[PATH_MAX];
+ 	size_t len;
+ 
+ 	while (!feof(fconf)) {
+-- 
+2.32.0
+

@@ -1,5 +1,7 @@
 require recipes-bsp/u-boot/u-boot-common.inc
 
+PE = ""
+
 LICENSE = "GPL-2.0-only & BSD-3-Clause & BSD-2-Clause & LGPL-2.0-only & LGPL-2.1-only"
 LIC_FILES_CHKSUM = " \
     file://Licenses/gpl-2.0.txt;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
@@ -22,6 +24,7 @@ SRC_URI += " \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0001-configs-s32g274ardb2-add-HSE_SECBOOT-config.patch', '', d)} \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0002-configs-s32g399ardb3-add-HSE_SECBOOT-config.patch', '', d)} \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0003-configs-s32g3xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
+    file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
 "
 
 SRCREV = "6391b468b1cf1e95b1f8020fadc59733c510eab6"
