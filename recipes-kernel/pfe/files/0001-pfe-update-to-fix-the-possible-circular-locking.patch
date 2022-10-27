@@ -1,0 +1,77 @@
+From 6affe6003b03f28467fab728923ab26b1120d8fc Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Thu, 27 Oct 2022 20:03:09 +0800
+Subject: [PATCH] pfe: update to fix the possible circular locking
+
+This patch is to fix the following possible circular locking, when remove or
+suspend/resume the driver:
+
+ WARNING: possible circular locking dependency detected
+ 5.15.74-yocto-standard #1 Tainted: G           O
+ ------------------------------------------------------
+ rmmod/600 is trying to acquire lock:
+ ffffff880e3e6548 ((wq_completion)pfe_mbox_intr/1){+.+.}-{0:0}, at: flush_workqueue+0x68/0x470
+
+ but task is already holding lock:
+ ffffff880f93cc78 (&mbox->lock){+.+.}-{3:3}, at: oal_mbox_destroy+0x4c/0x100 [pfeng]
+
+ which lock already depends on the new lock.
+ ......
+
+ Chain exists of:
+   (wq_completion)pfe_mbox_intr/1 --> (work_completion)(&mbox->intr.update) --> &mbox->lock
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(&mbox->lock);
+                                lock((work_completion)(&mbox->intr.update));
+                                lock(&mbox->lock);
+   lock((wq_completion)pfe_mbox_intr/1);
+
+  *** DEADLOCK ***
+  ......
+
+This is caused by the wrong order of the lock in oal_mbox_destroy, so
+correct the order to fix the issue.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/oal/src/oal_mbox_linux.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/sw/oal/src/oal_mbox_linux.c b/sw/oal/src/oal_mbox_linux.c
+index 72680aa..a256fc5 100644
+--- a/sw/oal/src/oal_mbox_linux.c
++++ b/sw/oal/src/oal_mbox_linux.c
+@@ -423,18 +423,18 @@ void oal_mbox_destroy(oal_mbox_t *mbox)
+ 		(void)oal_mbox_detach_timer(mbox);
+ 	}
+ 
+-	if(mutex_lock_interruptible(&mbox->lock))
+-	{
+-		NXP_LOG_ERROR("mbox locking failed\n");
+-		return; /* probably with leak of the mbox */
+-	}
+-
+ 	if (mbox->intr.queue)
+ 	{
+ 		drain_workqueue(mbox->intr.queue);
+ 		destroy_workqueue(mbox->intr.queue);
+ 	}
+ 
++	if(mutex_lock_interruptible(&mbox->lock))
++	{
++		NXP_LOG_ERROR("mbox locking failed\n");
++		return; /* probably with leak of the mbox */
++	}
++
+ 	if (mbox->intr.fifo)
+ 	{
+ 		fifo_destroy(mbox->intr.fifo);
+-- 
+2.25.1
+
