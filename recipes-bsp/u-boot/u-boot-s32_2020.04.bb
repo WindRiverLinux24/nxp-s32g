@@ -41,6 +41,3 @@ do_deploy:append() {
     done
     unset i
 }
-
-
-COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
