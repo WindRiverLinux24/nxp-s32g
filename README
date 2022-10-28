@@ -247,11 +247,12 @@ can 2 & can3 are no external interfaces and no validation.
 The NXP HSE (Hardware Security Engine) is a security subsystem aimed at running
 relevant security functions for applications with stringent confidentiality and
 authenticity requirements. This chapter describes the supported HSE features for
-the S32G274 board. Detailed information can refer to "HSE Reference Manual".
+the S32G274A and S32G399A boards. Detailed information can refer to "HSE Reference
+Manual".
 
-HSE is a component of S32G274A SOC. It must be installed with the firmware to use.
-HSE firmware is not shipped with SDK. It is released through NXP's Flexera, customers
-have to contact NXP to get the access to Flexera.
+HSE is a component of S32G274A/S32G399A SOCs. It must be installed with the
+firmware to use. HSE firmware is not shipped with SDK. It is released through
+NXP's Flexera, customers have to contact NXP to get the access to Flexera.
 
 6.2.1 HSE firmware
 ------------------
@@ -259,9 +260,10 @@ have to contact NXP to get the access to Flexera.
 Before to use the HSE, HSE firmware must be installed and the key catalogs must
 be formatted.
 
-If you get permission to use HSE, you can get packages "HSE_FW_S32G2_0_1_0_0.exe"
-and "HSE_FW_DEMO_APP_S32G2_0_1_0_0.exe" from NXP's official website. you can find
-the HSE firmware pink image from "HSE_FW_S32G2_0_1_0_0.exe"
+If you get permission to use HSE, you can get packages "HSE_FW_S32G2_0_1_0_5.exe"
+and "HSE_FW_DEMOAPP_S32G2_0_1_0_5.exe" for S32G274A, "HSE_FW_S32G3_0_0_21_0"
+and "HSE_DEMOAPP_S32G3_0_0_21_0" for S32G399A from NXP's official website. you
+can find the HSE firmware pink images from the related HSE_FW_S32Gx_xxx.exe.
 
 6.2.2 HSE Demo
 --------------
@@ -270,16 +272,17 @@ The demo application is provided separately and contains details on how to
 provision HSE FW on virgin devices and demonstrates common use cases of its
 security features.
 
-The HSE Demo is from the package "HSE_FW_DEMO_APP_S32G2_0_1_0_0.exe" of
-NXP's official website.
+The HSE Demo is from the package "HSE_FW_DEMOAPP_S32Gx_xxx.exe" of NXP's
+official website.
 
 Frist step in installing the HSE FW on a device is to generate the blob image,
 the blob image is a binary image which defines the layout of external flash memory.
 Contains all images used by BootRom/HSE FW to boot and configure the system at start-up.
 
 Below steps is an example about how to verify the HSE function on M7 cores,
-detailed information can refer to the document of "HSE_FW_DEMO_APP_S32G2_0_1_0_0_ReadMe.pdf"
+detailed information can refer to the document of "HSE_FW_DEMOAPP_S32Gx_xxx_ReadMe.pdf"
 
+In the following steps, take S32G274A SOC as example:
 1) Generate the blob image using scripts\blob.py script:
 
 %> set PLATFORM=s32g2xx
@@ -294,7 +297,7 @@ detailed information can refer to the document of "HSE_FW_DEMO_APP_S32G2_0_1_0_0
 
 There will be a display below on the serial to confirm HSE is up and running.
 
-	HSE FW Version: 0.1.0_1.0.0
+	HSE FW Version: 0.1.0_1.0.5
 	HSE FW up and running! Status:
 	      HSE_STATUS_RNG_INIT_OK
 	      HSE_STATUS_INIT_OK
@@ -317,18 +320,19 @@ The steps are as following:
     If users want to use HSE feature in linux, please specify the location
     of HSE firmware, like the following:
 
-	HSE_LOCAL_FIRMWARE_DIR = "/path/to/hse/firmware/for/s32g2/boards"
+	HSE_LOCAL_FIRMWARE_DIR = "/path/to/hse/firmware/for/s32g/boards"
 	HSE_FW_NAME_S32G2 = "name-of-hse-firmware-for-s32g2"
+	HSE_FW_NAME_S32G3 = "name-of-hse-firmware-for-s32g3"
 
     in the project <build-dir>/conf/local.conf, the HSE_LOCAL_FIRMWARE_DIR
-    is the HSE firmwares location and HSE_FW_NAME_S32G2 is the real name
-    of HSE firmware for S32G2 boards.
+    is the HSE firmwares location and HSE_FW_NAME_S32G2 and HSE_FW_NAME_S32G3
+    are the real names of HSE firmware for S32G2 and S32G3 boards.
 
     Then build the project as normal:
 
 	bitbake wrlinux-image-std
 
-    after build finish, HSE firmware has been put into the WIC image.
+    after build finish, HSE firmwares will be put into the related WIC images.
 
  2. Initialize HSE firmware and format key stores
 
@@ -344,7 +348,7 @@ The steps are as following:
 	Formatting NVM and RAM key stores...
 	Generating SYS_IMG...
 	Publishing SYS_IMG...
-	MMC write: dev # 0, block # 659, count 96...96 blocks written: OK
+	MMC write: dev # 0, block # 658, count 96...96 blocks written: OK
 	MMC write: dev # 0, block # 8, count 1...1 blocks written: OK
 
     then boot the board as normal.
@@ -378,16 +382,32 @@ The steps are as following:
 
 NOTICE:
 
-    The linux HSE & PKCS#11 demo supports S32G274AEVB board only for now,
-    because the RDB2 board does not include the HSE related configurations
-    and dts node in U-Boot. And this will be fixed in future.
+    The linux HSE & PKCS#11 demo supports all S32G274A and S32G399A boards now.
 
 6.2.4 Known issue
 -----------------
 
-There is an known issue that, if the HSE feature is enabled, the EVB board
-can not bootup with the output WIC image, we have submit a ticket to NXP to
-track the progress of this issue. This issue will be fixed later.
+There is an known issue that, the test demo will fail with error, so can not
+work as normal, and the fail log as following:
+
+  pkcs-keyop /usr/lib64/libpkcs-hse.so.1.0 
+  hse-uio 40211000.mu1b: device hse-uio open
+  hse: device initialized, status 0x0b20
+  
+  1 slots available
+  
+  Using token:
+  Manufacturer......: NXP-Semiconductors
+  Description.......: NXP-HSE-Slot
+  Token label.......: NXP-HSE-Token
+  
+  Keys available: 0
+  
+  hse-uio 40211000.mu1b: device hse-uio released 
+  Bus error
+  
+We have submit a ticket to NXP to track the progress of this
+issue. This issue will be fixed later.
 
 
 6.3 PFE
@@ -397,16 +417,16 @@ The NXP PFE (Packet Forwarding Engine) offloads the processing of Ethernet packe
 from the host cores, yielding higher performance and lower power than pure software
 processing can achieve.
 
-PFE is a component of S32G274A SOC. It must be installed with the firmware to use.
-PFE firmware is not shipped with SDK, customers have to contact NXP to get permission
-and download the PFE firmware.
+PFE is a component of S32G274A and S32G399A SOCs. It must be installed with the
+firmware to use. PFE firmware is not shipped with SDK, customers have to contact
+NXP to get permission and download the PFE firmware.
 
 6.3.1 PFE firmware
 ------------------
 
 PFE is a firmware-based module. Load the firmware before using PFE.
 The firmwares name are "s32g_pfe_class.fw" and "s32g_pfe_util.fw" with
-version 1.3.0, which have to be downloaded from NXP Software.
+version 1.4.0, which have to be downloaded from NXP Software.
 
 6.3.2 Steps to verify
 ---------------------
@@ -433,52 +453,37 @@ following line in your local.conf:
 
 	# bitbake wrlinux-image-<small/std>
 
-Normally the PFE feature should use the WIC booting system to verify instead of
-using NFS, the u-boot will default use the eth_pfeng Ethernet port mode and boot
-the wrlinux. You can set the ip address for the pfe port to do a simple test
-in the wrlinux. More complex usage and testing can refer to the document
-"S32G Linux PFE Driver User’s Manual".
+As PFE driver is a kernel module now, so it should not be used to NFS boot
+port. Please refer to the document "S32G Linux PFE Driver User’s Manual" for
+more information.
 
 About the detailed pfe port map information can refer to the chapter "Ethernet
-Hardware Support on S32G2" of the document "Linux BSP 33.0 User Manual for
-S32G2 platforms".
+Hardware Support on S32G2" and "Ethernet Hardware Support on S32G3" of the
+documents of Linux BSP 34.0 User Manual for S32G2 and S32G3 platforms.
 
 Note:
 
-1. Same as NXP SDK, only the "pfe1" interface for S32G274A-EVB board and
-"pfe2" interface for S32G274A-RDB2 board are verified fine. Others pfe ports
-connected with "SJA1105Q" or "SJA1110A" don't work.
+1. For S32G274A-RDB2 and S32G399A-RDB3 boards, if using NFS to verify the PFE
+feature, you should first switch eth to GMAC in u-boot, please refer to above
+chapter "4.1 NFS Root File System" to switch eth to GMAC.
 
-2. In order to use the Ethernet port with GMAC active instead of pfe in u-boot, you can
-remove the s32g_pfe_class.fw and s32g_pfe_util.fw from sdcard first boot partition,
-
-3. For S32G274A-EVB board, since the "pfe1" and GMAC Ethernet port share the same physical
-port, and u-boot will force the GMAC to be disabled if detecting the pfe
-firmware. So the GMAC will not be usable at this time, you can use the WIC method to
-test the pfe feature or adding a PCIe Ethernet port as a replacement.
-
-4. For S32G274A-RDB2 board, if using NFS to verify the PFE feature. You should
-first switch eth to GMAC in u-boot, please refer to above chapter "4.1 NFS Root File System"
-to switch eth to GMAC.
-
-5. For S32G274A-EVB board, the connection over the SJA1105 automotive switch requires
-firmware to be preloaded to the switch on every reboot:
+2. For S32G274A-EVB/S32G399A-EVB boards, the connection over the SJA1105
+automotive switch requires firmware to be preloaded to the switch on every
+reboot:
 	=> sja probe 5:0
 	=> sja speed -,-,-,1G,1G 5:0
-If the s32g_pfe_class.fw is not loaded, u-boot will print the following failure logs:
-	Failed to change the clock source of mux 6 to 55 (CGM = 0000000044018000)
-	Failed to enable clock: 20005
-	Failed to enable 93 clock
-	Failed to enable mac2_rx_rgmii clock
+
+3. Same as NXP SDK, the ports connected with "SJA1105Q" or "SJA1110A" are not
+stable, so they maybe don't work sometimes.
 
 6.3.3 Known issue
 -----------------
 
-On EVB/EVB3 boards, there have an known issue that the pfe1 phy can't work.
-Because the NXP SDK bsp33 changed the pfe1 to sgmii mode, then pfe1 will use
-an AQR107 phy, but when the pfe1 up to work, the RX count of pfe1 is allways
-0, so the pfe1 port can not get any packets from network. And this issue can
-be reproduced on SDK pre-built image.
+On S32G274A-EVB/S32G399A-EVB boards, there have an known issue that the pfe1
+phy can't work. Because the NXP SDK changed the pfe1 to sgmii mode, then pfe1
+will use an AQR107 phy, but when the pfe1 up to work, the RX count of pfe1 is
+allways 0, so the pfe1 port can not get any packets from network. And this
+issue can be reproduced on SDK pre-built image.
 
 We have submit the issue to NXP to track the progress, and the ticket url
 is:
@@ -495,9 +500,10 @@ Protocols. It is a self-contained module, separate from the application
 cores that would run applications (host cores). For now, LLCE CAN has
 been supported, LIN and Flexray are not, same as SDK.
 
-LLCE is a component of S32G274A SOC. It must be installed with the firmwares
-to use. LLCE firmwares are not shipped with SDK. It is released through NXP's
-Flexera, customers have to contact NXP to get the access to Flexera.
+LLCE is a component of S32G274A and S32G399A SOCs. It must be installed with
+the firmwares to use. LLCE firmwares are not shipped with SDK. It is released
+through NXP's Flexera, customers have to contact NXP to get the access to
+Flexera.
 
 6.4.1 LLCE firmwares
 --------------------
@@ -568,7 +574,7 @@ details of ATF, please refer to the sections
 and
 	"22 Power Management"
 
-in "S32G2_Linux_BSP33.0_User_Manual.pdf".
+in "S32G2_Linux_BSP34.0_User_Manual.pdf".
 
 NOTICE:
     For hardware reasons, the power management features are only supported
@@ -694,7 +700,7 @@ For ATF feature, there are some known issues.
      Same as SDK, the usb devices can not be identified after STR, because
      the USB driver does not support STR currentlly, there is a STR supported
      driver list in section:
-	"23.3 Suspend to RAM" in "S32G2_Linux_BSP33.0_User_Manual.pdf"
+	"23.3 Suspend to RAM" in "S32G2_Linux_BSP34.0_User_Manual.pdf"
 
      And this list will be updated in future.
 

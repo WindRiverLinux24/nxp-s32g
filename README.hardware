@@ -53,6 +53,8 @@ This BSP supports the following boards:
                            pre-released SDK bsp33.0-5.10.109-rt.
   - 2022/07 (LINUXPG-1146): WindRiver Linux 10.22 RCPL1. Standard and preempt-rt support based on NXP
                            pre-released SDK bsp33.0-5.10.109-rt.
+  - 2022/10 (LINUXPG-1352): WindRiver Linux 10.22 RCPL2. Standard and preempt-rt support based on NXP
+                           pre-released SDK bsp34.0-5.10.120-rt.
 
 3. BSP Features
 ===============
