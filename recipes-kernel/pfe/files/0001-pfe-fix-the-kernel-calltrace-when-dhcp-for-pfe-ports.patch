@@ -1,0 +1,93 @@
+From 09244ef161ca5b8a387cc76882bcc2d4586f7b52 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Sat, 29 Oct 2022 23:39:27 +0800
+Subject: [PATCH] pfe: fix the kernel calltrace when dhcp for pfe ports
+
+This patch is to fix the following kernel calltrace when run dhcpcd for
+pfe ports:
+
+ Unable to handle kernel NULL pointer dereference at virtual address 000000000000067c
+ Mem abort info:
+   ESR = 0x96000005
+   EC = 0x25: DABT (current EL), IL = 32 bits
+   SET = 0, FnV = 0
+   EA = 0, S1PTW = 0
+   FSC = 0x05: level 1 translation fault
+ Data abort info:
+   ISV = 0, ISS = 0x00000005
+   CM = 0, WnR = 0
+ user pgtable: 4k pages, 39-bit VAs, pgdp=000000089352a000
+ [000000000000067c] pgd=0000000000000000, p4d=0000000000000000, pud=0000000000000000
+ Internal error: Oops: 96000005 [#1] PREEMPT SMP
+ Modules linked in: 8021q llce_logger llce_mailbox llce_core llce_can pfeng ...
+ CPU: 7 PID: 426 Comm: dhcpcd Tainted: G           O      5.15.74-yocto-standard #1
+ Hardware name: NXP S32G399A-RDB3 (DT)
+ pstate: 60000005 (nZCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+ pc : pfeng_netif_logif_open+0x128/0x340 [pfeng]
+ lr : pfeng_netif_logif_open+0x118/0x340 [pfeng]
+ sp : ffffffc00cff3a50
+ x29: ffffffc00cff3a50 x28: 0000000000000000 x27: 0000000000004b00
+ x26: ffffffc00124d320 x25: ffffffc00124d300 x24: 0000000000000001
+ x23: 0000000000000004 x22: ffffff88124dfc80 x21: ffffff880f86cc80
+ x20: 0000000000000000 x19: ffffff880f86c000 x18: ffffffffffffffff
+ x17: 0000000000000001 x16: 000018a1eb1a0778 x15: ffffffc08cff3687
+ x14: 0000000000000000 x13: 6465747261747320 x12: 30464948203a6566
+ x11: 00000000000c0000 x10: ffffffc009d86b30 x9 : ffffffc008ba8ac4
+ x8 : 00000000fffff13a x7 : ffffffc009ddeb30 x6 : 0000000000000001
+ x5 : ffffffc009d61000 x4 : ffffffc009d617f8 x3 : ffffff885f8f7978
+ x2 : 0000000000000000 x1 : 0000000000000001 x0 : ffffff880f86cc80
+ Call trace:
+  pfeng_netif_logif_open+0x128/0x340 [pfeng]
+  __dev_open+0x104/0x1f0
+  __dev_change_flags+0x1d4/0x254
+  dev_change_flags+0x2c/0x6c
+  devinet_ioctl+0x5b0/0x6e0
+  inet_ioctl+0x210/0x220
+  sock_do_ioctl+0x50/0x100
+  sock_ioctl+0x290/0x3d0
+  __arm64_sys_ioctl+0xb0/0xfc
+  invoke_syscall+0x5c/0x130
+  el0_svc_common.constprop.0+0x68/0x124
+  do_el0_svc+0x4c/0xb0
+  el0_svc+0x54/0x110
+  el0t_64_sync_handler+0xa4/0x130
+  el0t_64_sync+0x1a0/0x1a4
+
+Because, there is a fixed-link pfe port on S32G platforms, for
+EVB/EVB Gen3, the port is pfe2, for RDB2/RDB3, the port is pfe0. For these
+fixed-link ports, there is no phy device for them, but there is following
+line:
+ netdev->phydev->mac_managed_pm = true;
+when open pfe ports, which to indicate that the MAC is responsible for PHY PM.
+But for the fixed-link port, there is no phy device, so there will be the
+above issue when access the netdev->phydev.
+
+So add netdev->phydev check can fix the issue.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/linux-pfeng/pfeng-netif.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/sw/linux-pfeng/pfeng-netif.c b/sw/linux-pfeng/pfeng-netif.c
+index 8cdde80..e9662a0 100644
+--- a/sw/linux-pfeng/pfeng-netif.c
++++ b/sw/linux-pfeng/pfeng-netif.c
+@@ -159,8 +159,10 @@ static int pfeng_netif_logif_open(struct net_device *netdev)
+ 			netdev_err(netdev, "Error connecting to the phy: %d\n", ret);
+ 			goto err_pl_con;
+ 		} else {
+-                        /* Indicate that the MAC is responsible for PHY PM */
+-                        netdev->phydev->mac_managed_pm = true;
++			if (netdev->phydev) {
++	                        /* Indicate that the MAC is responsible for PHY PM */
++	                        netdev->phydev->mac_managed_pm = true;
++			}
+ 
+ 			/* Start PHY */
+ 			ret = pfeng_phylink_start(netif);
+-- 
+2.25.1
+
