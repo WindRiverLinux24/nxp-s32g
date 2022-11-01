@@ -22,7 +22,7 @@ do_compile() {
 		for plat in ${UBOOT_CONFIG}; do
 			ivt_file="atf-${plat}.s32"
 
-			BDIR="${BUILD}-${suffix}"
+			BDIR="${BUILD}-${suffix}-${plat}"
 
 			oe_runmake CROSS_COMPILE="arm-none-eabi-" \
 				BUILD="${BDIR}" clean
