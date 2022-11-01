@@ -1,0 +1,6179 @@
+From 277a0973a27108822b4d68b231476c8ecbdab047 Mon Sep 17 00:00:00 2001
+From: "jan.petrous" <jan.petrous@nxp.com>
+Date: Thu, 13 Oct 2022 15:47:39 +0200
+Subject: [PATCH] version PFE_S32G_A53_LNX_RTM_1.2.0 RC1
+
+Highlights:
+    1) Support for kernel 5.15
+    2) RX offload fix
+    3) IQoS fix
+
+pfe_linux.git: 900b22643ab80309ba4dcdaed10f01436656e939
+
+Upstream-Status: Pending 
+
+Signed-off-by: Jan Petrous <jan.petrous@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/bpool/src/bpool.c                          |   5 +-
+ sw/common/src/blalloc.c                       |   4 +
+ sw/elf/public/elf.h                           | 176 +---
+ sw/elf/src/elf.c                              |  18 +-
+ sw/fci/src/fci_connections.c                  |   2 +-
+ sw/fci/src/fci_core_linux.c                   |   3 +
+ sw/fci/src/fci_interfaces.c                   |   5 +-
+ sw/fci/src/fci_l2br_domains.c                 |   6 +-
+ sw/fci/src/fci_mirror.c                       |   4 +-
+ sw/fci/src/fci_qos.c                          | 119 +--
+ sw/fci/src/fci_routes.c                       |   2 +-
+ sw/fci/src/fci_spd.c                          |   2 +-
+ sw/fifo/src/fifo.c                            |   3 +
+ sw/libfci_cli/Makefile                        |  15 +-
+ sw/libfci_cli/src/daemon/daemon.c             | 807 +++++++++++++++
+ sw/libfci_cli/src/daemon/daemon.h             |  42 +
+ sw/libfci_cli/src/daemon/daemon_cmds.c        | 331 ++++++
+ sw/libfci_cli/src/daemon/daemon_cmds.h        |  55 +
+ sw/libfci_cli/src/daemon/daemon_fciev2txt.c   | 296 ++++++
+ sw/libfci_cli/src/daemon/daemon_fciev2txt.h   |  40 +
+ sw/libfci_cli/src/daemon/daemon_shared.h      |  95 ++
+ sw/libfci_cli/src/libfci_cli_cmds_daemon.c    | 247 +++++
+ sw/libfci_cli/src/libfci_cli_cmds_daemon.h    |  45 +
+ sw/libfci_cli/src/libfci_cli_common.h         |  39 +-
+ sw/libfci_cli/src/libfci_cli_def_cmds.c       | 954 +++++++++++++++++-
+ sw/libfci_cli/src/libfci_cli_def_cmds.h       | 366 ++++++-
+ sw/libfci_cli/src/libfci_cli_def_help.c       | 719 ++++++++++++-
+ sw/libfci_cli/src/libfci_cli_def_opts.c       |  30 +-
+ sw/libfci_cli/src/libfci_cli_def_opts.h       |  84 +-
+ sw/libfci_cli/src/libfci_cli_parser.c         | 146 ++-
+ sw/libfci_cli/src/libfci_demo/demo_common.c   | 154 ++-
+ sw/libfci_cli/src/libfci_demo/demo_common.h   |   9 +-
+ sw/linux-pfeng/pfeng-drv.c                    |   1 -
+ sw/linux-pfeng/pfeng-dt.c                     |   5 +
+ sw/linux-pfeng/pfeng-ethtool.c                |  17 +-
+ sw/linux-pfeng/pfeng-hif.c                    |   3 +-
+ sw/linux-pfeng/pfeng-phylink.c                |   4 +-
+ sw/linux-pfeng/pfeng-slave-drv.c              |   1 -
+ sw/linux-pfeng/pfeng.h                        |  21 +-
+ sw/oal/src/oal_mm_linux.c                     |   3 +
+ sw/pfe_platform/hw/s32g/pfe_gpi_csr.h         |  24 +-
+ sw/pfe_platform/hw/s32g/pfe_platform_master.c |   4 +
+ sw/pfe_platform/hw/s32g/pfe_platform_slave.c  |   3 +
+ sw/pfe_platform/hw/s32g/pfe_wdt_csr.c         |  11 +-
+ sw/pfe_platform/public/pfe_gpi.h              |   2 +-
+ sw/pfe_platform/src/pfe_gpi.c                 | 162 ++-
+ sw/pfe_platform/src/pfe_hm.c                  |   4 +-
+ sw/pfe_platform/src/pfe_pe.c                  |   1 +
+ 48 files changed, 4683 insertions(+), 406 deletions(-)
+ create mode 100644 sw/libfci_cli/src/daemon/daemon.c
+ create mode 100644 sw/libfci_cli/src/daemon/daemon.h
+ create mode 100644 sw/libfci_cli/src/daemon/daemon_cmds.c
+ create mode 100644 sw/libfci_cli/src/daemon/daemon_cmds.h
+ create mode 100644 sw/libfci_cli/src/daemon/daemon_fciev2txt.c
+ create mode 100644 sw/libfci_cli/src/daemon/daemon_fciev2txt.h
+ create mode 100644 sw/libfci_cli/src/daemon/daemon_shared.h
+ create mode 100644 sw/libfci_cli/src/libfci_cli_cmds_daemon.c
+ create mode 100644 sw/libfci_cli/src/libfci_cli_cmds_daemon.h
+
+diff --git a/sw/bpool/src/bpool.c b/sw/bpool/src/bpool.c
+index 77cc484..aa25361 100644
+--- a/sw/bpool/src/bpool.c
++++ b/sw/bpool/src/bpool.c
+@@ -1,16 +1,19 @@
+ /* =========================================================================
+- *  Copyright 2017-2021 NXP
++ *  Copyright 2017-2022 NXP
+  *
+  *  SPDX-License-Identifier: GPL-2.0
+  *
+  * ========================================================================= */
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ #include "hal.h"
+ #include "fifo.h"
+ #include "bpool.h"
+ 
++MODULE_LICENSE("GPL");
++
+ /*==================================================================================================
+ *                          LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
+ ==================================================================================================*/
+diff --git a/sw/common/src/blalloc.c b/sw/common/src/blalloc.c
+index 7e646d5..cc5e7d8 100644
+--- a/sw/common/src/blalloc.c
++++ b/sw/common/src/blalloc.c
+@@ -31,9 +31,13 @@
+  2) needed interfaces from external units
+  3) internal and external interfaces from this unit
+ ==================================================================================================*/
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ #include "blalloc.h"
++
++MODULE_LICENSE("GPL");
++
+ /*==================================================================================================
+ 											CHECKS
+ ==================================================================================================*/
+diff --git a/sw/elf/public/elf.h b/sw/elf/public/elf.h
+index 4f6eb9d..b3995df 100644
+--- a/sw/elf/public/elf.h
++++ b/sw/elf/public/elf.h
+@@ -52,7 +52,6 @@
+ /*==================================================================================================
+                                        DEFINES AND MACROS
+ ==================================================================================================*/
+-#define ELF_NIDENT                  16U
+ #define ELF_NAMED_SECT_IDX_FLAG     0x80000000U
+ 
+ /* Macros for change of endianness */
+@@ -65,168 +64,16 @@
+                           | (((VAL)&0x0000FF0000000000U)>>24U) | (((VAL)&0x0000000000FF0000U)<<24U) \
+                           | (((VAL)&0x000000FF00000000U)>>8U ) | (((VAL)&0x00000000FF000000U)<<8U ) \
+                           )
+-/*==================================================================================================
+-                                             ENUMS
+-==================================================================================================*/
+-enum
+-{
+-    EI_MAG0         = 0, /* 0x7F */
+-    EI_MAG1         = 1, /* 'E' */
+-    EI_MAG2         = 2, /* 'L' */
+-    EI_MAG3         = 3, /* 'F' */
+-    EI_CLASS        = 4, /* Architecture 32-bit Architecture or 64-bit Architecture */
+-    EI_DATA         = 5, /* Byte Order */
+-    EI_VERSION      = 6, /* ELF Version */
+-    EI_OSABI        = 7, /* OS Specific */
+-    EI_ABIVERSION   = 8, /* OS Specific */
+-    EI_PAD          = 9  /* Padding */
+-};
+-
+-/* any section that is of type SHT_NOBITS and has the attribute SHF_ALLOC should be allocated */
+-enum
+-{
+-    SHT_NULL      = 0U,   /* Null section */
+-    SHT_PROGBITS  = 1U,   /* Program information */
+-    SHT_SYMTAB    = 2U,   /* Symbol table */
+-    SHT_STRTAB    = 3U,   /* String table */
+-    SHT_RELA      = 4U,   /* Relocation with addend*/
+-    SHT_NOBITS    = 8U,   /* Not present in file */
+-    SHT_REL       = 9U,   /* Relocation (no addend) */
+-};
+-
+-enum
+-{
+-    SHF_WRITE = 0x1, /* Writable */
+-    SHF_ALLOC = 0x2, /* Occupies memory during execution */
+-    SHF_EXECINSTR = 0x4, /* Executable */
+-    SHF_MERGE = 0x10, /* Might be merged */
+-    SHF_STRINGS = 0x20, /* Contains nul-terminated strings */
+-    SHF_INFO_LINK = 0x40, /* 'sh info' contains SHT index */
+-    SHF_LINK_ORDER = 0x80, /* Preserve order after combining */
+-    SHF_OS_NONCONFORMING = 0x100, /* Non-standard OS specific handling required */
+-    SHF_GROUP = 0x200, /* Section is member of a group */
+-    SHF_TLS = 0x400, /* Section hold thread-local data */
+-    SHF_MASKOS = 0x0ff00000, /* OS-specific */
+-    SHF_MASKPROC = (int32_t)0xf000000, /* Processor-specific *//* Cast to avoid warning on some compilers */
+-    SHF_ORDERED = 0x4000000, /* Special ordering requirement (Solaris) */
+-    SHF_EXCLUDE = 0x8000000, /* Section is excluded unless referenced or allocated (Solaris) */
+-};
+-
+ /*==================================================================================================
+                                  STRUCTURES AND OTHER TYPEDEFS
+ ==================================================================================================*/
+-typedef enum
+-{
+-    ELF_Arch_None    = 0x00u,
+-    ELF_Arch_SPARC   = 0x02u,
+-    ELF_Arch_x86     = 0x03u,
+-    ELF_Arch_MIPS    = 0x08u,
+-    ELF_Arch_PowerPC = 0x14u,
+-    ELF_Arch_ARM     = 0x28u,
+-    ELF_Arch_SuperH  = 0x2Au,
+-    ELF_Arch_IA_64   = 0x32u,
+-    ELF_Arch_x86_64  = 0x3Eu,
+-    ELF_Arch_AArch64 = 0xB7u,
+-    ELF_Arch_eXcess  = 0x6Fu,
+-} ELF_Arch_t;
+-
+-typedef uint32_t Elf32_Off;     /* Unsigned offset */
+-typedef uint32_t Elf32_Addr;    /* Unsigned address */
+-typedef uint64_t Elf64_Off;     /* Unsigned offset */
+-typedef uint64_t Elf64_Addr;    /* Unsigned address */
+-
+-typedef struct __attribute__((packed))
+-{
+-    uint8_t     e_ident[ELF_NIDENT];
+-    uint16_t    e_type;
+-    uint16_t    e_machine;
+-    uint32_t    e_version;
+-    Elf32_Addr  e_entry;
+-    Elf32_Off   e_phoff;
+-    Elf32_Off   e_shoff;
+-    uint32_t    e_flags;
+-    uint16_t    e_ehsize;
+-    uint16_t    e_phentsize;
+-    uint16_t    e_phnum;
+-    uint16_t    e_shentsize;
+-    uint16_t    e_shnum;
+-    uint16_t    e_shstrndx;
+-} Elf32_Ehdr;
+-typedef struct __attribute__((packed))
+-{
+-    uint8_t     e_ident[ELF_NIDENT];
+-    uint16_t    e_type;
+-    uint16_t    e_machine;
+-    uint32_t    e_version;
+-    Elf64_Addr  e_entry;
+-    Elf64_Off   e_phoff;
+-    Elf64_Off   e_shoff;
+-    uint32_t    e_flags;
+-    uint16_t    e_ehsize;
+-    uint16_t    e_phentsize;
+-    uint16_t    e_phnum;
+-    uint16_t    e_shentsize;
+-    uint16_t    e_shnum;
+-    uint16_t    e_shstrndx;
+-} Elf64_Ehdr;
+-
+-typedef struct __attribute__((packed))
+-{
+-    uint32_t   p_type;
+-    Elf32_Off  p_offset;
+-    Elf32_Addr p_vaddr;
+-    Elf32_Addr p_paddr;
+-    uint32_t   p_filesz;
+-    uint32_t   p_memsz;
+-    uint32_t   p_flags;
+-    uint32_t   p_align;
+-} Elf32_Phdr;
+-typedef struct __attribute__((packed))
+-{
+-    uint32_t   p_type;
+-    uint32_t   p_flags;
+-    Elf64_Off  p_offset;
+-    Elf64_Addr p_vaddr;
+-    Elf64_Addr p_paddr;
+-    uint64_t   p_filesz;
+-    uint64_t   p_memsz;
+-    uint64_t   p_align;
+-} Elf64_Phdr;
+-
+-typedef struct __attribute__((packed))
+-{
+-    uint32_t   sh_name;
+-    uint32_t   sh_type;
+-    uint32_t   sh_flags;
+-    Elf32_Addr sh_addr;
+-    Elf32_Off  sh_offset;
+-    uint32_t   sh_size;
+-    uint32_t   sh_link;
+-    uint32_t   sh_info;
+-    uint32_t   sh_addralign;
+-    uint32_t   sh_entsize;
+-} Elf32_Shdr;
+-typedef struct __attribute__((packed))
+-{
+-    uint32_t   sh_name;
+-    uint32_t   sh_type;
+-    uint64_t   sh_flags;
+-    Elf64_Addr sh_addr;
+-    Elf64_Off  sh_offset;
+-    uint64_t   sh_size;
+-    uint32_t   sh_link;
+-    uint32_t   sh_info;
+-    uint64_t   sh_addralign;
+-    uint64_t   sh_entsize;
+-} Elf64_Shdr;
+-
+ typedef struct __attribute__((packed))
+ {
+     union
+     {
+         Elf64_Ehdr r64;
+         Elf32_Ehdr r32;
+-        uint8_t    e_ident[ELF_NIDENT]; /* Direct access, same for both 64 and 32 */
++        uint8_t    e_ident[EI_NIDENT]; /* Direct access, same for both 64 and 32 */
+     }          Header;
+     Elf64_Phdr *arProgHead64;
+     Elf64_Shdr *arSectHead64;
+@@ -348,27 +195,6 @@ static inline bool_t ELF_IsLittleEndian(const ELF_File_t *pElfFile)
+ {
+     return (1U == pElfFile->Header.e_ident[EI_DATA]) ? TRUE : FALSE;
+ }
+-/**
+-* @brief        Use to check target architecture of the ELF.
+-* @param[in]    pElfFile Structure holding all informations about opened ELF file.
+-* @param[in]    eArch Expected architecture specification.
+-* @retval       TRUE ELF architecture matches given value.
+-* @retval       FALSE ELF targets different architecture.
+-*/
+-static inline bool_t ELF_IsArchitecture(const ELF_File_t *pElfFile, ELF_Arch_t eArch)
+-{
+-    bool_t bRetVal;
+-    if(TRUE == pElfFile->bIs64Bit)
+-    {
+-        bRetVal = ((uint16_t)eArch == pElfFile->Header.r64.e_machine) ? TRUE : FALSE;
+-    }
+-    else
+-    {
+-        bRetVal = ((uint16_t)eArch == pElfFile->Header.r32.e_machine) ? TRUE : FALSE;
+-    }
+-    return bRetVal;
+-}
+-
+ #ifdef PFE_CFG_TARGET_OS_AUTOSAR
+ #define ETH_43_PFE_STOP_SEC_CODE
+ #include "Eth_43_PFE_MemMap.h"
+diff --git a/sw/elf/src/elf.c b/sw/elf/src/elf.c
+index fd1a7b8..ce5ecb0 100644
+--- a/sw/elf/src/elf.c
++++ b/sw/elf/src/elf.c
+@@ -29,6 +29,7 @@
+  3) internal and external interfaces from this unit
+ ==================================================================================================*/
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ 
+@@ -37,6 +38,8 @@
+ 
+ #include "hal.h"
+ 
++MODULE_LICENSE("GPL");
++
+ /*==================================================================================================
+                                       FILE VERSION CHECKS
+ ==================================================================================================*/
+@@ -49,7 +52,6 @@
+ ==================================================================================================*/
+ #define ELF64_HEADER_SIZE 64U
+ #define ELF32_HEADER_SIZE 52U
+-#define SHN_UNDEF       0U    /* Undefined/Not present */
+ 
+ /*==================================================================================================
+                           LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
+@@ -62,20 +64,6 @@ enum
+     ELF_Type_Core = 4U,
+ };
+ 
+-enum
+-{
+-    PT_NULL      = 0U,
+-    PT_LOAD      = 1U, /* Loadable segment */
+-    PT_DYNAMIC   = 2U,
+-    PT_INTERP    = 3U,
+-    PT_NOTE      = 4U,
+-    PT_SHLIB     = 5U,
+-    PT_PHDR      = 6U,
+-    PT_LOPROC    = 7U,
+-    PT_HIPROC    = 8U,
+-    PT_GNU_STACK = 9U,
+-};
+-
+ /*==================================================================================================
+                                        LOCAL CONSTANTS
+ ==================================================================================================*/
+diff --git a/sw/fci/src/fci_connections.c b/sw/fci/src/fci_connections.c
+index 4a71a87..a4ed60a 100644
+--- a/sw/fci/src/fci_connections.c
++++ b/sw/fci/src/fci_connections.c
+@@ -1223,8 +1223,8 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 						*fci_ret = FPP_ERR_CT_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+diff --git a/sw/fci/src/fci_core_linux.c b/sw/fci/src/fci_core_linux.c
+index 9df4916..a88d92d 100644
+--- a/sw/fci/src/fci_core_linux.c
++++ b/sw/fci/src/fci_core_linux.c
+@@ -15,6 +15,7 @@
+  *
+  */
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ #include "fci.h"
+@@ -31,6 +32,8 @@
+ 
+ #include <linux/rtnetlink.h>
+ 
++MODULE_LICENSE("GPL");
++
+ static bool disable_netlink = false;
+ module_param(disable_netlink, bool, 0644);
+ MODULE_PARM_DESC(disable_netlink, "\t Do not create netlink socket for FCI communication (default: false)");
+diff --git a/sw/fci/src/fci_interfaces.c b/sw/fci/src/fci_interfaces.c
+index 10de11a..d14a92b 100644
+--- a/sw/fci/src/fci_interfaces.c
++++ b/sw/fci/src/fci_interfaces.c
+@@ -750,8 +750,8 @@ errno_t fci_interfaces_log_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_log_if_cmd
+ 						ret = EOK;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+ 					if (NULL == entry)
+@@ -1339,7 +1339,8 @@ errno_t fci_interfaces_phy_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_phy_if_cmd
+ 						*fci_ret = FPP_ERR_IF_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
+-				} /* FALLTHRU */
++					fallthrough;
++				}
+ 
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+diff --git a/sw/fci/src/fci_l2br_domains.c b/sw/fci/src/fci_l2br_domains.c
+index 419b8a9..e125e23 100644
+--- a/sw/fci/src/fci_l2br_domains.c
++++ b/sw/fci/src/fci_l2br_domains.c
+@@ -151,8 +151,8 @@ errno_t fci_l2br_domain_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_bd_cmd_t *
+ 						{
+ 							NXP_LOG_DEBUG("Bridge domain %d created\n", oal_ntohs(bd_cmd->vlan));
+ 						}
++						fallthrough;
+ 					}
+-					/* FALLTHRU */
+ 
+ 					case FPP_ACTION_UPDATE:
+ 					{
+@@ -350,8 +350,8 @@ errno_t fci_l2br_domain_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_bd_cmd_t *
+ 							*fci_ret = FPP_ERR_L2_BD_NOT_FOUND;
+ 							break;
+ 						}
++						fallthrough;
+ 					}
+-					/* FALLTHRU */
+ 
+ 					case FPP_ACTION_QUERY_CONT:
+ 					{
+@@ -591,8 +591,8 @@ errno_t fci_l2br_static_entry_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_l2_stat
+ 						*fci_ret = FPP_ERR_L2_STATIC_EN_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+ 					if (NULL == entry)
+diff --git a/sw/fci/src/fci_mirror.c b/sw/fci/src/fci_mirror.c
+index 74d8bc4..0b75ee0 100644
+--- a/sw/fci/src/fci_mirror.c
++++ b/sw/fci/src/fci_mirror.c
+@@ -106,8 +106,8 @@ errno_t fci_mirror_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_mirror_cmd_t *repl
+ 						ret = EPERM;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 
+ 				case FPP_ACTION_UPDATE:
+ 				{
+@@ -353,8 +353,8 @@ errno_t fci_mirror_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_mirror_cmd_t *repl
+ 						ret = EOK;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+diff --git a/sw/fci/src/fci_qos.c b/sw/fci/src/fci_qos.c
+index 66c8b09..ffab3d5 100644
+--- a/sw/fci/src/fci_qos.c
++++ b/sw/fci/src/fci_qos.c
+@@ -34,7 +34,6 @@
+ static pfe_phy_if_t *fci_get_phy_if_by_name(char_t *name);
+ static pfe_gpi_t *fci_qos_get_gpi(const pfe_phy_if_t *phy_if);
+ static errno_t fci_validate_cmd_params(const fci_msg_t *msg, uint16_t *fci_ret, void *reply_buf, uint32_t *reply_len, uint32_t cmd_len);
+-static errno_t fci_qos_flow_entry_validate_and_fixup_masks(pfe_iqos_flow_spec_t *flow);
+ static void fci_qos_flow_entry_convert_to_gpi(const fpp_iqos_flow_spec_t *flow, pfe_iqos_flow_spec_t *gpi_flow);
+ static void fci_qos_flow_entry_convert_from_gpi(const pfe_iqos_flow_spec_t *gpi_flow, fpp_iqos_flow_spec_t *flow);
+ 
+@@ -1157,105 +1156,6 @@ errno_t fci_qos_policer_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_qos_policer_c
+ 	return ret;
+ }
+ 
+-static errno_t fci_qos_flow_entry_validate_and_fixup_masks(pfe_iqos_flow_spec_t *flow)
+-{
+-	pfe_iqos_flow_args_t *args = &flow->args;
+-	errno_t ret = EOK;
+-
+-	if (((uint16_t)flow->type_mask >= ((uint16_t)PFE_IQOS_FLOW_TYPE_MAX << 1)) ||
+-	    ((uint16_t)flow->arg_type_mask >= ((uint16_t)PFE_IQOS_ARG_MAX << 1)) ||
+-	    (flow->action >= PFE_IQOS_FLOW_COUNT))
+-	{
+-		ret = EINVAL;
+-	}
+-	else
+-	{
+-
+-		if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_VLAN) != 0U)
+-		{
+-			if ((args->vlan > PFE_IQOS_VLAN_ID_MASK) || (args->vlan_m > PFE_IQOS_VLAN_ID_MASK))
+-			{
+-				ret = EINVAL;
+-			}
+-			else
+-			{
+-				/* fixup */
+-				if (args->vlan_m == 0U)
+-				{
+-					/* mask not specified */
+-					args->vlan_m = PFE_IQOS_VLAN_ID_MASK;
+-				}
+-			}
+-		}
+-
+-		if (EOK == ret)
+-		{
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_TOS) != 0U)
+-			{
+-				/* fixup */
+-				if (args->tos_m == 0U)
+-				{
+-					/* mask not specified */
+-					args->tos_m = PFE_IQOS_TOS_MASK;
+-				}
+-			}
+-
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_L4PROTO) != 0U)
+-			{
+-				/* fixup */
+-				if (args->l4proto_m == 0U)
+-				{
+-					/* mask not specified */
+-					args->l4proto_m = PFE_IQOS_L4PROTO_MASK;
+-				}
+-			}
+-
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_SIP) != 0U)
+-			{
+-				if (args->sip_m > PFE_IQOS_SDIP_MASK)
+-				{
+-					ret = EINVAL;
+-				}
+-			}
+-		}
+-
+-		if (EOK == ret)
+-		{
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_DIP) != 0U)
+-			{
+-				if (args->dip_m > PFE_IQOS_SDIP_MASK)
+-				{
+-					ret = EINVAL;
+-				}
+-			}
+-		}
+-
+-		if (EOK == ret)
+-		{
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_SPORT) != 0U)
+-			{
+-				if (args->sport_min > args->sport_max)
+-				{
+-					ret = EINVAL;
+-				}
+-			}
+-		}
+-
+-		if (EOK == ret)
+-		{
+-			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_DPORT) != 0U)
+-			{
+-				if (args->dport_min > args->dport_max)
+-				{
+-					ret = EINVAL;
+-				}
+-			}
+-		}
+-	}
+-
+-	return ret;
+-}
+-
+ static void fci_qos_flow_entry_convert_to_gpi(const fpp_iqos_flow_spec_t *flow, pfe_iqos_flow_spec_t *gpi_flow)
+ {
+ 	gpi_flow->type_mask = (pfe_iqos_flow_type_t)oal_ntohs(flow->type_mask);
+@@ -1357,20 +1257,6 @@ errno_t fci_qos_policer_flow_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_qos_poli
+ 						/* populate gpi flow struct */
+ 						fci_qos_flow_entry_convert_to_gpi(&flow_cmd->flow, &gpi_flow);
+ 
+-						ret = fci_qos_flow_entry_validate_and_fixup_masks(&gpi_flow);
+-						if (EOK != ret)
+-						{
+-							*fci_ret = FPP_ERR_WRONG_COMMAND_PARAM;
+-							break;
+-						}
+-
+-						/* id == 0xFF means the driver chooses the entry position */
+-						if ((flow_cmd->id >= PFE_IQOS_FLOW_TABLE_SIZE) && (flow_cmd->id != 0xFFU))
+-						{
+-							*fci_ret = FPP_ERR_WRONG_COMMAND_PARAM;
+-							break;
+-						}
+-
+ 						/* commit configuration to H/W */
+ 						ret = pfe_gpi_qos_add_flow(gpi, flow_cmd->id, &gpi_flow);
+ 						if (EOVERFLOW == ret)
+@@ -1378,6 +1264,11 @@ errno_t fci_qos_policer_flow_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_qos_poli
+ 							*fci_ret = FPP_ERR_QOS_POLICER_FLOW_TABLE_FULL;
+ 							break;
+ 						}
++						else if (EINVAL == ret)
++						{
++							*fci_ret = FPP_ERR_WRONG_COMMAND_PARAM;
++							break;
++						}
+ 						else if (EOK != ret)
+ 						{
+ 							*fci_ret = FPP_ERR_INTERNAL_FAILURE;
+diff --git a/sw/fci/src/fci_routes.c b/sw/fci/src/fci_routes.c
+index d201e47..e0f10c7 100644
+--- a/sw/fci/src/fci_routes.c
++++ b/sw/fci/src/fci_routes.c
+@@ -264,8 +264,8 @@ errno_t fci_routes_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_rt_cmd_t *reply_bu
+ 						*fci_ret = FPP_ERR_RT_ENTRY_NOT_FOUND;
+ 						break;
+ 					}
++					fallthrough;
+ 				}
+-				/* FALLTHRU */
+ 
+ 				case FPP_ACTION_QUERY_CONT:
+ 				{
+diff --git a/sw/fci/src/fci_spd.c b/sw/fci/src/fci_spd.c
+index 5917829..6909a70 100644
+--- a/sw/fci/src/fci_spd.c
++++ b/sw/fci/src/fci_spd.c
+@@ -181,7 +181,7 @@ errno_t fci_spd_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_spd_cmd_t *reply_buf,
+ 
+                                     case FPP_ACTION_QUERY:
+                                         search_position = 0U;
+-                                        /* FALLTHRU */
++                                        fallthrough;
+ 
+                                     case FPP_ACTION_QUERY_CONT:
+                                         ret = pfe_spd_acc_get_rule(phy_if, search_position, &spd_entry);
+diff --git a/sw/fifo/src/fifo.c b/sw/fifo/src/fifo.c
+index 554ebaf..2954456 100644
+--- a/sw/fifo/src/fifo.c
++++ b/sw/fifo/src/fifo.c
+@@ -5,6 +5,7 @@
+  *
+  * ========================================================================= */
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ #include "oal_mm.h"
+@@ -12,6 +13,8 @@
+ #include "hal.h"
+ #include "fifo.h"
+ 
++MODULE_LICENSE("GPL");
++
+ #define is_power_of_2(n) ((n) && !((n) & ((n) - 1U)))
+ 
+ #ifdef PFE_CFG_TARGET_OS_AUTOSAR
+diff --git a/sw/libfci_cli/Makefile b/sw/libfci_cli/Makefile
+index 44c9fd7..bc659f8 100644
+--- a/sw/libfci_cli/Makefile
++++ b/sw/libfci_cli/Makefile
+@@ -54,13 +54,14 @@ endif
+ ifeq ($(TARGET_OS),LINUX)
+ 	LD = $(CC)
+ 	LIBS += -L../xfci/libfci/build/$(PLATFORM)-$(BUILD_PROFILE) -l:libfci.a
++	LIBS_all += -lpthread
+ 	
+ 	#Expand GLOBAL_CCFLAGS to get rid of single quotes around string parameters of GLOBAL_CCFLAGS.
+ 	#Those single quotes are utilized in build process of the Linux PFE driver, but they cause warnings in this makefile.
+ 	GLOBAL_CCFLAGS := $(shell echo $(GLOBAL_CCFLAGS))
+ 	
+ 	CLI_TARGET_OS = "LNX"
+-	CLI_DRV_VERSION = "RTM 1.1.0"
++	CLI_DRV_VERSION = "RTM 1.2.0 RC1"
+ 	CLI_DRV_COMMIT_HASH = "M4_DRIVER_COMMIT_HASH"
+ else
+ #This branch by defaut means QNX.
+@@ -69,13 +70,15 @@ else
+ 	
+ 	CLI_TARGET_OS = "QNX"
+ 	CLI_DRV_VERSION = "$(RELEASE_VERSION)"
++	CLI_DRV_COMMIT_HASH = "$(DRIVER_COMMIT_HASH)"
+ endif
+ 
+ #User defined include/preprocessor flags and libraries
+ INCLUDES += -I../xfci/libfci/public \
+ 			-I../fci/public \
+ 			-I../common/public \
+-			-I./src/libfci_demo
++			-I./src/libfci_demo \
++			-I./src/daemon
+ 
+ #Dependencies
+ DEPENDENCIES = $(subst -L,,$(subst $(EMPTY) $(EMPTY)-l:,/,$(LIBS)))
+@@ -102,9 +105,13 @@ DEPS = -Wp,-MMD,$(@:%.o=%.d),-MT,$@
+ PFE_CT_H_START_OFFSET=$(word 1, $(shell cat -n ../pfe_platform/public/pfe_ct.h | sed -n '/=== \*/,$$p'))
+ PFE_CT_H_MD5 = $(word 1, $(shell cat ../pfe_platform/public/pfe_ct.h | sed -n '$(PFE_CT_H_START_OFFSET),$$p' | tr -d '\040\011\012\015' | md5sum))
+ CCFLAGS += -DPFE_CT_H_MD5=\"$(PFE_CT_H_MD5)\"
+-CCFLAGS += -DCLI_DRV_VERSION=\"$(CLI_DRV_VERSION)\"
+ CCFLAGS += -DCLI_TARGET_OS=\"$(CLI_TARGET_OS)\"
+-CCFLAGS += -DCLI_DRV_COMMIT_HASH=\"$(CLI_DRV_COMMIT_HASH)\"
++ifneq ($(CLI_DRV_VERSION), "")
++	CCFLAGS += -DCLI_DRV_VERSION=\"$(CLI_DRV_VERSION)\"
++endif
++ifneq ($(CLI_DRV_COMMIT_HASH), "")
++	CCFLAGS += -DCLI_DRV_COMMIT_HASH=\"$(CLI_DRV_COMMIT_HASH)\"
++endif
+ 
+ #Macro to expand files recursively: parameters $1 -  directory, $2 - extension, i.e. cpp
+ rwildcard = $(wildcard $(addprefix $1/*.,$2)) $(foreach d,$(wildcard $1/*),$(call rwildcard,$d,$2))
+diff --git a/sw/libfci_cli/src/daemon/daemon.c b/sw/libfci_cli/src/daemon/daemon.c
+new file mode 100644
+index 0000000..8b0d12c
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon.c
+@@ -0,0 +1,807 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#include <assert.h>
++#include <stdarg.h>
++#include <errno.h>
++#include <inttypes.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++
++#include <unistd.h>
++#include <pthread.h>
++#include <sys/stat.h>
++#include <sys/socket.h>
++#include <netinet/ip.h>
++
++#include "../libfci_cli_common.h"
++#include "../libfci_cli_def_cmds.h"
++#include "../libfci_cli_def_opts.h"
++
++#include "daemon_shared.h"
++#include "daemon_fciev2txt.h"
++#include "daemon.h"
++
++
++/*
++    NOTE:
++    The "demo_" functions are libFCI abstractions.
++    The "demo_" prefix was chosen because these functions are used as demos in FCI API Reference. 
++*/
++#include "demo_common.h"
++
++/* ==== TESTMODE vars ====================================================== */
++
++#if !defined(NDEBUG)
++/* empty */
++#endif
++
++/* ==== TYPEDEFS & DATA ==================================================== */
++
++extern FCI_CLIENT* cli_p_cl;  /* from [libfci_cli.c] */
++
++static_assert((sizeof(CLI_VERSION_STRING) <= DAEMON_VERSION_MAXLN), "CLI_VERSION_STRING is too long for daemon data structs!");
++
++/* default daemon configuration data */
++static daemon_cfg_t daemon_cfg =
++{
++    .version = CLI_VERSION_STRING,
++    .pid = -1L,
++    
++    .p_fci_client = NULL,
++    
++    .terminal.is_fciev_print_on = 1u,
++    .terminal.is_dbg_print_on = 0u,
++    
++    .logfile.p_file = NULL,
++    .logfile.name = "daemon_logfile.txt",
++    .logfile.is_fciev_print_on = 1u,
++
++    .dbgfile.p_file = NULL,
++    .dbgfile.name = "daemon_dbgfile.txt",
++    .dbgfile.is_dbg_print_on = 0u,
++};
++
++/* ==== PRIVATE FUNCTIONS ================================================== */
++
++/* printout function; utilized to log daemon activities */
++static void DBG_PRINTF(const char* p_txt, ...)
++{
++    assert(NULL != p_txt);
++
++    if ((daemon_cfg.terminal.is_dbg_print_on) || (daemon_cfg.dbgfile.is_dbg_print_on))
++    {
++        int rtn = 0;
++        char txt_buf[1024] = {0};  /* WARNING: owf possibility. The assumption is that debug prints are short. */
++        
++        va_list args;
++        va_start(args, p_txt);
++        rtn = vsnprintf(txt_buf, 1024, p_txt, args);
++        va_end(args);
++        
++        if (0 < rtn)
++        {
++            if (daemon_cfg.terminal.is_dbg_print_on)
++            {
++                printf("%s", txt_buf);
++            }
++            
++            pthread_mutex_lock(&daemon_cfg.dbgfile.mutex);
++            if ((daemon_cfg.dbgfile.is_dbg_print_on) && (NULL != daemon_cfg.dbgfile.p_file))
++            {
++                fprintf(daemon_cfg.dbgfile.p_file, "%s", txt_buf);
++                fflush(daemon_cfg.dbgfile.p_file);
++            }
++            pthread_mutex_unlock(&daemon_cfg.dbgfile.mutex);
++        }
++    }
++}
++
++/* auxiliary function for data handling (setting booleans in daemon configuration) */
++static int set_uint8bool_by_msg(uint8_t* p_bool, const daemon_msg_t* p_daemon_msg, const char* p_txt_boolname)
++{
++    assert(NULL != p_bool);
++    assert(NULL != p_daemon_msg);
++    assert(NULL != p_txt_boolname);
++    
++    int rtn = -1;
++    
++    DBG_PRINTF(TXT_DAEMON_NAME "Set '%s': ", p_txt_boolname);
++    
++    if (1u != (p_daemon_msg->payload_len))
++    {
++        rtn = -1;
++        DBG_PRINTF("FAIL  (wrong payload size;exp=%u;act=%u)\n", 1u, (p_daemon_msg->payload_len));
++    }
++    else
++    {
++        *p_bool = *((uint8_t*)(p_daemon_msg->payload));
++        
++        rtn = 0;
++        DBG_PRINTF("OK  (current value = %u)\n", (*p_bool));
++    }
++    
++    return rtn;
++}
++
++/* auxiliary function for data handling (filling response payload) */
++static int msg_for_client__fill_payload(daemon_msg_t* p_daemon_msg, uint8_t* p_payload, uint16_t payload_len)
++{
++    assert(NULL != p_daemon_msg);
++    assert(NULL != p_payload);
++    
++    int rtn = -1;
++    
++    DBG_PRINTF(TXT_DAEMON_NAME "Fill msg_for_client with payload data: ");
++    
++    if (sizeof(p_daemon_msg->payload) < payload_len)
++    {
++        rtn = -1;
++        DBG_PRINTF("FAIL  (payload_len=%u exceeds max msg payload size (%lu))\n", payload_len, sizeof(p_daemon_msg->payload));
++    }
++    else
++    {
++        memcpy(p_daemon_msg->payload, p_payload, payload_len);
++        p_daemon_msg->payload_len = payload_len;
++        
++        rtn = 0;
++        DBG_PRINTF("OK  \n");
++    }
++    
++    return rtn;
++}
++
++/* auxiliary function for cli command remote execution */
++static int execute_cli_cmd_and_fill_payload(daemon_msg_t* p_daemon_msg)
++{
++    assert(NULL != p_daemon_msg);
++    
++    int rtn = CLI_ERR;
++    cli_cmd_t cmd = CMD_00_NO_COMMAND;
++    cli_cmdargs_t cmdargs = {0};
++    mandopt_optbuf_t optbuf = {{OPT_NONE}};
++    
++    const uint32_t exp_payload_len = (sizeof(cli_cmd_t) + sizeof(cli_cmdargs_t));
++    
++    /* assume that command ID is always present in payload data, regardless of payload length */
++    memcpy(&cmd, p_daemon_msg->payload, sizeof(cli_cmd_t));
++    DBG_PRINTF(TXT_DAEMON_NAME "Execute cli command '%s': ", cli_cmd_cmd2txt(cmd));
++    
++    if (exp_payload_len != (p_daemon_msg->payload_len))
++    {
++        rtn = -1;
++        DBG_PRINTF("FAIL  (wrong payload size;exp=%u;act=%u)\n", exp_payload_len, (p_daemon_msg->payload_len));
++    }
++    else
++    {
++        /* get cmdargs and execute cli command */
++        memcpy(&cmdargs, (p_daemon_msg->payload + sizeof(cli_cmd_t)), sizeof(cli_cmdargs_t));
++        rtn = cli_cmd_execute(cmd, &cmdargs);
++        
++        if (CLI_OK == rtn)
++        {
++            DBG_PRINTF("OK  \n");
++        }
++        else
++        {
++            DBG_PRINTF("OK  (but cli command failed with rtn=%d)\n", rtn);
++        }
++    }
++    
++    /* fill reply data, regardless of cli_cmd_execute return code */
++    /* mandopt buffer needs to be sent back to client, because it may contain additional data for cli_cmd_execute() error printout */
++    cli_mandopt_getinternal(&optbuf);
++    msg_for_client__fill_payload(p_daemon_msg, (uint8_t*)(&optbuf), sizeof(mandopt_optbuf_t));
++    
++    return rtn;
++}
++
++/* auxiliary function for data handling (sending response back to the requesting libfci_cli) */
++static int msg_for_client__send(int client_socket_fd, daemon_msg_t* p_daemon_msg, int rtn_for_client)
++{
++    assert(NULL != p_daemon_msg);
++    
++    int rtn = -1;
++    
++    DBG_PRINTF(TXT_DAEMON_NAME "Send response back to client: ");
++    
++    /* set common reply data */
++    {
++        p_daemon_msg->rtn = rtn_for_client;
++        strncpy((p_daemon_msg->version), (daemon_cfg.version), DAEMON_VERSION_MAXLN);
++    }
++    
++    if (0 > send(client_socket_fd, p_daemon_msg, sizeof(daemon_msg_t), 0))
++    {
++        rtn = errno;
++        DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++    }
++    else
++    {
++        rtn = 0;
++        DBG_PRINTF("OK  \n");
++    }
++    
++    return rtn;
++}
++
++/* main loop of the daemon (processing of incoming libfci_cli requests) */
++static int daemon_main_loop(int socket_fd)
++{
++    int rtn = 0;
++    int tmp = 0;
++    bool keep_running = true;
++    
++    int client_socket_fd = -1;
++    daemon_msg_t daemon_msg = {0u};
++    
++    while (true == keep_running)
++    {
++        /* wait for some connection ; accept() is blocking, hence a bit different printout handling */
++        {
++            client_socket_fd = accept(socket_fd, NULL, NULL);
++            if (0 > client_socket_fd)
++            {
++                rtn = errno;
++                DBG_PRINTF(TXT_DAEMON_NAME "New connection: FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF(TXT_DAEMON_NAME "New connection: OK  (client_socket_fd=%d)\n", client_socket_fd);
++            }
++        }
++        
++        /* read the incoming command */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Receive a daemon command: ");
++            
++            errno = 0;
++            tmp = read(client_socket_fd, &daemon_msg, sizeof(daemon_msg_t));
++            if (0 > tmp)
++            {
++                rtn = errno;
++                DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++            }
++            else if (sizeof(daemon_msg_t) != tmp)
++            {
++                rtn = -1;
++                DBG_PRINTF("FAIL  (incomplete command received)\n");
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  (cmd=%u)\n", (daemon_msg.cmd));
++            }
++        }
++        
++        /* check version info */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Check version in daemon command: ");
++            
++            if (strcmp(daemon_cfg.version, daemon_msg.version))
++            {
++                rtn = -1;
++                DBG_PRINTF("FAIL  (command_version=%s;daemon_version=%s;)\n", (daemon_msg.version), (daemon_cfg.version));
++                msg_for_client__send(client_socket_fd, &daemon_msg, CLI_ERR_DAEMON_INCOMPATIBLE);  /* loop the message back to caller almost "as is" (just replace the version) */
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* process the command */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Process the daemon command cmd=%u \n", (daemon_msg.cmd));
++            
++            switch (daemon_msg.cmd)
++            {
++                case 0:  /* 0 == nothing */
++                    ;    /* empty */
++                break;
++                
++                case DAEMON_STOP:
++                    msg_for_client__send(client_socket_fd, &daemon_msg, 0);
++                    keep_running = false;
++                    rtn = 0;
++                break;
++                
++                case DAEMON_PING:
++                    msg_for_client__send(client_socket_fd, &daemon_msg, 0);
++                break;
++                
++                case DAEMON_GET_CFG:
++                    tmp = msg_for_client__fill_payload(&daemon_msg, (uint8_t*)(&daemon_cfg), sizeof(daemon_cfg_t));
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                case DAEMON_CLI_CMD_EXECUTE:
++                    tmp = execute_cli_cmd_and_fill_payload(&daemon_msg);
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                case DAEMON_TERMINAL_FCIEV_SET_PRINT:
++                    tmp = set_uint8bool_by_msg(&daemon_cfg.terminal.is_fciev_print_on, &daemon_msg, "terminal.is_fciev_print_on");
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                case DAEMON_TERMINAL_DBG_SET_PRINT:
++                    tmp = set_uint8bool_by_msg(&daemon_cfg.terminal.is_dbg_print_on, &daemon_msg, "terminal.is_dbg_print_on");
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                case DAEMON_LOGFILE_FCIEV_SET_PRINT:
++                    tmp = set_uint8bool_by_msg(&daemon_cfg.logfile.is_fciev_print_on, &daemon_msg, "logfile.is_fciev_print_on");
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                case DAEMON_DBGFILE_DBG_SET_PRINT:
++                    tmp = set_uint8bool_by_msg(&daemon_cfg.dbgfile.is_dbg_print_on, &daemon_msg, "dbgfile.is_dbg_print_on");
++                    msg_for_client__send(client_socket_fd, &daemon_msg, tmp);
++                break;
++                
++                default:
++                    DBG_PRINTF("FAIL  (unknown command)\n");
++                    msg_for_client__send(client_socket_fd, &daemon_msg, -1);
++                break;
++            }
++        }
++        
++        /* close the temporary socket which was created by accept() */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Close the temporary connection client_socket_fd=%d: ", client_socket_fd);
++            
++            if (0 >= client_socket_fd)
++            {
++                DBG_PRINTF("No valid temporary socket detected. Skipping this step.\n");
++            }
++            else
++            {
++                if (0 > close(client_socket_fd))
++                {
++                    rtn = errno;
++                    DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++                }
++                else
++                {
++                    rtn = 0;
++                    DBG_PRINTF("OK  \n");
++                }
++            }
++        }
++        
++    }
++    
++    return rtn;
++}
++
++/* FCI event callback function ; this is called from the parallel thread for each caught FCI event */
++static fci_cb_retval_t fciev_callback(unsigned short fcode, unsigned short len, unsigned short* payload)
++{
++    int tmp = 0;
++    
++    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &tmp);  /* guard FCI event processing against abrupt thread cancellation */
++    
++    DBG_PRINTF(TXT_DAEMON_NAME "Receive FCI event (fcode=0x%04X;len=%hu): OK  \n", fcode, len);
++    
++    if ((daemon_cfg.terminal.is_fciev_print_on) || (daemon_cfg.logfile.is_fciev_print_on))
++    {
++        char txt_fciev[2048] = {0};
++        
++        DBG_PRINTF(TXT_DAEMON_NAME "Print FCI event (fcode=0x%04X;len=%hu): ", fcode, len);
++        
++        tmp = daemon_fciev2txt_print(txt_fciev, sizeof(txt_fciev), fcode, len, payload);
++        if (0 != tmp)
++        {
++            DBG_PRINTF("FAIL  (rtn=%d)\n", tmp);
++        }
++        else
++        {
++            if (daemon_cfg.terminal.is_fciev_print_on)
++            {
++                printf("%s", txt_fciev);
++            }
++            if (daemon_cfg.logfile.is_fciev_print_on)
++            {
++                pthread_mutex_lock(&daemon_cfg.logfile.mutex);
++                if (NULL != daemon_cfg.logfile.p_file)
++                {
++                    fprintf(daemon_cfg.logfile.p_file, "%s", txt_fciev);
++                    fflush(daemon_cfg.logfile.p_file);
++                }
++                pthread_mutex_unlock(&daemon_cfg.logfile.mutex);
++            }
++            DBG_PRINTF("OK  \n");
++        }
++    }
++    
++    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp); /* re-enable thread cancellability */
++    
++    return FCI_CB_CONTINUE;
++}
++
++/* ==== PUBLIC FUNCTIONS =================================================== */ 
++
++int daemon_start(const daemon_cfg_t* p_startup_daemon_cfg)
++{
++    /* 'p_startup_daemon_cfg' is allowed to be NULL */
++    
++    int rtn = 0;
++    pid_t pid = 0;
++    
++    /* fork the daemon */
++    pid = fork();
++    if (pid < 0)
++    {
++        rtn = errno;
++        printf("Fork the " TXT_DAEMON_NAME ": FAIL  (errno=%d)\n", rtn);
++    }
++    else
++    {
++        rtn = 0;
++    }
++    
++    /* configure the newly forked daemon process */
++    if ((0 == rtn) && (0 == pid))  /* '0 == pid' means this is the forked child process */
++    {
++        int tmp = 0;
++        int socket_fd = -1;
++        
++        printf("Fork the " TXT_DAEMON_NAME ": OK  (pid=%d)\n", getpid());
++        
++        umask(0);
++        daemon_cfg.pid = getpid();
++        
++        /* set init cfg */
++        if (NULL != p_startup_daemon_cfg)
++        {
++            daemon_cfg.terminal.is_fciev_print_on = p_startup_daemon_cfg->terminal.is_fciev_print_on;
++            daemon_cfg.terminal.is_dbg_print_on = p_startup_daemon_cfg->terminal.is_dbg_print_on;
++            
++            daemon_cfg.logfile.is_fciev_print_on = p_startup_daemon_cfg->logfile.is_fciev_print_on;
++            
++            daemon_cfg.dbgfile.is_dbg_print_on = p_startup_daemon_cfg->dbgfile.is_dbg_print_on;
++        }
++        
++        /* MUTEXES: init file mutexes */
++        {
++            pthread_mutexattr_t mutexattr;
++            
++            /* prepare attributes */
++            rtn = pthread_mutexattr_init(&mutexattr);
++            if (0 == rtn)
++            {
++                rtn = pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_NORMAL);
++            }
++            if (0 == rtn)
++            {
++                rtn = pthread_mutexattr_setrobust(&mutexattr, PTHREAD_MUTEX_ROBUST);
++            }
++            
++            /* init mutexes */
++            if (0 == rtn)
++            {
++                rtn = pthread_mutex_init(&daemon_cfg.dbgfile.mutex, &mutexattr);
++            }
++            if (0 == rtn)
++            {
++                rtn = pthread_mutex_init(&daemon_cfg.logfile.mutex, &mutexattr);
++            }
++            
++            /* destroy attributes (no longer needed) */
++            pthread_mutexattr_destroy(&mutexattr);
++        }
++        
++        /* FILE: open a dbgfile */
++        if (0 == rtn)
++        {
++            daemon_cfg.dbgfile.p_file = fopen(daemon_cfg.dbgfile.name, "w");
++            if (NULL == daemon_cfg.dbgfile.p_file)
++            {
++                rtn = errno;
++                DBG_PRINTF(TXT_DAEMON_NAME "Open a dbgfile: FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF(TXT_DAEMON_NAME "Open a dbgfile: OK  \n");
++            }
++        }
++        
++        /* FILE: open a logfile */
++        if (0 == rtn)
++        {
++            daemon_cfg.logfile.p_file = fopen(daemon_cfg.logfile.name, "w");
++            if (NULL == daemon_cfg.logfile.p_file)
++            {
++                rtn = errno;
++                DBG_PRINTF(TXT_DAEMON_NAME "Open a logfile: FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF(TXT_DAEMON_NAME "Open a logfile: OK  \n");
++            }
++        }
++        
++        DBG_PRINTF(TXT_DAEMON_NAME "Daemon started  (pid=%d)\n", getpid());
++        
++        /* SOCKET: open a network socket */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Open a network socket: ");
++            
++            socket_fd = socket(AF_INET, SOCK_STREAM, 0);
++            if (0 > socket_fd)
++            {
++                rtn = errno;
++                DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  (socket_fd=%d)\n", socket_fd);
++            }
++        }
++        
++        /* SOCKET: set the socket to be reusable */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Set socket parameters: ");
++            
++            tmp = 1;
++            if (0 > setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp)))
++            {
++                rtn = errno;
++                DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* SOCKET: bind the socket */
++        if (0 == rtn)
++        {
++            struct sockaddr_in socket_addr = {0};
++        
++            DBG_PRINTF(TXT_DAEMON_NAME "Bind the socket (sin_addr=0x%08X;sin_port=%u): ", INADDR_ANY, DAEMON_PORT);
++            
++            socket_addr.sin_family = AF_INET;
++            socket_addr.sin_addr.s_addr = htonl(INADDR_ANY);
++            socket_addr.sin_port = htons(DAEMON_PORT);
++            
++            if (0 > bind(socket_fd, (struct sockaddr *)&socket_addr, sizeof(socket_addr)))
++            {
++                rtn = errno;
++                DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* SOCKET: start listening on the socket */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Start listening on the socket: ");
++            
++            if (0 > listen(socket_fd, 16))
++            {
++                rtn = errno;
++                DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++            }
++            else
++            {
++                rtn = 0;
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* FCI: open FCI client */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Open FCI client: ");
++            
++            rtn = demo_client_open_in_cmd_mode(&daemon_cfg.p_fci_client);
++            if (0 != rtn)
++            {
++                DBG_PRINTF("FAIL  (rtn=%d)\n", rtn);
++            }
++            else
++            {
++                DBG_PRINTF("OK  (FCI_CLIENT=%p)\n", (daemon_cfg.p_fci_client));
++                cli_p_cl = daemon_cfg.p_fci_client;  /* this global var is used in cli cmd executions */
++            }
++        }
++        
++        /* FCI: start a parallel thread for FCI events catching */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Start a parallel thread for FCI events catching: ");
++            
++            rtn = demo_events_catching_init(daemon_cfg.p_fci_client, fciev_callback);
++            if (0 != rtn)
++            {
++                DBG_PRINTF("FAIL  (rtn=%d)\n", rtn);
++            }
++            else
++            {
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* main loop of the daemon (processing of incoming libfci_cli requests) */
++        if (0 == rtn)
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Started main loop\n");
++            rtn = daemon_main_loop(socket_fd);
++            DBG_PRINTF(TXT_DAEMON_NAME "Finished main loop (rtn=%d)\n", rtn);
++            DBG_PRINTF(TXT_DAEMON_NAME "Shutdown initiated\n");
++        }
++        
++        /* FCI: stop the parallel thread */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Stop the parallel thread: ");
++            
++            rtn = demo_events_catching_fini(daemon_cfg.p_fci_client);
++            if (0 != rtn)
++            {
++                DBG_PRINTF("FAIL  (rtn=%d)\n", rtn);
++            }
++            else
++            {
++                DBG_PRINTF("OK  \n");
++            }
++        }
++        
++        /* FCI: close FCI client */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Close the FCI client (FCI_CLIENT=%p): ", (daemon_cfg.p_fci_client));
++               
++            if (NULL == (daemon_cfg.p_fci_client))
++            {
++                DBG_PRINTF("No valid FCI client found. Skipping this step.\n");
++            }
++            else
++            {
++                rtn = demo_client_close(daemon_cfg.p_fci_client);
++                if (0 != rtn)
++                {
++                    DBG_PRINTF("FAIL  (rtn=%d)\n", rtn);
++                }
++                else
++                {
++                    DBG_PRINTF("OK  \n");
++                }
++                
++                /* consider FCI client destroyed (regardless of rtn code) */
++                daemon_cfg.p_fci_client = NULL;
++                cli_p_cl = daemon_cfg.p_fci_client;  /* this global var is used in cli cmd executions */
++            }
++        }
++        
++        /* SOCKET: close the network socket */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Close the network socket (socket_fd=%d): ", socket_fd);
++            
++            if (0 >= socket_fd)
++            {
++                DBG_PRINTF("No valid network socket detected. Skipping this step.\n");
++            }
++            else
++            {
++                if (0 > close(socket_fd))
++                {
++                    rtn = errno;
++                    DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++                }
++                else
++                {
++                    rtn = 0;
++                    DBG_PRINTF("OK  \n");
++                }
++            }
++        }
++        
++        DBG_PRINTF(TXT_DAEMON_NAME "Daemon (pid=%d) stopped\n", getpid());
++        
++        /* FILE: close the logfile */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Close the logfile: ");
++            
++            if (NULL == daemon_cfg.logfile.p_file)
++            {
++                DBG_PRINTF("No valid logfile detected. Skipping this step.\n");
++            }
++            else
++            {
++                if (0 != fclose(daemon_cfg.logfile.p_file))
++                {
++                    rtn = errno;
++                    daemon_cfg.logfile.p_file = NULL;
++                    DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++                }
++                else
++                {
++                    rtn = 0;
++                    daemon_cfg.logfile.p_file = NULL;
++                    DBG_PRINTF("OK  \n");
++                }
++            }
++        }
++        
++        /* FILE: close the dbgfile */
++        {
++            DBG_PRINTF(TXT_DAEMON_NAME "Close the dbgfile: ");
++            
++            if (NULL == daemon_cfg.dbgfile.p_file)
++            {
++                DBG_PRINTF("No valid dbgfile detected. Skipping this step.\n");
++            }
++            else
++            {
++                if (0 != fclose(daemon_cfg.dbgfile.p_file))
++                {
++                    rtn = errno;
++                    daemon_cfg.dbgfile.p_file = NULL;
++                    DBG_PRINTF("FAIL  (errno=%d)\n", rtn);
++                }
++                else
++                {
++                    rtn = 0;
++                    daemon_cfg.dbgfile.p_file = NULL;
++                    DBG_PRINTF("OK  \n");
++                }
++            }
++        }
++        
++        /* MUTEXES: destroy file mutexes */
++        {
++            pthread_mutex_destroy(&daemon_cfg.logfile.mutex);
++            pthread_mutex_destroy(&daemon_cfg.dbgfile.mutex);
++        }
++    }
++    
++    return rtn;
++}
++
++
++/* ========================================================================= */
+diff --git a/sw/libfci_cli/src/daemon/daemon.h b/sw/libfci_cli/src/daemon/daemon.h
+new file mode 100644
+index 0000000..2e8fad1
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon.h
+@@ -0,0 +1,42 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#ifndef DAEMON_H_
++#define DAEMON_H_
++
++/* ==== PUBLIC FUNCTIONS =================================================== */
++
++typedef struct daemon_cfg_tt daemon_cfg_t;
++
++int daemon_start(const daemon_cfg_t* p_startup_daemon_cfg);
++
++/* ========================================================================= */
++
++#endif
+diff --git a/sw/libfci_cli/src/daemon/daemon_cmds.c b/sw/libfci_cli/src/daemon/daemon_cmds.c
+new file mode 100644
+index 0000000..8ffb080
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon_cmds.c
+@@ -0,0 +1,331 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#include <assert.h>
++#include <errno.h>
++#include <inttypes.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++
++#include <unistd.h>
++#include <sys/time.h>
++#include <sys/socket.h>
++#include <netinet/ip.h>
++
++#include "../libfci_cli_common.h"
++#include "../libfci_cli_def_cmds.h"
++#include "../libfci_cli_def_opts.h"
++
++#include "daemon_shared.h"
++#include "daemon_cmds.h"
++
++
++/*
++    NOTE:
++    The "demo_" functions are libFCI abstractions.
++    The "demo_" prefix was chosen because these functions are used as demos in FCI API Reference. 
++*/
++#include "demo_common.h"
++
++/* ==== TESTMODE vars ====================================================== */
++
++#if !defined(NDEBUG)
++/* empty */
++#endif
++
++/* ==== TYPEDEFS & DATA ==================================================== */
++
++void cli_print_error(int errcode, const char* p_txt_errname, const char* p_txt_errmsg, ...);  /* from [libfci_cli.c] */
++
++static int daemon_errno = 0;  /* storage for errno; used if errno occurs during communication between daemon and libfci_cli */
++
++/* ==== PRIVATE FUNCTIONS ================================================== */
++
++static int communicate_with_daemon(daemon_msg_t* p_cmd_for_daemon, daemon_msg_t* p_reply_from_daemon, const uint16_t expected_reply_payload_len)
++{
++    assert(NULL != p_cmd_for_daemon);
++    assert(NULL != p_reply_from_daemon);
++    
++    int rtn = 0;
++    int socket_fd = 0;
++
++    /* set common request data */
++    {
++        p_cmd_for_daemon->rtn = -1;
++        strncpy(p_cmd_for_daemon->version, CLI_VERSION_STRING, DAEMON_VERSION_MAXLN);
++    }
++    
++    /* open a network socket */
++    {
++        socket_fd = socket(AF_INET, SOCK_STREAM, 0);
++        if (0 > socket_fd)
++        {
++            daemon_errno = errno;
++            rtn = CLI_ERR_DAEMON_COMM_FAIL_SOCKET;
++        }
++        else
++        {
++            rtn = 0;
++        }
++    }
++    
++    /* set timeouts, so socket does not wait forever if daemon died (for whatever reason) */
++    if (0 == rtn)
++    {
++        struct timeval timeo = {5, 0};
++        
++        if (0 > setsockopt(socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeo, sizeof(struct timeval)))
++        {
++            daemon_errno = errno;
++            rtn = CLI_ERR_DAEMON_COMM_FAIL_SOCKET;
++        }
++        else
++        {
++            if (0 > setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeo, sizeof(struct timeval)))
++            {
++                daemon_errno = errno;
++                rtn = CLI_ERR_DAEMON_COMM_FAIL_SOCKET;
++            }
++            else
++            {
++                rtn = 0;
++            }
++        }
++    }
++    
++    /* connect to libfci_cli daemon */
++    if (0 == rtn)
++    {
++        struct sockaddr_in socket_addr_server = {0};
++        
++        socket_addr_server.sin_family = AF_INET;
++        socket_addr_server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++        socket_addr_server.sin_port = htons(DAEMON_PORT);
++        
++        if (0 > connect(socket_fd, (struct sockaddr *)&socket_addr_server, sizeof(socket_addr_server)))
++        {
++            daemon_errno = errno;
++            rtn = (ECONNREFUSED == daemon_errno) ? (CLI_ERR_DAEMON_NOT_DETECTED) : (CLI_ERR_DAEMON_COMM_FAIL_CONNECT);
++        }
++        else
++        {
++            rtn = 0;
++        }
++    }
++    
++    /* send command to libfci_cli daemon */
++    if (0 == rtn)
++    {
++        if (0 > send(socket_fd, p_cmd_for_daemon, sizeof(daemon_msg_t), 0))
++        {
++            daemon_errno = errno;
++            rtn = CLI_ERR_DAEMON_COMM_FAIL_SEND;
++        }
++        else
++        {
++            rtn = 0;
++        }
++    }
++    
++    /* wait for reply from libfci_cli daemon */
++    if (0 == rtn)
++    {
++        if (0 > read(socket_fd, p_reply_from_daemon, sizeof(daemon_msg_t)))
++        {
++            daemon_errno = errno;
++            rtn = CLI_ERR_DAEMON_COMM_FAIL_RECEIVE;
++        }
++        else
++        {
++            rtn = 0;
++        }
++    }
++    
++    /* basic check of reply data */
++    if (0 == rtn)
++    {
++        if (strcmp(CLI_VERSION_STRING, (p_reply_from_daemon->version)))
++        {
++            rtn = CLI_ERR_DAEMON_INCOMPATIBLE;
++        }
++        else if (0 != (p_reply_from_daemon->rtn))
++        {
++            rtn = CLI_ERR_DAEMON_REPLY_NONZERO_RTN;
++            daemon_errno = p_reply_from_daemon->rtn;  /* errno passing mechanism is utilized for daemon return code as well */
++        }
++        else
++        {
++            if (expected_reply_payload_len != (p_reply_from_daemon->payload_len))
++            {
++                rtn = CLI_ERR_DAEMON_REPLY_BAD_DATA;
++            }
++        }
++    }
++    
++    /* close the network socket ; do not hide behind rtn check! */
++    if (0 < socket_fd)
++    {
++        if (0 > close(socket_fd))
++        {
++            const int rtn_close = errno;
++            cli_print_error(CLI_ERR_DAEMON_COMM_FAIL_SOCKET, TXT_ERR_NONAME, TXT_ERR_INDENT "Failed to close the network socket for communication with libfci_cli daemon. errno=%d \n", rtn_close);
++        }
++    }
++    
++    return rtn;
++}
++
++/* ==== PUBLIC FUNCTIONS : errno =========================================== */
++
++/* print stored errno */
++void daemon_errno_print(const char* p_txt_indent)
++{
++    assert(NULL != p_txt_indent);
++    printf("%s%d\n", p_txt_indent, daemon_errno);
++}
++
++/* clear stored errno */
++void daemon_errno_clear(void)
++{
++    daemon_errno = 0;
++}
++
++/* ==== PUBLIC FUNCTIONS : commands for daemon ============================= */
++
++int daemon_stop(void)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_STOP };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 0u);
++    
++    return rtn;
++}
++
++int daemon_ping(void)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_PING };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 0u);
++    
++    return rtn;
++}
++
++int daemon_get_cfg(daemon_cfg_t *const p_daemon_cfg)
++{
++    assert(NULL != p_daemon_cfg);
++    
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_GET_CFG };
++    
++    rtn = communicate_with_daemon(&msg, &msg, sizeof(daemon_cfg_t));
++    if (0 == rtn)
++    {
++        memcpy(p_daemon_cfg, msg.payload, sizeof(daemon_cfg_t));
++    }
++    
++    return rtn;
++}
++
++int daemon_cli_cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
++{
++    assert(NULL != p_cmdargs);
++    
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_CLI_CMD_EXECUTE, .payload_len = (sizeof(cli_cmd_t) + sizeof(cli_cmdargs_t)) };
++    
++    memcpy((msg.payload + 0), &cmd, sizeof(cli_cmd_t));
++    memcpy((msg.payload + sizeof(cli_cmd_t)), p_cmdargs, sizeof(cli_cmdargs_t));
++    
++    rtn = communicate_with_daemon(&msg, &msg, sizeof(mandopt_optbuf_t));
++    
++    /*
++        NOTE: This daemon command handles its rtn value a bit different than other daemon commands.
++              This daemon command represents "remote procedure call" for cli commands.
++              It is expected (by other parts of code) that if the send/receive part of this command passes OK,
++              then return value of the command represents return value of the remote procedure call.
++              (return of the remote cli_cmd_execute())
++    */
++    if ((0 == rtn) || (CLI_ERR_DAEMON_REPLY_NONZERO_RTN == rtn))
++    {
++        /* set mandopt buffer from reply data, so it has correct data in case they are needed for cli_cmd_execute() error printout */
++        mandopt_optbuf_t optbuf = {{OPT_NONE}};
++        memcpy(&optbuf, msg.payload, sizeof(mandopt_optbuf_t));
++        cli_mandopt_setinternal(&optbuf);
++        
++        rtn = msg.rtn;
++    }
++    
++    return rtn;
++}
++
++int daemon_terminal_fciev_set_print(uint8_t is_on)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_TERMINAL_FCIEV_SET_PRINT, .payload_len = 1u, .payload = {is_on} };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 1u);
++    
++    return rtn;
++}
++
++int daemon_terminal_dbg_set_print(uint8_t is_on)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_TERMINAL_DBG_SET_PRINT, .payload_len = 1u, .payload = {is_on} };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 1u);
++    
++    return rtn;
++}
++
++int daemon_logfile_fciev_set_print(uint8_t is_on)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_LOGFILE_FCIEV_SET_PRINT, .payload_len = 1u, .payload = {is_on} };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 1u);
++    
++    return rtn;
++}
++
++int daemon_dbgfile_dbg_set_print(uint8_t is_on)
++{
++    int rtn = CLI_ERR;
++    daemon_msg_t msg = { .cmd = DAEMON_DBGFILE_DBG_SET_PRINT, .payload_len = 1u, .payload = {is_on} };
++    
++    rtn = communicate_with_daemon(&msg, &msg, 1u);
++    
++    return rtn;
++}
++
++/* ========================================================================= */
+diff --git a/sw/libfci_cli/src/daemon/daemon_cmds.h b/sw/libfci_cli/src/daemon/daemon_cmds.h
+new file mode 100644
+index 0000000..631a5ab
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon_cmds.h
+@@ -0,0 +1,55 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#ifndef DAEMON_CMDS_H_
++#define DAEMON_CMDS_H_
++
++/* ==== PUBLIC FUNCTIONS =================================================== */
++
++typedef struct daemon_cfg_tt daemon_cfg_t;
++typedef enum cli_cmd_tt cli_cmd_t;
++typedef struct cli_cmdargs_tt cli_cmdargs_t;
++
++
++void daemon_errno_print(const char* p_txt_indent);
++void daemon_errno_clear(void);
++
++int daemon_stop(void);
++int daemon_ping(void);
++int daemon_get_cfg(daemon_cfg_t *const p_daemon_cfg);
++int daemon_cli_cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs);
++int daemon_terminal_fciev_set_print(uint8_t is_on);
++int daemon_terminal_dbg_set_print(uint8_t is_on);
++int daemon_logfile_fciev_set_print(uint8_t is_on);
++int daemon_dbgfile_dbg_set_print(uint8_t is_on);
++
++/* ========================================================================= */
++
++#endif
+diff --git a/sw/libfci_cli/src/daemon/daemon_fciev2txt.c b/sw/libfci_cli/src/daemon/daemon_fciev2txt.c
+new file mode 100644
+index 0000000..9df80af
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon_fciev2txt.c
+@@ -0,0 +1,296 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#include <assert.h>
++#include <stdarg.h>
++#include <errno.h>
++#include <inttypes.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++#include <time.h>
++
++#include "../libfci_cli_common.h"
++
++
++/*
++    NOTE:
++    The "demo_" functions are libFCI abstractions.
++    The "demo_" prefix was chosen because these functions are used as demos in FCI API Reference. 
++*/
++#include "demo_common.h"
++#include "demo_rt_ct.h"
++
++/* ==== TESTMODE vars ====================================================== */
++
++#if !defined(NDEBUG)
++/* empty */
++#endif
++
++/* ==== TYPEDEFS & DATA ==================================================== */
++
++#define TXT_STRINGIFY(SYMBOL)  #SYMBOL
++
++static int fciev_snprintf(char**const pp_rtn_dst, int* p_rtn_dst_ln, const char* p_txt_fmt, ...);
++
++static int fciev_print_ip_route(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload);
++
++/* ==== PRIVATE FUNCTIONS : aux ============================================ */
++
++/* print correct decoded data based on FCI event ID ; NOTE: non-zero len and non-NULL payload are assumed */
++static int fciev_print_payload_decoded(char**const pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short fcode, const unsigned short len, const unsigned short* payload)
++{
++    int rtn = -1;
++    
++    /* header */
++    rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "payload_decoded = \n{\n");
++    
++    /* decoder selection */
++    if (0 == rtn)
++    {
++        switch (fcode)
++        {
++            case FPP_CMD_ENDPOINT_SHUTDOWN:
++                ;  /* no payload ; empty */
++            break;
++            
++            case FPP_CMD_IP_ROUTE:
++                rtn = fciev_print_ip_route(pp_rtn_dst, p_rtn_dst_ln, len, payload);
++            break;
++            
++            default:
++                rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "  libfci_cli version " CLI_VERSION_STRING " cannot decode payload of this FCI event \n");
++            break;
++        }
++    }
++    
++    /* footer */
++    if (0 == rtn)
++    {
++        rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "}\n");
++    }
++    
++    return (rtn);
++}
++
++/* conversion table for FCI event IDs ; event IDs are defined in FCI API header files */
++static const char* fciev_fcode2txt(unsigned short fcode)
++{
++    char* p_txt = NULL; 
++    switch (fcode)
++    {
++        case FPP_CMD_ENDPOINT_SHUTDOWN:
++            p_txt = TXT_STRINGIFY(FPP_CMD_ENDPOINT_SHUTDOWN);
++        break;
++        
++        case FPP_CMD_IP_ROUTE:
++            p_txt = TXT_STRINGIFY(FPP_CMD_IP_ROUTE);
++        break;
++        
++        default:
++            p_txt = "---";
++        break;
++    }
++    
++    return (p_txt);
++}
++
++/* conversion table for FCI actions ; action IDs are defined in FCI API header files */
++static const char* fciev_action2txt(uint16_t action)
++{
++    char* p_txt = NULL; 
++    switch (action)
++    {
++        case FPP_ACTION_REGISTER:
++            p_txt = TXT_STRINGIFY(FPP_ACTION_REGISTER);
++        break;
++        
++        case FPP_ACTION_DEREGISTER:
++            p_txt = TXT_STRINGIFY(FPP_ACTION_DEREGISTER);
++        break;
++        
++        case FPP_ACTION_KEEP_ALIVE:
++            p_txt = TXT_STRINGIFY(FPP_ACTION_KEEP_ALIVE);
++        break;
++        
++        case FPP_ACTION_REMOVED:
++            p_txt = TXT_STRINGIFY(FPP_ACTION_REMOVED);
++        break;
++        
++        default:
++            p_txt = "---";
++        break;
++    }
++    
++    return (p_txt);
++}
++
++/* print text and manipulate values of dst ptr and dst remaining free space */
++static int fciev_snprintf(char**const pp_rtn_dst, int* p_rtn_dst_ln, const char* p_txt_fmt, ...)
++{
++    assert((NULL != pp_rtn_dst) && (NULL != *pp_rtn_dst));
++    assert((NULL != p_rtn_dst_ln) && (0 != *p_rtn_dst_ln));
++    
++    int rtn = -1;
++    int chars_written = 0;
++    
++    va_list args;
++    va_start(args, p_txt_fmt);
++    chars_written = vsnprintf(*pp_rtn_dst, *p_rtn_dst_ln, p_txt_fmt, args);
++    va_end(args);
++    
++    if ((0 > chars_written) || (*p_rtn_dst_ln <= chars_written))
++    {
++        rtn = -1;
++    }
++    else
++    {
++        rtn = 0;
++        *pp_rtn_dst += chars_written;
++        *p_rtn_dst_ln -= chars_written;
++    }
++    
++    return (rtn);
++}
++
++/* ==== PRIVATE FUNCTIONS : printers ======================================= */
++
++/* print header of the FCI event txt representation */
++static int fciev_print_header(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short fcode, const unsigned short len)
++{
++    char txt_time[64] = {0};
++    const time_t t = time(NULL);
++    
++    strftime(txt_time, sizeof(txt_time), "%c", localtime(&t));
++    
++    return fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, 
++                "\n==== FCI_EVENT_beg =====================\n"
++                "timestamp   = %-10lu (%s)\n"
++                "fcode       = 0x%04X     (%s)\n"
++                "len         = %hu\n",
++                t, txt_time,
++                fcode, fciev_fcode2txt(fcode),
++                len
++           );
++}
++
++/* print raw payload data ; NOTE: non-zero len and non-NULL payload are assumed */
++static int fciev_print_payload_raw(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload)
++{
++    int rtn = -1;
++    
++    const unsigned char* p = (const unsigned char*)(payload);
++    
++    /* header and first payload byte */
++    rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "payload_raw = \n{\n  |%02X|", p[0]);
++    
++    /* payload bytes */
++    if (0 == rtn)
++    {
++        for (uint16_t i = 1u; (i < len); (i++))
++        {
++            /* new line if applicable */
++            if ((0 == rtn) && (0 == (i % 16u)))
++            {
++                rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "\n  |");
++            }
++            
++            /* payload bytes */
++            if (0 == rtn)
++            {
++                rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "%02X|", p[i]);
++            }
++        }
++    }
++    
++    /* footer */
++    if (0 == rtn)
++    {
++        rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "\n}\n");
++    }
++    
++    return (rtn);
++}
++
++/* print decoded FPP_CMD_IP_ROUTE ; NOTE: non-zero len and non-NULL payload are assumed */
++static int fciev_print_ip_route(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload)
++{
++    UNUSED(len);  /* just to suppress gcc warning */
++    
++    const fpp_rt_cmd_t* p_rt = (fpp_rt_cmd_t*)(payload);
++    
++    return fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln,
++                "  action = %"PRIu16" (%s)\n"
++                "  id     = %"PRIu32"\n",
++                p_rt->action, fciev_action2txt(p_rt->action),
++                demo_rt_ld_get_route_id(p_rt)
++           );
++}
++
++/* ==== PUBLIC FUNCTIONS =================================================== */ 
++
++/* print txt representation of FCI event */
++int daemon_fciev2txt_print(char* p_dst, int dst_ln, const unsigned short fcode, const unsigned short len, const unsigned short* payload)
++{
++    assert(NULL != p_dst);
++    assert(0 != dst_ln);
++    /* payload is allowed to be NULL (arrives from 3rd party, so everything is possible) */
++    
++    int rtn = -1;
++    
++    /* header */
++    rtn = fciev_print_header(&p_dst, &dst_ln, fcode, len);
++    
++    /* payload (if applicable) */
++    if ((0 != len) && (NULL != payload))
++    {
++        /* print raw payload data */
++        if (0 == rtn)
++        {
++            rtn = fciev_print_payload_raw(&p_dst, &dst_ln, len, payload);
++        }
++        
++        /* print decoded payload data */
++        if (0 == rtn)
++        {
++            rtn = fciev_print_payload_decoded(&p_dst, &dst_ln, fcode, len, payload);
++        }
++    }
++    
++    /* footer */
++    if (0 == rtn)
++    {
++        rtn = fciev_snprintf(&p_dst, &dst_ln, "==== FCI_EVENT_end =====================\n");
++    }
++    
++    return (rtn);
++}
++
++/* ========================================================================= */
+diff --git a/sw/libfci_cli/src/daemon/daemon_fciev2txt.h b/sw/libfci_cli/src/daemon/daemon_fciev2txt.h
+new file mode 100644
+index 0000000..44708ec
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon_fciev2txt.h
+@@ -0,0 +1,40 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#ifndef DAEMON_FCIEV2TXT_H_
++#define DAEMON_FCIEV2TXT_H_
++
++/* ==== PUBLIC FUNCTIONS =================================================== */
++
++int daemon_fciev2txt_print(char* p_dst, int rtn_dst_ln, const unsigned short fcode, const unsigned short len, const unsigned short* payload);
++
++/* ========================================================================= */
++
++#endif
+diff --git a/sw/libfci_cli/src/daemon/daemon_shared.h b/sw/libfci_cli/src/daemon/daemon_shared.h
+new file mode 100644
+index 0000000..847ba90
+--- /dev/null
++++ b/sw/libfci_cli/src/daemon/daemon_shared.h
+@@ -0,0 +1,95 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#ifndef DAEMON_SHARED_H_
++#define DAEMON_SHARED_H_
++
++#include <stdint.h>
++#include <pthread.h>
++#include "libfci.h"
++
++/* ==== TYPEDEFS & DATA ==================================================== */
++/* symbols which are shared by daemon internals and libfci_cli commands for daemon */
++
++/* misc */
++#define TXT_DAEMON_NAME       "[libfci_cli daemon] "
++#define DAEMON_PORT           (26000u)  /* Network port for communication with libfci_cli daemon. */
++#define DAEMON_VERSION_MAXLN  (16u)
++
++/* daemon configuration data struct */
++typedef struct daemon_cfg_tt {
++    const char version[DAEMON_VERSION_MAXLN];
++    int32_t pid;
++    
++    FCI_CLIENT* p_fci_client;
++    
++    struct {
++        uint8_t is_fciev_print_on;
++        uint8_t is_dbg_print_on;
++    } terminal;
++    
++    struct {
++        FILE* p_file;
++        pthread_mutex_t mutex;
++        const char name[32];
++        uint8_t is_fciev_print_on;
++    } logfile;
++    
++    struct {
++        FILE* p_file;
++        pthread_mutex_t mutex;
++        const char name[32];
++        uint8_t is_dbg_print_on;
++    } dbgfile;
++    
++} daemon_cfg_t;
++
++/* cli<->daemon communication : communication struct */
++typedef struct daemon_msg_tt {
++    char     version[DAEMON_VERSION_MAXLN];
++    int32_t  rtn;
++    uint16_t cmd;
++    uint16_t payload_len;
++    uint8_t  payload[1000];
++} daemon_msg_t;
++
++/* cli<->daemon communication : commands */
++#define DAEMON_STOP                      ( (uint16_t) 11u )
++#define DAEMON_PING                      ( (uint16_t) 12u )
++#define DAEMON_GET_CFG                   ( (uint16_t) 13u )
++#define DAEMON_CLI_CMD_EXECUTE           ( (uint16_t) 14u )
++#define DAEMON_TERMINAL_FCIEV_SET_PRINT  ( (uint16_t) 31u )
++#define DAEMON_TERMINAL_DBG_SET_PRINT    ( (uint16_t) 32u )
++#define DAEMON_LOGFILE_FCIEV_SET_PRINT   ( (uint16_t) 41u )
++#define DAEMON_DBGFILE_DBG_SET_PRINT     ( (uint16_t) 51u )
++
++/* ========================================================================= */
++
++#endif
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_daemon.c b/sw/libfci_cli/src/libfci_cli_cmds_daemon.c
+new file mode 100644
+index 0000000..6f31d6e
+--- /dev/null
++++ b/sw/libfci_cli/src/libfci_cli_cmds_daemon.c
+@@ -0,0 +1,247 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#include <assert.h>
++#include <inttypes.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++
++#include "libfci_cli_common.h"
++#include "libfci_cli_def_opts.h"
++#include "libfci_cli_print_helpers.h"
++#include "libfci_cli_def_optarg_keywords.h"
++#include "libfci_cli_cmds_daemon.h"
++
++#include "daemon/daemon.h"
++#include "daemon/daemon_cmds.h"
++#include "daemon/daemon_shared.h"
++
++
++/*
++    NOTE:
++    The "demo_" functions are libFCI abstractions.
++    The "demo_" prefix was chosen because these functions are used as demos in FCI API Reference. 
++*/
++#include "libfci_demo/demo_common.h"
++
++/* ==== TESTMODE vars ====================================================== */
++
++#if !defined(NDEBUG)
++/* empty */
++#endif
++
++/* ==== TYPEDEFS & DATA ==================================================== */
++
++void cli_print_error(int errcode, const char* p_txt_errname, const char* p_txt_errmsg, ...);  /* from [libfci_cli.c] */
++extern FCI_CLIENT* cli_p_cl;
++
++/* ==== PRIVATE FUNCTIONS : prints ========================================= */
++
++
++/* ==== PUBLIC FUNCTIONS =================================================== */ 
++
++int cli_cmd_daemon_print(const cli_cmdargs_t *p_cmdargs)
++{
++    assert(NULL != p_cmdargs);
++    
++    
++    int rtn = CLI_ERR;
++    daemon_cfg_t daemon_cfg = {0};
++    
++    /* check for mandatory opts */
++    /* empty */
++    
++    /* exec */
++    rtn = daemon_get_cfg(&daemon_cfg);
++    if (FPP_ERR_OK == rtn)
++    {
++        printf("Daemon reported the following configuration: \n"
++               "  ==================== \n"
++               "  version           : %s \n"
++               "  pid               : %d \n"
++               "  p_fci_client      : %p \n"
++               "  ---------- \n"
++               "  print-to-terminal : %s \n"
++               "  dbg-to-terminal   : %s \n"
++               "  ---------- \n"
++               "  logfile name      : %s \n"
++               "  is logfile open?  : %d \n"
++               "  print-to-logfile  : %s \n"
++               "  ---------- \n"
++               "  dbgfile name      : %s \n"
++               "  is dbgfile open?  : %d \n"
++               "  dbg-to-dbgfile    : %s \n"
++               "  ==================== \n",
++               daemon_cfg.version,
++               daemon_cfg.pid,
++               daemon_cfg.p_fci_client,
++               cli_value2txt_on_off(daemon_cfg.terminal.is_fciev_print_on),
++               cli_value2txt_on_off(daemon_cfg.terminal.is_dbg_print_on),
++               daemon_cfg.logfile.name,
++               (NULL != daemon_cfg.logfile.p_file),
++               cli_value2txt_on_off(daemon_cfg.logfile.is_fciev_print_on),
++               daemon_cfg.dbgfile.name,
++               (NULL != daemon_cfg.dbgfile.p_file),
++               cli_value2txt_on_off(daemon_cfg.dbgfile.is_dbg_print_on)
++        );
++    }
++    
++    return (rtn);
++}
++
++int cli_cmd_daemon_update(const cli_cmdargs_t *p_cmdargs)
++{
++    assert(NULL != p_cmdargs);
++    
++    
++    int rtn = CLI_ERR;
++    
++    /* check for mandatory opts */
++    /* empty */
++    
++    /* send daemon commands (if applicable) */
++    rtn = daemon_ping();  /* this is here just to make daemon-update throw an error if no daemon exists */
++    if (FPP_ERR_OK == rtn)
++    {
++        if (p_cmdargs->print_to_terminal.is_valid)
++        {
++            rtn = daemon_terminal_fciev_set_print(p_cmdargs->print_to_terminal.is_on);
++        }
++        if (p_cmdargs->dbg_to_terminal.is_valid)
++        {
++            rtn = daemon_terminal_dbg_set_print(p_cmdargs->dbg_to_terminal.is_on);
++        }
++        if (p_cmdargs->print_to_logfile.is_valid)
++        {
++            rtn = daemon_logfile_fciev_set_print(p_cmdargs->print_to_logfile.is_on);
++        }
++        if (p_cmdargs->dbg_to_dbgfile.is_valid)
++        {
++            rtn = daemon_dbgfile_dbg_set_print(p_cmdargs->dbg_to_dbgfile.is_on);
++        }
++    }
++    
++    return (rtn);
++}
++
++int cli_cmd_daemon_start(const cli_cmdargs_t *p_cmdargs)
++{
++    assert(NULL != p_cmdargs);
++    
++    
++    int rtn = CLI_ERR;
++    
++    /* startup values were taken from defaults in [daemon.c] */
++    daemon_cfg_t startup_cfg = {
++        .terminal.is_fciev_print_on = 1u,
++        .terminal.is_dbg_print_on = 0u,
++        
++        .logfile.is_fciev_print_on = 1u,
++        
++        .dbgfile.is_dbg_print_on = 0u,
++    };
++    
++    /* check for mandatory opts */
++    /* empty */
++    
++    /* check whether some daemon is already running */
++    rtn = daemon_ping();
++    if (FPP_ERR_OK == rtn)
++    {
++        rtn = CLI_ERR_DAEMON_ALREADY_EXISTS;  /* some daemon detected, do not create another one */
++    }
++    else if (CLI_ERR_DAEMON_NOT_DETECTED == rtn)
++    {
++        rtn = FPP_ERR_OK;  /* no daemon detected, can proceed with creating a new one */
++    }
++    else
++    {
++        /* empty ; keep the reported error code */
++    }
++    
++    /* start the daemon */
++    if (FPP_ERR_OK == rtn) 
++    {
++        /* close the global FCI client before the daemon is forked */
++        /* this prevents any hypothetical forking-related issues with FCI client */
++        if (NULL != cli_p_cl)
++        {
++            const int rtn_close = demo_client_close(cli_p_cl);
++            rtn = ((CLI_OK == rtn) ? (rtn_close) : (rtn));
++            if (CLI_OK != rtn_close)
++            {
++                cli_print_error(rtn_close, TXT_ERR_NONAME, TXT_ERR_INDENT "FCI endpoint failed to close.\n");
++            }
++            cli_p_cl = NULL;
++        }
++        
++        /* modify startup data */
++        if (p_cmdargs->print_to_terminal.is_valid)
++        {
++            startup_cfg.terminal.is_fciev_print_on = p_cmdargs->print_to_terminal.is_on;
++        }
++        if (p_cmdargs->dbg_to_terminal.is_valid)
++        {
++            startup_cfg.terminal.is_dbg_print_on = p_cmdargs->dbg_to_terminal.is_on;
++        }
++        if (p_cmdargs->print_to_logfile.is_valid)
++        {
++            startup_cfg.logfile.is_fciev_print_on = p_cmdargs->print_to_logfile.is_on;
++        }
++        if (p_cmdargs->dbg_to_dbgfile.is_valid)
++        {
++            startup_cfg.dbgfile.is_dbg_print_on = p_cmdargs->dbg_to_dbgfile.is_on;
++        }
++        
++        /* exec */
++        rtn = daemon_start(&startup_cfg);
++    }
++    
++    return (rtn);
++}
++
++int cli_cmd_daemon_stop(const cli_cmdargs_t *p_cmdargs)
++{
++    assert(NULL != p_cmdargs);
++    
++    
++    int rtn = CLI_ERR;
++    
++    /* check for mandatory opts */
++    /* empty */
++    
++    /* exec */
++    rtn = daemon_stop();
++    
++    return (rtn);
++}
++
++/* ========================================================================= */
+diff --git a/sw/libfci_cli/src/libfci_cli_cmds_daemon.h b/sw/libfci_cli/src/libfci_cli_cmds_daemon.h
+new file mode 100644
+index 0000000..5161704
+--- /dev/null
++++ b/sw/libfci_cli/src/libfci_cli_cmds_daemon.h
+@@ -0,0 +1,45 @@
++/* =========================================================================
++ *  Copyright 2020-2022 NXP
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright notice,
++ *    this list of conditions and the following disclaimer.
++ *
++ * 2. Redistributions in binary form must reproduce the above copyright notice,
++ *    this list of conditions and the following disclaimer in the documentation
++ *    and/or other materials provided with the distribution.
++ *
++ * 3. Neither the name of the copyright holder nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
++ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
++ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * ========================================================================= */
++
++#ifndef LIBFCI_CLI_CMDS_DAEMON_H_
++#define LIBFCI_CLI_CMDS_DAEMON_H_
++
++#include "libfci_cli_common.h"
++
++/* ==== PUBLIC FUNCTIONS =================================================== */
++
++int cli_cmd_daemon_print(const cli_cmdargs_t *p_cmdargs);
++int cli_cmd_daemon_update(const cli_cmdargs_t *p_cmdargs);
++int cli_cmd_daemon_start(const cli_cmdargs_t *p_cmdargs);
++int cli_cmd_daemon_stop(const cli_cmdargs_t *p_cmdargs);
++
++/* ========================================================================= */
++
++#endif
+diff --git a/sw/libfci_cli/src/libfci_cli_common.h b/sw/libfci_cli/src/libfci_cli_common.h
+index 1f84586..595ebe4 100644
+--- a/sw/libfci_cli/src/libfci_cli_common.h
++++ b/sw/libfci_cli/src/libfci_cli_common.h
+@@ -42,9 +42,10 @@
+ 
+ 
+ /* app version */
+-#define CLI_VERSION_MAJOR  "2"
+-#define CLI_VERSION_MINOR  "8"
+-#define CLI_VERSION_PATCH  "0"
++#define CLI_VERSION_MAJOR   "2"
++#define CLI_VERSION_MINOR   "9"
++#define CLI_VERSION_PATCH   "0"
++#define CLI_VERSION_STRING  CLI_VERSION_MAJOR"."CLI_VERSION_MINOR"."CLI_VERSION_PATCH
+ 
+ 
+ /* drv version (default values for non-makefile compilation) */
+@@ -58,7 +59,7 @@
+ #define PFE_CT_H_MD5  "????????????????????????????????"
+ #endif
+ #ifndef CLI_DRV_COMMIT_HASH
+-#define CLI_DRV_COMMIT_HASH  "????????????????????????????????"
++#define CLI_DRV_COMMIT_HASH  "????????????????????????????????????????"
+ #endif
+ 
+ 
+@@ -75,6 +76,15 @@
+ #define CLI_ERR_INCOMPATIBLE_IPS   (-119)
+ #define CLI_ERR_WRONG_IP_TYPE      (-120)
+ #define CLI_ERR_INV_DEMO_FEATURE   (-121)
++#define CLI_ERR_DAEMON_NOT_DETECTED       (-122)
++#define CLI_ERR_DAEMON_ALREADY_EXISTS     (-123)
++#define CLI_ERR_DAEMON_INCOMPATIBLE       (-124)
++#define CLI_ERR_DAEMON_COMM_FAIL_SOCKET   (-125)
++#define CLI_ERR_DAEMON_COMM_FAIL_CONNECT  (-126)
++#define CLI_ERR_DAEMON_COMM_FAIL_SEND     (-127)
++#define CLI_ERR_DAEMON_COMM_FAIL_RECEIVE  (-128)
++#define CLI_ERR_DAEMON_REPLY_NONZERO_RTN  (-129)
++#define CLI_ERR_DAEMON_REPLY_BAD_DATA     (-130)
+ 
+ 
+ /* misc macros */
+@@ -606,6 +616,27 @@ typedef struct cli_cmdargs_tt
+         bool is_valid;
+     } unlock0;
+ 
++    struct
++    {
++        bool is_valid;
++        bool is_on;
++    } print_to_terminal;
++    struct
++    {
++        bool is_valid;
++        bool is_on;
++    } print_to_logfile;
++    struct
++    {
++        bool is_valid;
++        bool is_on;
++    } dbg_to_terminal;
++    struct
++    {
++        bool is_valid;
++        bool is_on;
++    } dbg_to_dbgfile;
++
+ } cli_cmdargs_t;
+ 
+ #define TXT_ERR_INDENT     ""
+diff --git a/sw/libfci_cli/src/libfci_cli_def_cmds.c b/sw/libfci_cli/src/libfci_cli_def_cmds.c
+index 96cdd49..2f745a6 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_cmds.c
++++ b/sw/libfci_cli/src/libfci_cli_def_cmds.c
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2020-2021 NXP
++ *  Copyright 2020-2022 NXP
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+@@ -351,6 +351,316 @@ cli_cmdargs_t TEST_cmdargs;
+    int CMD_99_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
+ #endif
+ 
++#ifdef CMD_100_ENUM_NAME
++   int CMD_100_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_101_ENUM_NAME
++   int CMD_101_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_102_ENUM_NAME
++   int CMD_102_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_103_ENUM_NAME
++   int CMD_103_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_104_ENUM_NAME
++   int CMD_104_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_105_ENUM_NAME
++   int CMD_105_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_106_ENUM_NAME
++   int CMD_106_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_107_ENUM_NAME
++   int CMD_107_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_108_ENUM_NAME
++   int CMD_108_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_109_ENUM_NAME
++   int CMD_109_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++   int CMD_110_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_111_ENUM_NAME
++   int CMD_111_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_112_ENUM_NAME
++   int CMD_112_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_113_ENUM_NAME
++   int CMD_113_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_114_ENUM_NAME
++   int CMD_114_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_115_ENUM_NAME
++   int CMD_115_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_116_ENUM_NAME
++   int CMD_116_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_117_ENUM_NAME
++   int CMD_117_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_118_ENUM_NAME
++   int CMD_118_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_119_ENUM_NAME
++   int CMD_119_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++   int CMD_120_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_121_ENUM_NAME
++   int CMD_121_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_122_ENUM_NAME
++   int CMD_122_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_123_ENUM_NAME
++   int CMD_123_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_124_ENUM_NAME
++   int CMD_124_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_125_ENUM_NAME
++   int CMD_125_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_126_ENUM_NAME
++   int CMD_126_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_127_ENUM_NAME
++   int CMD_127_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_128_ENUM_NAME
++   int CMD_128_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_129_ENUM_NAME
++   int CMD_129_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++   int CMD_130_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_131_ENUM_NAME
++   int CMD_131_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_132_ENUM_NAME
++   int CMD_132_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_133_ENUM_NAME
++   int CMD_133_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_134_ENUM_NAME
++   int CMD_134_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_135_ENUM_NAME
++   int CMD_135_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_136_ENUM_NAME
++   int CMD_136_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_137_ENUM_NAME
++   int CMD_137_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_138_ENUM_NAME
++   int CMD_138_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_139_ENUM_NAME
++   int CMD_139_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++   int CMD_140_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_141_ENUM_NAME
++   int CMD_141_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_142_ENUM_NAME
++   int CMD_142_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_143_ENUM_NAME
++   int CMD_143_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_144_ENUM_NAME
++   int CMD_144_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_145_ENUM_NAME
++   int CMD_145_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_146_ENUM_NAME
++   int CMD_146_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_147_ENUM_NAME
++   int CMD_147_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_148_ENUM_NAME
++   int CMD_148_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_149_ENUM_NAME
++   int CMD_149_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++   int CMD_150_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_151_ENUM_NAME
++   int CMD_151_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_152_ENUM_NAME
++   int CMD_152_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_153_ENUM_NAME
++   int CMD_153_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_154_ENUM_NAME
++   int CMD_154_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_155_ENUM_NAME
++   int CMD_155_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_156_ENUM_NAME
++   int CMD_156_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_157_ENUM_NAME
++   int CMD_157_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_158_ENUM_NAME
++   int CMD_158_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_159_ENUM_NAME
++   int CMD_159_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++   int CMD_160_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_161_ENUM_NAME
++   int CMD_161_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_162_ENUM_NAME
++   int CMD_162_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_163_ENUM_NAME
++   int CMD_163_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_164_ENUM_NAME
++   int CMD_164_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_165_ENUM_NAME
++   int CMD_165_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_166_ENUM_NAME
++   int CMD_166_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_167_ENUM_NAME
++   int CMD_167_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_168_ENUM_NAME
++   int CMD_168_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_169_ENUM_NAME
++   int CMD_169_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++   int CMD_170_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_171_ENUM_NAME
++   int CMD_171_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_172_ENUM_NAME
++   int CMD_172_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_173_ENUM_NAME
++   int CMD_173_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_174_ENUM_NAME
++   int CMD_174_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_175_ENUM_NAME
++   int CMD_175_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_176_ENUM_NAME
++   int CMD_176_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_177_ENUM_NAME
++   int CMD_177_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_178_ENUM_NAME
++   int CMD_178_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_179_ENUM_NAME
++   int CMD_179_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++   int CMD_180_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_181_ENUM_NAME
++   int CMD_181_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_182_ENUM_NAME
++   int CMD_182_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_183_ENUM_NAME
++   int CMD_183_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_184_ENUM_NAME
++   int CMD_184_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_185_ENUM_NAME
++   int CMD_185_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_186_ENUM_NAME
++   int CMD_186_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_187_ENUM_NAME
++   int CMD_187_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_188_ENUM_NAME
++   int CMD_188_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_189_ENUM_NAME
++   int CMD_189_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++   int CMD_190_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_191_ENUM_NAME
++   int CMD_191_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_192_ENUM_NAME
++   int CMD_192_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_193_ENUM_NAME
++   int CMD_193_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_194_ENUM_NAME
++   int CMD_194_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_195_ENUM_NAME
++   int CMD_195_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_196_ENUM_NAME
++   int CMD_196_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_197_ENUM_NAME
++   int CMD_197_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_198_ENUM_NAME
++   int CMD_198_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++#ifdef CMD_199_ENUM_NAME
++   int CMD_199_CMDEXEC (const cli_cmdargs_t* p_cmdargs);
++#endif
++
+ 
+ static int cmdexec_dummy(const cli_cmdargs_t* p_cmdargs);
+ 
+@@ -666,6 +976,316 @@ static const cb_cmdexec_t cmdexecs[CMD_LN] =
+ #ifdef CMD_99_ENUM_NAME
+        CMD_99_CMDEXEC,
+ #endif
++
++#ifdef CMD_100_ENUM_NAME
++       CMD_100_CMDEXEC,
++#endif
++#ifdef CMD_101_ENUM_NAME
++       CMD_101_CMDEXEC,
++#endif
++#ifdef CMD_102_ENUM_NAME
++       CMD_102_CMDEXEC,
++#endif
++#ifdef CMD_103_ENUM_NAME
++       CMD_103_CMDEXEC,
++#endif
++#ifdef CMD_104_ENUM_NAME
++       CMD_104_CMDEXEC,
++#endif
++#ifdef CMD_105_ENUM_NAME
++       CMD_105_CMDEXEC,
++#endif
++#ifdef CMD_106_ENUM_NAME
++       CMD_106_CMDEXEC,
++#endif
++#ifdef CMD_107_ENUM_NAME
++       CMD_107_CMDEXEC,
++#endif
++#ifdef CMD_108_ENUM_NAME
++       CMD_108_CMDEXEC,
++#endif
++#ifdef CMD_109_ENUM_NAME
++       CMD_109_CMDEXEC,
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++       CMD_110_CMDEXEC,
++#endif
++#ifdef CMD_111_ENUM_NAME
++       CMD_111_CMDEXEC,
++#endif
++#ifdef CMD_112_ENUM_NAME
++       CMD_112_CMDEXEC,
++#endif
++#ifdef CMD_113_ENUM_NAME
++       CMD_113_CMDEXEC,
++#endif
++#ifdef CMD_114_ENUM_NAME
++       CMD_114_CMDEXEC,
++#endif
++#ifdef CMD_115_ENUM_NAME
++       CMD_115_CMDEXEC,
++#endif
++#ifdef CMD_116_ENUM_NAME
++       CMD_116_CMDEXEC,
++#endif
++#ifdef CMD_117_ENUM_NAME
++       CMD_117_CMDEXEC,
++#endif
++#ifdef CMD_118_ENUM_NAME
++       CMD_118_CMDEXEC,
++#endif
++#ifdef CMD_119_ENUM_NAME
++       CMD_119_CMDEXEC,
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++       CMD_120_CMDEXEC,
++#endif
++#ifdef CMD_121_ENUM_NAME
++       CMD_121_CMDEXEC,
++#endif
++#ifdef CMD_122_ENUM_NAME
++       CMD_122_CMDEXEC,
++#endif
++#ifdef CMD_123_ENUM_NAME
++       CMD_123_CMDEXEC,
++#endif
++#ifdef CMD_124_ENUM_NAME
++       CMD_124_CMDEXEC,
++#endif
++#ifdef CMD_125_ENUM_NAME
++       CMD_125_CMDEXEC,
++#endif
++#ifdef CMD_126_ENUM_NAME
++       CMD_126_CMDEXEC,
++#endif
++#ifdef CMD_127_ENUM_NAME
++       CMD_127_CMDEXEC,
++#endif
++#ifdef CMD_128_ENUM_NAME
++       CMD_128_CMDEXEC,
++#endif
++#ifdef CMD_129_ENUM_NAME
++       CMD_129_CMDEXEC,
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++       CMD_130_CMDEXEC,
++#endif
++#ifdef CMD_131_ENUM_NAME
++       CMD_131_CMDEXEC,
++#endif
++#ifdef CMD_132_ENUM_NAME
++       CMD_132_CMDEXEC,
++#endif
++#ifdef CMD_133_ENUM_NAME
++       CMD_133_CMDEXEC,
++#endif
++#ifdef CMD_134_ENUM_NAME
++       CMD_134_CMDEXEC,
++#endif
++#ifdef CMD_135_ENUM_NAME
++       CMD_135_CMDEXEC,
++#endif
++#ifdef CMD_136_ENUM_NAME
++       CMD_136_CMDEXEC,
++#endif
++#ifdef CMD_137_ENUM_NAME
++       CMD_137_CMDEXEC,
++#endif
++#ifdef CMD_138_ENUM_NAME
++       CMD_138_CMDEXEC,
++#endif
++#ifdef CMD_139_ENUM_NAME
++       CMD_139_CMDEXEC,
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++       CMD_140_CMDEXEC,
++#endif
++#ifdef CMD_141_ENUM_NAME
++       CMD_141_CMDEXEC,
++#endif
++#ifdef CMD_142_ENUM_NAME
++       CMD_142_CMDEXEC,
++#endif
++#ifdef CMD_143_ENUM_NAME
++       CMD_143_CMDEXEC,
++#endif
++#ifdef CMD_144_ENUM_NAME
++       CMD_144_CMDEXEC,
++#endif
++#ifdef CMD_145_ENUM_NAME
++       CMD_145_CMDEXEC,
++#endif
++#ifdef CMD_146_ENUM_NAME
++       CMD_146_CMDEXEC,
++#endif
++#ifdef CMD_147_ENUM_NAME
++       CMD_147_CMDEXEC,
++#endif
++#ifdef CMD_148_ENUM_NAME
++       CMD_148_CMDEXEC,
++#endif
++#ifdef CMD_149_ENUM_NAME
++       CMD_149_CMDEXEC,
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++       CMD_150_CMDEXEC,
++#endif
++#ifdef CMD_151_ENUM_NAME
++       CMD_151_CMDEXEC,
++#endif
++#ifdef CMD_152_ENUM_NAME
++       CMD_152_CMDEXEC,
++#endif
++#ifdef CMD_153_ENUM_NAME
++       CMD_153_CMDEXEC,
++#endif
++#ifdef CMD_154_ENUM_NAME
++       CMD_154_CMDEXEC,
++#endif
++#ifdef CMD_155_ENUM_NAME
++       CMD_155_CMDEXEC,
++#endif
++#ifdef CMD_156_ENUM_NAME
++       CMD_156_CMDEXEC,
++#endif
++#ifdef CMD_157_ENUM_NAME
++       CMD_157_CMDEXEC,
++#endif
++#ifdef CMD_158_ENUM_NAME
++       CMD_158_CMDEXEC,
++#endif
++#ifdef CMD_159_ENUM_NAME
++       CMD_159_CMDEXEC,
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++       CMD_160_CMDEXEC,
++#endif
++#ifdef CMD_161_ENUM_NAME
++       CMD_161_CMDEXEC,
++#endif
++#ifdef CMD_162_ENUM_NAME
++       CMD_162_CMDEXEC,
++#endif
++#ifdef CMD_163_ENUM_NAME
++       CMD_163_CMDEXEC,
++#endif
++#ifdef CMD_164_ENUM_NAME
++       CMD_164_CMDEXEC,
++#endif
++#ifdef CMD_165_ENUM_NAME
++       CMD_165_CMDEXEC,
++#endif
++#ifdef CMD_166_ENUM_NAME
++       CMD_166_CMDEXEC,
++#endif
++#ifdef CMD_167_ENUM_NAME
++       CMD_167_CMDEXEC,
++#endif
++#ifdef CMD_168_ENUM_NAME
++       CMD_168_CMDEXEC,
++#endif
++#ifdef CMD_169_ENUM_NAME
++       CMD_169_CMDEXEC,
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++       CMD_170_CMDEXEC,
++#endif
++#ifdef CMD_171_ENUM_NAME
++       CMD_171_CMDEXEC,
++#endif
++#ifdef CMD_172_ENUM_NAME
++       CMD_172_CMDEXEC,
++#endif
++#ifdef CMD_173_ENUM_NAME
++       CMD_173_CMDEXEC,
++#endif
++#ifdef CMD_174_ENUM_NAME
++       CMD_174_CMDEXEC,
++#endif
++#ifdef CMD_175_ENUM_NAME
++       CMD_175_CMDEXEC,
++#endif
++#ifdef CMD_176_ENUM_NAME
++       CMD_176_CMDEXEC,
++#endif
++#ifdef CMD_177_ENUM_NAME
++       CMD_177_CMDEXEC,
++#endif
++#ifdef CMD_178_ENUM_NAME
++       CMD_178_CMDEXEC,
++#endif
++#ifdef CMD_179_ENUM_NAME
++       CMD_179_CMDEXEC,
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++       CMD_180_CMDEXEC,
++#endif
++#ifdef CMD_181_ENUM_NAME
++       CMD_181_CMDEXEC,
++#endif
++#ifdef CMD_182_ENUM_NAME
++       CMD_182_CMDEXEC,
++#endif
++#ifdef CMD_183_ENUM_NAME
++       CMD_183_CMDEXEC,
++#endif
++#ifdef CMD_184_ENUM_NAME
++       CMD_184_CMDEXEC,
++#endif
++#ifdef CMD_185_ENUM_NAME
++       CMD_185_CMDEXEC,
++#endif
++#ifdef CMD_186_ENUM_NAME
++       CMD_186_CMDEXEC,
++#endif
++#ifdef CMD_187_ENUM_NAME
++       CMD_187_CMDEXEC,
++#endif
++#ifdef CMD_188_ENUM_NAME
++       CMD_188_CMDEXEC,
++#endif
++#ifdef CMD_189_ENUM_NAME
++       CMD_189_CMDEXEC,
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++       CMD_190_CMDEXEC,
++#endif
++#ifdef CMD_191_ENUM_NAME
++       CMD_191_CMDEXEC,
++#endif
++#ifdef CMD_192_ENUM_NAME
++       CMD_192_CMDEXEC,
++#endif
++#ifdef CMD_193_ENUM_NAME
++       CMD_193_CMDEXEC,
++#endif
++#ifdef CMD_194_ENUM_NAME
++       CMD_194_CMDEXEC,
++#endif
++#ifdef CMD_195_ENUM_NAME
++       CMD_195_CMDEXEC,
++#endif
++#ifdef CMD_196_ENUM_NAME
++       CMD_196_CMDEXEC,
++#endif
++#ifdef CMD_197_ENUM_NAME
++       CMD_197_CMDEXEC,
++#endif
++#ifdef CMD_198_ENUM_NAME
++       CMD_198_CMDEXEC,
++#endif
++#ifdef CMD_199_ENUM_NAME
++       CMD_199_CMDEXEC,
++#endif
+ };
+ 
+ /* indexed by 'cmd_t' */
+@@ -979,6 +1599,316 @@ static const char *const txt_cmdnames[CMD_LN] =
+ #ifdef CMD_99_ENUM_NAME
+        CMD_99_CLI_TXT,
+ #endif
++
++#ifdef CMD_100_ENUM_NAME
++       CMD_100_CLI_TXT,
++#endif
++#ifdef CMD_101_ENUM_NAME
++       CMD_101_CLI_TXT,
++#endif
++#ifdef CMD_102_ENUM_NAME
++       CMD_102_CLI_TXT,
++#endif
++#ifdef CMD_103_ENUM_NAME
++       CMD_103_CLI_TXT,
++#endif
++#ifdef CMD_104_ENUM_NAME
++       CMD_104_CLI_TXT,
++#endif
++#ifdef CMD_105_ENUM_NAME
++       CMD_105_CLI_TXT,
++#endif
++#ifdef CMD_106_ENUM_NAME
++       CMD_106_CLI_TXT,
++#endif
++#ifdef CMD_107_ENUM_NAME
++       CMD_107_CLI_TXT,
++#endif
++#ifdef CMD_108_ENUM_NAME
++       CMD_108_CLI_TXT,
++#endif
++#ifdef CMD_109_ENUM_NAME
++       CMD_109_CLI_TXT,
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++       CMD_110_CLI_TXT,
++#endif
++#ifdef CMD_111_ENUM_NAME
++       CMD_111_CLI_TXT,
++#endif
++#ifdef CMD_112_ENUM_NAME
++       CMD_112_CLI_TXT,
++#endif
++#ifdef CMD_113_ENUM_NAME
++       CMD_113_CLI_TXT,
++#endif
++#ifdef CMD_114_ENUM_NAME
++       CMD_114_CLI_TXT,
++#endif
++#ifdef CMD_115_ENUM_NAME
++       CMD_115_CLI_TXT,
++#endif
++#ifdef CMD_116_ENUM_NAME
++       CMD_116_CLI_TXT,
++#endif
++#ifdef CMD_117_ENUM_NAME
++       CMD_117_CLI_TXT,
++#endif
++#ifdef CMD_118_ENUM_NAME
++       CMD_118_CLI_TXT,
++#endif
++#ifdef CMD_119_ENUM_NAME
++       CMD_119_CLI_TXT,
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++       CMD_120_CLI_TXT,
++#endif
++#ifdef CMD_121_ENUM_NAME
++       CMD_121_CLI_TXT,
++#endif
++#ifdef CMD_122_ENUM_NAME
++       CMD_122_CLI_TXT,
++#endif
++#ifdef CMD_123_ENUM_NAME
++       CMD_123_CLI_TXT,
++#endif
++#ifdef CMD_124_ENUM_NAME
++       CMD_124_CLI_TXT,
++#endif
++#ifdef CMD_125_ENUM_NAME
++       CMD_125_CLI_TXT,
++#endif
++#ifdef CMD_126_ENUM_NAME
++       CMD_126_CLI_TXT,
++#endif
++#ifdef CMD_127_ENUM_NAME
++       CMD_127_CLI_TXT,
++#endif
++#ifdef CMD_128_ENUM_NAME
++       CMD_128_CLI_TXT,
++#endif
++#ifdef CMD_129_ENUM_NAME
++       CMD_129_CLI_TXT,
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++       CMD_130_CLI_TXT,
++#endif
++#ifdef CMD_131_ENUM_NAME
++       CMD_131_CLI_TXT,
++#endif
++#ifdef CMD_132_ENUM_NAME
++       CMD_132_CLI_TXT,
++#endif
++#ifdef CMD_133_ENUM_NAME
++       CMD_133_CLI_TXT,
++#endif
++#ifdef CMD_134_ENUM_NAME
++       CMD_134_CLI_TXT,
++#endif
++#ifdef CMD_135_ENUM_NAME
++       CMD_135_CLI_TXT,
++#endif
++#ifdef CMD_136_ENUM_NAME
++       CMD_136_CLI_TXT,
++#endif
++#ifdef CMD_137_ENUM_NAME
++       CMD_137_CLI_TXT,
++#endif
++#ifdef CMD_138_ENUM_NAME
++       CMD_138_CLI_TXT,
++#endif
++#ifdef CMD_139_ENUM_NAME
++       CMD_139_CLI_TXT,
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++       CMD_140_CLI_TXT,
++#endif
++#ifdef CMD_141_ENUM_NAME
++       CMD_141_CLI_TXT,
++#endif
++#ifdef CMD_142_ENUM_NAME
++       CMD_142_CLI_TXT,
++#endif
++#ifdef CMD_143_ENUM_NAME
++       CMD_143_CLI_TXT,
++#endif
++#ifdef CMD_144_ENUM_NAME
++       CMD_144_CLI_TXT,
++#endif
++#ifdef CMD_145_ENUM_NAME
++       CMD_145_CLI_TXT,
++#endif
++#ifdef CMD_146_ENUM_NAME
++       CMD_146_CLI_TXT,
++#endif
++#ifdef CMD_147_ENUM_NAME
++       CMD_147_CLI_TXT,
++#endif
++#ifdef CMD_148_ENUM_NAME
++       CMD_148_CLI_TXT,
++#endif
++#ifdef CMD_149_ENUM_NAME
++       CMD_149_CLI_TXT,
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++       CMD_150_CLI_TXT,
++#endif
++#ifdef CMD_151_ENUM_NAME
++       CMD_151_CLI_TXT,
++#endif
++#ifdef CMD_152_ENUM_NAME
++       CMD_152_CLI_TXT,
++#endif
++#ifdef CMD_153_ENUM_NAME
++       CMD_153_CLI_TXT,
++#endif
++#ifdef CMD_154_ENUM_NAME
++       CMD_154_CLI_TXT,
++#endif
++#ifdef CMD_155_ENUM_NAME
++       CMD_155_CLI_TXT,
++#endif
++#ifdef CMD_156_ENUM_NAME
++       CMD_156_CLI_TXT,
++#endif
++#ifdef CMD_157_ENUM_NAME
++       CMD_157_CLI_TXT,
++#endif
++#ifdef CMD_158_ENUM_NAME
++       CMD_158_CLI_TXT,
++#endif
++#ifdef CMD_159_ENUM_NAME
++       CMD_159_CLI_TXT,
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++       CMD_160_CLI_TXT,
++#endif
++#ifdef CMD_161_ENUM_NAME
++       CMD_161_CLI_TXT,
++#endif
++#ifdef CMD_162_ENUM_NAME
++       CMD_162_CLI_TXT,
++#endif
++#ifdef CMD_163_ENUM_NAME
++       CMD_163_CLI_TXT,
++#endif
++#ifdef CMD_164_ENUM_NAME
++       CMD_164_CLI_TXT,
++#endif
++#ifdef CMD_165_ENUM_NAME
++       CMD_165_CLI_TXT,
++#endif
++#ifdef CMD_166_ENUM_NAME
++       CMD_166_CLI_TXT,
++#endif
++#ifdef CMD_167_ENUM_NAME
++       CMD_167_CLI_TXT,
++#endif
++#ifdef CMD_168_ENUM_NAME
++       CMD_168_CLI_TXT,
++#endif
++#ifdef CMD_169_ENUM_NAME
++       CMD_169_CLI_TXT,
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++       CMD_170_CLI_TXT,
++#endif
++#ifdef CMD_171_ENUM_NAME
++       CMD_171_CLI_TXT,
++#endif
++#ifdef CMD_172_ENUM_NAME
++       CMD_172_CLI_TXT,
++#endif
++#ifdef CMD_173_ENUM_NAME
++       CMD_173_CLI_TXT,
++#endif
++#ifdef CMD_174_ENUM_NAME
++       CMD_174_CLI_TXT,
++#endif
++#ifdef CMD_175_ENUM_NAME
++       CMD_175_CLI_TXT,
++#endif
++#ifdef CMD_176_ENUM_NAME
++       CMD_176_CLI_TXT,
++#endif
++#ifdef CMD_177_ENUM_NAME
++       CMD_177_CLI_TXT,
++#endif
++#ifdef CMD_178_ENUM_NAME
++       CMD_178_CLI_TXT,
++#endif
++#ifdef CMD_179_ENUM_NAME
++       CMD_179_CLI_TXT,
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++       CMD_180_CLI_TXT,
++#endif
++#ifdef CMD_181_ENUM_NAME
++       CMD_181_CLI_TXT,
++#endif
++#ifdef CMD_182_ENUM_NAME
++       CMD_182_CLI_TXT,
++#endif
++#ifdef CMD_183_ENUM_NAME
++       CMD_183_CLI_TXT,
++#endif
++#ifdef CMD_184_ENUM_NAME
++       CMD_184_CLI_TXT,
++#endif
++#ifdef CMD_185_ENUM_NAME
++       CMD_185_CLI_TXT,
++#endif
++#ifdef CMD_186_ENUM_NAME
++       CMD_186_CLI_TXT,
++#endif
++#ifdef CMD_187_ENUM_NAME
++       CMD_187_CLI_TXT,
++#endif
++#ifdef CMD_188_ENUM_NAME
++       CMD_188_CLI_TXT,
++#endif
++#ifdef CMD_189_ENUM_NAME
++       CMD_189_CLI_TXT,
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++       CMD_190_CLI_TXT,
++#endif
++#ifdef CMD_191_ENUM_NAME
++       CMD_191_CLI_TXT,
++#endif
++#ifdef CMD_192_ENUM_NAME
++       CMD_192_CLI_TXT,
++#endif
++#ifdef CMD_193_ENUM_NAME
++       CMD_193_CLI_TXT,
++#endif
++#ifdef CMD_194_ENUM_NAME
++       CMD_194_CLI_TXT,
++#endif
++#ifdef CMD_195_ENUM_NAME
++       CMD_195_CLI_TXT,
++#endif
++#ifdef CMD_196_ENUM_NAME
++       CMD_196_CLI_TXT,
++#endif
++#ifdef CMD_197_ENUM_NAME
++       CMD_197_CLI_TXT,
++#endif
++#ifdef CMD_198_ENUM_NAME
++       CMD_198_CLI_TXT,
++#endif
++#ifdef CMD_199_ENUM_NAME
++       CMD_199_CLI_TXT,
++#endif
+ };
+ 
+ /* ==== PRIVATE FUNCTIONS ================================================== */
+@@ -1003,6 +1933,28 @@ inline bool cli_cmd_is_not_valid(uint16_t value)
+     return !(cli_cmd_is_valid(value));
+ }
+ 
++inline bool cli_cmd_is_daemon_related(uint16_t value)
++{
++    switch (value)
++    {
++        case CMD_DAEMON_PRINT:
++        case CMD_DAEMON_UPDATE:
++        case CMD_DAEMON_START:
++        case CMD_DAEMON_STOP:
++            return (true);
++        break;
++        
++        default:
++            return (false);
++        break;
++    }
++}
++
++inline bool cli_cmd_is_not_daemon_related(uint16_t value)
++{
++    return !(cli_cmd_is_daemon_related(value));
++}
++
+ int cli_cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+ {
+     return ((cli_cmd_is_not_valid(cmd)) ? (CLI_ERR_INVCMD) : (cmdexecs[cmd](p_cmdargs)));
+diff --git a/sw/libfci_cli/src/libfci_cli_def_cmds.h b/sw/libfci_cli/src/libfci_cli_def_cmds.h
+index 0302ced..2b3d3e5 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_cmds.h
++++ b/sw/libfci_cli/src/libfci_cli_def_cmds.h
+@@ -132,7 +132,7 @@
+ #define CMD_18_CMDEXEC      cli_cmd_mirror_del
+ #define CMD_18_HELP         txt_help_mirror_del
+ 
+-/*      CMD_19_ENUM_NAME    reserved for future LOGIF cmds */
++/*      CMD_19_ENUM_NAME    reserved for future MIRROR cmds */
+ 
+ #define CMD_20_ENUM_NAME    CMD_BD_PRINT
+ #define CMD_20_CLI_TXT      "bd-print"
+@@ -401,20 +401,55 @@
+ #define CMD_88_CMDEXEC      cli_cmd_qos_pol_flow_del
+ #define CMD_88_HELP         txt_help_qos_pol_flow_del
+ 
++/*      CMD_89_ENUM_NAME    reserved for future QOS_POL cmds */
++
+ #define CMD_90_ENUM_NAME    CMD_FCI_OWNERSHIP
+ #define CMD_90_CLI_TXT      "fci-ownership"
+ #define CMD_90_CMDEXEC      cli_cmd_fci_ownership
+ #define CMD_90_HELP         txt_help_fci_ownership
+ 
+-#define CMD_98_ENUM_NAME    CMD_DEMO_FEATURE_PRINT
+-#define CMD_98_CLI_TXT      "demo-feature-print"
+-#define CMD_98_CMDEXEC      cli_cmd_demo_feature_print
+-#define CMD_98_HELP         txt_help_demo_feature_print
++/*      CMD_91_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_92_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_93_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_94_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_95_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_96_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_97_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_98_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++/*      CMD_99_ENUM_NAME    reserved for future misc OWNERSHIP cmds */
++
++#define CMD_100_ENUM_NAME   CMD_DAEMON_PRINT
++#define CMD_100_CLI_TXT     "daemon-print"
++#define CMD_100_CMDEXEC     cli_cmd_daemon_print
++#define CMD_100_HELP        txt_help_daemon_print
++
++#define CMD_101_ENUM_NAME   CMD_DAEMON_UPDATE
++#define CMD_101_CLI_TXT     "daemon-update"
++#define CMD_101_CMDEXEC     cli_cmd_daemon_update
++#define CMD_101_HELP        txt_help_daemon_update
++
++#define CMD_102_ENUM_NAME   CMD_DAEMON_START
++#define CMD_102_CLI_TXT     "daemon-start"
++#define CMD_102_CMDEXEC     cli_cmd_daemon_start
++#define CMD_102_HELP        txt_help_daemon_start
++
++#define CMD_103_ENUM_NAME   CMD_DAEMON_STOP
++#define CMD_103_CLI_TXT     "daemon-stop"
++#define CMD_103_CMDEXEC     cli_cmd_daemon_stop
++#define CMD_103_HELP        txt_help_daemon_stop
++
++
++
+ 
+-#define CMD_99_ENUM_NAME    CMD_DEMO_FEATURE_RUN
+-#define CMD_99_CLI_TXT      "demo-feature-run"
+-#define CMD_99_CMDEXEC      cli_cmd_demo_feature_run
+-#define CMD_99_HELP         txt_help_demo_feature_run
++#define CMD_198_ENUM_NAME    CMD_DEMO_FEATURE_PRINT
++#define CMD_198_CLI_TXT      "demo-feature-print"
++#define CMD_198_CMDEXEC      cli_cmd_demo_feature_print
++#define CMD_198_HELP         txt_help_demo_feature_print
++
++#define CMD_199_ENUM_NAME    CMD_DEMO_FEATURE_RUN
++#define CMD_199_CLI_TXT      "demo-feature-run"
++#define CMD_199_CMDEXEC      cli_cmd_demo_feature_run
++#define CMD_199_HELP         txt_help_demo_feature_run
+ 
+ /* CMD_LAST (keep this at the bottom of the cli command definition list) */
+ 
+@@ -731,6 +766,316 @@ typedef enum cli_cmd_tt {
+        CMD_99_ENUM_NAME,
+ #endif
+ 
++#ifdef CMD_100_ENUM_NAME
++       CMD_100_ENUM_NAME,
++#endif
++#ifdef CMD_101_ENUM_NAME
++       CMD_101_ENUM_NAME,
++#endif
++#ifdef CMD_102_ENUM_NAME
++       CMD_102_ENUM_NAME,
++#endif
++#ifdef CMD_103_ENUM_NAME
++       CMD_103_ENUM_NAME,
++#endif
++#ifdef CMD_104_ENUM_NAME
++       CMD_104_ENUM_NAME,
++#endif
++#ifdef CMD_105_ENUM_NAME
++       CMD_105_ENUM_NAME,
++#endif
++#ifdef CMD_106_ENUM_NAME
++       CMD_106_ENUM_NAME,
++#endif
++#ifdef CMD_107_ENUM_NAME
++       CMD_107_ENUM_NAME,
++#endif
++#ifdef CMD_108_ENUM_NAME
++       CMD_108_ENUM_NAME,
++#endif
++#ifdef CMD_109_ENUM_NAME
++       CMD_109_ENUM_NAME,
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++       CMD_110_ENUM_NAME,
++#endif
++#ifdef CMD_111_ENUM_NAME
++       CMD_111_ENUM_NAME,
++#endif
++#ifdef CMD_112_ENUM_NAME
++       CMD_112_ENUM_NAME,
++#endif
++#ifdef CMD_113_ENUM_NAME
++       CMD_113_ENUM_NAME,
++#endif
++#ifdef CMD_114_ENUM_NAME
++       CMD_114_ENUM_NAME,
++#endif
++#ifdef CMD_115_ENUM_NAME
++       CMD_115_ENUM_NAME,
++#endif
++#ifdef CMD_116_ENUM_NAME
++       CMD_116_ENUM_NAME,
++#endif
++#ifdef CMD_117_ENUM_NAME
++       CMD_117_ENUM_NAME,
++#endif
++#ifdef CMD_118_ENUM_NAME
++       CMD_118_ENUM_NAME,
++#endif
++#ifdef CMD_119_ENUM_NAME
++       CMD_119_ENUM_NAME,
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++       CMD_120_ENUM_NAME,
++#endif
++#ifdef CMD_121_ENUM_NAME
++       CMD_121_ENUM_NAME,
++#endif
++#ifdef CMD_122_ENUM_NAME
++       CMD_122_ENUM_NAME,
++#endif
++#ifdef CMD_123_ENUM_NAME
++       CMD_123_ENUM_NAME,
++#endif
++#ifdef CMD_124_ENUM_NAME
++       CMD_124_ENUM_NAME,
++#endif
++#ifdef CMD_125_ENUM_NAME
++       CMD_125_ENUM_NAME,
++#endif
++#ifdef CMD_126_ENUM_NAME
++       CMD_126_ENUM_NAME,
++#endif
++#ifdef CMD_127_ENUM_NAME
++       CMD_127_ENUM_NAME,
++#endif
++#ifdef CMD_128_ENUM_NAME
++       CMD_128_ENUM_NAME,
++#endif
++#ifdef CMD_129_ENUM_NAME
++       CMD_129_ENUM_NAME,
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++       CMD_130_ENUM_NAME,
++#endif
++#ifdef CMD_131_ENUM_NAME
++       CMD_131_ENUM_NAME,
++#endif
++#ifdef CMD_132_ENUM_NAME
++       CMD_132_ENUM_NAME,
++#endif
++#ifdef CMD_133_ENUM_NAME
++       CMD_133_ENUM_NAME,
++#endif
++#ifdef CMD_134_ENUM_NAME
++       CMD_134_ENUM_NAME,
++#endif
++#ifdef CMD_135_ENUM_NAME
++       CMD_135_ENUM_NAME,
++#endif
++#ifdef CMD_136_ENUM_NAME
++       CMD_136_ENUM_NAME,
++#endif
++#ifdef CMD_137_ENUM_NAME
++       CMD_137_ENUM_NAME,
++#endif
++#ifdef CMD_138_ENUM_NAME
++       CMD_138_ENUM_NAME,
++#endif
++#ifdef CMD_139_ENUM_NAME
++       CMD_139_ENUM_NAME,
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++       CMD_140_ENUM_NAME,
++#endif
++#ifdef CMD_141_ENUM_NAME
++       CMD_141_ENUM_NAME,
++#endif
++#ifdef CMD_142_ENUM_NAME
++       CMD_142_ENUM_NAME,
++#endif
++#ifdef CMD_143_ENUM_NAME
++       CMD_143_ENUM_NAME,
++#endif
++#ifdef CMD_144_ENUM_NAME
++       CMD_144_ENUM_NAME,
++#endif
++#ifdef CMD_145_ENUM_NAME
++       CMD_145_ENUM_NAME,
++#endif
++#ifdef CMD_146_ENUM_NAME
++       CMD_146_ENUM_NAME,
++#endif
++#ifdef CMD_147_ENUM_NAME
++       CMD_147_ENUM_NAME,
++#endif
++#ifdef CMD_148_ENUM_NAME
++       CMD_148_ENUM_NAME,
++#endif
++#ifdef CMD_149_ENUM_NAME
++       CMD_149_ENUM_NAME,
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++       CMD_150_ENUM_NAME,
++#endif
++#ifdef CMD_151_ENUM_NAME
++       CMD_151_ENUM_NAME,
++#endif
++#ifdef CMD_152_ENUM_NAME
++       CMD_152_ENUM_NAME,
++#endif
++#ifdef CMD_153_ENUM_NAME
++       CMD_153_ENUM_NAME,
++#endif
++#ifdef CMD_154_ENUM_NAME
++       CMD_154_ENUM_NAME,
++#endif
++#ifdef CMD_155_ENUM_NAME
++       CMD_155_ENUM_NAME,
++#endif
++#ifdef CMD_156_ENUM_NAME
++       CMD_156_ENUM_NAME,
++#endif
++#ifdef CMD_157_ENUM_NAME
++       CMD_157_ENUM_NAME,
++#endif
++#ifdef CMD_158_ENUM_NAME
++       CMD_158_ENUM_NAME,
++#endif
++#ifdef CMD_159_ENUM_NAME
++       CMD_159_ENUM_NAME,
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++       CMD_160_ENUM_NAME,
++#endif
++#ifdef CMD_161_ENUM_NAME
++       CMD_161_ENUM_NAME,
++#endif
++#ifdef CMD_162_ENUM_NAME
++       CMD_162_ENUM_NAME,
++#endif
++#ifdef CMD_163_ENUM_NAME
++       CMD_163_ENUM_NAME,
++#endif
++#ifdef CMD_164_ENUM_NAME
++       CMD_164_ENUM_NAME,
++#endif
++#ifdef CMD_165_ENUM_NAME
++       CMD_165_ENUM_NAME,
++#endif
++#ifdef CMD_166_ENUM_NAME
++       CMD_166_ENUM_NAME,
++#endif
++#ifdef CMD_167_ENUM_NAME
++       CMD_167_ENUM_NAME,
++#endif
++#ifdef CMD_168_ENUM_NAME
++       CMD_168_ENUM_NAME,
++#endif
++#ifdef CMD_169_ENUM_NAME
++       CMD_169_ENUM_NAME,
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++       CMD_170_ENUM_NAME,
++#endif
++#ifdef CMD_171_ENUM_NAME
++       CMD_171_ENUM_NAME,
++#endif
++#ifdef CMD_172_ENUM_NAME
++       CMD_172_ENUM_NAME,
++#endif
++#ifdef CMD_173_ENUM_NAME
++       CMD_173_ENUM_NAME,
++#endif
++#ifdef CMD_174_ENUM_NAME
++       CMD_174_ENUM_NAME,
++#endif
++#ifdef CMD_175_ENUM_NAME
++       CMD_175_ENUM_NAME,
++#endif
++#ifdef CMD_176_ENUM_NAME
++       CMD_176_ENUM_NAME,
++#endif
++#ifdef CMD_177_ENUM_NAME
++       CMD_177_ENUM_NAME,
++#endif
++#ifdef CMD_178_ENUM_NAME
++       CMD_178_ENUM_NAME,
++#endif
++#ifdef CMD_179_ENUM_NAME
++       CMD_179_ENUM_NAME,
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++       CMD_180_ENUM_NAME,
++#endif
++#ifdef CMD_181_ENUM_NAME
++       CMD_181_ENUM_NAME,
++#endif
++#ifdef CMD_182_ENUM_NAME
++       CMD_182_ENUM_NAME,
++#endif
++#ifdef CMD_183_ENUM_NAME
++       CMD_183_ENUM_NAME,
++#endif
++#ifdef CMD_184_ENUM_NAME
++       CMD_184_ENUM_NAME,
++#endif
++#ifdef CMD_185_ENUM_NAME
++       CMD_185_ENUM_NAME,
++#endif
++#ifdef CMD_186_ENUM_NAME
++       CMD_186_ENUM_NAME,
++#endif
++#ifdef CMD_187_ENUM_NAME
++       CMD_187_ENUM_NAME,
++#endif
++#ifdef CMD_188_ENUM_NAME
++       CMD_188_ENUM_NAME,
++#endif
++#ifdef CMD_189_ENUM_NAME
++       CMD_189_ENUM_NAME,
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++       CMD_190_ENUM_NAME,
++#endif
++#ifdef CMD_191_ENUM_NAME
++       CMD_191_ENUM_NAME,
++#endif
++#ifdef CMD_192_ENUM_NAME
++       CMD_192_ENUM_NAME,
++#endif
++#ifdef CMD_193_ENUM_NAME
++       CMD_193_ENUM_NAME,
++#endif
++#ifdef CMD_194_ENUM_NAME
++       CMD_194_ENUM_NAME,
++#endif
++#ifdef CMD_195_ENUM_NAME
++       CMD_195_ENUM_NAME,
++#endif
++#ifdef CMD_196_ENUM_NAME
++       CMD_196_ENUM_NAME,
++#endif
++#ifdef CMD_197_ENUM_NAME
++       CMD_197_ENUM_NAME,
++#endif
++#ifdef CMD_198_ENUM_NAME
++       CMD_198_ENUM_NAME,
++#endif
++#ifdef CMD_199_ENUM_NAME
++       CMD_199_ENUM_NAME,
++#endif
++
+     CMD_LN  /* length of the ID enum list */
+ } cli_cmd_t;
+ 
+@@ -745,6 +1090,9 @@ typedef enum cli_cmd_tt {
+ bool cli_cmd_is_valid(uint16_t value);
+ bool cli_cmd_is_not_valid(uint16_t value);
+ 
++bool cli_cmd_is_daemon_related(uint16_t value);
++bool cli_cmd_is_not_daemon_related(uint16_t value);
++
+ int cli_cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs);
+ 
+ int cli_cmd_txt2cmd(cli_cmd_t* p_rtn_cmd, const char* p_txt);
+diff --git a/sw/libfci_cli/src/libfci_cli_def_help.c b/sw/libfci_cli/src/libfci_cli_def_help.c
+index 1e1f827..ea28eee 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_help.c
++++ b/sw/libfci_cli/src/libfci_cli_def_help.c
+@@ -887,6 +887,22 @@
+ #define TXT_OPTDESCR__UNLOCK            TXT_HELP__UNLOCK  "\n"  \
+                                         "  Release FCI ownership lock.\n"
+ 
++#define TXT_OPT__PRINT_TO_TERMINAL      TXT_HELP__PRINT_TO_TERMINAL  "=<"  TXT_OPTARGS__ON_OFF  ">"
++#define TXT_OPTDESCR__PRINT_TO_TERMINAL TXT_HELP__PRINT_TO_TERMINAL  "=<"  TXT_OPTARGS__ON_OFF  ">"  "\n"  \
++                                        "  Commands libfci_cli daemon to enable/disable printing of caught FCI events into terminal. \n"
++
++#define TXT_OPT__PRINT_TO_LOGFILE       TXT_HELP__PRINT_TO_LOGFILE  "=<"  TXT_OPTARGS__ON_OFF  ">"
++#define TXT_OPTDESCR__PRINT_TO_LOGFILE  TXT_HELP__PRINT_TO_LOGFILE  "=<"  TXT_OPTARGS__ON_OFF  ">"  "\n"  \
++                                        "  Commands libfci_cli daemon to enable/disable printing of caught FCI events into logfile. \n"
++
++#define TXT_OPT__DBG_TO_TERMINAL        TXT_HELP__DBG_TO_TERMINAL  "=<"  TXT_OPTARGS__ON_OFF  ">"
++#define TXT_OPTDESCR__DBG_TO_TERMINAL   TXT_HELP__DBG_TO_TERMINAL  "=<"  TXT_OPTARGS__ON_OFF  ">"  "\n"  \
++                                        "  Commands libfci_cli daemon to enable/disable printing of debug messages into terminal. \n"
++
++#define TXT_OPT__DBG_TO_DBGFILE         TXT_HELP__DBG_TO_DBGFILE  "=<"  TXT_OPTARGS__ON_OFF  ">"
++#define TXT_OPTDESCR__DBG_TO_DBGFILE    TXT_HELP__DBG_TO_DBGFILE  "=<"  TXT_OPTARGS__ON_OFF  ">"  "\n"  \
++                                        "  Commands libfci_cli daemon to enable/disable printing of debug messages into debugfile. \n"
++
+ 
+ 
+ 
+@@ -894,8 +910,7 @@
+     Sanity check for opt help texts. When new opt is added, create a help text for the opt and remove its symbol from here.
+     And don't forget to check the pairing! ^_^
+ */
+-#if (defined(OPT_121_TXT_HELP) || defined(OPT_122_TXT_HELP) || defined(OPT_123_TXT_HELP) || defined(OPT_124_TXT_HELP) || \
+-     defined(OPT_125_TXT_HELP) || defined(OPT_126_TXT_HELP) || defined(OPT_127_TXT_HELP) || defined(OPT_128_TXT_HELP) || defined(OPT_129_TXT_HELP) || \
++#if (defined(OPT_125_TXT_HELP) || defined(OPT_126_TXT_HELP) || defined(OPT_127_TXT_HELP) || defined(OPT_128_TXT_HELP) || defined(OPT_129_TXT_HELP) || \
+      defined(OPT_130_TXT_HELP) || defined(OPT_131_TXT_HELP) || defined(OPT_132_TXT_HELP) || defined(OPT_133_TXT_HELP) || defined(OPT_134_TXT_HELP) || \
+      defined(OPT_135_TXT_HELP) || defined(OPT_136_TXT_HELP) || defined(OPT_137_TXT_HELP) || defined(OPT_138_TXT_HELP) || defined(OPT_139_TXT_HELP) || \
+      defined(OPT_140_TXT_HELP) || defined(OPT_141_TXT_HELP) || defined(OPT_142_TXT_HELP) || defined(OPT_143_TXT_HELP) || defined(OPT_144_TXT_HELP) || \
+@@ -2363,6 +2378,86 @@ static const char* txt_help_fci_ownership[] =
+     NULL
+ };
+ 
++static const char* txt_help_daemon_print[] =
++{
++    TXT_DECOR_CMD,
++    ""    "daemon-print"  "   ",
++    "\n",
++    TXT_DECOR_DESCR,
++    ""    "Query daemon about its configuration and print it.",
++    "\n",
++    ""    "Daemon must be already running, otherwise this command fails.",
++    "\n",
++    TXT_DECOR_OPT,
++    "no options\n",
++    "\n",
++    
++    NULL
++};
++
++static const char* txt_help_daemon_update[] =
++{
++    TXT_DECOR_CMD,
++    ""    "daemon-update"             "   ",
++    "["   TXT_OPT__PRINT_TO_TERMINAL  "]  ",
++    "["   TXT_OPT__PRINT_TO_LOGFILE   "]  ",
++    "["   TXT_OPT__DBG_TO_TERMINAL    "]  ",
++    "["   TXT_OPT__DBG_TO_DBGFILE     "]  ",
++    "\n",
++    TXT_DECOR_DESCR,
++    ""    "Tell daemon to change its confguration.",
++    "\n",
++    ""    "Daemon must be already running, otherwise this command fails.",
++    "\n",
++    TXT_DECOR_OPT,
++    TXT_OPTDESCR__PRINT_TO_TERMINAL,
++    TXT_OPTDESCR__PRINT_TO_LOGFILE,
++    TXT_OPTDESCR__DBG_TO_TERMINAL,
++    TXT_OPTDESCR__DBG_TO_DBGFILE,
++    "\n",
++    
++    NULL
++};
++
++static const char* txt_help_daemon_start[] =
++{
++    TXT_DECOR_CMD,
++    ""    "daemon-start"              "   ",
++    "["   TXT_OPT__PRINT_TO_TERMINAL  "]  ",
++    "["   TXT_OPT__PRINT_TO_LOGFILE   "]  ",
++    "["   TXT_OPT__DBG_TO_TERMINAL    "]  ",
++    "["   TXT_OPT__DBG_TO_DBGFILE     "]  ",
++    "\n",
++    TXT_DECOR_DESCR,
++    ""    "Start libfci_cli daemon with given configuration.",
++    "\n",
++    TXT_DECOR_OPT,
++    TXT_OPTDESCR__PRINT_TO_TERMINAL,
++    TXT_OPTDESCR__PRINT_TO_LOGFILE,
++    TXT_OPTDESCR__DBG_TO_TERMINAL,
++    TXT_OPTDESCR__DBG_TO_DBGFILE,
++    "\n",
++    
++    NULL
++};
++
++static const char* txt_help_daemon_stop[] =
++{
++    TXT_DECOR_CMD,
++    ""    "daemon-stop"  "   ",
++    "\n",
++    TXT_DECOR_DESCR,
++    ""    "Stop libfci_cli daemon.",
++    "\n",
++    ""    "Daemon must be already running, otherwise this command fails.",
++    "\n",
++    TXT_DECOR_OPT,
++    "no options\n",
++    "\n",
++    
++    NULL
++};
++
+ static const char* txt_help_demo_feature_print[] =
+ {
+     TXT_DECOR_CMD,
+@@ -2715,6 +2810,316 @@ static const char *const txt_help_no_command[] =
+  "  "  CMD_99_CLI_TXT  "\n",
+ #endif
+ 
++#ifdef CMD_100_ENUM_NAME
++ "  "  CMD_100_CLI_TXT  "\n",
++#endif
++#ifdef CMD_101_ENUM_NAME
++ "  "  CMD_101_CLI_TXT  "\n",
++#endif
++#ifdef CMD_102_ENUM_NAME
++ "  "  CMD_102_CLI_TXT  "\n",
++#endif
++#ifdef CMD_103_ENUM_NAME
++ "  "  CMD_103_CLI_TXT  "\n",
++#endif
++#ifdef CMD_104_ENUM_NAME
++ "  "  CMD_104_CLI_TXT  "\n",
++#endif
++#ifdef CMD_105_ENUM_NAME
++ "  "  CMD_105_CLI_TXT  "\n",
++#endif
++#ifdef CMD_106_ENUM_NAME
++ "  "  CMD_106_CLI_TXT  "\n",
++#endif
++#ifdef CMD_107_ENUM_NAME
++ "  "  CMD_107_CLI_TXT  "\n",
++#endif
++#ifdef CMD_108_ENUM_NAME
++ "  "  CMD_108_CLI_TXT  "\n",
++#endif
++#ifdef CMD_109_ENUM_NAME
++ "  "  CMD_109_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++ "  "  CMD_110_CLI_TXT  "\n",
++#endif
++#ifdef CMD_111_ENUM_NAME
++ "  "  CMD_111_CLI_TXT  "\n",
++#endif
++#ifdef CMD_112_ENUM_NAME
++ "  "  CMD_112_CLI_TXT  "\n",
++#endif
++#ifdef CMD_113_ENUM_NAME
++ "  "  CMD_113_CLI_TXT  "\n",
++#endif
++#ifdef CMD_114_ENUM_NAME
++ "  "  CMD_114_CLI_TXT  "\n",
++#endif
++#ifdef CMD_115_ENUM_NAME
++ "  "  CMD_115_CLI_TXT  "\n",
++#endif
++#ifdef CMD_116_ENUM_NAME
++ "  "  CMD_116_CLI_TXT  "\n",
++#endif
++#ifdef CMD_117_ENUM_NAME
++ "  "  CMD_117_CLI_TXT  "\n",
++#endif
++#ifdef CMD_118_ENUM_NAME
++ "  "  CMD_118_CLI_TXT  "\n",
++#endif
++#ifdef CMD_119_ENUM_NAME
++ "  "  CMD_119_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++ "  "  CMD_120_CLI_TXT  "\n",
++#endif
++#ifdef CMD_121_ENUM_NAME
++ "  "  CMD_121_CLI_TXT  "\n",
++#endif
++#ifdef CMD_122_ENUM_NAME
++ "  "  CMD_122_CLI_TXT  "\n",
++#endif
++#ifdef CMD_123_ENUM_NAME
++ "  "  CMD_123_CLI_TXT  "\n",
++#endif
++#ifdef CMD_124_ENUM_NAME
++ "  "  CMD_124_CLI_TXT  "\n",
++#endif
++#ifdef CMD_125_ENUM_NAME
++ "  "  CMD_125_CLI_TXT  "\n",
++#endif
++#ifdef CMD_126_ENUM_NAME
++ "  "  CMD_126_CLI_TXT  "\n",
++#endif
++#ifdef CMD_127_ENUM_NAME
++ "  "  CMD_127_CLI_TXT  "\n",
++#endif
++#ifdef CMD_128_ENUM_NAME
++ "  "  CMD_128_CLI_TXT  "\n",
++#endif
++#ifdef CMD_129_ENUM_NAME
++ "  "  CMD_129_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++ "  "  CMD_130_CLI_TXT  "\n",
++#endif
++#ifdef CMD_131_ENUM_NAME
++ "  "  CMD_131_CLI_TXT  "\n",
++#endif
++#ifdef CMD_132_ENUM_NAME
++ "  "  CMD_132_CLI_TXT  "\n",
++#endif
++#ifdef CMD_133_ENUM_NAME
++ "  "  CMD_133_CLI_TXT  "\n",
++#endif
++#ifdef CMD_134_ENUM_NAME
++ "  "  CMD_134_CLI_TXT  "\n",
++#endif
++#ifdef CMD_135_ENUM_NAME
++ "  "  CMD_135_CLI_TXT  "\n",
++#endif
++#ifdef CMD_136_ENUM_NAME
++ "  "  CMD_136_CLI_TXT  "\n",
++#endif
++#ifdef CMD_137_ENUM_NAME
++ "  "  CMD_137_CLI_TXT  "\n",
++#endif
++#ifdef CMD_138_ENUM_NAME
++ "  "  CMD_138_CLI_TXT  "\n",
++#endif
++#ifdef CMD_139_ENUM_NAME
++ "  "  CMD_139_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++ "  "  CMD_140_CLI_TXT  "\n",
++#endif
++#ifdef CMD_141_ENUM_NAME
++ "  "  CMD_141_CLI_TXT  "\n",
++#endif
++#ifdef CMD_142_ENUM_NAME
++ "  "  CMD_142_CLI_TXT  "\n",
++#endif
++#ifdef CMD_143_ENUM_NAME
++ "  "  CMD_143_CLI_TXT  "\n",
++#endif
++#ifdef CMD_144_ENUM_NAME
++ "  "  CMD_144_CLI_TXT  "\n",
++#endif
++#ifdef CMD_145_ENUM_NAME
++ "  "  CMD_145_CLI_TXT  "\n",
++#endif
++#ifdef CMD_146_ENUM_NAME
++ "  "  CMD_146_CLI_TXT  "\n",
++#endif
++#ifdef CMD_147_ENUM_NAME
++ "  "  CMD_147_CLI_TXT  "\n",
++#endif
++#ifdef CMD_148_ENUM_NAME
++ "  "  CMD_148_CLI_TXT  "\n",
++#endif
++#ifdef CMD_149_ENUM_NAME
++ "  "  CMD_149_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++ "  "  CMD_150_CLI_TXT  "\n",
++#endif
++#ifdef CMD_151_ENUM_NAME
++ "  "  CMD_151_CLI_TXT  "\n",
++#endif
++#ifdef CMD_152_ENUM_NAME
++ "  "  CMD_152_CLI_TXT  "\n",
++#endif
++#ifdef CMD_153_ENUM_NAME
++ "  "  CMD_153_CLI_TXT  "\n",
++#endif
++#ifdef CMD_154_ENUM_NAME
++ "  "  CMD_154_CLI_TXT  "\n",
++#endif
++#ifdef CMD_155_ENUM_NAME
++ "  "  CMD_155_CLI_TXT  "\n",
++#endif
++#ifdef CMD_156_ENUM_NAME
++ "  "  CMD_156_CLI_TXT  "\n",
++#endif
++#ifdef CMD_157_ENUM_NAME
++ "  "  CMD_157_CLI_TXT  "\n",
++#endif
++#ifdef CMD_158_ENUM_NAME
++ "  "  CMD_158_CLI_TXT  "\n",
++#endif
++#ifdef CMD_159_ENUM_NAME
++ "  "  CMD_159_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++ "  "  CMD_160_CLI_TXT  "\n",
++#endif
++#ifdef CMD_161_ENUM_NAME
++ "  "  CMD_161_CLI_TXT  "\n",
++#endif
++#ifdef CMD_162_ENUM_NAME
++ "  "  CMD_162_CLI_TXT  "\n",
++#endif
++#ifdef CMD_163_ENUM_NAME
++ "  "  CMD_163_CLI_TXT  "\n",
++#endif
++#ifdef CMD_164_ENUM_NAME
++ "  "  CMD_164_CLI_TXT  "\n",
++#endif
++#ifdef CMD_165_ENUM_NAME
++ "  "  CMD_165_CLI_TXT  "\n",
++#endif
++#ifdef CMD_166_ENUM_NAME
++ "  "  CMD_166_CLI_TXT  "\n",
++#endif
++#ifdef CMD_167_ENUM_NAME
++ "  "  CMD_167_CLI_TXT  "\n",
++#endif
++#ifdef CMD_168_ENUM_NAME
++ "  "  CMD_168_CLI_TXT  "\n",
++#endif
++#ifdef CMD_169_ENUM_NAME
++ "  "  CMD_169_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++ "  "  CMD_170_CLI_TXT  "\n",
++#endif
++#ifdef CMD_171_ENUM_NAME
++ "  "  CMD_171_CLI_TXT  "\n",
++#endif
++#ifdef CMD_172_ENUM_NAME
++ "  "  CMD_172_CLI_TXT  "\n",
++#endif
++#ifdef CMD_173_ENUM_NAME
++ "  "  CMD_173_CLI_TXT  "\n",
++#endif
++#ifdef CMD_174_ENUM_NAME
++ "  "  CMD_174_CLI_TXT  "\n",
++#endif
++#ifdef CMD_175_ENUM_NAME
++ "  "  CMD_175_CLI_TXT  "\n",
++#endif
++#ifdef CMD_176_ENUM_NAME
++ "  "  CMD_176_CLI_TXT  "\n",
++#endif
++#ifdef CMD_177_ENUM_NAME
++ "  "  CMD_177_CLI_TXT  "\n",
++#endif
++#ifdef CMD_178_ENUM_NAME
++ "  "  CMD_178_CLI_TXT  "\n",
++#endif
++#ifdef CMD_179_ENUM_NAME
++ "  "  CMD_179_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++ "  "  CMD_180_CLI_TXT  "\n",
++#endif
++#ifdef CMD_181_ENUM_NAME
++ "  "  CMD_181_CLI_TXT  "\n",
++#endif
++#ifdef CMD_182_ENUM_NAME
++ "  "  CMD_182_CLI_TXT  "\n",
++#endif
++#ifdef CMD_183_ENUM_NAME
++ "  "  CMD_183_CLI_TXT  "\n",
++#endif
++#ifdef CMD_184_ENUM_NAME
++ "  "  CMD_184_CLI_TXT  "\n",
++#endif
++#ifdef CMD_185_ENUM_NAME
++ "  "  CMD_185_CLI_TXT  "\n",
++#endif
++#ifdef CMD_186_ENUM_NAME
++ "  "  CMD_186_CLI_TXT  "\n",
++#endif
++#ifdef CMD_187_ENUM_NAME
++ "  "  CMD_187_CLI_TXT  "\n",
++#endif
++#ifdef CMD_188_ENUM_NAME
++ "  "  CMD_188_CLI_TXT  "\n",
++#endif
++#ifdef CMD_189_ENUM_NAME
++ "  "  CMD_189_CLI_TXT  "\n",
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++ "  "  CMD_190_CLI_TXT  "\n",
++#endif
++#ifdef CMD_191_ENUM_NAME
++ "  "  CMD_191_CLI_TXT  "\n",
++#endif
++#ifdef CMD_192_ENUM_NAME
++ "  "  CMD_192_CLI_TXT  "\n",
++#endif
++#ifdef CMD_193_ENUM_NAME
++ "  "  CMD_193_CLI_TXT  "\n",
++#endif
++#ifdef CMD_194_ENUM_NAME
++ "  "  CMD_194_CLI_TXT  "\n",
++#endif
++#ifdef CMD_195_ENUM_NAME
++ "  "  CMD_195_CLI_TXT  "\n",
++#endif
++#ifdef CMD_196_ENUM_NAME
++ "  "  CMD_196_CLI_TXT  "\n",
++#endif
++#ifdef CMD_197_ENUM_NAME
++ "  "  CMD_197_CLI_TXT  "\n",
++#endif
++#ifdef CMD_198_ENUM_NAME
++ "  "  CMD_198_CLI_TXT  "\n",
++#endif
++#ifdef CMD_199_ENUM_NAME
++ "  "  CMD_199_CLI_TXT  "\n",
++#endif
++
+     "\n",
+     NULL
+ };
+@@ -3031,6 +3436,316 @@ static const char *const *const txt_helps[] =
+ #ifdef CMD_99_ENUM_NAME
+        CMD_99_HELP,
+ #endif
++
++#ifdef CMD_100_ENUM_NAME
++       CMD_100_HELP,
++#endif
++#ifdef CMD_101_ENUM_NAME
++       CMD_101_HELP,
++#endif
++#ifdef CMD_102_ENUM_NAME
++       CMD_102_HELP,
++#endif
++#ifdef CMD_103_ENUM_NAME
++       CMD_103_HELP,
++#endif
++#ifdef CMD_104_ENUM_NAME
++       CMD_104_HELP,
++#endif
++#ifdef CMD_105_ENUM_NAME
++       CMD_105_HELP,
++#endif
++#ifdef CMD_106_ENUM_NAME
++       CMD_106_HELP,
++#endif
++#ifdef CMD_107_ENUM_NAME
++       CMD_107_HELP,
++#endif
++#ifdef CMD_108_ENUM_NAME
++       CMD_108_HELP,
++#endif
++#ifdef CMD_109_ENUM_NAME
++       CMD_109_HELP,
++#endif
++
++#ifdef CMD_110_ENUM_NAME
++       CMD_110_HELP,
++#endif
++#ifdef CMD_111_ENUM_NAME
++       CMD_111_HELP,
++#endif
++#ifdef CMD_112_ENUM_NAME
++       CMD_112_HELP,
++#endif
++#ifdef CMD_113_ENUM_NAME
++       CMD_113_HELP,
++#endif
++#ifdef CMD_114_ENUM_NAME
++       CMD_114_HELP,
++#endif
++#ifdef CMD_115_ENUM_NAME
++       CMD_115_HELP,
++#endif
++#ifdef CMD_116_ENUM_NAME
++       CMD_116_HELP,
++#endif
++#ifdef CMD_117_ENUM_NAME
++       CMD_117_HELP,
++#endif
++#ifdef CMD_118_ENUM_NAME
++       CMD_118_HELP,
++#endif
++#ifdef CMD_119_ENUM_NAME
++       CMD_119_HELP,
++#endif
++
++#ifdef CMD_120_ENUM_NAME
++       CMD_120_HELP,
++#endif
++#ifdef CMD_121_ENUM_NAME
++       CMD_121_HELP,
++#endif
++#ifdef CMD_122_ENUM_NAME
++       CMD_122_HELP,
++#endif
++#ifdef CMD_123_ENUM_NAME
++       CMD_123_HELP,
++#endif
++#ifdef CMD_124_ENUM_NAME
++       CMD_124_HELP,
++#endif
++#ifdef CMD_125_ENUM_NAME
++       CMD_125_HELP,
++#endif
++#ifdef CMD_126_ENUM_NAME
++       CMD_126_HELP,
++#endif
++#ifdef CMD_127_ENUM_NAME
++       CMD_127_HELP,
++#endif
++#ifdef CMD_128_ENUM_NAME
++       CMD_128_HELP,
++#endif
++#ifdef CMD_129_ENUM_NAME
++       CMD_129_HELP,
++#endif
++
++#ifdef CMD_130_ENUM_NAME
++       CMD_130_HELP,
++#endif
++#ifdef CMD_131_ENUM_NAME
++       CMD_131_HELP,
++#endif
++#ifdef CMD_132_ENUM_NAME
++       CMD_132_HELP,
++#endif
++#ifdef CMD_133_ENUM_NAME
++       CMD_133_HELP,
++#endif
++#ifdef CMD_134_ENUM_NAME
++       CMD_134_HELP,
++#endif
++#ifdef CMD_135_ENUM_NAME
++       CMD_135_HELP,
++#endif
++#ifdef CMD_136_ENUM_NAME
++       CMD_136_HELP,
++#endif
++#ifdef CMD_137_ENUM_NAME
++       CMD_137_HELP,
++#endif
++#ifdef CMD_138_ENUM_NAME
++       CMD_138_HELP,
++#endif
++#ifdef CMD_139_ENUM_NAME
++       CMD_139_HELP,
++#endif
++
++#ifdef CMD_140_ENUM_NAME
++       CMD_140_HELP,
++#endif
++#ifdef CMD_141_ENUM_NAME
++       CMD_141_HELP,
++#endif
++#ifdef CMD_142_ENUM_NAME
++       CMD_142_HELP,
++#endif
++#ifdef CMD_143_ENUM_NAME
++       CMD_143_HELP,
++#endif
++#ifdef CMD_144_ENUM_NAME
++       CMD_144_HELP,
++#endif
++#ifdef CMD_145_ENUM_NAME
++       CMD_145_HELP,
++#endif
++#ifdef CMD_146_ENUM_NAME
++       CMD_146_HELP,
++#endif
++#ifdef CMD_147_ENUM_NAME
++       CMD_147_HELP,
++#endif
++#ifdef CMD_148_ENUM_NAME
++       CMD_148_HELP,
++#endif
++#ifdef CMD_149_ENUM_NAME
++       CMD_149_HELP,
++#endif
++
++#ifdef CMD_150_ENUM_NAME
++       CMD_150_HELP,
++#endif
++#ifdef CMD_151_ENUM_NAME
++       CMD_151_HELP,
++#endif
++#ifdef CMD_152_ENUM_NAME
++       CMD_152_HELP,
++#endif
++#ifdef CMD_153_ENUM_NAME
++       CMD_153_HELP,
++#endif
++#ifdef CMD_154_ENUM_NAME
++       CMD_154_HELP,
++#endif
++#ifdef CMD_155_ENUM_NAME
++       CMD_155_HELP,
++#endif
++#ifdef CMD_156_ENUM_NAME
++       CMD_156_HELP,
++#endif
++#ifdef CMD_157_ENUM_NAME
++       CMD_157_HELP,
++#endif
++#ifdef CMD_158_ENUM_NAME
++       CMD_158_HELP,
++#endif
++#ifdef CMD_159_ENUM_NAME
++       CMD_159_HELP,
++#endif
++
++#ifdef CMD_160_ENUM_NAME
++       CMD_160_HELP,
++#endif
++#ifdef CMD_161_ENUM_NAME
++       CMD_161_HELP,
++#endif
++#ifdef CMD_162_ENUM_NAME
++       CMD_162_HELP,
++#endif
++#ifdef CMD_163_ENUM_NAME
++       CMD_163_HELP,
++#endif
++#ifdef CMD_164_ENUM_NAME
++       CMD_164_HELP,
++#endif
++#ifdef CMD_165_ENUM_NAME
++       CMD_165_HELP,
++#endif
++#ifdef CMD_166_ENUM_NAME
++       CMD_166_HELP,
++#endif
++#ifdef CMD_167_ENUM_NAME
++       CMD_167_HELP,
++#endif
++#ifdef CMD_168_ENUM_NAME
++       CMD_168_HELP,
++#endif
++#ifdef CMD_169_ENUM_NAME
++       CMD_169_HELP,
++#endif
++
++#ifdef CMD_170_ENUM_NAME
++       CMD_170_HELP,
++#endif
++#ifdef CMD_171_ENUM_NAME
++       CMD_171_HELP,
++#endif
++#ifdef CMD_172_ENUM_NAME
++       CMD_172_HELP,
++#endif
++#ifdef CMD_173_ENUM_NAME
++       CMD_173_HELP,
++#endif
++#ifdef CMD_174_ENUM_NAME
++       CMD_174_HELP,
++#endif
++#ifdef CMD_175_ENUM_NAME
++       CMD_175_HELP,
++#endif
++#ifdef CMD_176_ENUM_NAME
++       CMD_176_HELP,
++#endif
++#ifdef CMD_177_ENUM_NAME
++       CMD_177_HELP,
++#endif
++#ifdef CMD_178_ENUM_NAME
++       CMD_178_HELP,
++#endif
++#ifdef CMD_179_ENUM_NAME
++       CMD_179_HELP,
++#endif
++
++#ifdef CMD_180_ENUM_NAME
++       CMD_180_HELP,
++#endif
++#ifdef CMD_181_ENUM_NAME
++       CMD_181_HELP,
++#endif
++#ifdef CMD_182_ENUM_NAME
++       CMD_182_HELP,
++#endif
++#ifdef CMD_183_ENUM_NAME
++       CMD_183_HELP,
++#endif
++#ifdef CMD_184_ENUM_NAME
++       CMD_184_HELP,
++#endif
++#ifdef CMD_185_ENUM_NAME
++       CMD_185_HELP,
++#endif
++#ifdef CMD_186_ENUM_NAME
++       CMD_186_HELP,
++#endif
++#ifdef CMD_187_ENUM_NAME
++       CMD_187_HELP,
++#endif
++#ifdef CMD_188_ENUM_NAME
++       CMD_188_HELP,
++#endif
++#ifdef CMD_189_ENUM_NAME
++       CMD_189_HELP,
++#endif
++
++#ifdef CMD_190_ENUM_NAME
++       CMD_190_HELP,
++#endif
++#ifdef CMD_191_ENUM_NAME
++       CMD_191_HELP,
++#endif
++#ifdef CMD_192_ENUM_NAME
++       CMD_192_HELP,
++#endif
++#ifdef CMD_193_ENUM_NAME
++       CMD_193_HELP,
++#endif
++#ifdef CMD_194_ENUM_NAME
++       CMD_194_HELP,
++#endif
++#ifdef CMD_195_ENUM_NAME
++       CMD_195_HELP,
++#endif
++#ifdef CMD_196_ENUM_NAME
++       CMD_196_HELP,
++#endif
++#ifdef CMD_197_ENUM_NAME
++       CMD_197_HELP,
++#endif
++#ifdef CMD_198_ENUM_NAME
++       CMD_198_HELP,
++#endif
++#ifdef CMD_199_ENUM_NAME
++       CMD_199_HELP,
++#endif
+ };
+ 
+ /* ==== PUBLIC FUNCTIONS =================================================== */
+diff --git a/sw/libfci_cli/src/libfci_cli_def_opts.c b/sw/libfci_cli/src/libfci_cli_def_opts.c
+index 846fef8..1c5d5e3 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_opts.c
++++ b/sw/libfci_cli/src/libfci_cli_def_opts.c
+@@ -7972,7 +7972,7 @@ inline uint32_t cli_opt_get_incompat_grps(cli_opt_t opt)
+ 
+ /* ==== TYPEDEFS & DATA : MANDOPT ========================================== */
+ 
+-static const char* txt_mandopts[MANDOPT_OPTS_LN] = {NULL};
++static mandopt_optbuf_t internal_optbuf = {{OPT_NONE}};
+ 
+ /* ==== PUBLIC FUNCTIONS : MANDOPT ========================================= */
+ 
+@@ -7984,7 +7984,7 @@ void cli_mandopt_print(const char* p_txt_indent, const char* p_txt_delim)
+     const char* p_txt_tmp = p_txt_indent;
+     for (uint8_t i = 0u; (MANDOPT_OPTS_LN > i); (++i))
+     {
+-        const char* p_txt_opt = txt_mandopts[i];
++        const char* p_txt_opt = cli_opt_get_txt_help(internal_optbuf.opts[i]);
+         if ((NULL != p_txt_opt) && ('\0' != (p_txt_opt[0])))
+         {
+             printf("%s%s", p_txt_tmp, p_txt_opt);
+@@ -7996,10 +7996,7 @@ void cli_mandopt_print(const char* p_txt_indent, const char* p_txt_delim)
+ 
+ void cli_mandopt_clear(void)
+ {
+-    for(uint8_t i = 0u; (MANDOPT_OPTS_LN > i); (++i))
+-    {
+-        txt_mandopts[i] = NULL;
+-    }
++    memset(&internal_optbuf, 0, sizeof(internal_optbuf));
+ }
+ 
+ int cli_mandopt_check(const mandopt_t* p_mandopts, const uint8_t mandopts_ln)
+@@ -8023,15 +8020,12 @@ int cli_mandopt_check(const mandopt_t* p_mandopts, const uint8_t mandopts_ln)
+         if (NULL == (p_item->p_mandopt_optbuf))
+         {
+             /* NULL optbuf == use single opt */
+-            txt_mandopts[0] = cli_opt_get_txt_help(p_item->opt);
++            internal_optbuf.opts[0] = p_item->opt;
+         }
+         else
+         {
+             /* non-NULL optbuf == use optbuf data */
+-            for(uint8_t i = 0u; (MANDOPT_OPTS_LN > i); (++i))
+-            {
+-                txt_mandopts[i] = cli_opt_get_txt_help(p_item->p_mandopt_optbuf->opts[i]);
+-            }
++            internal_optbuf = *(p_item->p_mandopt_optbuf);
+         }
+         rtn = CLI_ERR_MISSING_MANDOPT;
+     }
+@@ -8039,6 +8033,20 @@ int cli_mandopt_check(const mandopt_t* p_mandopts, const uint8_t mandopts_ln)
+     return (rtn);
+ }
+ 
++/* only for daemon ; do not use casually */
++void cli_mandopt_getinternal(mandopt_optbuf_t* p_rtn_optbuf)
++{
++    assert(NULL != p_rtn_optbuf);
++    *p_rtn_optbuf = internal_optbuf;
++}
++
++/* only for daemon ; do not use casually */
++void cli_mandopt_setinternal(mandopt_optbuf_t *const p_optbuf)
++{
++    assert(NULL != p_optbuf);
++    internal_optbuf = *p_optbuf;
++}
++
+ /* ==== TESTMODE constants ================================================= */
+ 
+ #if !defined(NDEBUG)
+diff --git a/sw/libfci_cli/src/libfci_cli_def_opts.h b/sw/libfci_cli/src/libfci_cli_def_opts.h
+index 93adb7e..7455d4c 100644
+--- a/sw/libfci_cli/src/libfci_cli_def_opts.h
++++ b/sw/libfci_cli/src/libfci_cli_def_opts.h
+@@ -1487,6 +1487,7 @@ typedef enum cli_opt_incompat_grp_tt {
+ #define                          TXT_HELP__DIP_PFX \
+         OPT_117_TXT_HELP
+ 
++
+ #define OPT_118_ENUM_NAME        OPT_PTP_MGMT_IF
+ #define OPT_118_HAS_ARG          y
+ #define OPT_118_OPT_PARSE        opt_parse_ptp_mgmt_if
+@@ -1498,27 +1499,80 @@ typedef enum cli_opt_incompat_grp_tt {
+         OPT_118_TXT_HELP
+ 
+ 
+-#define OPT_119_ENUM_NAME         OPT_LOCK
+-#define OPT_119_OPT_PARSE         opt_parse_lock
+-#define OPT_119_HAS_ARG           n
+-#define OPT_119_INCOMPAT_GRPS     OPT_GRP_LOCKUNLOCK
+-#define OPT_119_CLI_SHORT_CODE    L
+-#define OPT_119_CLI_LONG_TXT_A    "lock"
+-#define OPT_119_TXT_HELP          "-L|--L|--lock"
++#define OPT_119_ENUM_NAME        OPT_LOCK
++#define OPT_119_OPT_PARSE        opt_parse_lock
++#define OPT_119_HAS_ARG          n
++#define OPT_119_INCOMPAT_GRPS    OPT_GRP_LOCKUNLOCK
++#define OPT_119_CLI_SHORT_CODE   L
++#define OPT_119_CLI_LONG_TXT_A   "lock"
++#define OPT_119_TXT_HELP         "-L|--L|--lock"
+ #define                          TXT_HELP__LOCK \
+         OPT_119_TXT_HELP
+ 
+-#define OPT_120_ENUM_NAME         OPT_UNLOCK
+-#define OPT_120_OPT_PARSE         opt_parse_unlock
+-#define OPT_120_HAS_ARG           n
+-#define OPT_120_INCOMPAT_GRPS     OPT_GRP_LOCKUNLOCK
+-#define OPT_120_CLI_SHORT_CODE    U
+-#define OPT_120_CLI_LONG_TXT_A    "unlock"
+-#define OPT_120_TXT_HELP          "-U|--U|--unlock"
++
++#define OPT_120_ENUM_NAME        OPT_UNLOCK
++#define OPT_120_OPT_PARSE        opt_parse_unlock
++#define OPT_120_HAS_ARG          n
++#define OPT_120_INCOMPAT_GRPS    OPT_GRP_LOCKUNLOCK
++#define OPT_120_CLI_SHORT_CODE   U
++#define OPT_120_CLI_LONG_TXT_A   "unlock"
++#define OPT_120_TXT_HELP         "-U|--U|--unlock"
+ #define                          TXT_HELP__UNLOCK \
+         OPT_120_TXT_HELP
+ 
+ 
++#define OPT_121_ENUM_NAME        OPT_PRINT_TO_TERMINAL
++#define OPT_121_HAS_ARG          y
++#define OPT_121_OPT_PARSE        opt_print_to_terminal
++#define OPT_121_INCOMPAT_GRPS    OPT_GRP_NONE
++#define OPT_121_CLI_SHORT_CODE   OPT_AUTO_CODE
++#define OPT_121_CLI_LONG_TXT_A   "prn2term"
++#define OPT_121_CLI_LONG_TXT_B   "print-to-terminal"
++#define OPT_121_TXT_HELP         "--prn2term|--print-to-terminal"
++#define                          TXT_HELP__PRINT_TO_TERMINAL \
++        OPT_121_TXT_HELP
++
++
++#define OPT_122_ENUM_NAME        OPT_PRINT_TO_LOGFILE
++#define OPT_122_HAS_ARG          y
++#define OPT_122_OPT_PARSE        opt_print_to_logfile
++#define OPT_122_INCOMPAT_GRPS    OPT_GRP_NONE
++#define OPT_122_CLI_SHORT_CODE   OPT_AUTO_CODE
++#define OPT_122_CLI_LONG_TXT_A   "prn2log"
++#define OPT_122_CLI_LONG_TXT_B   "print-to-logfile"
++#define OPT_122_TXT_HELP         "--prn2log|--print-to-logfile"
++#define                          TXT_HELP__PRINT_TO_LOGFILE \
++        OPT_122_TXT_HELP
++
++
++#define OPT_123_ENUM_NAME        OPT_DBG_TO_TERMINAL
++#define OPT_123_HAS_ARG          y
++#define OPT_123_OPT_PARSE        opt_dbg_to_terminal
++#define OPT_123_INCOMPAT_GRPS    OPT_GRP_NONE
++#define OPT_123_CLI_SHORT_CODE   OPT_AUTO_CODE
++#define OPT_123_CLI_LONG_TXT_A   "dbg2term"
++#define OPT_123_CLI_LONG_TXT_B   "dbg-to-terminal"
++#define OPT_123_CLI_LONG_TXT_C   "debug-to-terminal"
++#define OPT_123_TXT_HELP         "--dbg2term|--dbg-to-terminal|--debug-to-terminal"
++#define                          TXT_HELP__DBG_TO_TERMINAL \
++        OPT_123_TXT_HELP
++
++
++#define OPT_124_ENUM_NAME        OPT_DBG_TO_DBGFILE
++#define OPT_124_HAS_ARG          y
++#define OPT_124_OPT_PARSE        opt_dbg_to_dbgfile
++#define OPT_124_INCOMPAT_GRPS    OPT_GRP_NONE
++#define OPT_124_CLI_SHORT_CODE   OPT_AUTO_CODE
++#define OPT_124_CLI_LONG_TXT_A   "dbg2dbg"
++#define OPT_124_CLI_LONG_TXT_B   "dbg-to-dbgfile"
++#define OPT_124_CLI_LONG_TXT_C   "debug-to-dbgfile"
++#define OPT_124_TXT_HELP         "--dbg2dbg|--dbg-to-dbgfile|--debug-to-dbgfile"
++#define                          TXT_HELP__DBG_TO_DBGFILE \
++        OPT_124_TXT_HELP
++
++
++
++
+ /* OPT_LAST (keep this at the bottom of the cli option definition list) */
+ 
+ /* ==== TYPEDEFS & DATA ==================================================== */
+@@ -4893,6 +4947,8 @@ uint32_t cli_opt_get_incompat_grps(cli_opt_t opt);
+ void cli_mandopt_print(const char* p_txt_indent, const char* p_txt_delim);
+ void cli_mandopt_clear(void);
+ int cli_mandopt_check(const mandopt_t* p_mandopts, const uint8_t mandopts_ln);
++void cli_mandopt_getinternal(mandopt_optbuf_t* p_rtn_optbuf);    /* only for daemon ; do not use casually */
++void cli_mandopt_setinternal(mandopt_optbuf_t *const p_optbuf);  /* only for daemon ; do not use casually */
+ 
+ /* ========================================================================= */
+ 
+diff --git a/sw/libfci_cli/src/libfci_cli_parser.c b/sw/libfci_cli/src/libfci_cli_parser.c
+index de12021..2c9aee4 100644
+--- a/sw/libfci_cli/src/libfci_cli_parser.c
++++ b/sw/libfci_cli/src/libfci_cli_parser.c
+@@ -42,6 +42,8 @@
+ #include "fpp.h"
+ #include "fpp_ext.h"
+ 
++#include "daemon/daemon_cmds.h"
++
+ #include "libfci_cli_common.h"
+ #include "libfci_cli_def_cmds.h"
+ #include "libfci_cli_def_opts.h"
+@@ -2034,6 +2036,69 @@ static int opt_parse_unlock(cli_cmdargs_t* p_rtn_cmdargs, const char* p_txt_opta
+     return (CLI_OK);
+ }
+ 
++static int opt_print_to_terminal(cli_cmdargs_t* p_rtn_cmdargs, const char* p_txt_optarg)
++{
++    assert(NULL != p_rtn_cmdargs);
++    assert(NULL != p_txt_optarg);
++    
++    
++    int rtn = CLI_ERR;
++    bool* p_is_valid = &(p_rtn_cmdargs->print_to_terminal.is_valid);
++    bool* p_is_on    = &(p_rtn_cmdargs->print_to_terminal.is_on);
++    
++    rtn = cli_txt2bool_on_off(p_is_on, p_txt_optarg);
++    
++    set_if_rtn_ok(rtn, p_is_valid);
++    return (rtn);
++}
++
++static int opt_print_to_logfile(cli_cmdargs_t* p_rtn_cmdargs, const char* p_txt_optarg)
++{
++    assert(NULL != p_rtn_cmdargs);
++    assert(NULL != p_txt_optarg);
++    
++    
++    int rtn = CLI_ERR;
++    bool* p_is_valid = &(p_rtn_cmdargs->print_to_logfile.is_valid);
++    bool* p_is_on    = &(p_rtn_cmdargs->print_to_logfile.is_on);
++    
++    rtn = cli_txt2bool_on_off(p_is_on, p_txt_optarg);
++    
++    set_if_rtn_ok(rtn, p_is_valid);
++    return (rtn);
++}
++
++static int opt_dbg_to_terminal(cli_cmdargs_t* p_rtn_cmdargs, const char* p_txt_optarg)
++{
++    assert(NULL != p_rtn_cmdargs);
++    assert(NULL != p_txt_optarg);
++    
++    
++    int rtn = CLI_ERR;
++    bool* p_is_valid = &(p_rtn_cmdargs->dbg_to_terminal.is_valid);
++    bool* p_is_on    = &(p_rtn_cmdargs->dbg_to_terminal.is_on);
++    
++    rtn = cli_txt2bool_on_off(p_is_on, p_txt_optarg);
++    
++    set_if_rtn_ok(rtn, p_is_valid);
++    return (rtn);
++}
++
++static int opt_dbg_to_dbgfile(cli_cmdargs_t* p_rtn_cmdargs, const char* p_txt_optarg)
++{
++    assert(NULL != p_rtn_cmdargs);
++    assert(NULL != p_txt_optarg);
++    
++    
++    int rtn = CLI_ERR;
++    bool* p_is_valid = &(p_rtn_cmdargs->dbg_to_dbgfile.is_valid);
++    bool* p_is_on    = &(p_rtn_cmdargs->dbg_to_dbgfile.is_on);
++    
++    rtn = cli_txt2bool_on_off(p_is_on, p_txt_optarg);
++    
++    set_if_rtn_ok(rtn, p_is_valid);
++    return (rtn);
++}
+ 
+ 
+ 
+@@ -3948,7 +4013,30 @@ static int cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+     else
+     {
+         /* standard execution path */
+-        rtn = cli_cmd_execute(cmd, p_cmdargs);
++        rtn = daemon_ping();
++        if (CLI_OK == rtn)
++        {
++            if (cli_cmd_is_not_daemon_related(cmd))
++            {
++                /* daemon exists and cli cmd is not a control command for daemon ; execute the cli cmd as a remote procedure call in daemon */
++                printf("NOTE: Using daemon to execute the cli command.\n");
++                rtn = daemon_cli_cmd_execute(cmd, p_cmdargs);
++            }
++            else
++            {
++                /* daemon exists, but cli cmd is a control command for daemon ; always execute locally */
++                rtn = cli_cmd_execute(cmd, p_cmdargs);
++            }
++        }
++        else if (CLI_ERR_DAEMON_NOT_DETECTED == rtn)
++        {
++            /* standard local execution */
++            rtn = cli_cmd_execute(cmd, p_cmdargs);
++        }
++        else
++        {
++            /* empty ; keep the reported error code */
++        }
+     }
+     
+     /* print error message if something went wrong */
+@@ -3957,6 +4045,7 @@ static int cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+         const char* p_txt_errname = TXT_ERR_NONAME;
+         const char* p_txt_errmsg = "";
+         bool do_mandopt_print = false;
++        bool do_daemon_errno_print = false;
+         switch (rtn)
+         {
+             /* errors of the libFCI_cli app */
+@@ -4005,6 +4094,53 @@ static int cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+                                TXT_ERR_INDENT "Does the feature exist?\n";
+             break;
+             
++            /* errors of communication between libFCI_cli daemon and libFCI_cli app */
++            
++            case CLI_ERR_DAEMON_NOT_DETECTED:
++                p_txt_errmsg = TXT_ERR_INDENT "Libfci_cli daemon not detected.\n"
++                               TXT_ERR_INDENT "Is the daemon really running?\n";
++            break;
++            
++            case CLI_ERR_DAEMON_ALREADY_EXISTS:
++                p_txt_errmsg = TXT_ERR_INDENT "Libfci_cli daemon is already running.\n"
++                               TXT_ERR_INDENT "There can be only one instance of libfci_cli daemon per session.\n";
++            break;
++            
++            case CLI_ERR_DAEMON_INCOMPATIBLE:
++                p_txt_errmsg = TXT_ERR_INDENT "Incompatible versions between libfci_cli demo app and libfci_cli daemon.\n"
++                               TXT_ERR_INDENT "Probably kill the old daemon and then properly start a new one?\n";
++            break;
++            
++            case CLI_ERR_DAEMON_COMM_FAIL_SOCKET:
++                p_txt_errmsg = TXT_ERR_INDENT "Failed to setup a network socket for communication with libfci_cli daemon. errno=";
++                do_daemon_errno_print = true;
++            break;
++            
++            case CLI_ERR_DAEMON_COMM_FAIL_CONNECT:
++                p_txt_errmsg = TXT_ERR_INDENT "Failed to connect to libfci_cli daemon. errno=";
++                do_daemon_errno_print = true;
++            break;
++            
++            case CLI_ERR_DAEMON_COMM_FAIL_SEND:
++                p_txt_errmsg = TXT_ERR_INDENT "Failed to send a command to libfci_cli daemon. errno=";
++                do_daemon_errno_print = true;
++            break;
++            
++            case CLI_ERR_DAEMON_COMM_FAIL_RECEIVE:
++                p_txt_errmsg = TXT_ERR_INDENT "Failed to receive a reply from libfci_cli daemon. errno=";
++                do_daemon_errno_print = true;
++            break;
++            
++            case CLI_ERR_DAEMON_REPLY_NONZERO_RTN:
++                p_txt_errmsg = TXT_ERR_INDENT "Libfci_cli daemon failed to process a command. Daemon return code = ";
++                do_daemon_errno_print = true;  /* errno passing mechanism is utilized for daemon return code as well */
++            break;
++            
++            case CLI_ERR_DAEMON_REPLY_BAD_DATA:
++                p_txt_errmsg = TXT_ERR_INDENT "Bad data in reply from libfci_cli daemon.\n"
++                               TXT_ERR_INDENT "Is the daemon compatible with libfci_cli (same versions)?\n";
++            break;
++            
+             /* errors of the libFCI library */
+             
+             case FPP_ERR_IF_ENTRY_ALREADY_REGISTERED:
+@@ -4211,6 +4347,12 @@ static int cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+             cli_mandopt_print("  ", "  or  ");
+             cli_mandopt_clear();
+         }
++        
++        if (do_daemon_errno_print)
++        {
++            daemon_errno_print("  ");
++            daemon_errno_clear();
++        }
+     }
+     
+     /* print confirmation message if all OK */
+@@ -4227,7 +4369,7 @@ static int cmd_execute(cli_cmd_t cmd, const cli_cmdargs_t* p_cmdargs)
+ void cli_print_app_version(bool is_verbose)
+ {
+     /* the following printf() is a one long string, spanning over multiple lines */
+-    printf("App version: "  CLI_VERSION_MAJOR  "."  CLI_VERSION_MINOR  "."  CLI_VERSION_PATCH
++    printf("App version: "  CLI_VERSION_STRING
+            " ("  __DATE__  " "  __TIME__  ") "
+            " ("  CLI_TARGET_OS  " ; "  CLI_DRV_VERSION  " ; "  PFE_CT_H_MD5  ")\n");
+     
+diff --git a/sw/libfci_cli/src/libfci_demo/demo_common.c b/sw/libfci_cli/src/libfci_demo/demo_common.c
+index d30a73f..0786d8d 100644
+--- a/sw/libfci_cli/src/libfci_demo/demo_common.c
++++ b/sw/libfci_cli/src/libfci_demo/demo_common.c
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2020-2021 NXP
++ *  Copyright 2020-2022 NXP
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+@@ -34,6 +34,9 @@
+ #include <arpa/inet.h>
+ #include <stdio.h>
+  
++#include <pthread.h>
++#include <signal.h>
++ 
+ #include <stdint.h>
+ #include <stddef.h>
+ #include "fpp.h"
+@@ -42,6 +45,38 @@
+  
+ #include "demo_common.h"
+  
++/* ==== TYPEDEFS & DATA ==================================================== */
++ 
++ static pthread_t pthread_events_catching = {0};
++ static volatile sig_atomic_t events_catching_is_running = 0;
++ 
++/* ==== PRIVATE FUNCTIONS ================================================== */
++ 
++ 
++ /*
++ * @brief      Main function in the parallel events-processing thread.
++ * @param[in]  p_cl  FCI client passed as (void*) according to create_thread() convention.
++ * @return     Always NULL.
++ */
++static void* events_catching(void* p_cl)
++{
++    assert(NULL != p_cl);
++    
++    int tmp = 0;
++    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &tmp);
++    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &tmp);
++    
++    /*
++        fci_catch is blocking "indefinitely". It will stop blocking only when the registered
++        callback function (the one registered with fci_cb_register()) returns anything else
++        than FCI_CB_CONTINUE.
++    */
++    fci_catch((FCI_CLIENT*)(p_cl));
++    
++    events_catching_is_running = 0;
++    return NULL;
++}
++ 
+  
+ /* ==== PUBLIC FUNCTIONS =================================================== */
+  
+@@ -227,5 +262,122 @@ int demo_client_close(FCI_CLIENT* p_cl)
+ }
+  
+  
++/*
++ * @brief      Initialize a parallel thread for FCI events catching.
++ * @details    FCI events are sent by PFE driver to FCI clients.
++ *             Client must register a callback in order to receive FCI events.
++ * @param[in]  p_cl         The FCI client
++ * @param[in]  p_cb_events  Callback function which will be used to process caught FCI events.
++ * @return     FPP_ERR_OK : FCI callback was registered and parallel thread was started.
++ *             other      : Some error occurred (represented by the respective error code).
++ */
++int demo_events_catching_init(FCI_CLIENT* p_cl, demo_events_cb_t p_cb_events)
++{
++    assert(NULL != p_cl);
++    assert(NULL != p_cb_events);
++    
++    int rtn = FPP_ERR_INTERNAL_FAILURE;
++    
++    /* this demo allows only one parallel thread for FCI events catching */
++    if (0 != events_catching_is_running)
++    {
++        rtn = FPP_ERR_INTERNAL_FAILURE;
++        print_if_error(rtn, "demo_events_catching_init(): Some instance of the parallel "
++                            "thread for catching FCI events is already up and running.\n");
++    }
++    else
++    {
++        events_catching_is_running = 1;
++        rtn = FPP_ERR_OK;
++    }
++    
++    /* register a callback function (to process caught FCI events) for target FCI client */
++    if (FPP_ERR_OK == rtn)
++    {
++        rtn = fci_register_cb(p_cl, p_cb_events);
++        if (FPP_ERR_OK != rtn)
++        {
++            events_catching_is_running = 0;
++            print_if_error(rtn, "demo_events_catching_init(): Failed to register a callback "
++                                "for processing of caught FCI events.\n");
++        }
++    }
++    
++    /* create a parallel thread which hosts fci_catch() */
++    /*
++        fci_catch() calls its registered callback function each time some 
++        FCI event is caught (arrives from PFE driver).
++    */
++    if (FPP_ERR_OK == rtn)
++    {
++        rtn = pthread_create(&pthread_events_catching, NULL, &events_catching, p_cl);
++        if (0 != rtn)
++        {
++            events_catching_is_running = 0;
++            print_if_error(rtn, "demo_events_catching_init(): Failed to create a parallel "
++                                "thread for catching FCI events.\n");
++        }
++    }
++    
++    return (rtn);
++}
++ 
++ 
++/*
++ * @brief      Stop and destroy the parallel thread for FCI events catching.
++ * @param[in]  p_cl         The FCI client
++ * @return     FPP_ERR_OK : FCI callback was unregistered and parallel thread was stopped.
++ *             other      : Some error occurred (represented by the respective error code).
++ */
++int demo_events_catching_fini(FCI_CLIENT* p_cl)
++{
++    assert(NULL != p_cl);
++    
++    int rtn = FPP_ERR_INTERNAL_FAILURE;
++    
++    /* check that some parallel thread for FCI catching is currently running */
++    if (0 == events_catching_is_running)
++    {
++        rtn = FPP_ERR_INTERNAL_FAILURE;
++        print_if_error(rtn, "demo_events_catching_fini(): No parallel thread for catching "
++                            "FCI events was detected.\n");
++    }
++    else
++    {
++        rtn = FPP_ERR_OK;
++    }
++    
++    /* no need to "unregister" callback function, it will be unregistered by fci_close() */
++    
++    /* stop and destroy the parallel thread which hosts fci_catch() */
++    if (FPP_ERR_OK == rtn)
++    {
++        rtn = pthread_cancel(pthread_events_catching);
++        if (0 != rtn)
++        {
++            print_if_error(rtn, "demo_events_catching_fini(): Failed to cancel the parallel "
++                                "thread for catching FCI events.\n");
++        }
++    }
++    if (FPP_ERR_OK == rtn)
++    {
++        rtn = pthread_join(pthread_events_catching, NULL);
++        if (0 != rtn)
++        {
++            print_if_error(rtn, "demo_events_fini(): Failed to join the parallel thread "
++                                "for catching FCI events.\n");
++        }
++    }
++    
++    /* if all OK, then signal that no parallel thread is currently running */
++    if (FPP_ERR_OK == rtn)
++    {
++        events_catching_is_running = 0;
++    }
++    
++    return (rtn);
++}
++ 
++ 
+ /* ========================================================================= */
+  
+diff --git a/sw/libfci_cli/src/libfci_demo/demo_common.h b/sw/libfci_cli/src/libfci_demo/demo_common.h
+index d3761e8..af89a8d 100644
+--- a/sw/libfci_cli/src/libfci_demo/demo_common.h
++++ b/sw/libfci_cli/src/libfci_demo/demo_common.h
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2020-2021 NXP
++ *  Copyright 2020-2022 NXP
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+@@ -37,6 +37,10 @@
+ #include "fpp_ext.h"
+ #include "libfci.h"
+  
++/* ==== TYPEDEFS & DATA ==================================================== */
++ 
++ typedef fci_cb_retval_t (*demo_events_cb_t)(unsigned short fcode, unsigned short len, unsigned short* payload);
++ 
+ /* ==== PUBLIC FUNCTIONS =================================================== */
+  
+ void print_if_error(int rtn, const char* p_txt_error);
+@@ -52,6 +56,9 @@ int demo_if_session_unlock(FCI_CLIENT* p_cl, int rtn);
+ int demo_client_open_in_cmd_mode(FCI_CLIENT** pp_rtn_cl);
+ int demo_client_close(FCI_CLIENT* p_cl);
+  
++int demo_events_catching_init(FCI_CLIENT* p_cl, demo_events_cb_t p_cb_events);
++int demo_events_catching_fini(FCI_CLIENT* p_cl);
++ 
+ /* ========================================================================= */
+  
+ #endif
+diff --git a/sw/linux-pfeng/pfeng-drv.c b/sw/linux-pfeng/pfeng-drv.c
+index 4fc7678..306b143 100644
+--- a/sw/linux-pfeng/pfeng-drv.c
++++ b/sw/linux-pfeng/pfeng-drv.c
+@@ -21,7 +21,6 @@
+ #include <linux/reset.h>
+ #include <linux/processor.h>
+ #include <linux/pinctrl/consumer.h>
+-#include <soc/s32/revision.h>
+ 
+ #include "pfe_cfg.h"
+ #include "hal.h"
+diff --git a/sw/linux-pfeng/pfeng-dt.c b/sw/linux-pfeng/pfeng-dt.c
+index 8c9ad4a..651d60d 100644
+--- a/sw/linux-pfeng/pfeng-dt.c
++++ b/sw/linux-pfeng/pfeng-dt.c
+@@ -276,9 +276,14 @@ int pfeng_dt_create_config(struct pfeng_priv *priv)
+ 		dev_info(dev, "netif name: %s", netif_cfg->name);
+ 
+ 		/* MAC eth address */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+ 		netif_cfg->macaddr = (u8 *)of_get_mac_address(child);
+ 		if (netif_cfg->macaddr)
+ 			dev_info(dev, "DT mac addr: %pM", netif_cfg->macaddr);
++#else
++		if (!of_get_mac_address(child, netif_cfg->macaddr))
++			dev_info(dev, "DT mac addr: %pM", netif_cfg->macaddr);
++#endif
+ 
+ 		if (of_find_property(child, "nxp,pfeng-netif-mode-aux", NULL))
+ 				netif_cfg->aux = true;
+diff --git a/sw/linux-pfeng/pfeng-ethtool.c b/sw/linux-pfeng/pfeng-ethtool.c
+index 6e7334d..175c268 100644
+--- a/sw/linux-pfeng/pfeng-ethtool.c
++++ b/sw/linux-pfeng/pfeng-ethtool.c
+@@ -114,7 +114,11 @@ static int pfeng_ethtool_get_ts_info(struct net_device *netdev, struct ethtool_t
+ 	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+ static int pfeng_get_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec)
++#else
++static int pfeng_get_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec, struct kernel_ethtool_coalesce *kec, struct netlink_ext_ack *nla)
++#endif
+ {
+ 	struct pfeng_netif *netif = netdev_priv(netdev);
+ 	struct pfeng_hif_chnl *chnl;
+@@ -134,7 +138,7 @@ static int pfeng_get_coalesce(struct net_device *netdev, struct ethtool_coalesce
+ 	return 0;
+ }
+ 
+-static int pfeng_set_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec)
++static int __pfeng_set_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec)
+ {
+ 	struct pfeng_netif *netif = netdev_priv(netdev);
+ 	struct pfeng_hif_chnl *chnl;
+@@ -166,6 +170,15 @@ static int pfeng_set_coalesce(struct net_device *netdev, struct ethtool_coalesce
+ 	return ret;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
++static int pfeng_set_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec)
++#else
++static int pfeng_set_coalesce(struct net_device *netdev, struct ethtool_coalesce *ec, struct kernel_ethtool_coalesce *kec, struct netlink_ext_ack *nla)
++#endif
++{
++	return __pfeng_set_coalesce(netdev, ec);
++}
++
+ static int pfeng_ethtool_begin(struct net_device *netdev)
+ {
+ 	struct pfeng_netif *netif = netdev_priv(netdev);
+@@ -229,7 +242,7 @@ int pfeng_ethtool_params_restore(struct pfeng_netif *netif) {
+ 	ec.rx_max_coalesced_frames = chnl->cfg_rx_max_coalesced_frames;
+ 	ec.rx_coalesce_usecs = chnl->cfg_rx_coalesce_usecs;
+ 
+-	ret = pfeng_set_coalesce(netdev, &ec);
++	ret = __pfeng_set_coalesce(netdev, &ec);
+ 	if (ret)
+ 		netdev_warn(netdev, "Coalescing not restored\n");
+ 
+diff --git a/sw/linux-pfeng/pfeng-hif.c b/sw/linux-pfeng/pfeng-hif.c
+index 6d97322..f16f31e 100644
+--- a/sw/linux-pfeng/pfeng-hif.c
++++ b/sw/linux-pfeng/pfeng-hif.c
+@@ -302,7 +302,8 @@ static int pfeng_hif_chnl_rx(struct pfeng_hif_chnl *chnl, int limit)
+ 		}
+ 
+ 		/* Cksumming support */
+-		if (likely(netdev->features & NETIF_F_RXCSUM)) {
++		if (likely(netdev->features & NETIF_F_RXCSUM) &&
++		    likely(hif_hdr->flags & (HIF_RX_UDPV4_CSUM | HIF_RX_TCPV4_CSUM | HIF_RX_UDPV6_CSUM | HIF_RX_TCPV6_CSUM))) {
+ 			/* we have only OK info, signal it */
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			/* one level csumming support */
+diff --git a/sw/linux-pfeng/pfeng-phylink.c b/sw/linux-pfeng/pfeng-phylink.c
+index 6a929a6..3c92cd7 100644
+--- a/sw/linux-pfeng/pfeng-phylink.c
++++ b/sw/linux-pfeng/pfeng-phylink.c
+@@ -362,8 +362,8 @@ int pfeng_phylink_create(struct pfeng_netif *netif)
+ 	if (emac->serdes_phy) {
+ 		if (!phy_init(emac->serdes_phy) && !phy_power_on(emac->serdes_phy)) {
+ 			if (!phy_configure(emac->serdes_phy, NULL)) {
+-				emac->xpcs = s32gen1_phy2xpcs(emac->serdes_phy);
+-				emac->xpcs_ops = s32gen1_xpcs_get_ops();
++				emac->xpcs = s32cc_phy2xpcs(emac->serdes_phy);
++				emac->xpcs_ops = s32cc_xpcs_get_ops();
+ 			} else {
+ 				dev_err(netif->dev, "SerDes PHY configuration failed on EMAC%d\n", netif->cfg->emac_id);
+ 			}
+diff --git a/sw/linux-pfeng/pfeng-slave-drv.c b/sw/linux-pfeng/pfeng-slave-drv.c
+index e2879c7..72310eb 100644
+--- a/sw/linux-pfeng/pfeng-slave-drv.c
++++ b/sw/linux-pfeng/pfeng-slave-drv.c
+@@ -21,7 +21,6 @@
+ #include <linux/reset.h>
+ #include <linux/processor.h>
+ #include <linux/pinctrl/consumer.h>
+-#include <soc/s32/revision.h>
+ 
+ #include "pfe_cfg.h"
+ #include "hal.h"
+diff --git a/sw/linux-pfeng/pfeng.h b/sw/linux-pfeng/pfeng.h
+index 5f2797e..fb71d98 100644
+--- a/sw/linux-pfeng/pfeng.h
++++ b/sw/linux-pfeng/pfeng.h
+@@ -20,7 +20,13 @@
+ #include <linux/kfifo.h>
+ #include <linux/mutex.h>
+ #include <linux/clk.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,120)
+ #include <linux/pcs/fsl-s32gen1-xpcs.h>
++#define s32cc_phy2xpcs s32gen1_phy2xpcs
++#define s32cc_xpcs_get_ops s32gen1_xpcs_get_ops
++#else
++#include <linux/pcs/nxp-s32cc-xpcs.h>
++#endif
+ #include <linux/phy/phy.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+@@ -37,7 +43,7 @@
+ #else
+ #error Incorrect configuration!
+ #endif
+-#define PFENG_DRIVER_VERSION		"RTM 1.1.0"
++#define PFENG_DRIVER_VERSION		"RTM 1.2.0 RC1"
+ 
+ #define PFENG_FW_CLASS_NAME		"s32g_pfe_class.fw"
+ #define PFENG_FW_UTIL_NAME		"s32g_pfe_util.fw"
+@@ -121,7 +127,11 @@ struct pfeng_netif_cfg {
+ 	struct list_head		lnode;
+ 	const char			*name;
+ 	struct device_node		*dn;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,0)
+ 	u8				*macaddr;
++#else
++	u8				macaddr[ETH_ALEN];
++#endif
+ 	u8				emac_id;
+ 	u8				hifs;
+ 	u32				hifmap;
+@@ -263,8 +273,13 @@ struct pfeng_emac {
+ 	struct mii_bus			*mii_bus;
+ 	/* XPCS */
+ 	struct phy			*serdes_phy;
+-	struct s32gen1_xpcs		*xpcs;
+-	const struct s32gen1_xpcs_ops	*xpcs_ops;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5,15,120)
++	struct s32gen1_xpcs             *xpcs;
++	const struct s32gen1_xpcs_ops   *xpcs_ops;
++#else
++	struct s32cc_xpcs		*xpcs;
++	const struct s32cc_xpcs_ops	*xpcs_ops;
++#endif
+ 	struct phylink_link_state 	xpcs_link;
+ 	u32				serdes_an_speed;
+ 	bool				sgmii_link;
+diff --git a/sw/oal/src/oal_mm_linux.c b/sw/oal/src/oal_mm_linux.c
+index e7da783..0a45362 100644
+--- a/sw/oal/src/oal_mm_linux.c
++++ b/sw/oal/src/oal_mm_linux.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/version.h>
+ #include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/types.h>
+@@ -29,6 +30,8 @@
+ #include "oal.h"
+ #include "oal_mm.h"
+ 
++MODULE_LICENSE("GPL");
++
+ /* managed memory allocation types */
+ enum pfe_kmem_type {
+ 	PFE_MEM_INVALID = 0,
+diff --git a/sw/pfe_platform/hw/s32g/pfe_gpi_csr.h b/sw/pfe_platform/hw/s32g/pfe_gpi_csr.h
+index d90a3e2..66d58f9 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_gpi_csr.h
++++ b/sw/pfe_platform/hw/s32g/pfe_gpi_csr.h
+@@ -220,20 +220,20 @@
+ /* data entry reg 3 */
+ #define GPI_QOS_FLOW_DIP_UP_OFF		GPI_QOS_FLOW_REG_OFF(96)
+ #define GPI_QOS_FLOW_DIP_UP_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(96, 102)
+-#define GPI_QOS_FLOW_SPORT_MAX_OFF	GPI_QOS_FLOW_REG_OFF(102)
+-#define GPI_QOS_FLOW_SPORT_MAX_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(102, 118)
+-#define GPI_QOS_FLOW_SPORT_MIN_OFF	GPI_QOS_FLOW_REG_OFF(118)
+-#define GPI_QOS_FLOW_SPORT_MIN_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(118, 128)
++#define GPI_QOS_FLOW_SPORT_MIN_OFF	GPI_QOS_FLOW_REG_OFF(102)
++#define GPI_QOS_FLOW_SPORT_MIN_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(102, 118)
++#define GPI_QOS_FLOW_SPORT_MAX_OFF	GPI_QOS_FLOW_REG_OFF(118)
++#define GPI_QOS_FLOW_SPORT_MAX_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(118, 128)
+ /* data entry reg 4 */
+-#define GPI_QOS_FLOW_SPORT_MIN_UP_OFF	GPI_QOS_FLOW_REG_OFF(128)
+-#define GPI_QOS_FLOW_SPORT_MIN_UP_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(128, 134)
+-#define GPI_QOS_FLOW_DPORT_MAX_OFF	GPI_QOS_FLOW_REG_OFF(134)
+-#define GPI_QOS_FLOW_DPORT_MAX_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(134, 150)
+-#define GPI_QOS_FLOW_DPORT_MIN_OFF	GPI_QOS_FLOW_REG_OFF(150)
+-#define GPI_QOS_FLOW_DPORT_MIN_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(150, 160)
++#define GPI_QOS_FLOW_SPORT_MAX_UP_OFF	GPI_QOS_FLOW_REG_OFF(128)
++#define GPI_QOS_FLOW_SPORT_MAX_UP_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(128, 134)
++#define GPI_QOS_FLOW_DPORT_MIN_OFF	GPI_QOS_FLOW_REG_OFF(134)
++#define GPI_QOS_FLOW_DPORT_MIN_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(134, 150)
++#define GPI_QOS_FLOW_DPORT_MAX_OFF	GPI_QOS_FLOW_REG_OFF(150)
++#define GPI_QOS_FLOW_DPORT_MAX_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(150, 160)
+ /* data entry reg 5 */
+-#define GPI_QOS_FLOW_DPORT_MIN_UP_OFF	GPI_QOS_FLOW_REG_OFF(160)
+-#define GPI_QOS_FLOW_DPORT_MIN_UP_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(160, 166)
++#define GPI_QOS_FLOW_DPORT_MAX_UP_OFF	GPI_QOS_FLOW_REG_OFF(160)
++#define GPI_QOS_FLOW_DPORT_MAX_UP_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(160, 166)
+ #define GPI_QOS_FLOW_VALID_ENTRY_OFF	GPI_QOS_FLOW_REG_OFF(166)
+ #define GPI_QOS_FLOW_VALID_ENTRY_WIDTH	GPI_QOS_FLOW_ARG_WIDTH(166, 167)
+ #define GPI_QOS_FLOW_TYPE_M_OFF		GPI_QOS_FLOW_REG_OFF(167)
+diff --git a/sw/pfe_platform/hw/s32g/pfe_platform_master.c b/sw/pfe_platform/hw/s32g/pfe_platform_master.c
+index a2839aa..4e6e91a 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_platform_master.c
++++ b/sw/pfe_platform/hw/s32g/pfe_platform_master.c
+@@ -7,11 +7,15 @@
+  *
+  * ========================================================================= */
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ 
++MODULE_LICENSE("GPL");
++
+ #ifdef PFE_CFG_PFE_MASTER
+ #include "elf_cfg.h"
++#include <uapi/linux/elf.h>
+ #include "elf.h"
+ 
+ #include "hal.h"
+diff --git a/sw/pfe_platform/hw/s32g/pfe_platform_slave.c b/sw/pfe_platform/hw/s32g/pfe_platform_slave.c
+index 9d14b48..93d09d3 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_platform_slave.c
++++ b/sw/pfe_platform/hw/s32g/pfe_platform_slave.c
+@@ -7,6 +7,7 @@
+  *
+  * ========================================================================= */
+ 
++#include <linux/module.h>
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ 
+@@ -27,6 +28,8 @@
+ #include "Eth_43_PFE_MemMap.h"
+ #endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+ 
++MODULE_LICENSE("GPL");
++
+ static pfe_platform_t pfe = {.probed = FALSE};
+ /* usage scope: pfe_platform_create_hif*/
+ static pfe_hif_chnl_id_t ids[HIF_CFG_MAX_CHANNELS] = {HIF_CHNL_0, HIF_CHNL_1, HIF_CHNL_2, HIF_CHNL_3};
+diff --git a/sw/pfe_platform/hw/s32g/pfe_wdt_csr.c b/sw/pfe_platform/hw/s32g/pfe_wdt_csr.c
+index 342d15e..392f15e 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_wdt_csr.c
++++ b/sw/pfe_platform/hw/s32g/pfe_wdt_csr.c
+@@ -90,6 +90,7 @@ errno_t pfe_wdt_cfg_isr(addr_t base_va, addr_t cbus_base_va)
+ 
+ 	uint32_t *int_src_arr, *int_en_arr;
+ 	const pfe_hm_evt_t *int_event_arr;
++	uint8_t int_src_nbr = 0;
+ 
+ 	(void)cbus_base_va;
+ 
+@@ -98,12 +99,14 @@ errno_t pfe_wdt_cfg_isr(addr_t base_va, addr_t cbus_base_va)
+ 		int_src_arr = (uint32_t *)wdt_int_src_arr_g2;
+ 		int_en_arr = (uint32_t *)wdt_int_en_arr_g2;
+ 		int_event_arr = wdt_int_event_id_g2;
++		int_src_nbr = (uint8_t)WDT_INT_SRC_NUMBER_G2;
+ 	}
+ 	else
+ 	{
+ 		int_src_arr = (uint32_t *)wdt_int_src_arr_g3;
+ 		int_en_arr = (uint32_t *)wdt_int_en_arr_g3;
+ 		int_event_arr = wdt_int_event_id_g3;
++		int_src_nbr = (uint8_t)WDT_INT_SRC_NUMBER_G3;
+ 	}
+ 
+ 	/*	Get enabled interrupts */
+@@ -116,7 +119,7 @@ errno_t pfe_wdt_cfg_isr(addr_t base_va, addr_t cbus_base_va)
+ 	hal_write32(reg_src, base_va + WDT_INT_SRC);
+ 
+ 	/*	Process interrupts which are triggered AND enabled */
+-	for(index = 0U; index < WDT_INT_SRC_NUMBER_G2; index++)
++	for(index = 0U; index < int_src_nbr; index++)
+ 	{
+ 		if (((reg_src & int_src_arr[index]) != 0U) && ((reg_en & int_en_arr[index]) != 0U))
+ 		{
+@@ -201,9 +204,9 @@ void pfe_wdt_cfg_init(addr_t base_va)
+ 	hal_write32(0x3FU, base_va + HNCPY_WDT_INT_EN);
+ 	hal_write32(0xFU, base_va + BMU1_WDT_INT_EN);
+ 	hal_write32(0xFU, base_va + BMU2_WDT_INT_EN);
+-	hal_write32(0x1FFU, base_va + EMAC0_WDT_INT_EN);
+-	hal_write32(0x1FFU, base_va + EMAC1_WDT_INT_EN);
+-	hal_write32(0x1FFU, base_va + EMAC2_WDT_INT_EN);
++	hal_write32(0xFFFU, base_va + EMAC0_WDT_INT_EN);
++	hal_write32(0xFFFU, base_va + EMAC1_WDT_INT_EN);
++	hal_write32(0xFFFU, base_va + EMAC2_WDT_INT_EN);
+ 
+ 	if (TRUE == pfe_feature_mgr_is_available(PFE_HW_FEATURE_RUN_ON_G3))
+ 	{
+diff --git a/sw/pfe_platform/public/pfe_gpi.h b/sw/pfe_platform/public/pfe_gpi.h
+index e9bf559..7681403 100644
+--- a/sw/pfe_platform/public/pfe_gpi.h
++++ b/sw/pfe_platform/public/pfe_gpi.h
+@@ -200,7 +200,7 @@ bool_t pfe_gpi_qos_is_enabled(const pfe_gpi_t *gpi);
+ errno_t pfe_gpi_qos_reset(pfe_gpi_t *gpi);
+ 
+ /* flow add/remove/get */
+-errno_t pfe_gpi_qos_add_flow(pfe_gpi_t *gpi, uint8_t id, const pfe_iqos_flow_spec_t *flow);
++errno_t pfe_gpi_qos_add_flow(pfe_gpi_t *gpi, uint8_t id, pfe_iqos_flow_spec_t *flow);
+ errno_t pfe_gpi_qos_rem_flow(pfe_gpi_t *gpi, uint8_t id);
+ errno_t pfe_gpi_qos_get_flow(const pfe_gpi_t *gpi, uint8_t id, pfe_iqos_flow_spec_t *flow);
+ errno_t pfe_gpi_qos_get_first_flow(pfe_gpi_t *gpi, uint8_t *id, pfe_iqos_flow_spec_t *flow);
+diff --git a/sw/pfe_platform/src/pfe_gpi.c b/sw/pfe_platform/src/pfe_gpi.c
+index 19ff860..443e9ad 100644
+--- a/sw/pfe_platform/src/pfe_gpi.c
++++ b/sw/pfe_platform/src/pfe_gpi.c
+@@ -512,18 +512,18 @@ static void igqos_convert_entry_to_flow(const uint32_t entry[], pfe_iqos_flow_sp
+ 	/* entry reg3 */
+ 	val = entry[3];
+ 	args->dip |= entry_arg_get_upper(DIP, val);
+-	args->sport_max = (uint16_t)entry_arg_get(SPORT_MAX, val);
+-	args->sport_min = (uint16_t)entry_arg_get_lower(SPORT_MIN, val);
++	args->sport_min = (uint16_t)entry_arg_get(SPORT_MIN, val);
++	args->sport_max = (uint16_t)entry_arg_get_lower(SPORT_MAX, val);
+ 
+ 	/* entry reg4 */
+ 	val = entry[4];
+-	args->sport_min |= (uint16_t)entry_arg_get_upper(SPORT_MIN, val);
+-	args->dport_max = (uint16_t)entry_arg_get(DPORT_MAX, val);
+-	args->dport_min = (uint16_t)entry_arg_get_lower(DPORT_MIN, val);
++	args->sport_max |= (uint16_t)entry_arg_get_upper(SPORT_MAX, val);
++	args->dport_min = (uint16_t)entry_arg_get(DPORT_MIN, val);
++	args->dport_max = (uint16_t)entry_arg_get_lower(DPORT_MAX, val);
+ 
+ 	/* entry reg5 */
+ 	val = entry[5];
+-	args->dport_min |= (uint16_t)entry_arg_get_upper(DPORT_MIN, val);
++	args->dport_max |= (uint16_t)entry_arg_get_upper(DPORT_MAX, val);
+ 	args->vlan_m = (uint16_t)entry_arg_get(VLAN_ID_M, val);
+ 	args->tos_m  = (uint8_t)entry_arg_get_lower(TOS_M, val);
+ 
+@@ -543,6 +543,138 @@ static void igqos_convert_entry_to_flow(const uint32_t entry[], pfe_iqos_flow_sp
+ 	{
+ 		flow->action = PFE_IQOS_FLOW_RESERVED;
+ 	}
++
++	/* revert h/w fixups from returned flow params */
++	args->sport_max <<= 1; /* AAVB-5836 */
++	args->dport_max <<= 1; /* AAVB-5836 */
++}
++
++
++static bool igqos_l4_port_range_is_valid(uint16_t min, uint16_t max)
++{
++	if (min > max)
++	{
++		return false;
++	}
++
++	/* AAVB-5836 */
++	if (min > 0x7FFFU)
++	{
++		return false;
++	}
++
++	/* AAVB-5836 */
++	if ((max > 0x7FFEU) || (max & 0x1U))
++	{
++		return false;
++	}
++
++	return true;
++}
++
++static errno_t igqos_flow_entry_validate_and_fixup(pfe_iqos_flow_spec_t *flow)
++{
++	pfe_iqos_flow_args_t *args = &flow->args;
++	errno_t ret = EOK;
++
++	if (((uint16_t)flow->type_mask >= ((uint16_t)PFE_IQOS_FLOW_TYPE_MAX << 1)) ||
++	    ((uint16_t)flow->arg_type_mask >= ((uint16_t)PFE_IQOS_ARG_MAX << 1)) ||
++	    (flow->action >= PFE_IQOS_FLOW_COUNT))
++	{
++		ret = EINVAL;
++	}
++	else
++	{
++
++		if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_VLAN) != 0U)
++		{
++			if ((args->vlan > PFE_IQOS_VLAN_ID_MASK) || (args->vlan_m > PFE_IQOS_VLAN_ID_MASK))
++			{
++				ret = EINVAL;
++			}
++			else
++			{
++				/* fixup */
++				if (args->vlan_m == 0U)
++				{
++					/* mask not specified */
++					args->vlan_m = PFE_IQOS_VLAN_ID_MASK;
++				}
++			}
++		}
++
++		if (EOK == ret)
++		{
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_TOS) != 0U)
++			{
++				/* fixup */
++				if (args->tos_m == 0U)
++				{
++					/* mask not specified */
++					args->tos_m = PFE_IQOS_TOS_MASK;
++				}
++			}
++
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_L4PROTO) != 0U)
++			{
++				/* fixup */
++				if (args->l4proto_m == 0U)
++				{
++					/* mask not specified */
++					args->l4proto_m = PFE_IQOS_L4PROTO_MASK;
++				}
++			}
++
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_SIP) != 0U)
++			{
++				if (args->sip_m > PFE_IQOS_SDIP_MASK)
++				{
++					ret = EINVAL;
++				}
++			}
++		}
++
++		if (EOK == ret)
++		{
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_DIP) != 0U)
++			{
++				if (args->dip_m > PFE_IQOS_SDIP_MASK)
++				{
++					ret = EINVAL;
++				}
++			}
++		}
++
++		if (EOK == ret)
++		{
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_SPORT) != 0U)
++			{
++				if (!igqos_l4_port_range_is_valid(args->sport_min, args->sport_max))
++				{
++					ret = EINVAL;
++				}
++
++				/* fixup - AAVB-5836 */
++				args->sport_max >>= 1;
++			}
++		}
++
++		if (EOK == ret)
++		{
++			if (((uint16_t)flow->arg_type_mask & (uint16_t)PFE_IQOS_ARG_DPORT) != 0U)
++			{
++				if (!igqos_l4_port_range_is_valid(args->dport_min, args->dport_max))
++				{
++					ret = EINVAL;
++				}
++
++				/* fixup - AAVB-5836 */
++				args->dport_max >>= 1;
++			}
++		}
++	}
++
++	return ret;
+ }
+ 
+ static void igqos_convert_flow_to_entry(const pfe_iqos_flow_spec_t *flow, uint32_t entry[])
+@@ -598,8 +730,8 @@ static void igqos_convert_flow_to_entry(const pfe_iqos_flow_spec_t *flow, uint32
+ 	}
+ 	if (0U != ((uint32_t)flow->arg_type_mask & (uint32_t)PFE_IQOS_ARG_SPORT))
+ 	{
+-		val |= entry_arg_set(SPORT_MAX, (uint32_t)args->sport_max);
+-		val |= entry_arg_set_lower(SPORT_MIN, (uint32_t)args->sport_min);
++		val |= entry_arg_set(SPORT_MIN, (uint32_t)args->sport_min);
++		val |= entry_arg_set_lower(SPORT_MAX, (uint32_t)args->sport_max);
+ 	}
+ 	entry[3] = val;
+ 
+@@ -607,12 +739,12 @@ static void igqos_convert_flow_to_entry(const pfe_iqos_flow_spec_t *flow, uint32
+ 	val = 0;
+ 	if (0U != ((uint32_t)flow->arg_type_mask & (uint32_t)PFE_IQOS_ARG_SPORT))
+ 	{
+-		val |= entry_arg_set_upper(SPORT_MIN, (uint32_t)args->sport_min);
++		val |= entry_arg_set_upper(SPORT_MAX, (uint32_t)args->sport_max);
+ 	}
+ 	if (0U != ((uint32_t)flow->arg_type_mask & (uint32_t)PFE_IQOS_ARG_DPORT))
+ 	{
+-		val |= entry_arg_set(DPORT_MAX, (uint32_t)args->dport_max);
+-		val |= entry_arg_set_lower(DPORT_MIN, (uint32_t)args->dport_min);
++		val |= entry_arg_set(DPORT_MIN, (uint32_t)args->dport_min);
++		val |= entry_arg_set_lower(DPORT_MAX, (uint32_t)args->dport_max);
+ 	}
+ 	entry[4] = val;
+ 
+@@ -624,7 +756,7 @@ static void igqos_convert_flow_to_entry(const pfe_iqos_flow_spec_t *flow, uint32
+ 
+ 	if (0U != ((uint32_t)flow->arg_type_mask & (uint32_t)PFE_IQOS_ARG_DPORT))
+ 	{
+-		val |= entry_arg_set_upper(DPORT_MIN, (uint32_t)args->dport_min);
++		val |= entry_arg_set_upper(DPORT_MAX, (uint32_t)args->dport_max);
+ 	}
+ 
+ 	if (0U != ((uint32_t)flow->arg_type_mask & (uint32_t)PFE_IQOS_ARG_VLAN))
+@@ -746,7 +878,7 @@ errno_t pfe_gpi_qos_rem_flow(pfe_gpi_t *gpi, uint8_t id)
+ 	return ret;
+ }
+ 
+-errno_t pfe_gpi_qos_add_flow(pfe_gpi_t *gpi, uint8_t id, const pfe_iqos_flow_spec_t *flow)
++errno_t pfe_gpi_qos_add_flow(pfe_gpi_t *gpi, uint8_t id, pfe_iqos_flow_spec_t *flow)
+ {
+ 	uint32_t class_table_entry[8];
+ 	uint8_t  entry_id;
+@@ -756,6 +888,10 @@ errno_t pfe_gpi_qos_add_flow(pfe_gpi_t *gpi, uint8_t id, const pfe_iqos_flow_spe
+ 	{
+ 		ret = EINVAL;
+ 	}
++	else if (EOK != igqos_flow_entry_validate_and_fixup(flow))
++	{
++		ret = EINVAL;
++	}
+ 	else
+ 	{
+ 		if (id == PFE_IQOS_FLOW_TABLE_ENTRY_SKIP)
+diff --git a/sw/pfe_platform/src/pfe_hm.c b/sw/pfe_platform/src/pfe_hm.c
+index 8cd6bea..6a35006 100644
+--- a/sw/pfe_platform/src/pfe_hm.c
++++ b/sw/pfe_platform/src/pfe_hm.c
+@@ -56,8 +56,8 @@ static const hm_string_t hm_evt_strings[] = {
+     {HM_EVT_WDT_EMAC2_ETGPI, "EMAC2 ETGPI Watchdog trigered"},
+     {HM_EVT_WDT_EXT_GPT1, "EXT GPT1 Watchdog trigered"},
+     {HM_EVT_WDT_EXT_GPT2, "EXT GPT1 Watchdog trigered"},
+-    {HM_EVT_WDT_EXT_GPT2, "LMEM Watchdog trigered"},
+-    {HM_EVT_WDT_EXT_GPT2, "ROUTE LMEM Watchdog trigered"},
++    {HM_EVT_WDT_LMEM, "LMEM Watchdog trigered"},
++    {HM_EVT_WDT_ROUTE_LMEM, "ROUTE LMEM Watchdog trigered"},
+ 
+ 	{HM_EVT_EMAC_ECC_TX_FIFO_CORRECTABLE, "MTL Tx memory correctable error"},
+ 	{HM_EVT_EMAC_ECC_TX_FIFO_UNCORRECTABLE, "MTL Tx memory uncorrectable error"},
+diff --git a/sw/pfe_platform/src/pfe_pe.c b/sw/pfe_platform/src/pfe_pe.c
+index 27ff881..49f5983 100644
+--- a/sw/pfe_platform/src/pfe_pe.c
++++ b/sw/pfe_platform/src/pfe_pe.c
+@@ -13,6 +13,7 @@
+ 
+ #include "pfe_platform.h"
+ #include "elf_cfg.h"
++#include <uapi/linux/elf.h>
+ #include "elf.h"
+ #include "pfe_cbus.h"
+ #include "pfe_pe.h"
+-- 
+2.17.1
+
