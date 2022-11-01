@@ -1,0 +1,137 @@
+From 3bcd8e94734ccb3e777fd938c332365ad8b23fe7 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 29 Sep 2022 14:25:25 +0300
+Subject: [PATCH 19/30] s32: Forward all SCMI request to SCP when
+ S32CC_USE_SCP=1
+
+Issue: ALB-9298
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_bl_common.h |  1 +
+ plat/nxp/s32/s32_scp_scmi.c          | 41 +++++++++++++++++++++++++++-
+ plat/nxp/s32/s32_svc.c               | 16 +++++++++--
+ 3 files changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/plat/nxp/s32/include/s32_bl_common.h b/plat/nxp/s32/include/s32_bl_common.h
+index e711cd1be..e6187cdf2 100644
+--- a/plat/nxp/s32/include/s32_bl_common.h
++++ b/plat/nxp/s32/include/s32_bl_common.h
+@@ -54,6 +54,7 @@ bool is_last_core(void);
+ bool is_cluster0_off(void);
+ bool is_cluster1_off(void);
+ void scp_scmi_init(void);
++void send_scmi_to_scp(uintptr_t scmi_mem);
+ 
+ struct s32_i2c_driver *s32_add_i2c_module(void *fdt, int fdt_node);
+ 
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index d1d50cf67..718a9606c 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -3,10 +3,11 @@
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
++#include <libc/assert.h>
+ #include <common/debug.h>
+ #include <drivers/arm/css/scmi.h>
++#include <arm/css/scmi/scmi_private.h>
+ #include <lib/mmio.h>
+-#include <libc/assert.h>
+ 
+ DEFINE_BAKERY_LOCK(s32_scmi_lock);
+ 
+@@ -52,3 +53,41 @@ void scp_scmi_init(void)
+ 		panic();
+ 	}
+ }
++
++static void copy_scmi_msg(uintptr_t to, uintptr_t from)
++{
++	size_t copy_len;
++	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)from;
++
++	copy_len =  offsetof(mailbox_mem_t, msg_header) + mbx_mem->len;
++	memcpy((void *)to, (const void *)from, copy_len);
++}
++
++void send_scmi_to_scp(uintptr_t scmi_mem)
++{
++	scmi_channel_t *ch = &channel;
++	scmi_channel_plat_info_t *ch_info = ch->info;
++	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)(ch_info->scmi_mbx_mem);
++
++	/* Transfer request into SRAM mailbox */
++	copy_scmi_msg((uintptr_t)mbx_mem, scmi_mem);
++
++	SCMI_MARK_CHANNEL_FREE(mbx_mem->status);
++
++	/*
++	 * All commands must complete with a poll, not
++	 * an interrupt, even if the agent requested this.
++	 */
++	mbx_mem->flags = SCMI_FLAG_RESP_POLL;
++
++	validate_scmi_channel(ch);
++
++	scmi_get_channel(ch);
++
++	scmi_send_sync_command(ch);
++
++	scmi_put_channel(ch);
++
++	/* Copy the result to agent's space */
++	copy_scmi_msg(scmi_mem, (uintptr_t)mbx_mem);
++}
+diff --git a/plat/nxp/s32/s32_svc.c b/plat/nxp/s32/s32_svc.c
+index 3f39b8d49..958c5fdb7 100644
+--- a/plat/nxp/s32/s32_svc.c
++++ b/plat/nxp/s32/s32_svc.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -8,6 +8,7 @@
+ #include <common/runtime_svc.h>
+ #include <drivers/scmi.h>
+ #include <scmi-msg/common.h>
++#include <s32_bl_common.h>
+ 
+ #define S32_SCMI_ID			0xc20000feU
+ 
+@@ -104,6 +105,13 @@ static int scmi_handler(uint32_t smc_fid, u_register_t x1,
+ 	return 0;
+ }
+ 
++static int scp_scmi_handler(uint32_t smc_fid, u_register_t x1,
++			    u_register_t x2, u_register_t x3)
++{
++	send_scmi_to_scp(S32_SCMI_SHARED_MEM);
++	return 0;
++}
++
+ uintptr_t s32_svc_smc_handler(uint32_t smc_fid,
+ 			       u_register_t x1,
+ 			       u_register_t x2,
+@@ -115,7 +123,11 @@ uintptr_t s32_svc_smc_handler(uint32_t smc_fid,
+ {
+ 	switch (smc_fid) {
+ 	case S32_SCMI_ID:
+-		SMC_RET1(handle, scmi_handler(smc_fid, x1, x2, x3));
++		if (is_scp_used()) {
++			SMC_RET1(handle, scp_scmi_handler(smc_fid, x1, x2, x3));
++		} else {
++			SMC_RET1(handle, scmi_handler(smc_fid, x1, x2, x3));
++		}
+ 		break;
+ 	default:
+ 		WARN("Unimplemented SIP Service Call: 0x%x\n", smc_fid);
+-- 
+2.17.1
+

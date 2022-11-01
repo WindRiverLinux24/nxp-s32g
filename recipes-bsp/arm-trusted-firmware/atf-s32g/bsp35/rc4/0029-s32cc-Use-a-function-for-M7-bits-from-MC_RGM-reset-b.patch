@@ -1,0 +1,106 @@
+From 0716773ac17269172020d1365ef90058e27d8f11 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 17 Oct 2022 14:10:38 +0300
+Subject: [PATCH 29/30] s32cc: Use a function for M7 bits from MC_RGM reset
+ block
+
+There's no a common rule which can be used to identify
+the slots from MC_RGM associated to M7 cores across S32CC.
+They differ between G2/R45 and S32G3. For this purpose a
+new accessory function was created.
+
+Issue: ALB-9435
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_mc_rgm.h      |  3 +--
+ plat/nxp/s32/s32_mc_me.c               |  2 +-
+ plat/nxp/s32/s32g/s32g3/s32g3_mc_rgm.c | 14 +++++++++++++-
+ plat/nxp/s32/s32gen1_mc_rgm.c          |  7 ++++++-
+ 4 files changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/plat/nxp/s32/include/s32_mc_rgm.h b/plat/nxp/s32/include/s32_mc_rgm.h
+index 9e0d7267c..c9d712050 100644
+--- a/plat/nxp/s32/include/s32_mc_rgm.h
++++ b/plat/nxp/s32/include/s32_mc_rgm.h
+@@ -26,8 +26,6 @@
+ 
+ /* Software-resettable domain/partition 0: M7 cores */
+ #define S32_MC_RGM_RST_DOMAIN_CM7	0
+-/* Bit corresponding to CM7_n in the cores' RGM reset partition (n=0..2) */
+-#define S32_MC_RGM_RST_CM7_BIT(n)	BIT(n)
+ 
+ /* Software-resettable domain/partition 1: CA53 cores */
+ #define S32_MC_RGM_RST_DOMAIN_CA53	1
+@@ -58,5 +56,6 @@ enum reset_cause {
+ #define RDC_CTRL_XBAR_DISABLE	BIT(3)
+ 
+ uint8_t get_rgm_a53_bit(uint8_t core);
++uint8_t get_rgm_m7_bit(uint8_t core);
+ 
+ #endif /* __S32_MC_RGM_H__ */
+diff --git a/plat/nxp/s32/s32_mc_me.c b/plat/nxp/s32/s32_mc_me.c
+index 2343a099b..61b4a0c79 100644
+--- a/plat/nxp/s32/s32_mc_me.c
++++ b/plat/nxp/s32/s32_mc_me.c
+@@ -323,7 +323,7 @@ void s32_reset_core(uint8_t part, uint8_t core)
+ 		pstat = S32_MC_RGM_PSTAT(S32_MC_RGM_RST_DOMAIN_CA53);
+ 	} else {
+ 		/* M7 cores */
+-		resetc = S32_MC_RGM_RST_CM7_BIT(core);
++		resetc = BIT(get_rgm_m7_bit(core));
+ 		prst = S32_MC_RGM_PRST(S32_MC_RGM_RST_DOMAIN_CM7);
+ 		pstat = S32_MC_RGM_PSTAT(S32_MC_RGM_RST_DOMAIN_CM7);
+ 	}
+diff --git a/plat/nxp/s32/s32g/s32g3/s32g3_mc_rgm.c b/plat/nxp/s32/s32g/s32g3/s32g3_mc_rgm.c
+index f66837216..fc62001a9 100644
+--- a/plat/nxp/s32/s32g/s32g3/s32g3_mc_rgm.c
++++ b/plat/nxp/s32/s32g/s32g3/s32g3_mc_rgm.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -22,3 +22,15 @@ uint8_t get_rgm_a53_bit(uint8_t core)
+ 
+ 	return periph_rgm_coresp[core] % 64;
+ }
++
++uint8_t get_rgm_m7_bit(uint8_t core)
++{
++	static uint8_t periph_rgm_mcoresp[] = {
++		[0] = 0,
++		[1] = 1,
++		[2] = 2,
++		[3] = 6,
++	};
++
++	return periph_rgm_mcoresp[core];
++}
+diff --git a/plat/nxp/s32/s32gen1_mc_rgm.c b/plat/nxp/s32/s32gen1_mc_rgm.c
+index 082bc3b82..62a355618 100644
+--- a/plat/nxp/s32/s32gen1_mc_rgm.c
++++ b/plat/nxp/s32/s32gen1_mc_rgm.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -13,3 +13,8 @@ uint8_t get_rgm_a53_bit(uint8_t core)
+ 	 */
+ 	return core + 1;
+ }
++
++uint8_t get_rgm_m7_bit(uint8_t core)
++{
++	return core;
++}
+-- 
+2.17.1
+

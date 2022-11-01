@@ -1,0 +1,610 @@
+From 3e716ef44f1d6ea325d372169a6994203be774f4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 21 Sep 2022 12:45:10 +0300
+Subject: [PATCH 03/30] s32: clk: Use PRI macros to print numbers
+
+Issue: ALB-9298
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/clk.c              | 14 +++++++-----
+ drivers/nxp/s32/clk/enable_clk.c       | 31 ++++++++++++++------------
+ drivers/nxp/s32/clk/get_rate.c         |  5 +++--
+ drivers/nxp/s32/clk/s32g_scmi_ids.c    | 25 +++++++++++----------
+ drivers/nxp/s32/clk/s32gen1_scmi_clk.c |  6 +++--
+ drivers/nxp/s32/clk/s32gen1_scmi_ids.c | 23 ++++++++++---------
+ drivers/nxp/s32/clk/set_par_rate.c     | 16 +++++++------
+ plat/nxp/s32/s32_bl_common.c           |  3 ++-
+ plat/nxp/s32/s32_dt.c                  |  7 ++++--
+ 9 files changed, 73 insertions(+), 57 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/clk.c b/drivers/nxp/s32/clk/clk.c
+index da4f35ea1..2cd3efcbf 100644
+--- a/drivers/nxp/s32/clk/clk.c
++++ b/drivers/nxp/s32/clk/clk.c
+@@ -10,6 +10,7 @@
+ #include <memory_pool.h>
+ #include <plat/common/platform.h>
+ #include <s32_dt.h>
++#include <inttypes.h>
+ 
+ /*
+  * We use a clk_driver structure for each 'fixed-clock' node in the
+@@ -106,7 +107,7 @@ int get_clk(uint32_t drv_id, uint32_t clk_id, struct clk *clock)
+ 
+ 	clk_drv = get_clk_driver(drv_id);
+ 	if (!clk_drv) {
+-		ERROR("Invalid clock driver ID: %d\n", drv_id);
++		ERROR("Invalid clock driver ID: %" PRIu32 "\n", drv_id);
+ 		return -EIO;
+ 	}
+ 
+@@ -143,14 +144,15 @@ static int process_parents_prop(int *parent_index, size_t nparents,
+ 
+ 		ret = get_clk(parent_drv_id, parent_clk_id, parent_clk);
+ 		if (ret) {
+-			ERROR("Unidentified clock id: %d\n", parent_clk_id);
++			ERROR("Unidentified clock id: %" PRIu32 "\n",
++			      parent_clk_id);
+ 			return -EIO;
+ 		}
+ 
+ 		if (clk->drv->ops && clk->drv->ops->set_parent) {
+ 			ret = clk->drv->ops->set_parent(clk, parent_clk);
+ 			if (ret) {
+-				ERROR("Failed to set parent of %d clk\n",
++				ERROR("Failed to set parent of %" PRIu32 " clk\n",
+ 						clk->id);
+ 			}
+ 			return ret;
+@@ -164,8 +166,8 @@ int dt_clk_apply_defaults(void *fdt, int node)
+ {
+ 	const fdt32_t *clocks, *parents, *rates;
+ 	int nclocks_size, nparents_size, nrates_size;
+-	int i, ret, index, parent_index;
+-	uint32_t clk_drv_id, clk_id, freq;
++	int ret, index, parent_index;
++	uint32_t clk_drv_id, clk_id, freq, i;
+ 	struct clk clk, parent_clk;
+ 	size_t nparents;
+ 	int fret = 0;
+@@ -224,7 +226,7 @@ int dt_clk_apply_defaults(void *fdt, int node)
+ 		if (freq && clk.drv->ops && clk.drv->ops->set_rate) {
+ 			ret = clk.drv->ops->set_rate(&clk, freq);
+ 			if (!ret) {
+-				ERROR("Failed to set rate of %d clk\n",
++				ERROR("Failed to set rate of %" PRIu32 " clk\n",
+ 						clk.id);
+ 				fret = ret;
+ 				continue;
+diff --git a/drivers/nxp/s32/clk/enable_clk.c b/drivers/nxp/s32/clk/enable_clk.c
+index 1a1a2b9b3..8b04cfda3 100644
+--- a/drivers/nxp/s32/clk/enable_clk.c
++++ b/drivers/nxp/s32/clk/enable_clk.c
+@@ -11,6 +11,7 @@
+ #include <dt-bindings/clock/s32gen1-clock.h>
+ #include <lib/mmio.h>
+ #include <s32g_fp.h>
++#include <inttypes.h>
+ 
+ enum en_order {
+ 	PARENT_FIRST,
+@@ -260,7 +261,7 @@ static void disable_part_cofb(uint32_t partition_n, uint32_t block,
+ 
+ 	clken = mmio_read_32(MC_ME_PRTN_N_COFB0_CLKEN(mc_me, partition_n));
+ 	if (!(clken & block_mask)) {
+-		ERROR("Block %u from partition %u is already disabled\n",
++		ERROR("Block %" PRIu32 " from partition %" PRIu32 " is already disabled\n",
+ 		      block, partition_n);
+ 		return;
+ 	}
+@@ -357,7 +358,7 @@ static int cgm_mux_clk_config(void *cgm_addr, uint32_t mux, uint32_t source)
+ 	    (MC_CGM_MUXn_CSS_SELSTAT(css) == source))
+ 		return 0;
+ 
+-	ERROR("Failed to change the clock source of mux %d to %d (CGM = %p)\n",
++	ERROR("Failed to change the clock source of mux %" PRIu32 " to %" PRIu32 " (CGM = %p)\n",
+ 	       mux, source, cgm_addr);
+ 
+ 	return -EINVAL;
+@@ -391,7 +392,7 @@ static int enable_mux(struct s32gen1_clk_obj *module,
+ 	struct s32gen1_clk *clk = get_clock(mux->source_id);
+ 
+ 	if (!clk) {
+-		ERROR("Invalid parent (%u) for mux %u\n",
++		ERROR("Invalid parent (%" PRIu32 ") for mux %" PRIu8 "\n",
+ 		      mux->source_id, mux->index);
+ 		return -EINVAL;
+ 	}
+@@ -445,7 +446,8 @@ static int cgm_mux_div_disable(void *cgm_addr, uint32_t mux,
+ 	uint32_t dc_val = mmio_read_32(CGM_MUXn_DCm(cgm_addr, mux, div_index));
+ 
+ 	if (!(dc_val & MC_CGM_MUXn_DCm_DE)) {
+-		ERROR("CGM divider is already disabled: cgm = 0x%lx mux = %u div = %u",
++		ERROR("CGM divider is already disabled: cgm = 0x%" PRIxPTR
++		      " mux = %" PRIu32 " div = %" PRIu32,
+ 		      (uintptr_t)cgm_addr, mux, div_index);
+ 		return -EINVAL;
+ 	}
+@@ -477,7 +479,7 @@ static int enable_cgm_div(struct s32gen1_clk_obj *module,
+ 	}
+ 
+ 	if (!div->freq) {
+-		ERROR("The frequency of the divider %d is not set\n",
++		ERROR("The frequency of the divider %" PRIu32 " is not set\n",
+ 		       div->index);
+ 		return -EINVAL;
+ 	}
+@@ -504,8 +506,8 @@ static int enable_cgm_div(struct s32gen1_clk_obj *module,
+ 
+ 	dc = (uint32_t)fp2u(fp_div(u2fp(pfreq), u2fp(div->freq)));
+ 	if (fp2u(fp_div(u2fp(pfreq), u2fp(dc))) != div->freq) {
+-		ERROR(
+-		"Cannot set CGM divider (mux:%d, div:%d) for input = %lu & output = %lu, Nearest freq = %lu\n",
++		ERROR("Cannot set CGM divider (mux:%" PRIu8 ", div:%" PRIu32
++		      ") for input = %lu & output = %lu, Nearest freq = %lu\n",
+ 		mux->index, div->index, (unsigned long)pfreq,
+ 		div->freq, (unsigned long)(pfreq / dc));
+ #if (S32_SET_NEAREST_FREQ == 0)
+@@ -619,7 +621,7 @@ static int disable_dfs_port(void *dfs_addr, uint32_t port)
+ 	pmask = BIT(port);
+ 
+ 	if (portreset & pmask) {
+-		ERROR("Port %u of DFS 0x%lx is already disabled\n",
++		ERROR("Port %" PRIu32 " of DFS 0x%" PRIxPTR " is already disabled\n",
+ 		      port, (uintptr_t)dfs_addr);
+ 		return -EINVAL;
+ 	}
+@@ -840,9 +842,9 @@ static int adjust_odiv_settings(struct s32gen1_pll *pll, void *pll_addr,
+ 		odiv_freq = fp_div(u2fp(pll->vco_freq), u2fp(div));
+ 
+ 		if (old_odiv_freq.val != odiv_freq.val) {
+-			ERROR("Failed to adjust ODIV %d to match previous frequency\n",
++			ERROR("Failed to adjust ODIV %" PRIu32 " to match previous frequency\n",
+ 			      i);
+-			ERROR("Previous freq: %llu Nearest freq: %llu\n",
++			ERROR("Previous freq: %" PRIu64 " Nearest freq: %" PRIu64 "\n",
+ 			      old_odiv_freq.val, odiv_freq.val);
+ 		}
+ 
+@@ -942,7 +944,7 @@ static int program_pll(struct s32gen1_pll *pll, void *pll_addr,
+ static int disable_pll(void *pll_addr)
+ {
+ 	if (!is_pll_enabled(pll_addr)) {
+-		ERROR("Disabling already disabled PLL: 0x%lx\n",
++		ERROR("Disabling already disabled PLL: 0x%" PRIxPTR "\n",
+ 		      (uintptr_t)pll_addr);
+ 		return -EINVAL;
+ 	}
+@@ -1143,7 +1145,7 @@ static struct s32gen1_clk_obj *get_mux_parent(struct s32gen1_clk_obj *module)
+ 	struct s32gen1_clk *clk = get_clock(mux->source_id);
+ 
+ 	if (!clk) {
+-		ERROR("Invalid parent (%u) for mux %u\n",
++		ERROR("Invalid parent (%" PRIu32 ") for mux %" PRIu8 "\n",
+ 		      mux->source_id, mux->index);
+ 		return NULL;
+ 	}
+@@ -1369,13 +1371,14 @@ int s32gen1_enable(struct clk *c, int enable)
+ 
+ 	clk = get_clock(c->id);
+ 	if (!clk) {
+-		ERROR("Clock %u is not part of the clcok tree\n", c->id);
++		ERROR("Clock %" PRIu32 " is not part of the clcok tree\n",
++		      c->id);
+ 		return 0;
+ 	}
+ 
+ 	ret = enable_module(&clk->desc, priv, enable);
+ 	if (ret)
+-		ERROR("Failed to enable clock: %u\n", c->id);
++		ERROR("Failed to enable clock: %" PRIu32 "\n", c->id);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
+index 3cecc1ebf..cdcb41088 100644
+--- a/drivers/nxp/s32/clk/get_rate.c
++++ b/drivers/nxp/s32/clk/get_rate.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  */
+ #include <clk/mc_cgm_regs.h>
+ #include <clk/s32gen1_clk_funcs.h>
+@@ -8,6 +8,7 @@
+ #include <lib/utils_def.h>
+ #include <s32g_fp.h>
+ #include <stdint.h>
++#include <inttypes.h>
+ 
+ static unsigned long get_osc_freq(struct s32gen1_clk_obj *module,
+ 			  struct s32gen1_clk_priv *priv)
+@@ -49,7 +50,7 @@ static unsigned long get_mux_freq(struct s32gen1_clk_obj *module,
+ 	struct s32gen1_clk *clk = get_clock(mux->source_id);
+ 
+ 	if (!clk) {
+-		ERROR("%s: Mux (id:%d) without a valid source (%d)\n",
++		ERROR("%s: Mux (id:%" PRIu8 ") without a valid source (%" PRIu32 ")\n",
+ 		      __func__, mux->index, mux->source_id);
+ 		return 0;
+ 	}
+diff --git a/drivers/nxp/s32/clk/s32g_scmi_ids.c b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+index 46aee0798..808e8f600 100644
+--- a/drivers/nxp/s32/clk/s32g_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+@@ -9,6 +9,7 @@
+ #include <dt-bindings/clock/s32g-scmi-clock.h>
+ #include <errno.h>
+ #include <stdint.h>
++#include <inttypes.h>
+ 
+ #define INDEX(X)	((X) - S32GEN1_SCMI_PLAT_CLK_BASE_ID)
+ 
+@@ -148,7 +149,7 @@ int plat_scmi_id2clk(uint32_t scmi_clk_id, uint32_t *clk_id)
+ 
+ 	*clk_id = s32g_scmi_clk[INDEX(scmi_clk_id)].plat_id;
+ 	if (!*clk_id) {
+-		ERROR("Unhandled S32G clock: %u\n", scmi_clk_id);
++		ERROR("Unhandled S32G clock: %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -163,7 +164,7 @@ int plat_compound_clk_get(struct clk *clk)
+ 		return -EINVAL;
+ 
+ 	if (s32g_compound2clkid(scmi_clk_id, NULL)) {
+-		ERROR("Invalid S32G compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid S32G compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -278,7 +279,7 @@ int plat_compound_clk_set_parents(struct clk *clk)
+ 	uint32_t id;
+ 
+ 	if (s32g_compound2clkid(clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -298,7 +299,7 @@ int plat_compound_clk_set_parents(struct clk *clk)
+ 	case S32GEN1_SCMI_NOT_IMPLEMENTED_CLK:
+ 		return 0;
+ 	default:
+-		ERROR("%s: Invalid clock %d\n", __func__, id);
++		ERROR("%s: Invalid clock %" PRIu32 "\n", __func__, id);
+ 		return -EINVAL;
+ 	}
+ }
+@@ -311,7 +312,7 @@ int plat_compound_clk_enable(struct clk *clk, int enable)
+ 	int ret;
+ 
+ 	if (s32g_compound2clkid(clk_id, &id)) {
+-		ERROR("Invalid s32g compound clock : %u\n", clk_id);
++		ERROR("Invalid s32g compound clock : %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -323,14 +324,14 @@ int plat_compound_clk_enable(struct clk *clk, int enable)
+ 
+ 	ret = plat_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	sclock.id = id;
+ 	ret = s32gen1_enable(&sclock, enable);
+ 	if (ret) {
+-		ERROR("Failed to enable %u clock\n", clk_id);
++		ERROR("Failed to enable %" PRIu32 " clock\n", clk_id);
+ 		return ret;
+ 	}
+ 
+@@ -349,12 +350,12 @@ unsigned long plat_compound_clk_set_rate(struct clk *clk, unsigned long rate)
+ 
+ 	ret = plat_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", scmi_clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (s32g_compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -378,7 +379,7 @@ unsigned long plat_compound_clk_get_rate(struct clk *clk)
+ 		return 0;
+ 
+ 	if (s32g_compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return 0;
+ 	}
+ 
+@@ -418,12 +419,12 @@ int plat_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 
+ 	ret = plat_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", scmi_clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (s32g_compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+index 29d6d7c61..0f5848763 100644
+--- a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
++++ b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+@@ -9,6 +9,7 @@
+ #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+ #include <errno.h>
+ #include <stdint.h>
++#include <inttypes.h>
+ 
+ static bool is_scmi_clk(uint32_t id)
+ {
+@@ -33,7 +34,7 @@ static int translate_clk(struct clk *clk, bool *is_compound)
+ 
+ 	ret = cc_scmi_id2clk(clk->id, &clk_id);
+ 	if (ret) {
+-		ERROR("Clock with ID %u isn't covered by this driver\n",
++		ERROR("Clock with ID %" PRIu32 " isn't covered by this driver\n",
+ 		       clk->id);
+ 		return -EINVAL;
+ 	}
+@@ -59,7 +60,8 @@ int s32gen1_scmi_request(uint32_t id, struct clk *clk)
+ 		return cc_compound_clk_get(clk);
+ 
+ 	if (!get_clock(clk->id)) {
+-		ERROR("Clock %u is not part of the clock tree\n", clk->id);
++		ERROR("Clock %" PRIu32 " is not part of the clock tree\n",
++		      clk->id);
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/nxp/s32/clk/s32gen1_scmi_ids.c b/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
+index 464b8bba5..4b857b225 100644
+--- a/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
+@@ -9,6 +9,7 @@
+ #include <dt-bindings/clock/s32gen1-scmi-clock.h>
+ #include <errno.h>
+ #include <stdint.h>
++#include <inttypes.h>
+ 
+ #define INDEX(X)	((X) - S32GEN1_SCMI_CLK_BASE_ID)
+ 
+@@ -267,7 +268,7 @@ static int cc_compound_clk_set_parents(struct clk *clk)
+ 	uint32_t id;
+ 
+ 	if (compound2clkid(clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -298,7 +299,7 @@ int cc_scmi_id2clk(uint32_t scmi_clk_id, uint32_t *clk_id)
+ 
+ 	*clk_id = cc_scmi_clk[INDEX(scmi_clk_id)].plat_id;
+ 	if (!*clk_id) {
+-		ERROR("Unhandled S32GEN1 clock: %u\n", scmi_clk_id);
++		ERROR("Unhandled S32GEN1 clock: %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 	return 0;
+@@ -315,7 +316,7 @@ int cc_compound_clk_get(struct clk *clk)
+ 		return -EINVAL;
+ 
+ 	if (compound2clkid(scmi_clk_id, NULL)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -337,12 +338,12 @@ unsigned long cc_compound_clk_set_rate(struct clk *clk, unsigned long rate)
+ 
+ 	ret = cc_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", scmi_clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -367,7 +368,7 @@ int cc_compound_clk_enable(struct clk *clk, int enable)
+ 		return plat_compound_clk_enable(clk, enable);
+ 
+ 	if (compound2clkid(clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -379,14 +380,14 @@ int cc_compound_clk_enable(struct clk *clk, int enable)
+ 
+ 	ret = cc_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	sclock.id = id;
+ 	ret = s32gen1_enable(&sclock, enable);
+ 	if (ret) {
+-		ERROR("Failed to enable %u clock\n", clk_id);
++		ERROR("Failed to enable %" PRIu32 " clock\n", clk_id);
+ 		return ret;
+ 	}
+ 
+@@ -406,7 +407,7 @@ unsigned long cc_compound_clk_get_rate(struct clk *clk)
+ 		return 0;
+ 
+ 	if (compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return 0;
+ 	}
+ 
+@@ -452,12 +453,12 @@ int cc_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 
+ 	ret = cc_compound_clk_set_parents(clk);
+ 	if (ret) {
+-		ERROR("Failed to set parents for %u\n", scmi_clk_id);
++		ERROR("Failed to set parents for %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (compound2clkid(scmi_clk_id, &id)) {
+-		ERROR("Invalid compound clock : %u\n", scmi_clk_id);
++		ERROR("Invalid compound clock : %" PRIu32 "\n", scmi_clk_id);
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/nxp/s32/clk/set_par_rate.c b/drivers/nxp/s32/clk/set_par_rate.c
+index 174f5bcc7..8461fbfea 100644
+--- a/drivers/nxp/s32/clk/set_par_rate.c
++++ b/drivers/nxp/s32/clk/set_par_rate.c
+@@ -5,6 +5,7 @@
+ #include <clk/s32gen1_clk_funcs.h>
+ #include <clk/s32gen1_clk_modules.h>
+ #include <common/debug.h>
++#include <inttypes.h>
+ 
+ static unsigned long set_module_rate(struct s32gen1_clk_obj *module,
+ 				     unsigned long rate);
+@@ -41,7 +42,7 @@ static unsigned long set_pll_div_freq(struct s32gen1_clk_obj *module,
+ 	}
+ 
+ 	if (div->freq && div->freq != rate) {
+-		ERROR("PLL DIV frequency was already set to %lu pll: %u index: %u\n",
++		ERROR("PLL DIV frequency was already set to %lu pll: %u index: %" PRIu32 "\n",
+ 		      div->freq, pll->instance, div->index);
+ 		return 0;
+ 	}
+@@ -132,7 +133,7 @@ static unsigned long set_mux_freq(struct s32gen1_clk_obj *module,
+ 	struct s32gen1_clk *clk = get_clock(mux->source_id);
+ 
+ 	if (!clk) {
+-		ERROR("%s: Mux (id:%d) without a valid source (%d)\n",
++		ERROR("%s: Mux (id:%" PRIu8 ") without a valid source (%" PRIu32 ")\n",
+ 		      __func__, mux->index, mux->source_id);
+ 		return 0;
+ 	}
+@@ -227,7 +228,7 @@ unsigned long s32gen1_set_rate(struct clk *c, unsigned long rate)
+ 
+ 	rate = set_module_rate(&clk->desc, rate);
+ 	if (rate == 0) {
+-		ERROR("Failed to set frequency (%lu MHz) for clock %u\n",
++		ERROR("Failed to set frequency (%lu MHz) for clock %" PRIu32 "\n",
+ 		      orig_rate, c->id);
+ 	}
+ 
+@@ -258,7 +259,8 @@ static int update_frequency(struct clk *c, struct clk *p,
+ 
+ 	rate = clk_get_rate(p);
+ 	if (rate == 0) {
+-		ERROR("Failed to get the frequency of clock %u\n", p->id);
++		ERROR("Failed to get the frequency of clock %" PRIu32 "\n",
++		      p->id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -299,18 +301,18 @@ int s32gen1_set_parent(struct clk *c, struct clk *p)
+ 	}
+ 
+ 	if (!is_mux(clk)) {
+-		ERROR("Clock %u is not a mux\n", c->id);
++		ERROR("Clock %" PRIu32 " is not a mux\n", c->id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	mux = clk2mux(clk);
+ 	if (!mux) {
+-		ERROR("Failed to cast clock %u to clock mux\n", c->id);
++		ERROR("Failed to cast clock %" PRIu32 " to clock mux\n", c->id);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (!check_mux_source(mux, p->id)) {
+-		ERROR("Clock %u is not a valid clock for mux %u\n",
++		ERROR("Clock %" PRIu32 " is not a valid clock for mux %" PRIu32 "\n",
+ 		       p->id, c->id);
+ 		return -EINVAL;
+ 	}
+diff --git a/plat/nxp/s32/s32_bl_common.c b/plat/nxp/s32/s32_bl_common.c
+index 4b8b43539..0f787d719 100644
+--- a/plat/nxp/s32/s32_bl_common.c
++++ b/plat/nxp/s32/s32_bl_common.c
+@@ -7,6 +7,7 @@
+ #include <drivers/generic_delay_timer.h>
+ #include <libfdt.h>
+ #include <lib/mmio.h>
++#include <inttypes.h>
+ #include "platform_def.h"
+ #include "s32_bl_common.h"
+ #include "s32_clocks.h"
+@@ -61,7 +62,7 @@ void plat_ea_handler(unsigned int ea_reason, uint64_t syndrome, void *cookie,
+ {
+ 	ERROR("Unhandled External Abort received on 0x%lx at EL3!\n",
+ 	      read_mpidr_el1());
+-	ERROR(" exception reason=%u syndrome=0x%llx\n", ea_reason, syndrome);
++	ERROR(" exception reason=%u syndrome=0x%" PRIx64 "\n", ea_reason, syndrome);
+ 
+ 	panic();
+ }
+diff --git a/plat/nxp/s32/s32_dt.c b/plat/nxp/s32/s32_dt.c
+index 0a5f6c618..b3e5dca6e 100644
+--- a/plat/nxp/s32/s32_dt.c
++++ b/plat/nxp/s32/s32_dt.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <clk/clk.h>
++#include <inttypes.h>
+ #include <common/debug.h>
+ #include <common/fdt_wrappers.h>
+ #include <errno.h>
+@@ -78,7 +79,8 @@ int dt_enable_clocks(void *fdt_addr, int node)
+ 
+ 		ret = get_clk(clk_drv_id, clk_id, &clk);
+ 		if (ret) {
+-			ERROR("Failed to get the clock (drv:%d clk%d) of the node '%s'\n",
++			ERROR("Failed to get the clock (drv:%" PRIu32 " clk%"
++			      PRIu32 ") of the node '%s'\n",
+ 			      clk_drv_id, clk_id,
+ 			      fdt_get_name(fdt_addr, node, NULL));
+ 			return ret;
+@@ -86,7 +88,8 @@ int dt_enable_clocks(void *fdt_addr, int node)
+ 
+ 		ret = clk_enable(&clk);
+ 		if (ret) {
+-			ERROR("Failed to enable the clock (drv:%d clk:%d) of the node '%s'\n",
++			ERROR("Failed to enable the clock (drv:%" PRIu32
++			      " clk:%" PRIu32 ") of the node '%s'\n",
+ 			      clk_drv_id, clk_id,
+ 			      fdt_get_name(fdt_addr, node, NULL));
+ 			return ret;
+-- 
+2.17.1
+

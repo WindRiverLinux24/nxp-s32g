@@ -18,6 +18,36 @@ SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
+    file://bsp35/rc4/0001-fix-libc-use-long-for-64-bit-types-on-aarch64.patch \
+    file://bsp35/rc4/0002-libc-Correct-PRIxPTR-define.patch \
+    file://bsp35/rc4/0003-s32-clk-Use-PRI-macros-to-print-numbers.patch \
+    file://bsp35/rc4/0004-s32-clock-Fix-compilation-warning.patch \
+    file://bsp35/rc4/0005-s32-clock-Fix-compilation-warning.patch \
+    file://bsp35/rc4/0006-s32-clock-Fix-compilation-warning.patch \
+    file://bsp35/rc4/0007-plat-s32g-Fix-compilation-warning.patch \
+    file://bsp35/rc4/0008-s32cc-Guard-arm64-specific-code.patch \
+    file://bsp35/rc4/0009-s32cc-Rename-USDHC-base-address.patch \
+    file://bsp35/rc4/0010-s32cc-Make-DFS-base-addresses-available-for-MMU.patch \
+    file://bsp35/rc4/0011-s32cc-Make-PLL-base-addresses-available-for-MMU.patch \
+    file://bsp35/rc4/0012-s32cc-Update-addresses-for-platform-modules.patch \
+    file://bsp35/rc4/0013-s32cc-Update-MMU-entries-for-BL31-BL2.patch \
+    file://bsp35/rc4/0014-dt-bindings-s32cc-Add-defines-for-early-clock-freque.patch \
+    file://bsp35/rc4/0015-s32cc-Allow-custom-A53-frequencies.patch \
+    file://bsp35/rc4/0016-s32cc-Initialize-SCP-SCMI-layer.patch \
+    file://bsp35/rc4/0017-linflex-Print-character-based-on-operating-mode.patch \
+    file://bsp35/rc4/0018-css-scmi-Add-a-macro-to-mark-the-channel-as-free.patch \
+    file://bsp35/rc4/0019-s32-Forward-all-SCMI-request-to-SCP-when-S32CC_USE_S.patch \
+    file://bsp35/rc4/0020-s32-Initialize-multiple-SCMI-channels.patch \
+    file://bsp35/rc4/0021-nxp-s32-clk-Add-a-missing-include.patch \
+    file://bsp35/rc4/0022-s32cc-rst-Use-PRIu32-to-print-an-uint32_t.patch \
+    file://bsp35/rc4/0023-s32cc-Rename-SCMI-defines-used-for-memory-base-and-s.patch \
+    file://bsp35/rc4/0024-s32cc-Optimize-PMIC-initialization.patch \
+    file://bsp35/rc4/0025-s32cc-Move-PMIC-WDG-refresh-before-DDR-init-on-resum.patch \
+    file://bsp35/rc4/0026-s32cc-psci-Split-A53-reset-address-set-and-kick.patch \
+    file://bsp35/rc4/0027-dt-bindings-s32cc-Add-headers-for-SCMI-Power-Domains.patch \
+    file://bsp35/rc4/0028-s32cc-CPU-hotplug-using-SCP.patch \
+    file://bsp35/rc4/0029-s32cc-Use-a-function-for-M7-bits-from-MC_RGM-reset-b.patch \
+    file://bsp35/rc4/0030-s32cc-Disable-the-core-even-if-its-clock-seems-off.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \

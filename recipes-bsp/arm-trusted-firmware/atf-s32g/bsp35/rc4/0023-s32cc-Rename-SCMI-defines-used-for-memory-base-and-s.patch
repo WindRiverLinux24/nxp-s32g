@@ -1,0 +1,158 @@
+From ed5317ea61acf2161943adea98e480389d700a71 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 5 Oct 2022 10:29:20 +0300
+Subject: [PATCH 23/30] s32cc: Rename SCMI defines used for memory base and
+ size
+
+This is needed to clearly differentiate between SCMI channels
+between OS - ATF and ATF - SCP.
+
+Issue: ALB-9298
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_platform_def.h | 10 +++++-----
+ plat/nxp/s32/s32_bl2_el3.c              |  2 +-
+ plat/nxp/s32/s32_bl31.c                 |  6 +++---
+ plat/nxp/s32/s32_scp_scmi.c             |  6 +++---
+ plat/nxp/s32/s32_svc.c                  |  8 ++++----
+ 5 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
+index 478a019c3..6bfdd4cb8 100644
+--- a/plat/nxp/s32/include/s32_platform_def.h
++++ b/plat/nxp/s32/include/s32_platform_def.h
+@@ -166,8 +166,8 @@
+ #define S32_UART_SIZE		S32_LINFLEX0_SIZE
+ #endif
+ 
+-#define S32_SCMI_SHARED_MEM			0xd0000000U
+-#define S32_SCMI_SHARED_MEM_SIZE	0x400000U
++#define S32_OSPM_SCMI_MEM	(0xd0000000U)
++#define S32_OSPM_SCMI_MEM_SIZE	(0x400000U)
+ 
+ #define S32_QSPI_BASE		(0x40134000ul)
+ #define S32_QSPI_SIZE		(0x1000)
+@@ -183,9 +183,9 @@
+ #define MSCM_BASE_ADDR		(0x40198000U)
+ #define MSCM_SIZE		(0xfa0u)
+ 
+-#define SCMI_PAYLOAD_BASE	(0x34000000U)
+-#define SCMI_PAYLOAD_SIZE	(128)
+-#define SCMI_PAYLOAD_MAX_SIZE	(SCMI_PAYLOAD_SIZE * PLATFORM_CORE_COUNT)
++#define S32_SCP_SCMI_MEM	(0x34000000U)
++#define S32_SCP_CH_MEM_SIZE	(128)
++#define S32_SCP_SCMI_MEM_SIZE	(S32_SCP_CH_MEM_SIZE * PLATFORM_CORE_COUNT)
+ 
+ #endif /* S32_PLATFORM_H */
+ 
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 9492a0dc4..fe677c441 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -223,7 +223,7 @@ static mmap_region_t s32_mmap[] = {
+ 			MT_MEMORY | MT_RW, PAGE_SIZE),
+ 	MAP_REGION_FLAT(S32_PMEM_START, S32_PMEM_LEN,
+ 			MT_MEMORY | MT_RW | MT_SECURE),
+-	MAP_REGION_FLAT(S32_SCMI_SHARED_MEM, S32_SCMI_SHARED_MEM_SIZE,
++	MAP_REGION_FLAT(S32_OSPM_SCMI_MEM, S32_OSPM_SCMI_MEM_SIZE,
+ 			MT_NON_CACHEABLE | MT_RW | MT_SECURE),
+ 	MAP_REGION_FLAT(S32_QSPI_BASE, S32_QSPI_SIZE, MT_DEVICE | MT_RW),
+ 	MAP_REGION_FLAT(FIP_BASE, FIP_MAXIMUM_SIZE, MT_RW | MT_SECURE),
+diff --git a/plat/nxp/s32/s32_bl31.c b/plat/nxp/s32/s32_bl31.c
+index eba375a3c..081e60d2d 100644
+--- a/plat/nxp/s32/s32_bl31.c
++++ b/plat/nxp/s32/s32_bl31.c
+@@ -89,13 +89,13 @@ static const mmap_region_t s32_mmap[] = {
+ 			MT_MEMORY | MT_RW, PAGE_SIZE),
+ 	MAP_REGION_FLAT(S32_PMEM_START, S32_PMEM_LEN,
+ 			MT_MEMORY | MT_RW | MT_SECURE),
+-	MAP_REGION_FLAT(S32_SCMI_SHARED_MEM, S32_SCMI_SHARED_MEM_SIZE,
++	MAP_REGION_FLAT(S32_OSPM_SCMI_MEM, S32_OSPM_SCMI_MEM_SIZE,
+ 			MT_NON_CACHEABLE | MT_RW | MT_SECURE),
+ 	/* SCP entries */
+ 	MAP_REGION_FLAT(MSCM_BASE_ADDR, MMU_ROUND_UP_TO_4K(MSCM_SIZE),
+ 			MT_DEVICE | MT_RW),
+-	MAP_REGION_FLAT(SCMI_PAYLOAD_BASE,
+-			MMU_ROUND_UP_TO_PAGE(SCMI_PAYLOAD_MAX_SIZE),
++	MAP_REGION_FLAT(S32_SCP_SCMI_MEM,
++			MMU_ROUND_UP_TO_PAGE(S32_SCP_SCMI_MEM_SIZE),
+ 			MT_NON_CACHEABLE | MT_RW | MT_SECURE),
+ #if defined(MC_CGM6_BASE_ADDR)
+ 	MAP_REGION_FLAT(MC_CGM6_BASE_ADDR, MMU_ROUND_UP_TO_PAGE(MC_CGM6_SIZE),
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index c63e4c716..cff405c30 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -29,7 +29,7 @@ void mscm_ring_doorbell(struct scmi_channel_plat_info *plat_info)
+ 
+ static uintptr_t get_mb_addr(uint32_t core)
+ {
+-	return SCMI_PAYLOAD_BASE + core * SCMI_PAYLOAD_SIZE;
++	return S32_SCP_SCMI_MEM + core * S32_SCP_CH_MEM_SIZE;
+ }
+ 
+ void scp_scmi_init(void)
+@@ -95,7 +95,7 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 	if (!ch)
+ 		return -EINVAL;
+ 
+-	if (get_packet_size(scmi_mem) > SCMI_PAYLOAD_SIZE)
++	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
+ 		return -EINVAL;
+ 
+ 	if (!ch->is_initialized) {
+@@ -115,7 +115,7 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 
+ 	/* Transfer request into SRAM mailbox */
+ 	if (ch_info->scmi_mbx_mem + get_packet_size(scmi_mem) >
+-	    SCMI_PAYLOAD_BASE + SCMI_PAYLOAD_MAX_SIZE)
++	    S32_SCP_SCMI_MEM + S32_SCP_SCMI_MEM_SIZE)
+ 		return -EINVAL;
+ 
+ 	copy_scmi_msg((uintptr_t)mbx_mem, scmi_mem);
+diff --git a/plat/nxp/s32/s32_svc.c b/plat/nxp/s32/s32_svc.c
+index 2b325c81c..57a8e1168 100644
+--- a/plat/nxp/s32/s32_svc.c
++++ b/plat/nxp/s32/s32_svc.c
+@@ -75,7 +75,7 @@ size_t plat_scmi_protocol_count(void)
+ 
+ static int32_t s32_svc_smc_setup(void)
+ {
+-	struct scmi_shared_mem *mem = (void *)S32_SCMI_SHARED_MEM;
++	struct scmi_shared_mem *mem = (void *)S32_OSPM_SCMI_MEM;
+ 
+ 	mem->channel_status = SCMI_SHMEM_CHAN_STAT_CHANNEL_FREE;
+ 	return 0;
+@@ -84,7 +84,7 @@ static int32_t s32_svc_smc_setup(void)
+ static int scmi_handler(uint32_t smc_fid, u_register_t x1,
+ 			u_register_t x2, u_register_t x3)
+ {
+-	struct scmi_shared_mem *mem = (void *)S32_SCMI_SHARED_MEM;
++	struct scmi_shared_mem *mem = (void *)S32_OSPM_SCMI_MEM;
+ 	struct response *response = (struct response *)&mem->msg_payload[0];
+ 	uint32_t msg_header = mem->msg_header;
+ 	struct scmi_msg msg = {
+@@ -94,7 +94,7 @@ static int scmi_handler(uint32_t smc_fid, u_register_t x1,
+ 		.protocol_id = MSG_PRO_ID(msg_header),
+ 		.message_id = MSG_ID(msg_header),
+ 		.out = (char *)response,
+-		.out_size = S32_SCMI_SHARED_MEM_SIZE - sizeof(*mem),
++		.out_size = S32_OSPM_SCMI_MEM_SIZE - sizeof(*mem),
+ 	};
+ 
+ 	scmi_process_message(&msg);
+@@ -108,7 +108,7 @@ static int scmi_handler(uint32_t smc_fid, u_register_t x1,
+ static int scp_scmi_handler(uint32_t smc_fid, u_register_t x1,
+ 			    u_register_t x2, u_register_t x3)
+ {
+-	return send_scmi_to_scp(S32_SCMI_SHARED_MEM);
++	return send_scmi_to_scp(S32_OSPM_SCMI_MEM);
+ }
+ 
+ uintptr_t s32_svc_smc_handler(uint32_t smc_fid,
+-- 
+2.17.1
+

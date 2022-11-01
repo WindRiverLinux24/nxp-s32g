@@ -1,0 +1,340 @@
+From 8ab830ee143770789f3bdf1b2a5ee85eac1f1b47 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 5 Oct 2022 10:21:14 +0300
+Subject: [PATCH 28/30] s32cc: CPU hotplug using SCP
+
+Issue: ALB-9435
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/arm/css/scmi/scmi_private.h  |   3 +
+ plat/nxp/s32/include/s32_bl_common.h |   3 +
+ plat/nxp/s32/s32_common.mk           |   2 +
+ plat/nxp/s32/s32_psci.c              |  24 ++++-
+ plat/nxp/s32/s32_scp_scmi.c          | 144 ++++++++++++++++++++++++---
+ plat/nxp/s32/s32g/s32g_bl31.c        |   8 ++
+ 6 files changed, 166 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/arm/css/scmi/scmi_private.h b/drivers/arm/css/scmi/scmi_private.h
+index 56bea86ab..4e58a1c3b 100644
+--- a/drivers/arm/css/scmi/scmi_private.h
++++ b/drivers/arm/css/scmi/scmi_private.h
+@@ -73,6 +73,9 @@
+ 	(((_msg_id) & SCMI_MSG_ID_MASK) << SCMI_MSG_ID_SHIFT) |			\
+ 	(((_token) & SCMI_MSG_TOKEN_MASK) << SCMI_MSG_TOKEN_SHIFT))
+ 
++#define SCMI_MSG_GET_PROTO(_hdr)	\
++	(((_hdr) >> SCMI_MSG_PROTO_ID_SHIFT) & SCMI_MSG_PROTO_ID_MASK)
++
+ /* Helper macro to get the token from a SCMI message header */
+ #define SCMI_MSG_GET_TOKEN(_msg)				\
+ 	(((_msg) >> SCMI_MSG_TOKEN_SHIFT) & SCMI_MSG_TOKEN_MASK)
+diff --git a/plat/nxp/s32/include/s32_bl_common.h b/plat/nxp/s32/include/s32_bl_common.h
+index 5fec2dce4..c1d290e87 100644
+--- a/plat/nxp/s32/include/s32_bl_common.h
++++ b/plat/nxp/s32/include/s32_bl_common.h
+@@ -56,6 +56,9 @@ bool is_cluster1_off(void);
+ void scp_scmi_init(void);
+ int send_scmi_to_scp(uintptr_t scmi_mem);
+ void scp_set_core_reset_addr(uintptr_t addr);
++int scp_get_cpu_state(uint32_t core);
++int scp_cpu_on(uint32_t core);
++int scp_cpu_off(uint32_t core);
+ 
+ struct s32_i2c_driver *s32_add_i2c_module(void *fdt, int fdt_node);
+ 
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 09821c965..3f3d4c4f8 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -116,6 +116,8 @@ BL31_SOURCES += \
+ 			${S32_PLAT}/s32_psci.c \
+ 			${S32_PLAT}/s32_scp_scmi.c \
+ 			drivers/arm/css/scmi/scmi_common.c \
++			drivers/arm/css/scmi/scmi_ap_core_proto.c \
++			drivers/arm/css/scmi/scmi_pwr_dmn_proto.c \
+ 
+ DTC_FLAGS		+= -Wno-unit_address_vs_reg
+ 
+diff --git a/plat/nxp/s32/s32_psci.c b/plat/nxp/s32/s32_psci.c
+index 38e80c79f..677f8a82c 100644
+--- a/plat/nxp/s32/s32_psci.c
++++ b/plat/nxp/s32/s32_psci.c
+@@ -46,14 +46,24 @@ static bool is_core_in_secondary_cluster(int pos)
+ static int s32_pwr_domain_on(u_register_t mpidr)
+ {
+ 	int pos;
++	int ret;
+ 	uintptr_t core_start_addr = (uintptr_t)&plat_secondary_cold_boot_setup;
+ 
+ 	pos = plat_core_pos_by_mpidr(mpidr);
++	if (pos < 0)
++		return PSCI_E_INTERN_FAIL;
++
+ 	dsbsy();
+ 
+-	if (s32_core_in_reset(pos)) {
+-		s32_set_core_entrypoint(pos, core_start_addr);
+-		s32_kick_secondary_ca53_core(pos);
++	if (is_scp_used()) {
++		ret = scp_cpu_on(pos);
++		if (ret)
++			return PSCI_E_INVALID_PARAMS;
++	} else {
++		if (s32_core_in_reset(pos)) {
++			s32_set_core_entrypoint(pos, core_start_addr);
++			s32_kick_secondary_ca53_core(pos);
++		}
+ 	}
+ 
+ 	/* Do some chores on behalf of the secondary core. ICC setup must be
+@@ -142,6 +152,7 @@ static void __dead2 s32_pwr_domain_pwr_down_wfi(
+ 					const psci_power_state_t *target_state)
+ {
+ 	unsigned int pos = plat_my_core_pos();
++	int ret;
+ 
+ 	NOTICE("S32 TF-A: %s: cpu = %u\n", __func__, pos);
+ 
+@@ -154,6 +165,13 @@ static void __dead2 s32_pwr_domain_pwr_down_wfi(
+ 		if (is_cluster1_off())
+ 			ncore_caiu_offline(A53_CLUSTER1_CAIU);
+ 
++		if (is_scp_used()) {
++			ret = scp_cpu_off(pos);
++			if (ret) {
++				ERROR("Failed to turn off core %u\n", pos);
++				plat_panic_handler();
++			}
++		}
+ 		plat_secondary_cold_boot_setup();
+ 	}
+ 
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index cff405c30..77a2877c1 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -10,9 +10,13 @@
+ #include <lib/mmio.h>
+ #include <platform.h>
+ #include <libc/errno.h>
++#include <drivers/scmi.h>
++#include <inttypes.h>
++#include <dt-bindings/power/s32gen1-scmi-pd.h>
+ 
+ static scmi_channel_t scmi_channels[PLATFORM_CORE_COUNT];
+ static scmi_channel_plat_info_t s32_scmi_plat_info[PLATFORM_CORE_COUNT];
++static void *scmi_handles[PLATFORM_CORE_COUNT];
+ DEFINE_BAKERY_LOCK(s32_scmi_locks[PLATFORM_CORE_COUNT]);
+ 
+ void mscm_ring_doorbell(struct scmi_channel_plat_info *plat_info)
+@@ -55,18 +59,42 @@ void scp_scmi_init(void)
+ 	}
+ }
+ 
+-static scmi_channel_t *get_scmi_channel(int *ch_id)
++static scmi_channel_t *get_scmi_channel(unsigned int *ch_id)
+ {
+ 	int core = plat_core_pos_by_mpidr(read_mpidr());
++	scmi_channel_t *ch;
+ 
+-	if (core >= ARRAY_SIZE(scmi_channels)) {
++	if (core < 0 || core >= (ssize_t)ARRAY_SIZE(scmi_channels)) {
+ 		ERROR("Failed to get SCMI channel for core %d\n",
+ 		      core);
+ 		return NULL;
+ 	}
+ 
+-	*ch_id = core;
+-	return &scmi_channels[core];
++	ch = &scmi_channels[core];
++	if (!ch->is_initialized) {
++		scmi_handles[core] = scmi_init(ch);
++		if (scmi_handles[core] == NULL) {
++			ERROR("Failed to initialize SCMI channel for core %d\n",
++			      core);
++			return NULL;
++		}
++	}
++
++	if (ch_id)
++		*ch_id = core;
++
++	return ch;
++}
++
++static void *get_scmi_handle(void)
++{
++	unsigned int ch_id;
++	scmi_channel_t *ch = get_scmi_channel(&ch_id);
++
++	if (!ch)
++		return NULL;
++
++	return scmi_handles[ch_id];
+ }
+ 
+ static size_t get_packet_size(uintptr_t scmi_packet)
+@@ -84,28 +112,114 @@ static void copy_scmi_msg(uintptr_t to, uintptr_t from)
+ 	memcpy((void *)to, (const void *)from, copy_len);
+ }
+ 
++void scp_set_core_reset_addr(uintptr_t addr)
++{
++	int ret;
++	void *handle = get_scmi_handle();
++
++	if (!handle) {
++		ERROR("%s: Failed to get SCMI handle", __func__);
++		panic();
++	}
++
++	ret = scmi_ap_core_set_reset_addr(handle, addr, 0x0u);
++	if (ret) {
++		ERROR("Failed to set core reset address\n");
++		panic();
++	}
++}
++
++static int scp_cpu_set_state(uint32_t core, uint32_t state)
++{
++	void *handle = get_scmi_handle();
++	uint32_t domain_id = S32GEN1_SCMI_PD_A53(core);
++	uint32_t pwr_state;
++	int ret;
++
++	if (!handle) {
++		ERROR("%s: Failed to get SCMI handle", __func__);
++		panic();
++	}
++
++	pwr_state = S32GEN1_SCMI_PD_SET_LEVEL0_STATE(state);
++	pwr_state |= S32GEN1_SCMI_PD_SET_LEVEL1_STATE(S32GEN1_SCMI_PD_ON);
++	pwr_state |= S32GEN1_SCMI_PD_SET_MAX_LEVEL_STATE(S32GEN1_SCMI_PD_ON);
++
++	ret = scmi_pwr_state_set(handle, domain_id, pwr_state);
++
++	if (ret != SCMI_E_QUEUED && ret != SCMI_E_SUCCESS) {
++		ERROR("Failed to set core%" PRIu32 " power state to '%" PRIu32 "'",
++		      core, state);
++		return -EINVAL;
++	}
++
++	if (ret == SCMI_E_SUCCESS)
++		return 0;
++
++	return -EINVAL;
++}
++
++int scp_cpu_on(uint32_t core)
++{
++	return scp_cpu_set_state(core, S32GEN1_SCMI_PD_ON);
++}
++
++int scp_cpu_off(uint32_t core)
++{
++	return scp_cpu_set_state(core, S32GEN1_SCMI_PD_OFF);
++}
++
++int scp_get_cpu_state(uint32_t core)
++{
++	void *handle = get_scmi_handle();
++	uint32_t pwr_state = 0u;
++	uint32_t domain_id = S32GEN1_SCMI_PD_A53(core);
++	int ret;
++
++	if (!handle) {
++		ERROR("%s: Failed to get SCMI handle", __func__);
++		panic();
++	}
++
++	ret = scmi_pwr_state_get(handle, domain_id, &pwr_state);
++	if (ret != SCMI_E_SUCCESS) {
++		ERROR("Failed to get core%" PRIu32 " power state\n", core);
++		return -EINVAL;
++	}
++
++	return S32GEN1_SCMI_PD_GET_LEVEL0_STATE(pwr_state);
++}
++
++static bool is_proto_allowed(mailbox_mem_t *mbx_mem)
++{
++	uint32_t proto = SCMI_MSG_GET_PROTO(mbx_mem->msg_header);
++
++	switch (proto) {
++	case SCMI_PROTOCOL_ID_BASE:
++	case SCMI_PROTOCOL_ID_CLOCK:
++	case SCMI_PROTOCOL_ID_RESET_DOMAIN:
++		return true;
++	}
++
++	return false;
++}
++
+ int send_scmi_to_scp(uintptr_t scmi_mem)
+ {
+ 	scmi_channel_plat_info_t *ch_info;
+ 	mailbox_mem_t *mbx_mem;
+-	void *s32_scmi_handle;
+-	int ch_id;
++	unsigned int ch_id;
+ 	scmi_channel_t *ch = get_scmi_channel(&ch_id);
+ 
+ 	if (!ch)
+ 		return -EINVAL;
+ 
+-	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
++	/* Filter OSPM specific call */
++	if (!is_proto_allowed((mailbox_mem_t *)scmi_mem))
+ 		return -EINVAL;
+ 
+-	if (!ch->is_initialized) {
+-		s32_scmi_handle = scmi_init(ch);
+-		if (s32_scmi_handle == NULL) {
+-			ERROR("Failed to initialize SCMI channel for core %d\n",
+-			      ch_id);
+-			return -EINVAL;
+-		}
+-	}
++	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
++		return -EINVAL;
+ 
+ 	ch_info = ch->info;
+ 	mbx_mem = (mailbox_mem_t *)(ch_info->scmi_mbx_mem);
+diff --git a/plat/nxp/s32/s32g/s32g_bl31.c b/plat/nxp/s32/s32g/s32g_bl31.c
+index 22a006678..a8f594310 100644
+--- a/plat/nxp/s32/s32g/s32g_bl31.c
++++ b/plat/nxp/s32/s32g/s32g_bl31.c
+@@ -25,6 +25,7 @@
+ #include <s32gen1-wkpu.h>
+ #include <s32g_bl_common.h>
+ #include <clk/clk.h>
++#include <s32_lowlevel.h>
+ 
+ static void dt_init_wkpu(void)
+ {
+@@ -110,6 +111,8 @@ void clk_tree_init(void)
+ 
+ void bl31_platform_setup(void)
+ {
++	uintptr_t core_addr;
++
+ 	generic_delay_timer_init();
+ 
+ 	dt_init_pmic();
+@@ -121,5 +124,10 @@ void bl31_platform_setup(void)
+ 
+ 	s32_enable_a53_clock();
+ 	dt_clk_init();
++
++	if (is_scp_used()) {
++		core_addr = (uintptr_t)plat_secondary_cold_boot_setup;
++		scp_set_core_reset_addr(core_addr);
++	}
+ }
+ 
+-- 
+2.17.1
+

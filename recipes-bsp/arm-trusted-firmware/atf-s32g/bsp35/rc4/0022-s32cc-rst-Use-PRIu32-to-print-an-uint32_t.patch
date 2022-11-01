@@ -1,0 +1,38 @@
+From cb69938b8b2447bfede6cfa31b521c008a57a173 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 4 Oct 2022 15:09:51 +0300
+Subject: [PATCH 22/30] s32cc: rst: Use PRIu32 to print an uint32_t
+
+Issue: ALB-9298
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/rst/s32gen1_rst.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nxp/s32/rst/s32gen1_rst.c b/drivers/nxp/s32/rst/s32gen1_rst.c
+index adc3db2c8..2a8527477 100644
+--- a/drivers/nxp/s32/rst/s32gen1_rst.c
++++ b/drivers/nxp/s32/rst/s32gen1_rst.c
+@@ -9,6 +9,7 @@
+ #include <clk/s32gen1_scmi_clk.h>
+ #include <drivers/delay_timer.h>
+ #include <lib/mmio.h>
++#include <inttypes.h>
+ 
+ #define S32GEN1_RESET_TIMEOUT_US	(1000)
+ 
+@@ -95,7 +96,7 @@ static int s32gen1_assert_rgm(uintptr_t rgm, bool asserted, uint32_t id)
+ 			return 0;
+ 	}
+ 
+-	ERROR("Failed to %s reset for id %u\n", msg, id);
++	ERROR("Failed to %s reset for id %" PRIu32 "\n", msg, id);
+ 	return -EINVAL;
+ }
+ 
+-- 
+2.17.1
+

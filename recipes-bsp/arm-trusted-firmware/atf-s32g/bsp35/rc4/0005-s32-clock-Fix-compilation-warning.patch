@@ -1,0 +1,33 @@
+From 63b10dea2853c3ac310f8e50ce5b13586d4265f4 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 21 Sep 2022 12:48:01 +0300
+Subject: [PATCH 05/30] s32: clock: Fix compilation warning
+
+This fixes:
+error: comparison of unsigned expression >= 0 is always true
+
+Issue: ALB-9298
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/s32gen1_scmi_clk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+index 0f5848763..11eabb015 100644
+--- a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
++++ b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+@@ -13,7 +13,7 @@
+ 
+ static bool is_scmi_clk(uint32_t id)
+ {
+-	if (id >= S32GEN1_SCMI_CLK_BASE_ID && id < S32GEN1_CLK_ID_BASE)
++	if (id < S32GEN1_CLK_ID_BASE)
+ 		return true;
+ 
+ 	return false;
+-- 
+2.17.1
+
