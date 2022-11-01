@@ -13,6 +13,12 @@ LIC_FILES_CHKSUM = " \
 
 SRC_URI = "git://source.codeaurora.org/external/autobsps32/u-boot;protocol=https;branch=release/bsp34.0-2020.04"
 SRC_URI += " \
+    file://bsp35/rc4/0001-tools-s32ccimage-Add-option-for-boot-core-selection.patch \
+    file://bsp35/rc4/0002-serial-linflex-Get-Linflex-clock-rate-during-initial.patch \
+    file://bsp35/rc4/0003-phy-s32cc-serdes-rename-fsl-sys-mode-to-nxp-sys-mode.patch \
+    file://bsp35/rc4/0004-arm-s32cc-remove-S32_CMU-drive-leftover.patch \
+    file://bsp35/rc4/0005-misc-s32cc-cmu-add-S32CC_CMU-config-option.patch \
+    file://bsp35/rc4/0006-arm-s32cc-NXP_S32CC-imply-S32CC_CMU-driver.patch \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \

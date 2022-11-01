@@ -1,0 +1,60 @@
+From b559d1f26b0f4aab714ce7bcc82cef0c3dec5139 Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Mon, 12 Sep 2022 12:27:52 +0300
+Subject: [PATCH 5/6] misc: s32cc cmu: add S32CC_CMU config option
+
+Add S32CC_CMU config option for the CMU driver.
+
+Issue: ALB-8491
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/misc/Kconfig  | 8 ++++++++
+ drivers/misc/Makefile | 2 +-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 8909c6750b..ed8f20be41 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -299,6 +299,14 @@ config PCA9551_I2C_ADDR
+ 	help
+ 	  The I2C address of the PCA9551 LED controller.
+ 
++config S32CC_CMU
++	bool "Clock Monitoring Unit-Frequency Check driver"
++	default y
++	help
++	  Enable S32CC CMU driver.
++	  Checks if the frequency of a monitored clock (monitored_clock)
++	  is within a programmable frequency range specified by the user.
++
+ config STM32MP_FUSE
+ 	bool "Enable STM32MP fuse wrapper providing the fuse API"
+ 	depends on ARCH_STM32MP && MISC
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index ed01728fec..12d4443eee 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -53,7 +53,6 @@ obj-$(CONFIG_MXC_OCOTP) += mxc_ocotp.o
+ obj-$(CONFIG_MXS_OCOTP) += mxs_ocotp.o
+ obj-$(CONFIG_NUVOTON_NCT6102D) += nuvoton_nct6102d.o
+ obj-$(CONFIG_NXP_S32CC) += s32cc_a53_gpr.o
+-obj-$(CONFIG_NXP_S32CC) += s32cc_cmu.o
+ obj-$(CONFIG_NXP_S32CC) += s32cc_fuse.o
+ obj-$(CONFIG_NXP_S32CC) += s32cc_ocotp.o
+ obj-$(CONFIG_NXP_S32CC) += s32cc_siul2_nvram.o
+@@ -63,6 +62,7 @@ obj-$(CONFIG_$(SPL_)PWRSEQ) += pwrseq-uclass.o
+ obj-$(CONFIG_QFW) += qfw.o
+ obj-$(CONFIG_ROCKCHIP_EFUSE) += rockchip-efuse.o
+ obj-$(CONFIG_ROCKCHIP_OTP) += rockchip-otp.o
++obj-$(CONFIG_S32CC_CMU) += s32cc_cmu.o
+ obj-$(CONFIG_SANDBOX) += syscon_sandbox.o misc_sandbox.o
+ obj-$(CONFIG_SMSC_LPC47M) += smsc_lpc47m.o
+ obj-$(CONFIG_SMSC_SIO1007) += smsc_sio1007.o
+-- 
+2.17.1
+

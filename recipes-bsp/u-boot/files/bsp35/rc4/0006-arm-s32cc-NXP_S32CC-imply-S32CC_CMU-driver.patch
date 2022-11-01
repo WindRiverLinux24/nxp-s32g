@@ -1,0 +1,30 @@
+From ee3109fe25039a4ab8472c7baf4cf471fa5d2581 Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Mon, 12 Sep 2022 12:30:06 +0300
+Subject: [PATCH 6/6] arm: s32cc: NXP_S32CC imply S32CC_CMU driver
+
+Issue: ALB-8491
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 591667ad5a..3ece354791 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -44,6 +44,7 @@ config NXP_S32CC
+ 	imply NXP_S32CC_PIT_TIMER
+ 	imply PCI
+ 	imply PCIE_S32GEN1
++	imply S32CC_CMU
+ 	imply SPI
+ 	imply SYS_I2C_MXC
+ 	imply TIMER
+-- 
+2.17.1
+
