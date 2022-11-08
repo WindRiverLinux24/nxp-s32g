@@ -57,6 +57,22 @@ do_deploy:prepend:nxp-s32g() {
 	unset i
 }
 
+do_deploy:append:nxp-s32g() {
+	if ${@bb.utils.contains('S32G_FEATURES', 'm7_boot', 'true', 'false', d)}; then
+		# Copy the private key for signing m7 boot binary
+		hse_keys_dir="${B}/${HSE_SEC_KEYS}"
+		cp -f ${hse_keys_dir}/${HSE_SEC_PRI_KEY} ${DEPLOY_DIR_IMAGE}/
+
+		# Write signed fip.bin into fip.s32
+		for plat in ${PLATFORM}; do
+			ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+			fip_dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
+			dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.s32 seek=`printf "%d" ${fip_dd_offset}` oflag=seek_bytes conv=notrunc,fsync
+			cp -f ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
+		done
+	fi
+}
+
 KERNEL_PN = "${@d.getVar('PREFERRED_PROVIDER_virtual/kernel')}"
 python () {
     if d.getVar('ATF_SIGN_ENABLE') == "1":
