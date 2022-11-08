@@ -1,0 +1,28 @@
+From d89400c174a9ba607e719cfb93476e9e27996277 Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Mon, 31 Oct 2022 17:33:40 +0800
+Subject: [PATCH] m7_boot: preserve signature space for m7 boot code
+
+preserve 0x100 bytes size signature space for m7 boot code
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ project.ld.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/project.ld.S b/project.ld.S
+index 6d28751..94b45ea 100644
+--- a/project.ld.S
++++ b/project.ld.S
+@@ -36,7 +36,7 @@ SECTIONS
+  }
+ 
+  _stack_end = START_ADDR + 0x1000;
+- _stack_start = START_ADDR + 0x2000 - VTOR_ALIGNMENT;
++ _stack_start = START_ADDR + 0x2000 - VTOR_ALIGNMENT*3;
+ 
+  /DISCARD/ : { *(.dynsym) }
+  /DISCARD/ : { *(.dynstr*) }
+-- 
+2.36.1
+
