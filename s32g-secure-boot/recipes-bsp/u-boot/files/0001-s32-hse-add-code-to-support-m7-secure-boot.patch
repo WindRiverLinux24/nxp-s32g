@@ -1,0 +1,294 @@
+From 81b64ebcb91ee6391579fc48ab4ffa73db75a0f8 Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Tue, 1 Nov 2022 17:13:26 +0800
+Subject: [PATCH] s32: hse: add code to support m7 secure boot
+
+Add code to verify m7 code image when secure boot feature
+is enabled.
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/hse_adv_secboot.c | 127 ++++++++++++++++++---
+ include/hse/hse_abi.h                      |   8 +-
+ 2 files changed, 121 insertions(+), 14 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
+index 18d8768ac3..edab040ca4 100644
+--- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
++++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
+@@ -52,6 +52,9 @@ DECLARE_GLOBAL_DATA_PTR;
+ {0u, 0u, 0u, 0u, 0u}
+ 
+ #define APP_CODE_OFFSET 0x40
++#define M7_BOOT_CODE_SIZE 0x2000
++#define M7_SIGNATURE_SIZE 0x100
++
+ 
+ #define UUID_BL2_CERT \
+ 	{ 0xea69e2d6, \
+@@ -77,18 +80,23 @@ static inline int compare_uuids(const struct uuid *uuid1,
+ 	return memcmp(uuid1, uuid2, sizeof(struct uuid));
+ }
+ 
+-static u32 get_fip_start(struct hse_private *priv)
++static u32 get_m7_start(struct hse_private *priv)
+ {
+ 	return priv->ivt.app_boot + APP_CODE_OFFSET;
+ }
+ 
++static u32 get_fip_start(struct hse_private *priv)
++{
++	return priv->ivt.app_boot + APP_CODE_OFFSET + M7_BOOT_CODE_SIZE;
++}
++
+ static u64 get_fip_toc_offset(struct hse_private *priv, struct uuid *search)
+ {
+ 	struct fip_toc_header *toc_header;
+ 	struct fip_toc_entry *toc_entry;
+ 	uintptr_t fip_hdr_start, fip_hdr_end;
+ 
+-	fip_hdr_start = (uintptr_t)priv->app_boot_hdr.ram_load;
++	fip_hdr_start = (uintptr_t)priv->app_boot_hdr.ram_load + M7_BOOT_CODE_SIZE;
+ 	toc_header = (struct fip_toc_header *)fip_hdr_start;
+ 	toc_entry = (struct fip_toc_entry *)(toc_header + 1);
+ 
+@@ -118,6 +126,11 @@ static u64 get_fip_sign_offset(struct hse_private *priv)
+ 	return get_fip_toc_offset(priv, &uuid_bl2_cert);
+ }
+ 
++static u32 get_m7_sign_mmc(struct hse_private *priv)
++{
++	return get_m7_start(priv) +  M7_BOOT_CODE_SIZE - M7_SIGNATURE_SIZE;
++}
++
+ static u32 get_fip_sign_mmc(struct hse_private *priv)
+ {
+ 	u32 sign_offset;
+@@ -129,9 +142,16 @@ static u32 get_fip_sign_mmc(struct hse_private *priv)
+ 	return get_fip_start(priv) + sign_offset;
+ }
+ 
++static uintptr_t get_m7_sign_sram(struct hse_private *priv)
++{
++	uintptr_t m7_start = (uintptr_t)priv->app_boot_hdr.ram_load;
++
++	return m7_start + M7_BOOT_CODE_SIZE - M7_SIGNATURE_SIZE;
++}
++
+ static uintptr_t get_fip_sign_sram(struct hse_private *priv)
+ {
+-	uintptr_t fip_hdr_start = (uintptr_t)priv->app_boot_hdr.ram_load;
++	uintptr_t fip_hdr_start = (uintptr_t)priv->app_boot_hdr.ram_load + M7_BOOT_CODE_SIZE;
+ 	uintptr_t sign_offset;
+ 
+ 	sign_offset = (uintptr_t)get_fip_sign_offset(priv);
+@@ -227,9 +247,9 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
+ 	memset((void *)&priv->cr_entry, 0, sizeof(struct hse_cr_entry));
+ 	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
+ 
+-	priv->cr_entry.core_id = HSE_APP_CORE3;
++	priv->cr_entry.core_id = HSE_APP_M7_0;
+ 	priv->cr_entry.cr_sanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
+-	priv->cr_entry.preboot_smr_map = HSE_SMR_ENTRY_1;
++	priv->cr_entry.preboot_smr_map = HSE_SMR_ENTRY_1 | HSE_SMR_ENTRY_2;
+ 	priv->cr_entry.pass_reset = priv->app_boot_hdr.ram_entry;
+ 	priv->cr_entry.start_option = HSE_CR_AUTO_START;
+ 
+@@ -252,7 +272,7 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
+ 	return 0;
+ }
+ 
+-int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
++int hse_install_fip_smr_entry(struct hse_private *priv, u32 *recv_buf)
+ {
+ 	struct hse_smr_entry *smr_entry;
+ 	struct hse_smr_install_srv *smr_install_req;
+@@ -262,7 +282,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+ 	smr_entry = &(priv->smr_entry);
+ 	smr_install_req = &(priv->srv_desc.smr_install_req);
+ 
+-	printf("\tGenerating Secure Memory Region entry...\n");
++	printf("\tGenerating FIP Secure Memory Region entry...\n");
+ 	memset((void *)&priv->smr_entry, 0, sizeof(struct hse_smr_entry));
+ 	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
+ 
+@@ -281,10 +301,10 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+ 
+ 	/**
+ 	 * no address of actual code start, need to reference app bl header
+-	 * fip start is at app_bl_header + 0x40
++	 * fip start is at app_bl_header + 0x40 + M7_BOOT_CODE_SIZE
+ 	 */
+-	smr_entry->smr_src = priv->ivt.app_boot + APP_CODE_OFFSET;
+-	smr_entry->smr_dst_addr = priv->app_boot_hdr.ram_load;
++	smr_entry->smr_src = priv->ivt.app_boot + APP_CODE_OFFSET + M7_BOOT_CODE_SIZE;
++	smr_entry->smr_dst_addr = priv->app_boot_hdr.ram_load + M7_BOOT_CODE_SIZE;
+ 	smr_entry->smr_size = fip_size - HSE_FIP_AUTH_LEN;
+ 	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
+ 				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
+@@ -298,9 +318,9 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+ 
+ 	priv->srv_desc.srv_id = HSE_SRV_ID_SMR_ENTRY_INSTALL;
+ 	smr_install_req->access_mode = HSE_ACCESS_MODE_ONE_PASS;
+-	smr_install_req->entry_index = 1u;
++	smr_install_req->entry_index = 2u;
+ 	smr_install_req->smr_entry_addr = (uintptr_t)smr_entry;
+-	smr_install_req->smr_data_addr = priv->app_boot_hdr.ram_load;
++	smr_install_req->smr_data_addr = priv->app_boot_hdr.ram_load + M7_BOOT_CODE_SIZE;
+ 	smr_install_req->smr_data_len = fip_size - HSE_FIP_AUTH_LEN;
+ 	smr_install_req->smr_auth_tag_addr = (uintptr_t)priv->fip_signature;
+ 	smr_install_req->smr_auth_tag_len = HSE_FIP_AUTH_LEN;
+@@ -319,6 +339,74 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+ 	return 0;
+ }
+ 
++int hse_install_m7_smr_entry(struct hse_private *priv, u32 *recv_buf)
++{
++	struct hse_smr_entry *smr_entry;
++	struct hse_smr_install_srv *smr_install_req;
++	u32 m7_size;
++	u32 align_diff;
++	int ret;
++	int i = 0;
++
++	smr_entry = &(priv->smr_entry);
++	smr_install_req = &(priv->srv_desc.smr_install_req);
++
++	printf("\tGenerating M7 Secure Memory Region entry...\n");
++	memset((void *)&priv->smr_entry, 0, sizeof(struct hse_smr_entry));
++	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
++
++	m7_size = priv->ivt.m7_boot_size;
++
++	/* need to recopy application code to pass verification, it needs to copy code from the address aligning with 512 bytes */
++	memset((void *)(uintptr_t)priv->app_boot_hdr.ram_load - APP_CODE_OFFSET, 0,
++	       priv->app_boot_hdr.code_len + APP_CODE_OFFSET);
++	hse_mmc_read((void *)(uintptr_t)priv->app_boot_hdr.ram_load - APP_CODE_OFFSET,
++		     priv->ivt.app_boot / 512,
++		     (priv->app_boot_hdr.code_len / 512) + 1);
++
++	/**
++	 * no address of actual code start, need to reference app bl header
++	 * m7 start is at app_bl_header + 0x40
++	 *  For M7 code, it must align with 128 byte in ram,
++	 * so get the diff between load address and entry address
++	 */
++	align_diff = priv->app_boot_hdr.ram_entry - priv->app_boot_hdr.ram_load;
++	smr_entry->smr_src = priv->ivt.app_boot + APP_CODE_OFFSET + align_diff;
++	smr_entry->smr_dst_addr = priv->app_boot_hdr.ram_entry;
++	smr_entry->smr_size = m7_size;
++	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
++				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
++	smr_entry->check_period = 0;
++	smr_entry->key_handle = HSE_BOOT_KEY_HANDLE;
++	smr_entry->sign_sch.sign_scheme = HSE_SIGN_RSASSA_PKCS1_V15;
++	smr_entry->sign_sch.sch.hash_algo = HSE_HASH_ALGO_SHA_1;
++	smr_entry->auth_tag = get_m7_sign_mmc(priv);
++	smr_entry->decrypt_key_handle = HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED;
++	smr_entry->version_offset = 0;
++
++	priv->srv_desc.srv_id = HSE_SRV_ID_SMR_ENTRY_INSTALL;
++	smr_install_req->access_mode = HSE_ACCESS_MODE_ONE_PASS;
++	smr_install_req->entry_index = 1u;
++	smr_install_req->smr_entry_addr = (uintptr_t)smr_entry;
++	smr_install_req->smr_data_addr = priv->app_boot_hdr.ram_entry;
++	smr_install_req->smr_data_len = m7_size;
++	smr_install_req->smr_auth_tag_addr = (uintptr_t)priv->m7_signature;
++	smr_install_req->smr_auth_tag_len = M7_SIGNATURE_SIZE;
++
++	flush_dcache_range((u64)priv,
++			   (u64)priv + sizeof(struct hse_private));
++
++	ret = hse_send_recv(HSE_CHANNEL_GENERAL,
++			    (u32)(uintptr_t)&priv->srv_desc,
++			    recv_buf);
++	if (ret) {
++		printf("ERROR: smr entry install failed!\n");
++		return ret;
++	}
++
++	return 0;
++}
++
+ int hse_generate_sys_img(struct hse_private *priv, u32 *recv_buf)
+ {
+ 	struct hse_publish_sys_img_srv *publish_sys_img_req;
+@@ -446,6 +534,8 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+ 	long long len_read;
+ 	int hse_nodeoffset, ret;
+ 	uintptr_t fip_sign_sram;
++	uintptr_t m7_sign_sram;
++	int i = 0;
+ 
+ 	/* check if hse has been initialised */
+ 	hse_status_ret = hse_mu_check_status();
+@@ -495,6 +585,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+ 		return ret;
+ 	}
+ 
++	m7_sign_sram = get_m7_sign_sram(priv);
++	if (!m7_sign_sram) {
++		printf("ERROR: m7 code signature read failed!\n");
++		return -ENOMEM;
++	}
++	memcpy((void *)priv->m7_signature, (void *)m7_sign_sram, M7_SIGNATURE_SIZE);
++
+ 	fip_sign_sram = get_fip_sign_sram(priv);
+ 	if (!fip_sign_sram) {
+ 		printf("ERROR: FIP signature read failed!\n");
+@@ -540,7 +637,11 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = hse_install_smr_entry(priv, &hse_recv);
++	ret = hse_install_m7_smr_entry(priv, &hse_recv);
++	if (ret)
++		return ret;
++
++	ret = hse_install_fip_smr_entry(priv, &hse_recv);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
+index 1233e4b859..627ddb84a5 100644
+--- a/include/hse/hse_abi.h
++++ b/include/hse/hse_abi.h
+@@ -51,6 +51,8 @@
+ 
+ #define HSE_ACCESS_MODE_ONE_PASS 0u
+ 
++#define HSE_APP_M7_0 0u /* M7_0 */
++#define HSE_APP_M7_1 1u /* M7_0 */
+ #define HSE_APP_CORE3 3u /* A53_0 */
+ 
+ #define HSE_PUBLISH_UPDATED_DATA_SET BIT(0)
+@@ -61,6 +63,7 @@
+ #define HSE_SMR_CFG_FLAG_SD_FLASH     0x2u
+ #define HSE_SMR_CFG_FLAG_INSTALL_AUTH BIT(2)
+ #define HSE_SMR_ENTRY_1               BIT(1)
++#define HSE_SMR_ENTRY_2               BIT(2)
+ 
+ #define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 0x7455u
+ #define HSE_CR_AUTO_START                  0x35A5u
+@@ -192,7 +195,9 @@ struct ivt {
+ 	u32 sys_img_ext_flash_type;
+ 	u32 sys_img_flash_page_size;
+ 	u32 app_bsb_ext_flash_type;
+-	u8 reserved3[168];
++	u8 hse_reserved[8];
++	u32 m7_boot_size;
++	u8 reserved3[156];
+ 	u32 gmac[4];
+ 	/* pad to block size - 512 bytes */
+ 	u8 reserved4[256];
+@@ -473,6 +478,7 @@ struct hse_private {
+ 	u8 rsa_exponent[3];
+ 	u8 reserved;
+ 	u8 fip_signature[256];
++	u8 m7_signature[256];
+ 	u8 sys_img[HSE_SYS_IMG_MAX_SIZE];
+ 	u32 sys_img_len;
+ 	u32 publish_offset;
+-- 
+2.36.1
+
