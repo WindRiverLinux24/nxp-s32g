@@ -3,7 +3,7 @@ make_m7_sample_wic() {
     cd ${IMGDEPLOYDIR}
     for plat in ${UBOOT_CONFIG}; do
         if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-	    atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32-secure.m7"
+	        atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32-secure.m7"
         else
             atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32.m7"
         fi
@@ -27,4 +27,4 @@ make_m7_sample_wic() {
 }
 
 do_image_wic[depends] += "m7-sample:do_deploy"
-do_image_wic[postfuncs] += "make_m7_sample_wic"
+do_image_wic[postfuncs] += "${@bb.utils.contains('S32G_FEATURES', 'omit_atf', '', 'make_m7_sample_wic', d)}"
