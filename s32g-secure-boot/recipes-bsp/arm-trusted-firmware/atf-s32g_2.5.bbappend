@@ -2,12 +2,12 @@ PROVIDES = "atf-s32g"
 FILES:${PN} = "/boot ${datadir}"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI:append:nxp-s32g = " \
+SRC_URI:append = " \
     file://0001-s32-extend-the-DTB-size-for-BL33.patch \
     file://0001-secboot-move-bl2-base-address-to-0x34100000-when-sec.patch \
 "
 
-do_install:append:nxp-s32g() {
+do_install:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 
 	unset i j
@@ -25,7 +25,7 @@ do_install:append:nxp-s32g() {
 	unset i
 }
 
-do_deploy:prepend:nxp-s32g() {
+do_deploy:prepend() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 
 	install -d ${DEPLOY_DIR_IMAGE}
@@ -57,7 +57,7 @@ do_deploy:prepend:nxp-s32g() {
 	unset i
 }
 
-do_deploy:append:nxp-s32g() {
+do_deploy:append() {
 	if ${@bb.utils.contains('S32G_FEATURES', 'm7_boot', 'true', 'false', d)}; then
 		# Copy the private key for signing m7 boot binary
 		hse_keys_dir="${B}/${HSE_SEC_KEYS}"

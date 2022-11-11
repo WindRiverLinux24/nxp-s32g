@@ -1,5 +1,5 @@
 # Add public key to ATF dtb for multiple platforms
-fitimage_assemble:append:nxp-s32g() {
+fitimage_assemble:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 
 	unset i j
@@ -28,7 +28,7 @@ fitimage_assemble:append:nxp-s32g() {
 	unset i
 }
 
-do_deploy:append:nxp-s32g() {
+do_deploy:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 
 	cd ${B}
@@ -42,7 +42,7 @@ do_deploy:append:nxp-s32g() {
 }
 
 # Emit signature of the fitImage ITS kernel section
-fitimage_emit_section_kernel:append:nxp-s32g() {
+fitimage_emit_section_kernel:append() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" -a "${FIT_SIGN_INDIVIDUAL}" = "1" -a -n "$kernel_sign_keyname" ] ; then
 		sed -i '$ d' $1
 		cat << EOF >> $1
@@ -56,7 +56,7 @@ EOF
 }
 
 # Emit signature of the fitImage ITS DTB section
-fitimage_emit_section_dtb:append:nxp-s32g() {
+fitimage_emit_section_dtb:append() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" -a "${FIT_SIGN_INDIVIDUAL}" = "1" -a -n "$dtb_sign_keyname" ] ; then
 		sed -i '$ d' $1
 		cat << EOF >> $1
@@ -70,7 +70,7 @@ EOF
 }
 
 # Emit signature of the fitImage ITS u-boot script section
-fitimage_emit_section_boot_script:append:nxp-s32g() {
+fitimage_emit_section_boot_script:append() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" -a "${FIT_SIGN_INDIVIDUAL}" = "1" -a -n "$bootscr_sign_keyname" ] ; then
 		sed -i '$ d' $1
 		cat << EOF >> $1
@@ -84,7 +84,7 @@ EOF
 }
 
 # Emit signature of the fitImage ITS ramdisk section
-fitimage_emit_section_ramdisk:append:nxp-s32g() {
+fitimage_emit_section_ramdisk:append() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" -a "${FIT_SIGN_INDIVIDUAL}" = "1" -a -n "$ramdisk_sign_keyname" ] ; then
 		sed -i '$ d' $1
 		cat << EOF >> $1
@@ -98,7 +98,7 @@ EOF
 }
 
 # set key name of the fitImage ITS configuration section
-fitimage_emit_section_config:prepend:nxp-s32g() {
+fitimage_emit_section_config:prepend() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" ] ; then
 		conf_sign_keyname="${UBOOT_SIGN_KEYNAME}"
 	fi

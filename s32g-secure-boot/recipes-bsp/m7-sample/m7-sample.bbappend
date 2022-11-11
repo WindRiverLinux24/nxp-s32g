@@ -1,5 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI:append:nxp-s32g = " \
+SRC_URI:append = " \
 	 file://0001-m7_boot-preserve-signature-space-for-m7-boot-code.patch \
 "
 
@@ -47,7 +47,7 @@ m7_load_off="4"
 m7_entry_off="8"
 
 # Insert signature partition for m7_boot binary
-do_compile:append:nxp-s32g() {
+do_compile:append() {
 	cd "${BUILD}"
 	BDIR="${BUILD}-${BOOT_TYPE}-${plat}"
 	for plat in ${UBOOT_CONFIG}; do
@@ -85,7 +85,7 @@ do_compile:append:nxp-s32g() {
 	done
 }
 
-do_deploy:append:nxp-s32g() {
+do_deploy:append() {
 	for plat in ${UBOOT_CONFIG}; do
 		ivt_file="atf-${plat}.s32"
 
