@@ -6,9 +6,6 @@
 
 require pfe_common.inc
 
-SRC_URI:append = " \
-	file://0001-pfeng-fix-to-compatible-with-kernel-v5.15.patch \
-"
 
 EXTRA_OEMAKE:append = " PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=0"
 
