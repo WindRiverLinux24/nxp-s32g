@@ -25,5 +25,8 @@ KERNEL_RAS_TYPE = "rsa2048"
 # Set KERNEL_CSUM_TYPE as the expected value. The default one is sha1.
 KERNEL_CSUM_TYPE = "sha1"
 
-ATF_DTB = "s32g2xxa-evb.dtb s32g274a-rdb2.dtb s32g399a-rdb3.dtb s32g3xxa-evb.dtb"
-ATF_PLATFORM = "s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
+ATF_DTB:nxp-s32g = "s32g2xxa-evb.dtb s32g274a-rdb2.dtb s32g399a-rdb3.dtb s32g3xxa-evb.dtb"
+ATF_PLATFORM:nxp-s32g = "s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
+
+ATF_DTB:aptiv_cvc_sousa = "aptiv-cvc-sousa.dtb"
+ATF_PLATFORM:aptiv_cvc_sousa = "aptiv_cvc_sousa"
