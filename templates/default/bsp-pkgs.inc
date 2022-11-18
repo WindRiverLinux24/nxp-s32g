@@ -1,10 +1,10 @@
 IMAGE_INSTALL += "can-utils"
-IMAGE_INSTALL += "ptpd"
 IMAGE_INSTALL += "u-boot-s32"
 IMAGE_INSTALL += "libp11"
 IMAGE_INSTALL += "pkcs11-hse"
 IMAGE_INSTALL += "pkcs11-hse-examples"
 IMAGE_INSTALL += "atf-s32g"
+IMAGE_INSTALL += "linuxptp linuxptp-configs"
 
 NXP_S32G_WIC_INC ?= ""
 NXP_S32G_WIC_INC:nxp-s32g = "${@bb.utils.contains('S32G_FEATURES', 'm7_boot', 'make_m7_boot_wic.inc', 'make_nxp_s32g_wic.inc', d)}"
