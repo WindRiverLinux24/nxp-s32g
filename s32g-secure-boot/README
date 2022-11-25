@@ -271,7 +271,13 @@ There are 4 images as below for 4 s32g boards separately in boot partition.
 Load the fitImage with below command
 	=> fatload mmc 0:1 0xa0000000 fitImage-<board name>
 
-3.4.2 Run fitImage
+
+3.4.2 Set Environment Variables
+-------------------------------
+Set proper bootargs for sd booting mode
+	=> run mmcargs
+
+3.4.3 Run fitImage
 ------------------
 Run fitImage below command
 
@@ -281,7 +287,7 @@ For example:
 
 Note: About other boot parameters setting, please refer to README in BSP layer directory.
 	
-3.4.3 Verifiable fitImage
+3.4.4 Verifiable fitImage
 -------------------------
 In generally, the rsa cryptographic algorithms is used to sign the fitImage with a
 private key of the ras2048 key pair that is only owned by the signer. But anyone who
