@@ -2,15 +2,12 @@
 #
 # This is the PFE driver for Linux kernel 5.4 and 5.10
 
-require pfe_common.inc
+require pfe_driver.inc
 
 # Dummy entry to keep the recipe parser happy if we don't use this recipe
-PFE_LOCAL_FIRMWARE_DIR ?= "."
 FW_INSTALL_DIR = "${D}/lib/firmware"
 FW_INSTALL_CLASS_NAME ?= "s32g_pfe_class.fw"
 FW_INSTALL_UTIL_NAME ?= "s32g_pfe_util.fw"
-
-PATCHTOOL = "git"
 
 # Tell yocto not to bother stripping our binaries, especially the firmware
 # since 'aarch64-fsl-linux-strip' fails with error code 1 when parsing the firmware

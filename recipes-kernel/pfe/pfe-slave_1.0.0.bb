@@ -4,7 +4,7 @@
 # This driver can be used only in PFE Master/Slave configuration.
 # PFE Master driver is required to run the Slave driver.
 
-require pfe_common.inc
+require pfe_driver.inc
 
 
 EXTRA_OEMAKE:append = " PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=0"
