@@ -1,0 +1,103 @@
+From 68e381c930c8b174f5f0b360c79822bca9d52a45 Mon Sep 17 00:00:00 2001
+From: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Date: Wed, 2 Nov 2022 21:32:24 +0200
+Subject: [PATCH 11/19] dm: uclass: Start seq numbers from parent's for aliased
+ devices
+
+If there are aliases for an uclass, set the base for the "dynamically"
+allocated numbers starting from the parent's seq number, if available.
+
+This is an alternative to other similar fixes to 'uclass_resolve_seq',
+such as upstream commit:
+8f7da5d98f4e ("dm: uclass: don't assign aliased seq numbers")
+
+The difference is that in the case of using 8f7da5d98f4e, the seq is
+chosen next to the highest alias. This does not work for PCIe, since
+in the case of SoCs with more than one controller (e.g. S32G with two)
+there are different seq numbers assigned to bridge and EP devices for the
+case when one/all controllers are enabled, none/one/all EPs are connected
+to the bridges. Not to mention PCIe switches.
+There is no relation between the alias ID and the seq number.
+8f7da5d98f4e will try to use as seq number for the devices on the first
+controller a value after the highest alias, which is unpredictable.
+
+Therefore the best solution for this case is to start the numbering from
+parent's seq number, which appears to work rather well.
+
+Issue: ALB-9211
+
+Upstream-Status: Pending 
+
+Signed-off-by: Ionut Vicovan <Ionut.Vicovan@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/core/uclass.c    | 13 ++++++++++---
+ drivers/pci/pci-uclass.c |  2 +-
+ include/dm/uclass.h      |  3 +++
+ 3 files changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/core/uclass.c b/drivers/core/uclass.c
+index 58b19a4210..6f9256d8ba 100644
+--- a/drivers/core/uclass.c
++++ b/drivers/core/uclass.c
+@@ -688,12 +688,14 @@ int uclass_unbind_device(struct udevice *dev)
+ 
+ int uclass_resolve_seq(struct udevice *dev)
+ {
++	struct uclass *uc = dev->uclass;
++	struct uclass_driver *uc_drv = uc->uc_drv;
+ 	struct udevice *dup;
+-	int seq;
++	int seq = 0;
+ 	int ret;
+ 
+ 	assert(dev->seq == -1);
+-	ret = uclass_find_device_by_seq(dev->uclass->uc_drv->id, dev->req_seq,
++	ret = uclass_find_device_by_seq(uc_drv->id, dev->req_seq,
+ 					false, &dup);
+ 	if (!ret) {
+ 		dm_warn("Device '%s': seq %d is in use by '%s'\n",
+@@ -706,7 +708,12 @@ int uclass_resolve_seq(struct udevice *dev)
+ 		return ret;
+ 	}
+ 
+-	for (seq = 0; seq < DM_MAX_SEQ; seq++) {
++	if (uc_drv->flags & DM_UC_FLAG_SEQ_PARENT_ALIAS) {
++		if (dev->parent && dev->parent->seq >= 0)
++			seq = dev->parent->seq + 1;
++	}
++
++	for (; seq < DM_MAX_SEQ; seq++) {
+ 		ret = uclass_find_device_by_seq(dev->uclass->uc_drv->id, seq,
+ 						false, &dup);
+ 		if (ret == -ENODEV)
+diff --git a/drivers/pci/pci-uclass.c b/drivers/pci/pci-uclass.c
+index 75d1b1c2c0..8f15227c48 100644
+--- a/drivers/pci/pci-uclass.c
++++ b/drivers/pci/pci-uclass.c
+@@ -1543,7 +1543,7 @@ int dm_pci_flr(struct udevice *dev)
+ UCLASS_DRIVER(pci) = {
+ 	.id		= UCLASS_PCI,
+ 	.name		= "pci",
+-	.flags		= DM_UC_FLAG_SEQ_ALIAS,
++	.flags		= DM_UC_FLAG_SEQ_ALIAS | DM_UC_FLAG_SEQ_PARENT_ALIAS,
+ 	.post_bind	= dm_scan_fdt_dev,
+ 	.pre_probe	= pci_uclass_pre_probe,
+ 	.post_probe	= pci_uclass_post_probe,
+diff --git a/include/dm/uclass.h b/include/dm/uclass.h
+index 70fca79b44..1e4f608fbc 100644
+--- a/include/dm/uclass.h
++++ b/include/dm/uclass.h
+@@ -47,6 +47,9 @@ struct udevice;
+ /* Same as DM_FLAG_ALLOC_PRIV_DMA */
+ #define DM_UC_FLAG_ALLOC_PRIV_DMA		(1 << 5)
+ 
++/* Members of this class have sequences numbers greater than parent's */
++#define DM_UC_FLAG_SEQ_PARENT_ALIAS		(1 << 31)
++
+ /**
+  * struct uclass_driver - Driver for the uclass
+  *
+-- 
+2.17.1
+

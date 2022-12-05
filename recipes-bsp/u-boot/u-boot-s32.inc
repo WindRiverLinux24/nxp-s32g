@@ -19,6 +19,25 @@ SRC_URI += " \
     file://bsp35/rc4/0004-arm-s32cc-remove-S32_CMU-drive-leftover.patch \
     file://bsp35/rc4/0005-misc-s32cc-cmu-add-S32CC_CMU-config-option.patch \
     file://bsp35/rc4/0006-arm-s32cc-NXP_S32CC-imply-S32CC_CMU-driver.patch \
+    file://bsp35/rc7/0001-board-s32gxxxardb-add-RDB3-rev-F-support.patch \
+    file://bsp35/rc7/0002-board-s32gxxxardb-Simplify-setting-pfe1_phy_addr.patch \
+    file://bsp35/rc7/0003-pci-Update-to-use-new-sequence-numbers.patch \
+    file://bsp35/rc7/0004-pci-Update-the-highest-subordinate-bus-number-for-br.patch \
+    file://bsp35/rc7/0005-pci-Fix-setting-controller-s-last_busno.patch \
+    file://bsp35/rc7/0006-s32cc-pcie-Group-all-device-tree-related-checks-in-o.patch \
+    file://bsp35/rc7/0007-s32cc-pcie-Check-if-the-pcie-node-is-enabled.patch \
+    file://bsp35/rc7/0008-s32cc-Disable-SerDes-and-PCIe-if-not-listed-in-hwcon.patch \
+    file://bsp35/rc7/0009-s32cc-pcie-Update-access-to-config-space.patch \
+    file://bsp35/rc7/0010-s32cc-pcie-Updated-some-messages-to-show-the-device-.patch \
+    file://bsp35/rc7/0011-dm-uclass-Start-seq-numbers-from-parent-s-for-aliase.patch \
+    file://bsp35/rc7/0012-s32cc-pcie-Lower-severity-of-some-mesages.patch \
+    file://bsp35/rc7/0013-s32cc-serdes-hwconfig-Fix-several-memory-issues-in-a.patch \
+    file://bsp35/rc7/0014-s32-pcie-Remove-always-used-macros.patch \
+    file://bsp35/rc7/0015-s32cc-serdes-Enable-mode5-in-Linux-device-tree.patch \
+    file://bsp35/rc7/0016-s32cc-serdes-hwconfig-Extend-dts_node-functionality.patch \
+    file://bsp35/rc7/0017-s32cc-serdes-Fixup-device-tree-for-Mode-5.patch \
+    file://bsp35/rc7/0018-s32-serdes-hwconfig-Redesign-hwconfig-env-variable.patch \
+    file://bsp35/rc7/0019-s32-serdes-hwconfig-Update-Kconfigs-for-the-new-form.patch \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
