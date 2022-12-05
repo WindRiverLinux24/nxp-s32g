@@ -14,6 +14,8 @@ SRCREV = "4be61dbaa14b6383abb11fad46a8371966606b82"
 SRC_URI[sha256sum] = "d864f6c2e0e238362f5e56e692da61eda2cee27c1383c77c90fa2be6fc989581"
 
 SRC_URI += " \
+    file://bsp35/rc7/0001-secboot-add-support-for-secboot-to-libhse-usrspc.patch \
+    file://bsp35/rc7/0002-pkcs-fix-wrong-jump-label-on-error-case.patch \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0002-pkcs-fix-QA-error.patch \
 "
@@ -22,6 +24,9 @@ PATCHTOOL = "git"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 S = "${WORKDIR}/pkcs11-hse"
+
+# Disable -O2 optimization, since it seems to be exposing an alignment issue
+SELECTED_OPTIMIZATION:remove = "-O2"
 
 EXTRA_OEMAKE += " \
 	CROSS_COMPILE=${TARGET_PREFIX} \
