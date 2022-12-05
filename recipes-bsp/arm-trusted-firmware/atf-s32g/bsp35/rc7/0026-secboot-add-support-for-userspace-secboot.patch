@@ -1,0 +1,117 @@
+From d05e0de98bd15155cc832df0d5f0aca660955ca3 Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Tue, 8 Nov 2022 17:58:30 +0200
+Subject: [PATCH 26/49] secboot: add support for userspace secboot
+
+handling secure boot in userspace means that some
+changes made to atf are no longer needed
+
+Issue: ALB-9004
+Upstream-Status: Pending 
+
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi            |  2 +-
+ plat/nxp/s32/s32_bl2_el3.c | 29 -----------------------------
+ plat/nxp/s32/s32_common.mk | 12 ------------
+ 3 files changed, 1 insertion(+), 42 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index b052f7375..8bc16526d 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -64,7 +64,7 @@
+ 
+ 		hse_reserved: shm@84000000 {
+ 			compatible = "nxp,s32cc-hse-rmem";
+-			reg = <0x0 0x84000000 0x0 0x80000>;	/* 512k */
++			reg = <0x0 0x84000000 0x0 0x400000>;	/* 4 MB */
+ 			no-map;
+ 		};
+ 	};
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index e0c2b4326..d9cdb697a 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -305,31 +305,6 @@ static void filter_mmu_entries(const uintptr_t *filters, size_t n_filters)
+ 	}
+ }
+ 
+-#ifdef HSE_SECBOOT
+-static size_t get_fip_size(void)
+-{
+-	static const uuid_t uuid_null = { {0} };
+-	uintptr_t fip_hdr_start, fip_hdr_end;
+-	fip_toc_header_t *toc_header;
+-	fip_toc_entry_t *toc_entry;
+-
+-	fip_hdr_start = get_fip_hdr_base();
+-	fip_hdr_end = fip_hdr_start + fip_hdr_size;
+-
+-	toc_header = (fip_toc_header_t *)fip_hdr_start;
+-	toc_entry = (fip_toc_entry_t *)(toc_header + 1);
+-
+-	while ((uintptr_t)toc_entry < fip_hdr_end) {
+-		if (!compare_uuids(&toc_entry->uuid, &uuid_null))
+-			break;
+-
+-		toc_entry++;
+-	}
+-
+-	return (size_t)toc_entry->offset_address;
+-}
+-#endif
+-
+ int s32_el3_mmu_fixup(const uintptr_t *filters, size_t n_filters)
+ {
+ 	const unsigned long code_start = BL_CODE_BASE;
+@@ -363,11 +338,7 @@ int s32_el3_mmu_fixup(const uintptr_t *filters, size_t n_filters)
+ 		{
+ 			.base_pa = get_fip_hdr_page(),
+ 			.base_va = get_fip_hdr_page(),
+-#ifdef HSE_SECBOOT
+-			.size = MMU_ROUND_UP_TO_PAGE(get_fip_size()),
+-#else
+ 			.size = BL2_BASE - get_fip_hdr_page(),
+-#endif
+ 			.attr = MT_RO | MT_MEMORY | MT_SECURE,
+ 		},
+ 	};
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 723621562..949c8288e 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -363,12 +363,6 @@ ${DTB_SIZE_FILE}: dtbs
+ ${BL2_W_DTB}: bl2 dtbs ${DTB_SIZE_FILE}
+ 	@cp ${BUILD_PLAT}/fdts/${DTB_FILE_NAME} $@
+ 	@dd if=${BUILD_PLAT}/bl2.bin of=$@ seek=$$(printf "%d" ${DTB_SIZE}) status=none oflag=seek_bytes
+-ifneq (${HSE_SECBOOT},)
+-	${Q}PADDINGHEX=$$($(call hexfilesize,${BUILD_PLAT}/bl2.bin)); \
+-	PADDING=$$(printf "%d" $${PADDINGHEX}); \
+-	SEEKSIZE=$$(echo "$$(printf '%d' ${DTB_SIZE}) + $${PADDING}" | bc); \
+-	dd if=/dev/zero of=$@ seek=$$SEEKSIZE bs=1 count=$$PADDING
+-endif
+ 
+ ${BOOT_INFO_SRC}: ${FIP_MMC_OFFSET_FILE} ${FIP_EMMC_OFFSET_FILE} ${FIP_QSPI_OFFSET_FILE} ${FIP_MEMORY_OFFSET_FILE} ${FIP_HDR_SIZE_FILE} ${DTB_SIZE_FILE}
+ 	${ECHO} "  CREATE  $@"
+@@ -386,16 +380,10 @@ ${BL2_W_DTB_SIZE_FILE}: ${BL2_W_DTB}
+ ${MKIMAGE_FIP_CONF_FILE}: ${BL2_W_DTB_SIZE_FILE} ${FIP_HDR_SIZE_FILE} add_to_fip FORCE
+ 	${ECHO} "  CREATE  $@"
+ 	${Q}cp -f ${MKIMAGE_CFG} $@
+-ifneq (${HSE_SECBOOT},)
+-	${Q}ACTUAL_FIP_SIZE=$$($(call hexfilesize,${BUILD_PLAT}/${FIP_NAME})); \
+-	T_SIZE=$$(printf "0x%x" $${ACTUAL_FIP_SIZE}); \
+-	echo "DATA_FILE SIZE $$T_SIZE" >> $@
+-else
+ 	${Q}BL2_W_DTB_SIZE=$$(cat ${BL2_W_DTB_SIZE_FILE}); \
+ 	HDR_SIZE=$$(cat ${FIP_HDR_SIZE_FILE}); \
+ 	T_SIZE=0x$$($(call hexbc, $${BL2_W_DTB_SIZE}, +, $${HDR_SIZE})); \
+ 	echo "DATA_FILE SIZE $$T_SIZE" >> $@
+-endif
+ 
+ FIP_ALIGN := 16
+ all: add_to_fip
+-- 
+2.25.1
+

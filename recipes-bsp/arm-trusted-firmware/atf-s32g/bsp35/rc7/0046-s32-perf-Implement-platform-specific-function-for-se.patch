@@ -1,0 +1,166 @@
+From 3de1f01666bab732d5fea61e3d563862b976bf6c Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Fri, 14 Oct 2022 17:04:44 +0300
+Subject: [PATCH 46/49] s32: perf: Implement platform specific function for
+ setting and getting the performance level
+
+Issue: ALB-7158
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/perf/s32gen1_scmi_perf.c      | 21 +++++++-
+ .../drivers/nxp/s32/clk/s32gen1_scmi_perf.h   |  8 ++++
+ plat/nxp/s32/s32_scmi_perf.c                  | 48 +++++++++++++++++--
+ 3 files changed, 72 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/nxp/s32/perf/s32gen1_scmi_perf.c b/drivers/nxp/s32/perf/s32gen1_scmi_perf.c
+index 470deb84f..8d7103a21 100644
+--- a/drivers/nxp/s32/perf/s32gen1_scmi_perf.c
++++ b/drivers/nxp/s32/perf/s32gen1_scmi_perf.c
+@@ -6,6 +6,7 @@
+ #include <drivers/scmi.h>
+ #include <drivers/scmi-msg.h>
+ #include <dt-bindings/perf/s32gen1-scmi-perf.h>
++#include <drivers/scmi-msg.h>
+ #include <lib/utils_def.h>
+ #include <lib/spinlock.h>
+ 
+@@ -48,7 +49,7 @@ static int32_t populate_opps_table(unsigned int domain_id, size_t lvl_index,
+ 	return SCMI_SUCCESS;
+ }
+ 
+-uint32_t find_perf_level_by_rate(unsigned int domain_id, unsigned long rate)
++static uint32_t find_perf_level_by_rate(unsigned int domain_id, unsigned long rate)
+ {
+ 	size_t i = 0;
+ 	uint32_t level = 0;
+@@ -68,7 +69,7 @@ uint32_t find_perf_level_by_rate(unsigned int domain_id, unsigned long rate)
+ 	return level;
+ }
+ 
+-unsigned long find_rate_by_perf_level(unsigned int domain_id, uint32_t perf_level)
++static unsigned long find_rate_by_perf_level(unsigned int domain_id, uint32_t perf_level)
+ {
+ 	size_t i = 0;
+ 	unsigned long rate = 0;
+@@ -126,3 +127,19 @@ int32_t s32gen1_scmi_get_perf_levels(unsigned int agent_id, unsigned int clock_i
+ 	return ret;
+ }
+ 
++unsigned int s32gen1_scmi_get_level(unsigned int agent_id, unsigned int clock_id,
++				unsigned int domain_id)
++{
++	unsigned long rate = plat_scmi_clock_get_rate(agent_id, clock_id);
++
++	return find_perf_level_by_rate(domain_id, rate);
++}
++
++int s32gen1_scmi_set_level(unsigned int agent_id, unsigned int clock_id, unsigned int domain_id,
++	unsigned int perf_level)
++{
++	unsigned long rate = find_rate_by_perf_level(domain_id, perf_level);
++
++	return plat_scmi_clock_set_rate(agent_id, clock_id, rate);
++}
++
+diff --git a/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h b/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
+index 9980d3658..937b26091 100644
+--- a/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
++++ b/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
+@@ -6,6 +6,7 @@
+ #define S32GEN1_SCMI_PERF_H
+ 
+ #include <clk/s32gen1_clk_funcs.h>
++#include <dt-bindings/clock/s32gen1-clock-freq.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+@@ -19,7 +20,14 @@
+ #define rate2khz(rate)				((rate) / KHZ)
+ #define rate2level(rate)			((rate) - (rate) % KHZ)
+ 
++#define S32GEN1_A53_MAX_LEVEL		rate2level(S32GEN1_A53_MAX_FREQ)
++#define S32GEN1_A53_MIN_LEVEL		rate2level(S32GEN1_A53_MIN_FREQ)
++
+ int32_t s32gen1_scmi_get_perf_levels(unsigned int agent_id, unsigned int clock_id,
+ 	unsigned int domain_id, size_t lvl_index, uint32_t *levels, size_t *num_levels);
++unsigned int s32gen1_scmi_get_level(unsigned int agent_id, unsigned int clock_id,
++				unsigned int domain_id);
++int s32gen1_scmi_set_level(unsigned int agent_id, unsigned int clock_id,
++	unsigned int domain_id, unsigned int perf_level);
+ 
+ #endif
+diff --git a/plat/nxp/s32/s32_scmi_perf.c b/plat/nxp/s32/s32_scmi_perf.c
+index 2032c02f4..a72636cfe 100644
+--- a/plat/nxp/s32/s32_scmi_perf.c
++++ b/plat/nxp/s32/s32_scmi_perf.c
+@@ -17,14 +17,18 @@ struct perf_domain {
+ 	uint32_t clock_id;
+ 	uint32_t attributes;
+ 	const char *name;
++	uint32_t min_level;
++	uint32_t max_level;
+ };
+ 
+-#define PERF_DOMAIN(ID, NAME, ATTR) \
+-{ .clock_id = (ID), .name = (NAME), .attributes = (ATTR)}
++#define PERF_DOMAIN(ID, NAME, ATTR, MIN_LEVEL, MAX_LEVEL) \
++{ .clock_id = (ID), .name = (NAME), .attributes = (ATTR), \
++	.min_level = (MIN_LEVEL), .max_level = (MAX_LEVEL), }
+ 
+ static const struct perf_domain domains[] = {
+ 	[S32GEN1_SCMI_PERF_A53] = PERF_DOMAIN(S32GEN1_SCMI_CLK_A53, "a53",
+-		SCMI_PERF_SET_LIMITS | SCMI_PERF_SET_LEVEL),
++		SCMI_PERF_SET_LIMITS | SCMI_PERF_SET_LEVEL,
++		S32GEN1_A53_MIN_LEVEL, S32GEN1_A53_MAX_LEVEL),
+ };
+ 
+ size_t plat_scmi_perf_domain_count(unsigned int agent_id __unused)
+@@ -101,4 +105,42 @@ int32_t plat_scmi_perf_describe_levels(unsigned int agent_id,
+ 					lvl_index, buf, num_levels);
+ }
+ 
++int32_t plat_scmi_perf_get_level(unsigned int agent_id __unused,
++				    unsigned int domain_id __unused,
++				    unsigned int *perf_level __unused)
++{
++	unsigned int clock_id;
++
++	if (domain_id >= ARRAY_SIZE(domains))
++		return SCMI_NOT_FOUND;
++
++	if (!perf_level)
++		return SCMI_INVALID_PARAMETERS;
++
++	clock_id = domains[domain_id].clock_id;
++	*perf_level = s32gen1_scmi_get_level(agent_id, clock_id, domain_id);
++
++	return SCMI_SUCCESS;
++}
++
++int32_t plat_scmi_perf_set_level(unsigned int agent_id __unused,
++				    unsigned int domain_id __unused,
++				    unsigned int perf_level __unused)
++{
++	unsigned int clock_id;
++
++	if (domain_id >= ARRAY_SIZE(domains))
++		return SCMI_NOT_FOUND;
++
++	if (!(domains[domain_id].attributes & SCMI_PERF_SET_LEVEL))
++		return SCMI_DENIED;
++
++	if (perf_level > domains[domain_id].max_level ||
++		perf_level < domains[domain_id].min_level)
++		return SCMI_OUT_OF_RANGE;
++
++	clock_id = domains[domain_id].clock_id;
++	return s32gen1_scmi_set_level(agent_id, clock_id, domain_id, perf_level);
++}
++
+ 
+-- 
+2.25.1
+

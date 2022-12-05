@@ -1,0 +1,291 @@
+From 59575001d19fb5f9da8d7b2e06c978fc4fc5c7a6 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Fri, 7 Oct 2022 14:12:06 +0300
+Subject: [PATCH 30/49] s32: clock: Introduce s32gen1_clk_rates structure for
+ keeping track of more clock rates
+
+Issue: ALB-8876
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/get_rate.c                | 48 +++++++++++++++++++
+ drivers/nxp/s32/clk/s32g_scmi_ids.c           |  7 +--
+ drivers/nxp/s32/clk/s32gen1_scmi_clk.c        |  7 +--
+ drivers/nxp/s32/clk/s32gen1_scmi_ids.c        |  7 +--
+ drivers/nxp/s32/clk/s32r_scmi_ids.c           |  7 +--
+ drivers/nxp/s32/clk/set_par_rate.c            | 30 ++++++++++++
+ .../drivers/nxp/s32/clk/s32gen1_clk_funcs.h   |  4 ++
+ .../drivers/nxp/s32/clk/s32gen1_clk_modules.h |  7 ++-
+ plat/nxp/s32/s32_scmi_clk.c                   |  2 +-
+ 9 files changed, 105 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
+index 1560414f0..dcc362833 100644
+--- a/drivers/nxp/s32/clk/get_rate.c
++++ b/drivers/nxp/s32/clk/get_rate.c
+@@ -10,6 +10,26 @@
+ #include <stdint.h>
+ #include <inttypes.h>
+ 
++static inline unsigned long get_clock_max_rate(struct s32gen1_clk_rates *clk_rates)
++{
++	size_t nrates = *clk_rates->nrates;
++
++	if (!nrates)
++		return 0;
++
++	return clk_rates->rates[nrates - 1];
++}
++
++static inline unsigned long get_clock_min_rate(struct s32gen1_clk_rates *clk_rates)
++{
++	size_t nrates = *clk_rates->nrates;
++
++	if (!nrates)
++		return 0;
++
++	return clk_rates->rates[0];
++}
++
+ static unsigned long get_osc_freq(struct s32gen1_clk_obj *module,
+ 			  struct s32gen1_clk_priv *priv)
+ {
+@@ -376,3 +396,31 @@ unsigned long s32gen1_get_minrate(struct clk *c)
+ 
+ 	return clk->min_freq;
+ }
++
++int s32gen1_get_rates(struct clk *c, struct s32gen1_clk_rates *clk_rates)
++{
++	struct s32gen1_clk *clk = get_leaf_clk(c);
++	struct s32gen1_clk_priv *priv;
++	unsigned long min_rate, max_rate;
++
++	if (!clk || !clk_rates)
++		return -EINVAL;
++
++	priv = s32gen1_get_clk_priv(c);
++	if (!priv) {
++		ERROR("Could not retrieve clock private data.\n");
++		return -EINVAL;
++	}
++
++	min_rate = s32gen1_get_minrate(c);
++	max_rate = s32gen1_get_maxrate(c);
++
++	if (add_clk_rate(clk_rates, min_rate))
++		return -EINVAL;
++
++	if (add_clk_rate(clk_rates, max_rate))
++		return -EINVAL;
++
++	return 0;
++}
++
+diff --git a/drivers/nxp/s32/clk/s32g_scmi_ids.c b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+index 808e8f600..6dd79fe8a 100644
+--- a/drivers/nxp/s32/clk/s32g_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+@@ -410,6 +410,7 @@ int plat_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 			    size_t *nrates)
+ {
+ 	struct clk sclock = *clk;
++	struct s32gen1_clk_rates clk_rates;
+ 	uint32_t scmi_clk_id = clk->id;
+ 	uint32_t id;
+ 	int ret;
+@@ -435,8 +436,8 @@ int plat_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 	}
+ 
+ 	sclock.id = id;
+-	rates[0] = s32gen1_get_minrate(&sclock);
+-	rates[1] = s32gen1_get_maxrate(&sclock);
++	clk_rates.rates = rates;
++	clk_rates.nrates = nrates;
+ 
+-	return 0;
++	return s32gen1_get_rates(&sclock, &clk_rates);
+ }
+diff --git a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+index 11eabb015..35a1a9bb5 100644
+--- a/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
++++ b/drivers/nxp/s32/clk/s32gen1_scmi_clk.c
+@@ -138,6 +138,7 @@ int s32gen1_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ {
+ 	int ret;
+ 	bool is_compound;
++	struct s32gen1_clk_rates clk_rates;
+ 
+ 	ret = translate_clk(clk, &is_compound);
+ 	if (ret)
+@@ -146,10 +147,10 @@ int s32gen1_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 	if (is_compound)
+ 		return cc_scmi_clk_get_rates(clk, rates, nrates);
+ 
+-	rates[0] = s32gen1_get_minrate(clk);
+-	rates[1] = s32gen1_get_maxrate(clk);
++	clk_rates.rates = rates;
++	clk_rates.nrates = nrates;
+ 
+-	return 0;
++	return s32gen1_get_rates(clk, &clk_rates);
+ }
+ 
+ unsigned long s32gen1_scmi_clk_get_rate(struct clk *clk)
+diff --git a/drivers/nxp/s32/clk/s32gen1_scmi_ids.c b/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
+index f67cb0658..7d5029ee6 100644
+--- a/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32gen1_scmi_ids.c
+@@ -438,6 +438,7 @@ int cc_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 			  size_t *nrates)
+ {
+ 	struct clk sclock = *clk;
++	struct s32gen1_clk_rates clk_rates;
+ 	uint32_t scmi_clk_id = clk->id;
+ 	uint32_t id;
+ 	int ret;
+@@ -466,9 +467,9 @@ int cc_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 	}
+ 
+ 	sclock.id = id;
+-	rates[0] = s32gen1_get_minrate(&sclock);
+-	rates[1] = s32gen1_get_maxrate(&sclock);
++	clk_rates.rates = rates;
++	clk_rates.nrates = nrates;
+ 
+-	return 0;
++	return s32gen1_get_rates(&sclock, &clk_rates);
+ }
+ 
+diff --git a/drivers/nxp/s32/clk/s32r_scmi_ids.c b/drivers/nxp/s32/clk/s32r_scmi_ids.c
+index 2f504aea8..b260f23d7 100644
+--- a/drivers/nxp/s32/clk/s32r_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32r_scmi_ids.c
+@@ -290,6 +290,7 @@ int plat_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 			    size_t *nrates)
+ {
+ 	struct clk sclock = *clk;
++	struct s32gen1_clk_rates clk_rates;
+ 	uint32_t scmi_clk_id = clk->id;
+ 	uint32_t id;
+ 	int ret;
+@@ -315,9 +316,9 @@ int plat_scmi_clk_get_rates(struct clk *clk, unsigned long *rates,
+ 	}
+ 
+ 	sclock.id = id;
+-	rates[0] = s32gen1_get_minrate(&sclock);
+-	rates[1] = s32gen1_get_maxrate(&sclock);
++	clk_rates.rates = rates;
++	clk_rates.nrates = nrates;
+ 
+-	return 0;
++	return s32gen1_get_rates(&sclock, &clk_rates);
+ }
+ 
+diff --git a/drivers/nxp/s32/clk/set_par_rate.c b/drivers/nxp/s32/clk/set_par_rate.c
+index 8461fbfea..e2d629ae6 100644
+--- a/drivers/nxp/s32/clk/set_par_rate.c
++++ b/drivers/nxp/s32/clk/set_par_rate.c
+@@ -217,6 +217,36 @@ static unsigned long set_module_rate(struct s32gen1_clk_obj *module,
+ 	return 0;
+ }
+ 
++int add_clk_rate(struct s32gen1_clk_rates *clk_rates, unsigned long rate)
++{
++	size_t i = 0, pos = 0;
++	size_t nrates = 0;
++
++	if (!clk_rates)
++		return -EINVAL;
++
++	nrates = *clk_rates->nrates;
++	if (nrates >= S32GEN1_MAX_NUM_FREQ)
++		return -EINVAL;
++
++	/* keep the array sorted */
++	for (i = 0; i < nrates; i++) {
++		if (rate < clk_rates->rates[i])
++			break;
++	}
++
++	pos = i;
++	if (nrates) {
++		for (i = 0 ; i < nrates - pos; i++)
++			clk_rates->rates[nrates - i] = clk_rates->rates[nrates - i - 1];
++	}
++
++	clk_rates->rates[pos] = rate;
++	(*clk_rates->nrates)++;
++
++	return 0;
++}
++
+ unsigned long s32gen1_set_rate(struct clk *c, unsigned long rate)
+ {
+ 	struct s32gen1_clk *clk;
+diff --git a/include/drivers/nxp/s32/clk/s32gen1_clk_funcs.h b/include/drivers/nxp/s32/clk/s32gen1_clk_funcs.h
+index ff5726c31..3a1ba194a 100644
+--- a/include/drivers/nxp/s32/clk/s32gen1_clk_funcs.h
++++ b/include/drivers/nxp/s32/clk/s32gen1_clk_funcs.h
+@@ -8,6 +8,8 @@
+ #include <clk/clk.h>
+ #include <clk/s32gen1_clk_modules.h>
+ 
++#define S32GEN1_MAX_NUM_FREQ		10U
++
+ struct s32gen1_clk *get_clock(uint32_t id);
+ struct s32gen1_clk *get_plat_clock(uint32_t id);
+ struct s32gen1_clk *get_plat_cc_clock(uint32_t id);
+@@ -19,8 +21,10 @@ void s32gen1_disable_partition(struct s32gen1_clk_priv *priv,
+ 			       uint32_t partition_n);
+ void s32gen1_enable_partition(struct s32gen1_clk_priv *priv,
+ 			      uint32_t partition_n);
++int add_clk_rate(struct s32gen1_clk_rates *clk_rates, unsigned long rate);
+ 
+ unsigned long s32gen1_get_rate(struct clk *clk);
++int s32gen1_get_rates(struct clk *c, struct s32gen1_clk_rates *clk_rates);
+ unsigned long get_module_rate(struct s32gen1_clk_obj *module,
+ 			      struct s32gen1_clk_priv *priv);
+ unsigned long s32gen1_get_minrate(struct clk *c);
+diff --git a/include/drivers/nxp/s32/clk/s32gen1_clk_modules.h b/include/drivers/nxp/s32/clk/s32gen1_clk_modules.h
+index f6a4b190c..0eb00fb0b 100644
+--- a/include/drivers/nxp/s32/clk/s32gen1_clk_modules.h
++++ b/include/drivers/nxp/s32/clk/s32gen1_clk_modules.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: BSD-3-Clause */
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  */
+ #ifndef S32GEN1_CLK_MODULES_H
+ #define S32GEN1_CLK_MODULES_H
+@@ -293,6 +293,11 @@ struct siul2_freq_mapping {
+ 	unsigned long xbar_2x_freq;
+ };
+ 
++struct s32gen1_clk_rates {
++	unsigned long *rates;
++	size_t *nrates;
++};
++
+ static inline struct s32gen1_pll *obj2pll(struct s32gen1_clk_obj *mod)
+ {
+ 	return container_of(mod, struct s32gen1_pll, desc);
+diff --git a/plat/nxp/s32/s32_scmi_clk.c b/plat/nxp/s32/s32_scmi_clk.c
+index ce1f65699..42f4d1f57 100644
+--- a/plat/nxp/s32/s32_scmi_clk.c
++++ b/plat/nxp/s32/s32_scmi_clk.c
+@@ -120,7 +120,7 @@ int32_t plat_scmi_clock_rates_array(unsigned int agent_id, unsigned int scmi_id,
+ 	if (!are_agent_clk_valid(agent_id, scmi_id))
+ 		return SCMI_INVALID_PARAMETERS;
+ 
+-	*nb_elts = 2;
++	*nb_elts = 0;
+ 
+ 	if (rates == NULL)
+ 		return SCMI_SUCCESS;
+-- 
+2.17.1
+

@@ -48,6 +48,54 @@ SRC_URI += " \
     file://bsp35/rc4/0028-s32cc-CPU-hotplug-using-SCP.patch \
     file://bsp35/rc4/0029-s32cc-Use-a-function-for-M7-bits-from-MC_RGM-reset-b.patch \
     file://bsp35/rc4/0030-s32cc-Disable-the-core-even-if-its-clock-seems-off.patch \
+    file://bsp35/rc7/0001-plat-s32g274aemu-disable-ERRATA_050543.patch \
+    file://bsp35/rc7/0002-plat-nxp-add-dummy-implementation-for-PMIC-callbacks.patch \
+    file://bsp35/rc7/0003-plat-nxp-add-__unused-attribute-for-reset_rtc-functi.patch \
+    file://bsp35/rc7/0004-s32-ddr-Align-ddr_utils.h-to-format-generated-by-DDR.patch \
+    file://bsp35/rc7/0005-s32-ddr-Switch-to-quote-include-statements.patch \
+    file://bsp35/rc7/0006-s32-ddr-Convert-S32G3-firmware-code-from-CRLF-to-LF-.patch \
+    file://bsp35/rc7/0007-s32cc-mmu-add-adc0-entry.patch \
+    file://bsp35/rc7/0008-drivers-s32-add-adc-driver.patch \
+    file://bsp35/rc7/0009-s32g399ardb3-add-ddr-config-fixup-for-revision-f.patch \
+    file://bsp35/rc7/0010-s32cc-clocks-early-enable-adc-clock.patch \
+    file://bsp35/rc7/0011-fdts-s32cc-use-dt-bindings-defines-for-PHI1-and-PER-.patch \
+    file://bsp35/rc7/0012-s32cc-Allow-the-turn-off-of-M7-cores-using-a-mask.patch \
+    file://bsp35/rc7/0013-s32cc-Encode-CPU-state-using-a-32-bit-value.patch \
+    file://bsp35/rc7/0014-s32cc-Move-WFI-loop-into-C-implementation.patch \
+    file://bsp35/rc7/0015-s32cc-Enter-into-suspend-state-using-SCP.patch \
+    file://bsp35/rc7/0016-s32cc-Update-core-turn-off-procedure.patch \
+    file://bsp35/rc7/0017-s32-i2c-Use-int-instead-of-uint8_t-where-needed.patch \
+    file://bsp35/rc7/0018-s32-ocotp-Use-PRIu32-for-uint32_t-types.patch \
+    file://bsp35/rc7/0019-s32cc-Fix-system-resume-when-running-with-SCP.patch \
+    file://bsp35/rc7/0020-atf-secboot-fix-highly-parallel-builds-with-HSE_SECB.patch \
+    file://bsp35/rc7/0021-s32cc-ddr-Add-PHY-init-start-request-functionality-i.patch \
+    file://bsp35/rc7/0022-s32g3-ddr-Update-timing-registers.patch \
+    file://bsp35/rc7/0023-fdts-s32-add-s32cc-crypto.dtsi-file.patch \
+    file://bsp35/rc7/0024-plat-s32-add-DT-irq-handling-utility.patch \
+    file://bsp35/rc7/0025-plat-s32-configure-HSE-MU-secure-interrupts.patch \
+    file://bsp35/rc7/0027-s32-clock-Make-s32g_fp-generic-for-all-platforms.patch \
+    file://bsp35/rc7/0028-s32-dt-bindings-Define-A53-minimum-frequency.patch \
+    file://bsp35/rc7/0029-s32-clock-Use-A53-minimum-frequency-in-A53_CORE-cloc.patch \
+    file://bsp35/rc7/0030-s32-clock-Introduce-s32gen1_clk_rates-structure-for.patch \
+    file://bsp35/rc7/0031-s32-clock-Compute-multiple-clock-frequencies-from.patch \
+    file://bsp35/rc7/0032-s32-clock-Compute-multiple-clock-frequencies-from-cg.patch \
+    file://bsp35/rc7/0033-s32-clock-Compute-multiple-clock-frequencies-from-df.patch \
+    file://bsp35/rc7/0034-s32-plat-clock-Do-not-allow-frequency-scaling-for-XB.patch \
+    file://bsp35/rc7/0035-s32g3-rdb3-Fix-ddr_utils.h-include-statement.patch \
+    file://bsp35/rc7/0036-s32g-bl31sram-Change-include-statement-for-ddr_lp.h.patch \
+    file://bsp35/rc7/0037-scmi-perf-Implement-common-commands-of-performance-d.patch \
+    file://bsp35/rc7/0038-scmi-perf-Implement-generic-PERFORMANCE_DOMAIN_ATTRI.patch \
+    file://bsp35/rc7/0039-scmi-perf-Implement-PERFORMANCE_DESCRIBE_LEVELS-comm.patch \
+    file://bsp35/rc7/0040-scmi-perf-Implement-LIMITS_SET-and-LIMITS_GET-comman.patch \
+    file://bsp35/rc7/0041-scmi-perf-Implement-LEVEL_SET-and-LEVEL_GET-commands.patch \
+    file://bsp35/rc7/0042-dt-bindings-s32-Add-performance-domain-management-bi.patch \
+    file://bsp35/rc7/0043-s32-perf-Add-some-of-the-platform-specific-performan.patch \
+    file://bsp35/rc7/0044-s32-perf-Add-translation-mechansim-between-performan.patch \
+    file://bsp35/rc7/0045-s32-perf-Implement-platform-specific-function-to-han.patch \
+    file://bsp35/rc7/0046-s32-perf-Implement-platform-specific-function-for-se.patch \
+    file://bsp35/rc7/0047-s32-perf-Implement-platform-specific-services-for-se.patch \
+    file://bsp35/rc7/0048-plat-s32-enable-performance-domain-protocol-for-s32-.patch \
+    file://bsp35/rc7/0049-s32-clock-Switch-cgm-mux-to-FIRC-before-changing-the.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \

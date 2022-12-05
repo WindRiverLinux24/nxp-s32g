@@ -1,0 +1,169 @@
+From 937dd264c9fc852752e843508790b039f20c2364 Mon Sep 17 00:00:00 2001
+From: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Date: Thu, 3 Nov 2022 16:48:00 +0200
+Subject: [PATCH 21/49] s32cc: ddr: Add PHY init start request functionality
+ improvement
+
+Added the functionality which improves the programming of the
+PHY init start request signal during DDR initialization and
+retention exit, provided by the DDR code generated with DDR Tools
+1.6 Update 3 release. This only applies for S32G2 and S32R45.
+
+Issue: ALB-9492
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/ddr/ddr_lp.c            | 38 +++++++++++++++++++++++++
+ drivers/nxp/s32/ddr/ddr_utils.c         | 31 ++++++++++++++++++++
+ include/drivers/nxp/s32/ddr/ddr_utils.h |  8 ++++++
+ 3 files changed, 77 insertions(+)
+
+diff --git a/drivers/nxp/s32/ddr/ddr_lp.c b/drivers/nxp/s32/ddr/ddr_lp.c
+index aac778f8a..608d8d493 100644
+--- a/drivers/nxp/s32/ddr/ddr_lp.c
++++ b/drivers/nxp/s32/ddr/ddr_lp.c
+@@ -160,9 +160,30 @@ void ddrss_to_io_retention_mode(void)
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+ 		      dfimisc | DFI_FREQUENCY(DFIMISC_LP3_PHY_STATE));
+ 
++#if !defined(PLAT_s32g3)
++	/* Disable PHY Master. */
++	tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR,
++		      tmp32 & ~DFIPHYMSTR_ENABLE);
++
++	/* Wait for PHY Master to be disabled. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	} while ((tmp32 & DFIPHYMSTR_ENABLE) != DFIPHYMSTR_DISABLED);
++
++	/* Wait for PHY Master request to be finished. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_STAT);
++	} while (((tmp32 & SELFREF_TYPE_MASK) >>
++		  SELFREF_TYPE_POS) == PHY_MASTER_REQUEST);
++#endif
++
++	/* Set DFIMISC.dfi_init_start to 1. */
+ 	dfimisc = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+ 		      dfimisc | DFI_INIT_START_MASK);
++
++	/* Wait DFISTAT.dfi_init_complete to be 1. */
+ 	do {
+ 		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFISTAT);
+ 	} while ((tmp32 & DFI_INIT_COMPLETE_MASK) !=
+@@ -171,9 +192,25 @@ void ddrss_to_io_retention_mode(void)
+ 	dfimisc = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+ 		      dfimisc | DFI_FREQUENCY(DFIMISC_LP3_PHY_STATE));
++
++	/* Set DFIMISC.dfi_init_start to 0. */
+ 	dfimisc = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+ 		      dfimisc & (~DFI_INIT_START_MASK));
++
++#if !defined(PLAT_s32g3)
++	/* Enable PHY Master. */
++	tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR,
++		      tmp32 | DFIPHYMSTR_ENABLE);
++
++	/* Wait for PHY Master to be enabled. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	} while ((tmp32 & DFIPHYMSTR_ENABLE) != DFIPHYMSTR_ENABLE);
++#endif
++
++	/* Wait DFISTAT.dfi_init_complete to be 1. */
+ 	do {
+ 		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFISTAT);
+ 	} while ((tmp32 & DFI_INIT_COMPLETE_MASK) ==
+@@ -182,6 +219,7 @@ void ddrss_to_io_retention_mode(void)
+ 	swctl = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL);
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL,
+ 		      swctl | SW_DONE_MASK);
++
+ 	do {
+ 		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
+ 	} while ((tmp32 & SW_DONE_ACK_MASK) == SWSTAT_SW_NOT_DONE);
+diff --git a/drivers/nxp/s32/ddr/ddr_utils.c b/drivers/nxp/s32/ddr/ddr_utils.c
+index d31105a93..1b9a8323b 100644
+--- a/drivers/nxp/s32/ddr/ddr_utils.c
++++ b/drivers/nxp/s32/ddr/ddr_utils.c
+@@ -266,6 +266,24 @@ uint32_t post_train_setup(uint8_t options)
+ 		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
+ 	} while ((tmp32 & SWSTAT_SWDONE_ACK_MASK) != SWSTAT_SW_NOT_DONE);
+ 
++#if !defined(PLAT_s32g3)
++	/* Disable PHY Master. */
++	tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR,
++		      tmp32 & ~DFIPHYMSTR_ENABLE);
++
++	/* Wait for PHY Master to be disabled. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	} while ((tmp32 & DFIPHYMSTR_ENABLE) != DFIPHYMSTR_DISABLED);
++
++	/* Wait for PHY Master request to be finished. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_STAT);
++	} while (((tmp32 & SELFREF_TYPE_MASK) >>
++		  SELFREF_TYPE_POS) == PHY_MASTER_REQUEST);
++#endif
++
+ 	/* Set DFIMISC.dfi_init_start to 1*/
+ 	tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC);
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+@@ -273,6 +291,7 @@ uint32_t post_train_setup(uint8_t options)
+ 
+ 	/* Set SWCTL.sw_done to 1 */
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWCTL, SWCTL_SWDONE_DONE);
++
+ 	/* Wait SWSTAT.sw_done_ack to 1*/
+ 	do {
+ 		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DDRC_SWSTAT);
+@@ -295,6 +314,18 @@ uint32_t post_train_setup(uint8_t options)
+ 	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DDRC_DFIMISC,
+ 		      (~DFIMISC_DFI_INIT_START_MASK) & tmp32);
+ 
++#if !defined(PLAT_s32g3)
++	/* Enable PHY Master. */
++	tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	mmio_write_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR,
++		      tmp32 | DFIPHYMSTR_ENABLE);
++
++	/* Wait for PHY Master to be enabled. */
++	do {
++		tmp32 = mmio_read_32(DDRC_BASE_ADDR + OFFSET_DFIPHYMSTR);
++	} while ((tmp32 & DFIPHYMSTR_ENABLE) != DFIPHYMSTR_ENABLE);
++#endif
++
+ 	if ((options & ADJUST_DDRC_MASK) != ADJUST_DDRC_DISABLED) {
+ 		/* Overwrite DDRC register based on post training_results */
+ 		ret = adjust_ddrc_config();
+diff --git a/include/drivers/nxp/s32/ddr/ddr_utils.h b/include/drivers/nxp/s32/ddr/ddr_utils.h
+index 9731d85c8..c9d2538e4 100644
+--- a/include/drivers/nxp/s32/ddr/ddr_utils.h
++++ b/include/drivers/nxp/s32/ddr/ddr_utils.h
+@@ -375,6 +375,14 @@
+ #define REQUIRED_OK_CHECKS 0x3U
+ #endif
+ 
++#if !defined(PLAT_s32g3)
++#define OFFSET_DFIPHYMSTR   ((uint32_t)0x1C4U)
++#define DFIPHYMSTR_ENABLE   0x1U
++#define DFIPHYMSTR_DISABLED 0x0U
++#define SELFREF_TYPE_POS    4
++#define PHY_MASTER_REQUEST  0x1U
++#endif
++
+ /* ERR050760 related defines */
+ #define REQUIRED_MRSTAT_READS 0x2U
+ 
+-- 
+2.25.1
+

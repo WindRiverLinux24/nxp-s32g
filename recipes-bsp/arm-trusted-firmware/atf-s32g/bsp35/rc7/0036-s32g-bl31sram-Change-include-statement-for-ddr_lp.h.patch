@@ -1,0 +1,35 @@
+From ba44c4565c5a1757fc0cb561b489bba6e3fb2a45 Mon Sep 17 00:00:00 2001
+From: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Date: Mon, 7 Nov 2022 18:06:02 +0200
+Subject: [PATCH 36/49] s32g: bl31sram: Change include statement for "ddr_lp.h"
+
+Removed the leading "ddr/" from the include statement of
+"ddr_lp.h", to correctly manage the case when CUSTOM_DDR_DRV
+parameter is specified and the used DDR Driver sources are
+user-specified.
+
+Issue: ALB-9511
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c b/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
+index 24d641bb8..37f46dceb 100644
+--- a/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
++++ b/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
+@@ -7,7 +7,7 @@
+ #include <plat/common/platform.h>
+ 
+ #include "bl31_sram.h"
+-#include "ddr/ddr_lp.h"
++#include "ddr_lp.h"
+ #include "s32g_clocks.h"
+ #include "s32g_mc_me.h"
+ #include "s32_bl_common.h"
+-- 
+2.25.1
+

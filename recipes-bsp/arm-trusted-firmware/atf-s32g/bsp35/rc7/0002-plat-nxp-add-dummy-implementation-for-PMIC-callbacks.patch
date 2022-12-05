@@ -1,0 +1,206 @@
+From 203ec3f08eebfadd776f6924e75728a0aa4f723f Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Thu, 27 Oct 2022 14:17:00 +0300
+Subject: [PATCH 02/49] plat: nxp: add dummy implementation for PMIC callbacks
+
+Add a dummy implementation for PMIC callbakcs to be used when the VR5510
+PMIC is not present (e.g. EMU targets, S32R45).
+
+Issue: ALB-9146
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_pmic.h         | 16 +++++++++++++
+ plat/nxp/s32/s32_common.mk              |  1 +
+ plat/nxp/s32/s32_pmic.c                 | 30 +++++++++++++++++++++++++
+ plat/nxp/s32/s32g/include/s32g_vr5510.h |  5 +----
+ plat/nxp/s32/s32g/s32g2/s32g2.mk        |  2 ++
+ plat/nxp/s32/s32g/s32g3/s32g3.mk        |  2 ++
+ plat/nxp/s32/s32g/s32g_common.mk        | 12 ++++++++--
+ plat/nxp/s32/s32g/s32g_vr5510.c         | 10 ---------
+ 8 files changed, 62 insertions(+), 16 deletions(-)
+ create mode 100644 plat/nxp/s32/include/s32_pmic.h
+ create mode 100644 plat/nxp/s32/s32_pmic.c
+
+diff --git a/plat/nxp/s32/include/s32_pmic.h b/plat/nxp/s32/include/s32_pmic.h
+new file mode 100644
+index 000000000..02fa1e590
+--- /dev/null
++++ b/plat/nxp/s32/include/s32_pmic.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++#ifndef S32_PMIC_H
++#define S32_PMIC_H
++
++#include <stdint.h>
++
++int pmic_prepare_for_suspend(void);
++void pmic_system_off(void);
++int pmic_setup(void);
++uint16_t pmic_stby_pwr_rails(void);
++
++#endif /* S32_PMIC_H */
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 3f3d4c4f8..3e4b2636f 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -66,6 +66,7 @@ PLAT_BL_COMMON_SOURCES += \
+ 			${S32_PLAT}/s32_mc_me.c \
+ 			${S32_PLAT}/s32_ncore.c \
+ 			${S32_PLAT}/s32_pinctrl.c \
++			${S32_PLAT}/s32_pmic.c \
+ 			drivers/delay_timer/delay_timer.c \
+ 			drivers/delay_timer/generic_delay_timer.c \
+ 			${S32_DRIVERS}/memory_pool.c \
+diff --git a/plat/nxp/s32/s32_pmic.c b/plat/nxp/s32/s32_pmic.c
+new file mode 100644
+index 000000000..cbec9e33e
+--- /dev/null
++++ b/plat/nxp/s32/s32_pmic.c
+@@ -0,0 +1,30 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++#include <s32_pmic.h>
++
++#pragma weak pmic_prepare_for_suspend
++#pragma weak pmic_system_off
++#pragma weak pmic_setup
++#pragma weak pmic_stby_pwr_rails
++
++int pmic_prepare_for_suspend(void)
++{
++	return 0;
++}
++
++void pmic_system_off(void)
++{
++}
++
++int pmic_setup(void)
++{
++	return 0;
++}
++
++uint16_t pmic_stby_pwr_rails(void)
++{
++	return 0;
++}
+diff --git a/plat/nxp/s32/s32g/include/s32g_vr5510.h b/plat/nxp/s32/s32g/include/s32g_vr5510.h
+index 8170fe4bb..eeb5672cd 100644
+--- a/plat/nxp/s32/s32g/include/s32g_vr5510.h
++++ b/plat/nxp/s32/s32g/include/s32g_vr5510.h
+@@ -8,11 +8,8 @@
+ 
+ #include <pmic/vr5510.h>
+ #include <stdint.h>
++#include <s32_pmic.h>
+ 
+-int pmic_prepare_for_suspend(void);
+-void pmic_system_off(void);
+ int pmic_disable_wdg(vr5510_t fsu);
+-int pmic_setup(void);
+-uint16_t pmic_stby_pwr_rails(void);
+ 
+ #endif /* S32G_VR5510_H */
+diff --git a/plat/nxp/s32/s32g/s32g2/s32g2.mk b/plat/nxp/s32/s32g/s32g2/s32g2.mk
+index 9bed6e6e3..5c874594a 100644
+--- a/plat/nxp/s32/s32g/s32g2/s32g2.mk
++++ b/plat/nxp/s32/s32g/s32g2/s32g2.mk
+@@ -6,6 +6,8 @@
+ 
+ S32_PLAT_SOC := s32g2
+ 
++S32_VR5510 := 1
++
+ include plat/nxp/s32/s32g/s32g_common.mk
+ 
+ PLAT_SOC_PATH	:= ${S32_SOC_FAMILY}/${S32_PLAT_SOC}
+diff --git a/plat/nxp/s32/s32g/s32g3/s32g3.mk b/plat/nxp/s32/s32g/s32g3/s32g3.mk
+index 6df418af6..f9478045b 100644
+--- a/plat/nxp/s32/s32g/s32g3/s32g3.mk
++++ b/plat/nxp/s32/s32g/s32g3/s32g3.mk
+@@ -6,6 +6,8 @@
+ 
+ S32_PLAT_SOC := s32g3
+ 
++S32_VR5510 := 1
++
+ include plat/nxp/s32/s32g/s32g_common.mk
+ 
+ PLAT_SOC_PATH	:= ${S32_SOC_FAMILY}/${S32_PLAT_SOC}
+diff --git a/plat/nxp/s32/s32g/s32g_common.mk b/plat/nxp/s32/s32g/s32g_common.mk
+index 92fd5d791..51ad7473b 100644
+--- a/plat/nxp/s32/s32g/s32g_common.mk
++++ b/plat/nxp/s32/s32g/s32g_common.mk
+@@ -8,6 +8,9 @@ include plat/nxp/s32/s32_common.mk
+ 
+ S32_SOC_FAMILY	:= ${S32_PLAT}/s32g
+ 
++S32_VR5510 ?= 0
++$(eval $(call add_define_val,S32_VR5510,$(S32_VR5510)))
++
+ ifeq ($(S32CC_EMU),1)
+ DDR_DRV_SRCS := \
+ 	${DDR_DRV}/emu/ddrss_emu.c \
+@@ -32,9 +35,7 @@ PLAT_BL_COMMON_SOURCES	+= \
+ 			   ${S32_DRIVERS}/clk/s32g_clk.c \
+ 			   ${S32_DRIVERS}/ocotp.c \
+ 			   lib/utils/crc8.c \
+-			   ${S32_SOC_FAMILY}/s32g_vr5510.c \
+ 			   ${S32_SOC_FAMILY}/s32g_plat_funcs.c \
+-			   ${S32_DRIVERS}/pmic/vr5510.c \
+ 			   ${BL31SRAM_SRC_DUMP} \
+ 
+ BL2_SOURCES		+= \
+@@ -47,6 +48,13 @@ BL31_SOURCES		+= ${S32_SOC_FAMILY}/s32g_bl31.c \
+ 			   ${S32_DRIVERS}/s32g_wkpu.c \
+ 			   ${S32_DRIVERS}/clk/s32g_scmi_ids.c \
+ 
++ifeq ($(S32_VR5510),1)
++PLAT_BL_COMMON_SOURCES	+= \
++			   ${S32_SOC_FAMILY}/s32g_vr5510.c \
++			   ${S32_DRIVERS}/pmic/vr5510.c \
++
++endif
++
+ ### Platform-specific defines ###
+ # Which LinFlexD to use as a UART device
+ ifeq ($(S32CC_EMU),0)
+diff --git a/plat/nxp/s32/s32g/s32g_vr5510.c b/plat/nxp/s32/s32g/s32g_vr5510.c
+index f5ccb7029..b7b3deb9c 100644
+--- a/plat/nxp/s32/s32g/s32g_vr5510.c
++++ b/plat/nxp/s32/s32g/s32g_vr5510.c
+@@ -6,11 +6,6 @@
+ #include <s32g_bl_common.h>
+ #include <s32g_vr5510.h>
+ 
+-#pragma weak pmic_prepare_for_suspend
+-#pragma weak pmic_system_off
+-#pragma weak pmic_disable_wdg
+-#pragma weak pmic_setup
+-
+ static int watchdog_refresh(vr5510_t fsu)
+ {
+ 	uint16_t reg;
+@@ -271,8 +266,3 @@ int pmic_disable_wdg(vr5510_t fsu)
+ 
+ 	return watchdog_refresh(fsu);
+ }
+-
+-int pmic_setup(void)
+-{
+-	return 0;
+-}
+-- 
+2.25.1
+

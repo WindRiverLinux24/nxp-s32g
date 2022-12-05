@@ -1,0 +1,151 @@
+From 81090cd147c7609614e580fc75d75282821d9004 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Fri, 14 Oct 2022 09:44:21 +0300
+Subject: [PATCH 44/49] s32: perf: Add translation mechansim between
+ performance levels and clock rates
+
+Performance level values cannot be substituded with actual clock
+frequencies, hence a mapping between them is needed. Also add
+helper functions to retrieve the corresponding perf level or
+frequency value when knowing its counterpart.
+
+Access to the translation table is serialized, given that different
+agents may want to access the same performance domain.
+
+Issue: ALB-7544
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/perf/s32gen1_scmi_perf.c      | 89 +++++++++++++++++++
+ .../drivers/nxp/s32/clk/s32gen1_scmi_perf.h   | 13 +--
+ 2 files changed, 97 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/nxp/s32/perf/s32gen1_scmi_perf.c
+
+diff --git a/drivers/nxp/s32/perf/s32gen1_scmi_perf.c b/drivers/nxp/s32/perf/s32gen1_scmi_perf.c
+new file mode 100644
+index 000000000..30f360c51
+--- /dev/null
++++ b/drivers/nxp/s32/perf/s32gen1_scmi_perf.c
+@@ -0,0 +1,89 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright 2022 NXP
++ */
++#include <clk/s32gen1_scmi_perf.h>
++#include <drivers/scmi.h>
++#include <dt-bindings/perf/s32gen1-scmi-perf.h>
++#include <lib/utils_def.h>
++#include <lib/spinlock.h>
++
++struct opp {
++	uint32_t level;
++	unsigned long frequency;
++};
++
++/**
++ * Mapping between performance level and frequency.
++ */
++static struct opp opps[S32GEN1_SCMI_PERF_MAX_ID][S32GEN1_SCMI_MAX_LEVELS];
++static spinlock_t opps_lock;
++
++int32_t populate_opps_table(unsigned int domain_id, size_t lvl_index,
++		unsigned long *rates, size_t num_rates)
++{
++	size_t i = 0;
++	unsigned long level;
++
++	if (domain_id >= ARRAY_SIZE(opps))
++		return SCMI_INVALID_PARAMETERS;
++
++	for (i = lvl_index; i < num_rates; i++) {
++
++		if (i >= ARRAY_SIZE(opps[domain_id]))
++			break;
++
++		level = rate2level(rates[i]);
++		if (level > UINT32_MAX)
++			return SCMI_INVALID_PARAMETERS;
++
++		spin_lock(&opps_lock);
++		opps[domain_id][i].frequency = rates[i];
++		opps[domain_id][i].level = level;
++		spin_unlock(&opps_lock);
++
++	}
++
++	return SCMI_SUCCESS;
++}
++
++uint32_t find_perf_level_by_rate(unsigned int domain_id, unsigned long rate)
++{
++	size_t i = 0;
++	uint32_t level = 0;
++
++	if (domain_id >= ARRAY_SIZE(opps))
++		return 0;
++
++	spin_lock(&opps_lock);
++	for (i = 0; i < ARRAY_SIZE(opps[domain_id]); i++) {
++		if (opps[domain_id][i].frequency == rate) {
++			level = opps[domain_id][i].level;
++			break;
++		}
++	}
++	spin_unlock(&opps_lock);
++
++	return level;
++}
++
++unsigned long find_rate_by_perf_level(unsigned int domain_id, uint32_t perf_level)
++{
++	size_t i = 0;
++	unsigned long rate = 0;
++
++	if (domain_id >= ARRAY_SIZE(opps))
++		return 0;
++
++	spin_lock(&opps_lock);
++	for (i = 0; i < ARRAY_SIZE(opps[domain_id]); i++) {
++		if (opps[domain_id][i].level == perf_level) {
++			rate = opps[domain_id][i].frequency;
++			break;
++		}
++	}
++	spin_unlock(&opps_lock);
++
++	return rate;
++}
++
+diff --git a/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h b/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
+index 89ff32eb0..6ae2b9661 100644
+--- a/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
++++ b/include/drivers/nxp/s32/clk/s32gen1_scmi_perf.h
+@@ -5,15 +5,18 @@
+ #ifndef S32GEN1_SCMI_PERF_H
+ #define S32GEN1_SCMI_PERF_H
+ 
++#include <clk/s32gen1_clk_funcs.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+-#define KHZ                    	(1000U)
++#define KHZ                    		(1000U)
+ 
+-#define SCMI_PERF_SET_LIMITS   	BIT(31)
+-#define SCMI_PERF_SET_LEVEL    	BIT(30)
++#define SCMI_PERF_SET_LIMITS   		BIT(31)
++#define SCMI_PERF_SET_LEVEL    		BIT(30)
+ 
+-#define rate2khz(rate)			((rate) / KHZ)
+-#define rate2level(rate)		((rate) - (rate) % KHZ)
++#define S32GEN1_SCMI_MAX_LEVELS		S32GEN1_MAX_NUM_FREQ
++
++#define rate2khz(rate)				((rate) / KHZ)
++#define rate2level(rate)			((rate) - (rate) % KHZ)
+ 
+ #endif
+-- 
+2.25.1
+

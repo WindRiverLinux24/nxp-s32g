@@ -1,0 +1,66 @@
+From 01456e5a44fd82a70ff0426395b3620641521bf9 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Thu, 26 May 2022 08:38:41 +0300
+Subject: [PATCH 27/49] s32: clock: Make s32g_fp generic for all platforms
+
+Issue: ALB-8876
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/enable_clk.c                | 2 +-
+ drivers/nxp/s32/clk/get_rate.c                  | 2 +-
+ include/drivers/nxp/s32/{s32g_fp.h => s32_fp.h} | 6 +++---
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+ rename include/drivers/nxp/s32/{s32g_fp.h => s32_fp.h} (97%)
+
+diff --git a/drivers/nxp/s32/clk/enable_clk.c b/drivers/nxp/s32/clk/enable_clk.c
+index 8b04cfda3..6ba61bfd3 100644
+--- a/drivers/nxp/s32/clk/enable_clk.c
++++ b/drivers/nxp/s32/clk/enable_clk.c
+@@ -10,7 +10,7 @@
+ #include <common/debug.h>
+ #include <dt-bindings/clock/s32gen1-clock.h>
+ #include <lib/mmio.h>
+-#include <s32g_fp.h>
++#include <s32_fp.h>
+ #include <inttypes.h>
+ 
+ enum en_order {
+diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
+index cdcb41088..1560414f0 100644
+--- a/drivers/nxp/s32/clk/get_rate.c
++++ b/drivers/nxp/s32/clk/get_rate.c
+@@ -6,7 +6,7 @@
+ #include <clk/s32gen1_clk_funcs.h>
+ #include <lib/mmio.h>
+ #include <lib/utils_def.h>
+-#include <s32g_fp.h>
++#include <s32_fp.h>
+ #include <stdint.h>
+ #include <inttypes.h>
+ 
+diff --git a/include/drivers/nxp/s32/s32g_fp.h b/include/drivers/nxp/s32/s32_fp.h
+similarity index 97%
+rename from include/drivers/nxp/s32/s32g_fp.h
+rename to include/drivers/nxp/s32/s32_fp.h
+index 24b821adf..57fd3a3a5 100644
+--- a/include/drivers/nxp/s32/s32g_fp.h
++++ b/include/drivers/nxp/s32/s32_fp.h
+@@ -1,9 +1,9 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+ /*
+- * Copyright 2020-2021 NXP
++ * Copyright 2020-2022 NXP
+  */
+-#ifndef S32G_FP_H
+-#define S32G_FP_H
++#ifndef S32_FP_H
++#define S32_FP_H
+ 
+ #define FP_PRECISION		100000000U
+ /* 1 percent error */
+-- 
+2.25.1
+

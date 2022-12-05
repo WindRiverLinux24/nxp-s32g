@@ -1,0 +1,46 @@
+From 2e144f58885f5a4966e9652a002e0e20b096a1b7 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Wed, 8 Jun 2022 15:11:37 +0300
+Subject: [PATCH 29/49] s32: clock: Use A53 minimum frequency in A53_CORE
+ clocks definition
+
+Issue: ALB-8876
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/s32gen1_clk.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/s32gen1_clk.c b/drivers/nxp/s32/clk/s32gen1_clk.c
+index b331908d8..b38806149 100644
+--- a/drivers/nxp/s32/clk/s32gen1_clk.c
++++ b/drivers/nxp/s32/clk/s32gen1_clk.c
+@@ -92,20 +92,20 @@ static struct s32gen1_clk cgm1_mux0_clk =
+ 
+ /* A53_CORE */
+ static struct s32gen1_clk a53_core_clk =
+-		S32GEN1_FREQ_MODULE_CLK(cgm1_mux0_clk, 0,
++		S32GEN1_FREQ_MODULE_CLK(cgm1_mux0_clk, S32GEN1_A53_MIN_FREQ,
+ 					S32GEN1_A53_MAX_FREQ);
+ 
+ /* A53_CORE_DIV2 */
+ static struct s32gen1_fixed_div a53_core_div2 =
+ 		S32GEN1_FIXED_DIV_INIT(cgm1_mux0_clk, 2);
+ static struct s32gen1_clk a53_core_div2_clk =
+-		S32GEN1_FREQ_MODULE_CLK(a53_core_div2, 0,
++		S32GEN1_FREQ_MODULE_CLK(a53_core_div2, S32GEN1_A53_MIN_FREQ / 2,
+ 					S32GEN1_A53_MAX_FREQ / 2);
+ /* A53_CORE_DIV10 */
+ static struct s32gen1_fixed_div a53_core_div10 =
+ 		S32GEN1_FIXED_DIV_INIT(cgm1_mux0_clk, 10);
+ static struct s32gen1_clk a53_core_div10_clk =
+-		S32GEN1_FREQ_MODULE_CLK(a53_core_div10, 0,
++		S32GEN1_FREQ_MODULE_CLK(a53_core_div10, S32GEN1_A53_MIN_FREQ / 10,
+ 					S32GEN1_A53_MAX_FREQ / 10);
+ 
+ /* ARM - MC_CGM_0 */
+-- 
+2.25.1
+

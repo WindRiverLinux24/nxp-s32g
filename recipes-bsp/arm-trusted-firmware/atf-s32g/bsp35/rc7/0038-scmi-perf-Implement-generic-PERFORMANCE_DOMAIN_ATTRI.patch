@@ -1,0 +1,180 @@
+From a098ae6eed7adde40b12c2288774eed80b04bc3f Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Thu, 7 Jul 2022 18:04:31 +0300
+Subject: [PATCH 38/49] scmi: perf: Implement generic
+ PERFORMANCE_DOMAIN_ATTRIBUTES command
+
+Issue: ALB-7158
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/scmi-msg/perf.c    | 68 +++++++++++++++++++++++++++++++++++++-
+ drivers/scmi-msg/perf.h    | 26 +++++++++++++++
+ include/drivers/scmi-msg.h |  9 +++++
+ 3 files changed, 102 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scmi-msg/perf.c b/drivers/scmi-msg/perf.c
+index 777c702b1..82c6b3f91 100644
+--- a/drivers/scmi-msg/perf.c
++++ b/drivers/scmi-msg/perf.c
+@@ -18,6 +18,10 @@ static bool message_id_is_supported(size_t message_id);
+ #pragma weak plat_scmi_perf_domain_count
+ #pragma weak plat_scmi_perf_is_power_mw
+ #pragma weak plat_scmi_perf_statistics
++#pragma weak plat_scmi_perf_get_name
++#pragma weak plat_scmi_perf_get_attributes
++#pragma weak plat_scmi_perf_get_sustained_freq
++#pragma weak plat_scmi_perf_get_sustained_perf_lvl
+ 
+ size_t plat_scmi_perf_domain_count(unsigned int agent_id __unused)
+ {
+@@ -30,7 +34,31 @@ bool plat_scmi_perf_is_power_mw(unsigned int agent_id __unused)
+ }
+ 
+ unsigned int plat_scmi_perf_statistics(unsigned int agent_id __unused,
+-				     unsigned long *addr __unused)
++				    unsigned long *addr __unused)
++{
++	return 0U;
++}
++
++const char *plat_scmi_perf_get_name(unsigned int agent_id __unused,
++				  unsigned int domain_id __unused)
++{
++	return NULL;
++}
++
++int32_t plat_scmi_perf_get_attributes(unsigned int agent_id __unused,
++					unsigned int domain_id __unused)
++{
++	return SCMI_NOT_SUPPORTED;
++}
++
++unsigned int plat_scmi_perf_get_sustained_freq(unsigned int agent_id __unused,
++					unsigned int domain_id __unused)
++{
++	return 0U;
++}
++
++unsigned int plat_scmi_perf_get_sustained_perf_lvl(unsigned int agent_id __unused,
++					unsigned int domain_id __unused)
+ {
+ 	return 0U;
+ }
+@@ -98,11 +126,49 @@ static void report_message_attributes(struct scmi_msg *msg)
+ 	scmi_write_response(msg, &return_values, sizeof(return_values));
+ }
+ 
++static void scmi_performance_domain_attributes(struct scmi_msg *msg)
++{
++	struct scmi_performance_domain_attributes_a2p *in_args = (void *)msg->in;
++	struct scmi_performance_domain_attributes_p2a return_values = {
++		.status = SCMI_SUCCESS,
++	};
++	const char *name = NULL;
++	unsigned int domain_id = 0U;
++
++	if (msg->in_size != sizeof(*in_args)) {
++		scmi_status_response(msg, SCMI_PROTOCOL_ERROR);
++		return;
++	}
++
++	domain_id = SPECULATION_SAFE_VALUE(in_args->domain_id);
++	if (domain_id > plat_scmi_perf_domain_count(msg->agent_id)) {
++		scmi_status_response(msg, SCMI_INVALID_PARAMETERS);
++		return;
++	}
++
++	name = plat_scmi_perf_get_name(msg->agent_id, domain_id);
++	if (name == NULL) {
++		scmi_status_response(msg, SCMI_NOT_FOUND);
++		return;
++	}
++
++	COPY_NAME_IDENTIFIER(return_values.name, name);
++
++	return_values.attributes = plat_scmi_perf_get_attributes(msg->agent_id, domain_id);
++	return_values.rate_limit = 0U;
++	return_values.sustained_freq_khz =
++		plat_scmi_perf_get_sustained_freq(msg->agent_id, domain_id);
++	return_values.sustained_perf_level =
++		plat_scmi_perf_get_sustained_perf_lvl(msg->agent_id, domain_id);
++
++	scmi_write_response(msg, &return_values, sizeof(return_values));
++}
+ 
+ static const scmi_msg_handler_t scmi_perf_handler_table[] = {
+ 	[SCMI_PROTOCOL_VERSION] = report_version,
+ 	[SCMI_PROTOCOL_ATTRIBUTES] = report_attributes,
+ 	[SCMI_PROTOCOL_MESSAGE_ATTRIBUTES] = report_message_attributes,
++	[SCMI_PERFORMANCE_DOMAIN_ATTRIBUTES] = scmi_performance_domain_attributes,
+ };
+ 
+ static bool message_id_is_supported(size_t message_id)
+diff --git a/drivers/scmi-msg/perf.h b/drivers/scmi-msg/perf.h
+index 007554fd8..c03685678 100644
+--- a/drivers/scmi-msg/perf.h
++++ b/drivers/scmi-msg/perf.h
+@@ -9,6 +9,13 @@
+ 
+ #define SCMI_PROTOCOL_VERSION_PERF  0x20000U
+ 
++/*
++ * Identifiers of the SCMI Performance Domain Management Protocol commands
++ */
++enum scmi_perf_command_id {
++	SCMI_PERFORMANCE_DOMAIN_ATTRIBUTES = 0x3,
++};
++
+ /* Protocol attributes */
+ #define SCMI_PERF_PERF_DOMAIN_COUNT_MASK	GENMASK(15, 0)
+ #define SCMI_PERF_POWER_MW_MASK				BIT(16)
+@@ -26,4 +33,23 @@ struct scmi_protocol_attributes_p2a_perf {
+ 	uint32_t statistics_len;
+ };
+ 
++/* Domain attributes */
++struct scmi_performance_domain_attributes_a2p {
++	uint32_t domain_id;
++};
++
++#define SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_PERF_LEVEL_POS  30
++#define SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_PERF_LEVEL_MASK  \
++	BIT(SCMI_PERF_DOMAIN_ATTRIBUTES_CAN_SET_PERF_LEVEL_POS)
++
++#define SCMI_DOMAIN_NAME_LENGTH_MAX		16U
++struct scmi_performance_domain_attributes_p2a {
++	int32_t status;
++	uint32_t attributes;
++	uint32_t rate_limit;
++	uint32_t sustained_freq_khz;
++	uint32_t sustained_perf_level;
++	char name[SCMI_DOMAIN_NAME_LENGTH_MAX];
++};
++
+ #endif /* SCMI_MSG_PERF_H */
+diff --git a/include/drivers/scmi-msg.h b/include/drivers/scmi-msg.h
+index fd7a8bc8f..37e2e13c4 100644
+--- a/include/drivers/scmi-msg.h
++++ b/include/drivers/scmi-msg.h
+@@ -185,6 +185,15 @@ int32_t plat_scmi_clock_set_state(unsigned int agent_id, unsigned int scmi_id,
+  */
+ size_t plat_scmi_perf_domain_count(unsigned int agent_id);
+ 
++/*
++ * Get performance domain string ID (aka name)
++ * @agent_id: SCMI agent ID
++ * @domain_id: SCMI performance domain ID
++ * Return pointer to name or NULL
++ */
++const char *plat_scmi_perf_get_name(unsigned int agent_id,
++				  unsigned int domain_id);
++
+ /* Handlers for SCMI Reset Domain protocol services */
+ 
+ /*
+-- 
+2.25.1
+

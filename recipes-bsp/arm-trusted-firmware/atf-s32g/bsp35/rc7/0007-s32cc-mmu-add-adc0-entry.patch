@@ -1,0 +1,101 @@
+From 2f867a430180290c18f78029ff8f0d849e211cd7 Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Fri, 28 Oct 2022 11:15:42 +0300
+Subject: [PATCH 07/49] s32cc: mmu: add adc0 entry
+
+Issue: ALB-9479
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/include/s32_platform_def.h       |  3 +++
+ plat/nxp/s32/s32_bl2_el3.c                    |  2 ++
+ plat/nxp/s32/s32g/include/s32g_platform_def.h | 14 +-------------
+ plat/nxp/s32/s32r/include/s32r_platform_def.h | 15 +--------------
+ 4 files changed, 7 insertions(+), 27 deletions(-)
+
+diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
+index 6bfdd4cb8..9be824c2f 100644
+--- a/plat/nxp/s32/include/s32_platform_def.h
++++ b/plat/nxp/s32/include/s32_platform_def.h
+@@ -187,5 +187,8 @@
+ #define S32_SCP_CH_MEM_SIZE	(128)
+ #define S32_SCP_SCMI_MEM_SIZE	(S32_SCP_CH_MEM_SIZE * PLATFORM_CORE_COUNT)
+ 
++#define ADC0_BASE_ADDR		(0x401f8000U)
++#define ADC0_SIZE		(0x1000)
++
+ #endif /* S32_PLATFORM_H */
+ 
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 5fbfdbdd4..e0c2b4326 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -198,6 +198,8 @@ static mmap_region_t s32_mmap[] = {
+ 			MT_DEVICE | MT_RW),
+ 	MAP_REGION_FLAT(I2C4_BASE_ADDR, MMU_ROUND_UP_TO_PAGE(I2C4_SIZE),
+ 			MT_DEVICE | MT_RW),
++	MAP_REGION_FLAT(ADC0_BASE_ADDR, MMU_ROUND_UP_TO_PAGE(ADC0_SIZE),
++			MT_DEVICE | MT_RW),
+ 	MAP_REGION_FLAT(OCOTP_BASE_ADDR, MMU_ROUND_UP_TO_PAGE(OCOTP_SIZE),
+ 			MT_DEVICE | MT_RW),
+ 	MAP_REGION_FLAT(SRAMC0_BASE_ADDR, MMU_ROUND_UP_TO_PAGE(SRAMC_SIZE),
+diff --git a/plat/nxp/s32/s32g/include/s32g_platform_def.h b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+index 35ad77ad5..5c5b51f8f 100644
+--- a/plat/nxp/s32/s32g/include/s32g_platform_def.h
++++ b/plat/nxp/s32/s32g/include/s32g_platform_def.h
+@@ -63,21 +63,9 @@
+ #define BL31SSRAM_MAX_CODE_SIZE	(S32G_SSRAM_LIMIT - BL31SSRAM_BASE)
+ #define BL31SSRAM_STACK_SIZE	0x1000
+ 
+-#if defined IMAGE_BL31
+-/* To limit usage, keep these in sync with sizeof(s32_mmap) */
+ #define MAX_MMAP_REGIONS		39
+-#define MAX_XLAT_TABLES			15
+-#endif
++#define MAX_XLAT_TABLES			28
+ 
+-#if defined IMAGE_BL2
+-#if (ERRATA_S32_050543 == 1)
+-#define MAX_MMAP_REGIONS		28
+-#define MAX_XLAT_TABLES			27
+-#else
+-#define MAX_MMAP_REGIONS		27
+-#define MAX_XLAT_TABLES			26
+-#endif
+-#endif /* IMAGE_BL2 */
+ #if defined IMAGE_BL33
+ #pragma warning "BL33 image is being built; you should configure it out."
+ #endif
+diff --git a/plat/nxp/s32/s32r/include/s32r_platform_def.h b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+index f7a24e1c2..9e2ce65b9 100644
+--- a/plat/nxp/s32/s32r/include/s32r_platform_def.h
++++ b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+@@ -21,21 +21,8 @@
+ #define S32_MPIDR_CPU_MASK		0x1
+ #define S32_MPIDR_CPU_MASK_BITS	0x1
+ 
+-#if defined IMAGE_BL31
+-/* To limit usage, keep these in sync with sizeof(s32_mmap) */
+ #define MAX_MMAP_REGIONS		31
+-#define MAX_XLAT_TABLES			15
+-#endif
+-
+-#if defined IMAGE_BL2
+-#if (ERRATA_S32_050543 == 1)
+-#define MAX_MMAP_REGIONS		24
+-#define MAX_XLAT_TABLES			25
+-#else
+-#define MAX_MMAP_REGIONS		23
+-#define MAX_XLAT_TABLES			25
+-#endif
+-#endif /* IMAGE_BL2 */
++#define MAX_XLAT_TABLES			26
+ 
+ #if defined IMAGE_BL33
+ #pragma warning "BL33 image is being built; you should configure it out."
+-- 
+2.25.1
+

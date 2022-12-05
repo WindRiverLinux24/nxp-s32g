@@ -1,0 +1,62 @@
+From 9a944e09e41c135fb244ae937b2e9ca93d6020c6 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Mon, 6 Jun 2022 08:42:27 +0300
+Subject: [PATCH 32/49] s32: clock: Compute multiple clock frequencies from cgm
+ mux module
+
+Issue: ALB-8876
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/get_rate.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
+index 164de62c7..5227dc236 100644
+--- a/drivers/nxp/s32/clk/get_rate.c
++++ b/drivers/nxp/s32/clk/get_rate.c
+@@ -365,7 +365,7 @@ static unsigned long get_pll_div_freq(struct s32gen1_clk_obj *module,
+ }
+ 
+ static int get_pll_div_freqs(struct s32gen1_clk_obj *module,
+-			      struct s32gen1_clk_priv *priv, struct s32gen1_clk_rates *clk_rates)
++			struct s32gen1_clk_priv *priv, struct s32gen1_clk_rates *clk_rates)
+ {
+ 	struct s32gen1_clk_obj *parent = get_module_parent(module);
+ 	unsigned long pfreq;
+@@ -379,6 +379,21 @@ static int get_pll_div_freqs(struct s32gen1_clk_obj *module,
+ 	return populate_scaler_rates(pfreq, clk_rates);
+ }
+ 
++static int get_cgm_div_freqs(struct s32gen1_clk_obj *module,
++			struct s32gen1_clk_priv *priv, struct s32gen1_clk_rates *clk_rates)
++{
++	struct s32gen1_clk_obj *parent = get_module_parent(module);
++	unsigned long pfreq;
++
++	pfreq = get_module_rate(parent, priv);
++	if (!pfreq) {
++		ERROR("Failed to get the frequency of CGM div parent\n");
++		return -EINVAL;
++	}
++
++	return populate_scaler_rates(pfreq, clk_rates);
++}
++
+ static unsigned long get_part_block_freq(struct s32gen1_clk_obj *module,
+ 				 struct s32gen1_clk_priv *priv)
+ {
+@@ -501,6 +516,8 @@ static int get_available_frequencies(struct s32gen1_clk_obj *module, struct s32g
+ 	switch (module->type) {
+ 	case s32gen1_pll_out_div_t:
+ 		return get_pll_div_freqs(module, priv, clk_rates);
++	case s32gen1_cgm_div_t:
++		return get_cgm_div_freqs(module, priv, clk_rates);
+ 	default:
+ 		return 0;
+ 	}
+-- 
+2.25.1
+
