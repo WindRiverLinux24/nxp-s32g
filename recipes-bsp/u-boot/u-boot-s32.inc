@@ -50,6 +50,7 @@ SRC_URI += " \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0002-configs-s32g399ardb3-add-HSE_SECBOOT-config.patch', '', d)} \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', 'file://0003-configs-s32g3xxaevb-add-HSE_SECBOOT-config.patch', '', d)} \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
+    file://0001-s32-hse-support-secure-boot-feature-on-both-S32G2-an.patch \
 "
 
 SRCREV = "6391b468b1cf1e95b1f8020fadc59733c510eab6"
