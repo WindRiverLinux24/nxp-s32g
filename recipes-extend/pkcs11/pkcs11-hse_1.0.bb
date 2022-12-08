@@ -16,6 +16,13 @@ SRC_URI[sha256sum] = "d864f6c2e0e238362f5e56e692da61eda2cee27c1383c77c90fa2be6fc
 SRC_URI += " \
     file://bsp35/rc7/0001-secboot-add-support-for-secboot-to-libhse-usrspc.patch \
     file://bsp35/rc7/0002-pkcs-fix-wrong-jump-label-on-error-case.patch \
+    file://bsp35/rc9/0001-pkcs-fix-ec-key-import.patch \
+    file://bsp35/rc9/0002-secboot-change-coreID-based-on-HSE_PLATFORM.patch \
+    file://bsp35/rc9/0003-pkcs-fix-bus-error-when-writing-to-key_info.patch \
+    file://bsp35/rc9/0004-hse-add-support-for-hse_memcpy-and-hse_memset.patch \
+    file://bsp35/rc9/0005-hse-pkcs-secboot-set-hse-service-descriptors-to-0.patch \
+    file://bsp35/rc9/0006-pkcs-add-support-for-digest-ops-w-SHA1.patch \
+    file://bsp35/rc9/0007-pkcs-guard-EC-key-format-with-ifdef.patch \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0002-pkcs-fix-QA-error.patch \
 "
@@ -56,6 +63,7 @@ do_install() {
     install -m 0755 ${S}/examples/hse-encrypt ${D}${bindir}
     install -m 0755 ${S}/examples/hse-sysimg ${D}${bindir}
     install -m 0755 ${S}/examples/pkcs-key-provision ${D}${bindir}
+    install -m 0755 ${S}/examples/hse-secboot ${D}${bindir}
 }
 
 PACKAGES =+ "${PN}-examples "

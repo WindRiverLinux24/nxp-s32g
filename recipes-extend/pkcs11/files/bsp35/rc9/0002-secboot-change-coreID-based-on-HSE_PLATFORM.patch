@@ -1,0 +1,47 @@
+From 67cf18a20bd384b1a04bd8425668805ebc53c8da Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Mon, 14 Nov 2022 13:06:50 +0200
+Subject: [PATCH 2/7] secboot: change coreID based on HSE_PLATFORM
+
+the coreID for A53_0 differs in HSE FW depending
+on the platform; switch HSE_APP_CORE_A53_0 based
+on HSE_PLATFORM to either CORE3 or CORE4
+
+Issue: ALB-8762
+Upstream-Status: Pending 
+
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/hse-secboot.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/examples/hse-secboot.c b/examples/hse-secboot.c
+index d1b8de2..1de7114 100644
+--- a/examples/hse-secboot.c
++++ b/examples/hse-secboot.c
+@@ -33,6 +33,12 @@
+ #define HSE_EXT_FLASH_SD 2u
+ #define HSE_EXT_FLASH_PAGE 512u
+ 
++#if (HSE_PLATFORM == HSE_S32G2XX) || (HSE_PLATFORM == HSE_S32R45X)
++#define HSE_APP_CORE_A53_0 HSE_APP_CORE3
++#elif (HSE_PLATFORM == HSE_S32G3XX)
++#define HSE_APP_CORE_A53_0 HSE_APP_CORE4
++#endif
++
+ #define UUID_BL2_SIGN \
+ 	{{0xd6, 0xe2, 0x69, 0xea}, {0x5d, 0x63}, {0xe4, 0x11}, 0x8d, 0x8c, {0x9f, 0xba, 0xbe, 0x99, 0x56, 0xa5} }
+ 
+@@ -382,7 +388,7 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 		return -ENOMEM;
+ 	}
+ 
+-	cr_entry->coreId = HSE_APP_CORE4;
++	cr_entry->coreId = HSE_APP_CORE_A53_0;
+ 	cr_entry->crSanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
+ 	cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1;
+ 	cr_entry->pPassReset = app_boot->ram_entry;
+-- 
+2.17.1
+

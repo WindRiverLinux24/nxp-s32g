@@ -1,7 +1,7 @@
-From 64b45cf64d692e10530e68682db505ba937800a5 Mon Sep 17 00:00:00 2001
+From 1461d2c6750919583aca660c73b966853056ec94 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Thu, 27 Oct 2022 09:30:01 +0800
-Subject: [PATCH 2/2] pkcs: fix QA error
+Subject: [PATCH] pkcs: fix QA error
 
 This patch is to fix the following QA error:
 
@@ -18,14 +18,14 @@ Upstream-Status: Pending
 
 Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
 ---
- examples/Makefile | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ examples/Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/examples/Makefile b/examples/Makefile
-index 9f926cc..a07b2ea 100644
+index 663e984..8b0cf5d 100644
 --- a/examples/Makefile
 +++ b/examples/Makefile
-@@ -50,13 +50,13 @@ pkcs-keyop: pkcs-keyop.c
+@@ -50,16 +50,16 @@ pkcs-keyop: pkcs-keyop.c
  	$(CROSS_COMPILE)gcc $(LIBS) $(INCLUDE_KEYOP) $(CFLAGS) $^ -o $@ $(LDFLAGS)
  
  pkcs-key-provision: pkcs-key-provision.c
@@ -40,8 +40,12 @@ index 9f926cc..a07b2ea 100644
 -	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ -lhse
 +	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lhse
  
+ hse-secboot: hse-secboot.c
+-	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) -L$(OPENSSL_DIR)/lib -I$(OPENSSL_DIR)/include $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ -lcrypto -lhse
++	$(CROSS_COMPILE)gcc -L$(LIBHSE_DIR) -L$(OPENSSL_DIR)/lib -I$(OPENSSL_DIR)/include $(INCLUDE_LIBHSE) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lcrypto -lhse
+ 
  clean:
- 	rm -f pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg
+ 	rm -f pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg hse-secboot
 -- 
 2.25.1
 

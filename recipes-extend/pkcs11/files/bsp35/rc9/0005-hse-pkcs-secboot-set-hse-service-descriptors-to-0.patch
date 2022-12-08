@@ -1,0 +1,688 @@
+From 2fe8046d6a2d87ec5697a36e2ecf3e30111c7334 Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Tue, 29 Nov 2022 15:13:10 +0200
+Subject: [PATCH 5/7] hse:pkcs:secboot: set hse service descriptors to 0
+
+to preserve backwards compat with future versions
+of HSE FW, which might use reserved bits, all
+service descriptor fields should be set to 0
+
+Issue: ALB-9559
+Upstream-Status: Pending 
+
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/hse-encrypt.c  | 12 ++++----
+ examples/hse-secboot.c  | 36 +++++++++++++-----------
+ examples/hse-sysimg.c   |  8 +++---
+ libhse/hse-usr.c        |  8 ++++--
+ libpkcs/pkcs11_crypt.c  | 62 +++++++++++++++++++++--------------------
+ libpkcs/pkcs11_object.c | 21 +++++++-------
+ libpkcs/pkcs11_random.c |  6 ++--
+ 7 files changed, 81 insertions(+), 72 deletions(-)
+
+diff --git a/examples/hse-encrypt.c b/examples/hse-encrypt.c
+index d944a42..3324f20 100644
+--- a/examples/hse-encrypt.c
++++ b/examples/hse-encrypt.c
+@@ -22,7 +22,7 @@
+ 
+ int main(int argc, char *argv[])
+ {
+-	hseSrvDescriptor_t srv_desc = {0};
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	void *iv, *plaintext, *ciphertext;
+ 	unsigned int group_id, slot_id;
+ 	uint32_t key_handle;
+@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
+ 	srv_desc.hseSrv.keyGenReq.keyGenScheme = HSE_KEY_GEN_SYM_RANDOM_KEY;
+ 
+ 	/* issue key generation service request */
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		printf("DEMO: generate key request failed: error %d\n", err);
+ 		goto out_dev_close;
+@@ -87,14 +87,14 @@ int main(int argc, char *argv[])
+ 		return ENOMEM;
+ 		goto out_dev_close;
+ 	}
+-	memset(iv, 0, AES_BLOCK_SIZE);
++	hse_memset(iv, 0, AES_BLOCK_SIZE);
+ 
+ 	plaintext = hse_mem_alloc(INPUT_SIZE);
+ 	if (!plaintext) {
+ 		err = ENOMEM;
+ 		goto out_free_iv;
+ 	}
+-	memcpy(plaintext, "Simple symmetric cipher encryption test", 40u);
++	hse_memcpy(plaintext, "Simple symmetric cipher encryption test", 40u);
+ 
+ 	ciphertext = hse_mem_alloc(INPUT_SIZE);
+ 	if (!ciphertext) {
+@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
+ 	srv_desc.hseSrv.symCipherReq.pOutput = hse_virt_to_dma(ciphertext);
+ 
+ 	/* issue encrypt service request */
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		printf("DEMO: encrypt request failed: error %d\n", err);
+ 		goto out_free_output;
+@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
+ 	srv_desc.hseSrv.symCipherReq.pOutput = hse_virt_to_dma(ciphertext);
+ 
+ 	/* issue decrypt service request */
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		printf("DEMO: decrypt request failed: error %d\n", err);
+ 		goto out_free_output;
+diff --git a/examples/hse-secboot.c b/examples/hse-secboot.c
+index 1de7114..0901664 100644
+--- a/examples/hse-secboot.c
++++ b/examples/hse-secboot.c
+@@ -168,7 +168,7 @@ static struct fip_toc_entry *get_fip_toc_entry(uint8_t *fip_header, struct uuid
+ 
+ int hse_mus_enable()
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseAttrMUConfig_t *mu_config;
+ 	int i, ret = 0;
+ 
+@@ -177,6 +177,7 @@ int hse_mus_enable()
+ 		ERROR("Failed to allocate space for MU Configuration\n");
+ 		return -ENOMEM;
+ 	}
++	hse_memset(mu_config, 0, sizeof(*mu_config));
+ 
+ 	srv_desc.srvId = HSE_SRV_ID_SET_ATTR;
+ 
+@@ -190,7 +191,7 @@ int hse_mus_enable()
+ 	srv_desc.hseSrv.setAttrReq.attrLen = sizeof(*mu_config);
+ 	srv_desc.hseSrv.setAttrReq.pAttr = hse_virt_to_dma(mu_config);
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ADM, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ADM, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to enable MUs\n");
+ 
+@@ -200,7 +201,7 @@ int hse_mus_enable()
+ 
+ int hse_key_format()
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseKeyGroupCfgEntry_t *nvm_catalog, *ram_catalog;
+ 	int ret = 0;
+ 
+@@ -217,14 +218,14 @@ int hse_key_format()
+ 		goto err_free_nvm;
+ 	}
+ 
+-	memcpy(nvm_catalog, &nvm_cat, sizeof(nvm_cat));
+-	memcpy(ram_catalog, &ram_cat, sizeof(ram_cat));
++	hse_memcpy(nvm_catalog, &nvm_cat, sizeof(nvm_cat));
++	hse_memcpy(ram_catalog, &ram_cat, sizeof(ram_cat));
+ 
+ 	srv_desc.srvId = HSE_SRV_ID_FORMAT_KEY_CATALOGS;
+ 	srv_desc.hseSrv.formatKeyCatalogsReq.pNvmKeyCatalogCfg = hse_virt_to_dma(nvm_catalog);
+ 	srv_desc.hseSrv.formatKeyCatalogsReq.pRamKeyCatalogCfg = hse_virt_to_dma(ram_catalog);
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to format key catalogs!\n");
+ 
+@@ -236,7 +237,7 @@ err_free_nvm:
+ 
+ int hse_key_import(uint8_t *rsa_modulus, int rsa_modulus_size, uint8_t *rsa_pub_exponent, int rsa_pub_exponent_size)
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseKeyInfo_t *key_info;
+ 	int ret = 0;
+ 
+@@ -245,6 +246,7 @@ int hse_key_import(uint8_t *rsa_modulus, int rsa_modulus_size, uint8_t *rsa_pub_
+ 		ERROR("Failed to allocate space for key info\n");
+ 		return -ENOMEM;
+ 	}
++	hse_memset(key_info, 0, sizeof(*key_info));
+ 
+ 	key_info->keyFlags = HSE_KF_USAGE_VERIFY;
+ 	key_info->keyBitLen = HSE_BYTES_TO_BITS(rsa_modulus_size);
+@@ -265,7 +267,7 @@ int hse_key_import(uint8_t *rsa_modulus, int rsa_modulus_size, uint8_t *rsa_pub_
+ 	srv_desc.hseSrv.importKeyReq.cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
+ 	srv_desc.hseSrv.importKeyReq.keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to import RSA Public Key\n");
+ 
+@@ -277,7 +279,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+ {
+ 	struct uuid uuid_bl2_sign = UUID_BL2_SIGN;
+ 	struct fip_toc_entry *toc_bl2_sign;
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSmrEntry_t smr_entry, *smr_entry_hse;
+ 	uint8_t *fip_header, *bl2_sign, *fip_bin;
+ 	int ret = 0;
+@@ -334,6 +336,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+ 		ret = -ENOMEM;
+ 		goto err_free_fip_bin;
+ 	}
++	hse_memset(smr_entry_hse, 0, sizeof(*smr_entry_hse));
+ 
+ 	smr_entry.pSmrSrc = get_fip_start(ivt);
+ 	smr_entry.pSmrDest = app_boot->ram_load;
+@@ -362,7 +365,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+ 	srv_desc.hseSrv.smrEntryInstallReq.authTagLength[0] = toc_bl2_sign->size;
+ 	srv_desc.hseSrv.smrEntryInstallReq.authTagLength[1] = 0u;
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to install SMR Entry\n");
+ 
+@@ -378,7 +381,7 @@ err_free_fip_header:
+ 
+ int hse_cr_install(struct app_boot_hdr *app_boot)
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseCrEntry_t *cr_entry;
+ 	int ret = 0;
+ 
+@@ -387,6 +390,7 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 		ERROR("Failed to allocate space for core reset entry\n");
+ 		return -ENOMEM;
+ 	}
++	hse_memset(cr_entry, 0, sizeof(*cr_entry));
+ 
+ 	cr_entry->coreId = HSE_APP_CORE_A53_0;
+ 	cr_entry->crSanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
+@@ -401,7 +405,7 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 	srv_desc.hseSrv.crEntryInstallReq.crEntryIndex = 1u;
+ 	srv_desc.hseSrv.crEntryInstallReq.pCrEntry = hse_virt_to_dma(cr_entry);
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to install Core Reset Entry\n");
+ 
+@@ -411,13 +415,13 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 
+ int hse_sysimg_getsize(uint32_t *sysimg_size)
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	int ret = 0;
+ 
+ 	srv_desc.srvId = HSE_SRV_ID_GET_SYS_IMAGE_SIZE;
+ 	srv_desc.hseSrv.getSysImageSizeReq.pSysImageSize = hse_virt_to_dma(sysimg_size);
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to get SYSIMG size\n");
+ 
+@@ -426,7 +430,7 @@ int hse_sysimg_getsize(uint32_t *sysimg_size)
+ 
+ int hse_sysimg_publish(void *sysimg, uint32_t *sysimg_size)
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hsePublishSysImageSrv_t *publish_sysimg_req;
+ 	uint32_t *publish_offset;
+ 	int ret = 0;
+@@ -446,7 +450,7 @@ int hse_sysimg_publish(void *sysimg, uint32_t *sysimg_size)
+ 	publish_sysimg_req->pBuffLength = hse_virt_to_dma(sysimg_size);
+ 	publish_sysimg_req->pBuff = hse_virt_to_dma(sysimg);
+ 
+-	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (ret)
+ 		ERROR("Failed to publish SYS_IMG\n");
+ 
+diff --git a/examples/hse-sysimg.c b/examples/hse-sysimg.c
+index c3a27cb..b7290b1 100644
+--- a/examples/hse-sysimg.c
++++ b/examples/hse-sysimg.c
+@@ -27,7 +27,7 @@ struct ivt {
+ 
+ int hse_sysimg_get_size(uint32_t *size)
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseGetSysImageSizeSrv_t *get_sysimg_size_req;
+ 	int err;
+ 
+@@ -36,7 +36,7 @@ int hse_sysimg_get_size(uint32_t *size)
+ 	srv_desc.srvId = HSE_SRV_ID_GET_SYS_IMAGE_SIZE;
+ 	get_sysimg_size_req->pSysImageSize = hse_virt_to_dma(size);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 
+ 	return err;
+ }
+@@ -97,7 +97,7 @@ err_close_fd:
+ 
+ int main(int argc, char *argv[])
+ {
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hsePublishSysImageSrv_t *publish_sysimg_req;
+ 	uint32_t *publish_off, *sysimg_size;
+ 	uint16_t status;
+@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
+ 	publish_sysimg_req->pBuffLength = hse_virt_to_dma(sysimg_size);
+ 	publish_sysimg_req->pBuff = hse_virt_to_dma(sysimg);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		printf("ERROR: could not publish SYSIMG\n");
+ 		goto err_free_sysimg;
+diff --git a/libhse/hse-usr.c b/libhse/hse-usr.c
+index 9c01cfb..addf320 100644
+--- a/libhse/hse-usr.c
++++ b/libhse/hse-usr.c
+@@ -238,6 +238,7 @@ static inline int hse_mu_msg_send(uint8_t channel, uint32_t msg)
+  * hse_srv_req_sync - issue a synchronous service request (blocking)
+  * @channel: service channel index
+  * @srv_desc: service descriptor
++ * @size: service descriptor size
+  *
+  * Send a HSE service descriptor on the selected channel and block until the
+  * HSE response becomes available, then read the reply.
+@@ -246,13 +247,13 @@ static inline int hse_mu_msg_send(uint8_t channel, uint32_t msg)
+  *         index out of range, EBUSY for channel busy or none available,
+  *         ENOMSG for failure to read the HSE service response
+  */
+-int hse_srv_req_sync(uint8_t channel, const void *srv_desc)
++int hse_srv_req_sync(uint8_t channel, const void *srv_desc, const size_t size)
+ {
+ 	uint32_t status;
+ 	size_t offset;
+ 	int i, err;
+ 
+-	if (!srv_desc)
++	if (!srv_desc || !size)
+ 		return EINVAL;
+ 
+ 	if (channel != HSE_CHANNEL_ANY && channel >= HSE_NUM_CHANNELS)
+@@ -273,7 +274,8 @@ int hse_srv_req_sync(uint8_t channel, const void *srv_desc)
+ 	priv.channel_busy[channel] = true;
+ 
+ 	offset = channel * HSE_SRV_DESC_MAX_SIZE;
+-	memcpy(priv.desc + offset, srv_desc, HSE_SRV_DESC_MAX_SIZE);
++	hse_memcpy(priv.desc + offset, srv_desc, size);
++	hse_memset(priv.desc + offset + size, 0, HSE_SRV_DESC_MAX_SIZE - size);
+ 
+ 	err = hse_mu_msg_send(channel, priv.desc_dma + offset);
+ 	if (err) {
+diff --git a/libpkcs/pkcs11_crypt.c b/libpkcs/pkcs11_crypt.c
+index e362989..b7cae67 100644
+--- a/libpkcs/pkcs11_crypt.c
++++ b/libpkcs/pkcs11_crypt.c
+@@ -53,7 +53,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSymCipherSrv_t *sym_cipher_srv;
+ 	hseAeadSrv_t *aead_srv;
+ 	void *input, *output, *output_len, *pIV = NULL;
+@@ -78,14 +78,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 	input = hse_mem_alloc(ulDataLen);
+ 	if (input == NULL) 
+ 		return CKR_HOST_MEMORY;
+-	memcpy(input, pData, ulDataLen);
++	hse_memcpy(input, pData, ulDataLen);
+ 
+ 	output_len = hse_mem_alloc(sizeof(uint32_t));
+ 	if (output_len == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_free_input;
+ 	}
+-	memcpy(output_len, pulEncryptedDataLen, sizeof(uint32_t));
++	hse_memcpy(output_len, pulEncryptedDataLen, sizeof(uint32_t));
++
+ 	output = hse_mem_alloc(*(uint32_t *)output_len);
+ 	if (output == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+@@ -98,7 +99,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 			rc = CKR_HOST_MEMORY;
+ 			goto err_free_output;
+ 		}
+-		memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
++		hse_memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
+ 	}
+ 
+ 	switch (gCtx->cryptCtx.mechanism->mechanism) {
+@@ -152,14 +153,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 			goto err_free_piv;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_piv;
+ 	}
+ 
+-	memcpy(pEncryptedData, output, *(uint32_t *)output_len);
+-	memcpy(pulEncryptedDataLen, output_len, sizeof(uint32_t));
++	hse_memcpy(pEncryptedData, output, *(uint32_t *)output_len);
++	hse_memcpy(pulEncryptedDataLen, output_len, sizeof(uint32_t));
+ 
+ err_free_piv:
+ 	hse_mem_free(pIV);
+@@ -216,7 +217,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSymCipherSrv_t *sym_cipher_srv;
+ 	hseAeadSrv_t *aead_srv;
+ 	void *input, *output, *output_len, *pIV = NULL;
+@@ -241,14 +242,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 	input = hse_mem_alloc(ulEncryptedDataLen);
+ 	if (input == NULL)
+ 		return CKR_HOST_MEMORY;
+-	memcpy(input, pEncryptedData, ulEncryptedDataLen);
++	hse_memcpy(input, pEncryptedData, ulEncryptedDataLen);
+ 
+ 	output_len = hse_mem_alloc(sizeof(uint32_t));
+ 	if (output_len == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_free_input;
+ 	}
+-	memcpy(output_len, pulDataLen, sizeof(uint32_t));
++	hse_memcpy(output_len, pulDataLen, sizeof(uint32_t));
++
+ 	output = hse_mem_alloc(*(uint32_t *)output_len);
+ 	if (output == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+@@ -261,7 +263,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			rc = CKR_HOST_MEMORY;
+ 			goto err_free_output;
+ 		}
+-		memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
++		hse_memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
+ 	}
+ 
+ 	switch (gCtx->cryptCtx.mechanism->mechanism) {
+@@ -315,14 +317,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			goto err_free_piv;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_piv;
+ 	}
+ 
+-	memcpy(pData, output, *(uint32_t *)output_len);
+-	memcpy(pulDataLen, output_len, sizeof(uint32_t));
++	hse_memcpy(pData, output, *(uint32_t *)output_len);
++	hse_memcpy(pulDataLen, output_len, sizeof(uint32_t));
+ 
+ err_free_piv:
+ 	hse_mem_free(pIV);
+@@ -374,7 +376,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSignSrv_t *sign_srv;
+ 	hseSignScheme_t *sign_scheme;
+ 	void *input, *sign0 = NULL, *sign1 = NULL, *output_len;
+@@ -408,14 +410,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	input = hse_mem_alloc(ulDataLen);
+ 	if (input == NULL)
+ 		return CKR_HOST_MEMORY;
+-	memcpy(input, pData, ulDataLen);
++	hse_memcpy(input, pData, ulDataLen);
+ 
+ 	output_len = hse_mem_alloc(sizeof(uint32_t));
+ 	if (output_len == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_free_input;
+ 	}
+-	memcpy(output_len, pulSignatureLen, sizeof(uint32_t));
++	hse_memcpy(output_len, pulSignatureLen, sizeof(uint32_t));
+ 
+ 	sign_srv = &srv_desc.hseSrv.signReq;
+ 	sign_scheme = &sign_srv->signScheme;
+@@ -480,7 +482,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	sign_srv->inputLength = ulDataLen;
+ 	sign_srv->pInput = hse_virt_to_dma(input);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_sign1;
+@@ -489,18 +491,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	switch (gCtx->signCtx.mechanism->mechanism) {
+ 		case CKM_SHA256_RSA_PKCS:
+ 
+-			memcpy(pSignature, sign0, *(uint32_t *)output_len);
+-			memcpy(pulSignatureLen, output_len, sizeof(uint32_t));
++			hse_memcpy(pSignature, sign0, *(uint32_t *)output_len);
++			hse_memcpy(pulSignatureLen, output_len, sizeof(uint32_t));
+ 
+ 			break;
+ 		case CKM_ECDSA_SHA1:
+ 
+-			memcpy(pSignature, sign0, *(uint32_t *)output_len);
+-			memcpy(pSignature + *(uint32_t *)output_len, sign1, *(uint32_t *)output_len);
++			hse_memcpy(pSignature, sign0, *(uint32_t *)output_len);
++			hse_memcpy(pSignature + *(uint32_t *)output_len, sign1, *(uint32_t *)output_len);
+ 
+ 			/* restore actual length */
+ 			*(uint32_t *)output_len = *(uint32_t *)output_len * 2;
+-			memcpy(pulSignatureLen, output_len, sizeof(uint32_t));
++			hse_memcpy(pulSignatureLen, output_len, sizeof(uint32_t));
+ 
+ 			break;
+ 		default:
+@@ -558,7 +560,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSignSrv_t *sign_srv;
+ 	hseSignScheme_t *sign_scheme;
+ 	void *input, *sign0 = NULL, *sign1 = NULL, *output_len;
+@@ -592,14 +594,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 	input = hse_mem_alloc(ulDataLen);
+ 	if (input == NULL)
+ 		return CKR_HOST_MEMORY;
+-	memcpy(input, pData, ulDataLen);
++	hse_memcpy(input, pData, ulDataLen);
+ 
+ 	output_len = hse_mem_alloc(sizeof(uint32_t));
+ 	if (output_len == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_free_input;
+ 	}
+-	memcpy(output_len, &ulSignatureLen, sizeof(uint32_t));
++	hse_memcpy(output_len, &ulSignatureLen, sizeof(uint32_t));
+ 
+ 	sign_srv = &srv_desc.hseSrv.signReq;
+ 	sign_scheme = &sign_srv->signScheme;
+@@ -612,7 +614,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_output_len;
+ 			}
+-			memcpy(sign0, pSignature, ulSignatureLen);
++			hse_memcpy(sign0, pSignature, ulSignatureLen);
+ 
+ 			sign_scheme->signSch = HSE_SIGN_RSASSA_PKCS1_V15;
+ 			sign_scheme->sch.rsaPkcs1v15.hashAlgo = HSE_HASH_ALGO_SHA2_256;
+@@ -640,8 +642,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_sign0;
+ 			}
+-			memcpy(sign0, pSignature, *(uint32_t *)output_len);
+-			memcpy(sign1, pSignature + *(uint32_t *)output_len, *(uint32_t *)output_len);
++			hse_memcpy(sign0, pSignature, *(uint32_t *)output_len);
++			hse_memcpy(sign1, pSignature + *(uint32_t *)output_len, *(uint32_t *)output_len);
+ 
+ 			sign_scheme->signSch = HSE_SIGN_ECDSA;
+ 			sign_scheme->sch.ecdsa.hashAlgo = HSE_HASH_ALGO_SHA_1;
+@@ -666,7 +668,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 	sign_srv->inputLength = ulDataLen;
+ 	sign_srv->pInput = hse_virt_to_dma(input);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err == EBADMSG) {
+ 		rc = CKR_SIGNATURE_INVALID;
+ 		goto err_free_sign1;
+diff --git a/libpkcs/pkcs11_object.c b/libpkcs/pkcs11_object.c
+index 36180c2..ea9df05 100644
+--- a/libpkcs/pkcs11_object.c
++++ b/libpkcs/pkcs11_object.c
+@@ -99,7 +99,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseImportKeySrv_t *import_key_req;
+ 	volatile hseKeyInfo_t *key_info;
+ 	uint32_t pkey0_len, pkey1_len, pkey2_len;
+@@ -134,6 +134,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 	key_info = (hseKeyInfo_t *)hse_mem_alloc(sizeof(hseKeyInfo_t));
+ 	if (key_info == NULL)
+ 		return CKR_HOST_MEMORY;
++	hse_memset(key_info, 0, sizeof(hseKeyInfo_t));
+ 
+ 	key = (struct hse_keyObject *)hse_intl_mem_alloc(sizeof(struct hse_keyObject));
+ 	if (key == NULL) {
+@@ -209,7 +210,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_key_intl;
+ 			}
+-			memcpy(pkey0, getattr_pval(pTemplate, CKA_MODULUS, ulCount), pkey0_len);
++			hse_memcpy(pkey0, getattr_pval(pTemplate, CKA_MODULUS, ulCount), pkey0_len);
+ 
+ 			pkey1_len = getattr_len(pTemplate, CKA_PUBLIC_EXPONENT, ulCount);
+ 			if (!pkey1_len) {
+@@ -221,7 +222,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_pkey0;
+ 			}
+-			memcpy(pkey1, getattr_pval(pTemplate, CKA_PUBLIC_EXPONENT, ulCount), pkey1_len);
++			hse_memcpy(pkey1, getattr_pval(pTemplate, CKA_PUBLIC_EXPONENT, ulCount), pkey1_len);
+ 
+ 			/* rsa can be used for sign/verify */
+ 			key_info->keyFlags = HSE_KF_USAGE_VERIFY;
+@@ -248,7 +249,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 					rc = CKR_HOST_MEMORY;
+ 					goto err_free_pkey1;
+ 				}
+-				memcpy(pkey2, getattr_pval(pTemplate, CKA_PRIVATE_EXPONENT, ulCount), pkey2_len);
++				hse_memcpy(pkey2, getattr_pval(pTemplate, CKA_PRIVATE_EXPONENT, ulCount), pkey2_len);
+ 
+ 				key_info->keyFlags |= HSE_KF_USAGE_SIGN;
+ 				key_info->keyType = HSE_KEY_TYPE_RSA_PAIR;
+@@ -275,7 +276,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 			}
+ 			ec_point = getattr_pval(pTemplate, CKA_EC_POINT, ulCount);
+ 			ec_point = (uint8_t *)ec_point + 3;
+-			memcpy(pkey0, ec_point, pkey0_len);
++			hse_memcpy(pkey0, ec_point, pkey0_len);
+ 
+ 			ecc_oid = getattr_pval(pTemplate, CKA_EC_PARAMS, ulCount);
+ 			if (ecc_oid == NULL) {
+@@ -309,7 +310,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 					rc = CKR_HOST_MEMORY;
+ 					goto err_free_pkey0;
+ 				}
+-				memcpy(pkey2, getattr_pval(pTemplate, CKA_VALUE, ulCount), pkey2_len);
++				hse_memcpy(pkey2, getattr_pval(pTemplate, CKA_VALUE, ulCount), pkey2_len);
+ 
+ 				key_info->keyFlags |= HSE_KF_USAGE_SIGN;
+ 				key_info->keyType = HSE_KEY_TYPE_ECC_PAIR;
+@@ -331,7 +332,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_key_intl;
+ 			}
+-			memcpy(pkey2, getattr_pval(pTemplate, CKA_VALUE, ulCount), pkey2_len);
++			hse_memcpy(pkey2, getattr_pval(pTemplate, CKA_VALUE, ulCount), pkey2_len);
+ 
+ 			/* aes keys can only be used for encrypt/decrypt */
+ 			key_info->keyFlags = (HSE_KF_USAGE_ENCRYPT | HSE_KF_USAGE_DECRYPT);
+@@ -351,7 +352,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 			goto err_free_key_intl;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_pkey2;
+@@ -386,7 +387,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	struct hse_keyObject *pkey;
+ 	int err;
+ 
+@@ -404,7 +405,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)(
+ 	srv_desc.hseSrv.eraseKeyReq.keyHandle = pkey->key_handle;
+ 	srv_desc.hseSrv.eraseKeyReq.eraseKeyOptions = 0u;
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err)
+ 		return CKR_FUNCTION_FAILED;
+ 
+diff --git a/libpkcs/pkcs11_random.c b/libpkcs/pkcs11_random.c
+index cc72835..35c4137 100644
+--- a/libpkcs/pkcs11_random.c
++++ b/libpkcs/pkcs11_random.c
+@@ -26,7 +26,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	hseSrvDescriptor_t srv_desc;
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseGetRandomNumSrv_t *rng_req;
+ 	void *rng_output;
+ 	int err;
+@@ -53,13 +53,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)(
+ 	rng_req->randomNumLength = ulRandomLen;
+ 	rng_req->pRandomNum = hse_virt_to_dma(rng_output);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc);
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_output;
+ 	}
+ 
+-	memcpy(pRandomData, rng_output, ulRandomLen);
++	hse_memcpy(pRandomData, rng_output, ulRandomLen);
+ 
+ err_free_output:
+ 	hse_mem_free(rng_output);
+-- 
+2.17.1
+
