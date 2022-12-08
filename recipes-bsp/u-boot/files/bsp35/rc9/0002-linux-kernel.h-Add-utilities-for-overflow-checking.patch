@@ -1,0 +1,43 @@
+From 64656387ef078d262f8c3a2e4f39ebb1b286fe7a Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Nov 2022 08:56:39 +0200
+Subject: [PATCH 02/13] linux/kernel.h: Add utilities for overflow checking
+
+These mechanisms are borrowed from arm-trusted-firmware
+repository, include/lib/utils_def.h file.
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/linux/kernel.h | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index b88c210065..355594a7cc 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -281,4 +281,18 @@
+ 	offsetof(struct structure, member) == (offset), \
+ 	"`struct " #structure "` offset for `" #member "` is not " #offset)
+ 
++/*
++ * Evaluates to 1 if (ptr + inc) overflows, 0 otherwise.
++ * Both arguments must be unsigned pointer values (i.e. uintptr_t).
++ */
++#define check_uptr_overflow(_ptr, _inc)		\
++	((_ptr) > (ULONG_MAX - (_inc)))
++
++/*
++ * Evaluates to 1 if (u32 + inc) overflows, 0 otherwise.
++ * Both arguments must be 32-bit unsigned integers (i.e. effectively uint32_t).
++ */
++#define check_u32_overflow(_u32, _inc) \
++	((_u32) > (UINT32_MAX - (_inc)))
++
+ #endif
+-- 
+2.17.1
+

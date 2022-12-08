@@ -1,0 +1,60 @@
+From f30287c440b5371df683aac37b7521048d164d05 Mon Sep 17 00:00:00 2001
+From: Andrei Botila <andrei.botila@nxp.com>
+Date: Tue, 29 Nov 2022 11:15:34 +0200
+Subject: [PATCH 13/13] drivers: net: s32-cc: fix-up mac address for GMAC
+
+When a new mac address for GMAC is set through ethaddr variable, this new
+value is not passed to Kernel if a ping is not initiated before booting.
+To fix this we manually patch the DT in the fix-up procedure.
+
+Issue: ALB-9566
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Botila <andrei.botila@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/eth.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/eth.c b/arch/arm/mach-s32/s32-cc/eth.c
+index a5b6bd0701..6c721823d9 100644
+--- a/arch/arm/mach-s32/s32-cc/eth.c
++++ b/arch/arm/mach-s32/s32-cc/eth.c
+@@ -26,7 +26,7 @@
+ #include <dm/platform_data/pfeng_dm_eth.h>
+ #endif
+ 
+-#if CONFIG_IS_ENABLED(FSL_PFENG)
++#if CONFIG_IS_ENABLED(FSL_PFENG) || CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
+ static void ft_update_eth_addr_by_name(const char *name, const u8 idx,
+ 				       void *fdt, int nodeoff)
+ {
+@@ -158,6 +158,9 @@ void ft_enet_fixup(void *fdt)
+ {
+ 	int __maybe_unused nodeoff;
+ 	bool __maybe_unused ena;
++#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
++	u8 idx = 0;
++#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
+ 
+ 	/* PFE */
+ #if CONFIG_IS_ENABLED(FSL_PFENG)
+@@ -169,6 +172,15 @@ void ft_enet_fixup(void *fdt)
+ 		ft_enet_pfe_fixup_netif(2, fdt);
+ 	}
+ #endif /* CONFIG_IS_ENABLED(FSL_PFENG) */
++
++#if CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC)
++	nodeoff = fdt_node_offset_by_compatible(fdt, -1, "nxp,s32cc-dwmac");
++	while (nodeoff != -FDT_ERR_NOTFOUND) {
++		ft_update_eth_addr_by_name("eth", idx, fdt, nodeoff);
++		nodeoff = fdt_node_offset_by_compatible(fdt, nodeoff, "nxp,s32cc-dwmac");
++		idx++;
++	}
++#endif /* CONFIG_IS_ENABLED(DWC_ETH_QOS_S32CC) */
+ }
+ 
+ /*
+-- 
+2.17.1
+

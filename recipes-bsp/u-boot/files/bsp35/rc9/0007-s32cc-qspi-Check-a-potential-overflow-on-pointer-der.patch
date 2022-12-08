@@ -1,0 +1,33 @@
+From a25c8616401b8d9b8eacafeb150c85e119f75f13 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 15 Nov 2022 17:59:11 +0200
+Subject: [PATCH 07/13] s32cc: qspi: Check a potential overflow on pointer
+ dereference
+
+Issue: ALB-9532
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/spi/s32cc_qspi.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/spi/s32cc_qspi.c b/drivers/spi/s32cc_qspi.c
+index ed4353cedd..b9862b8943 100644
+--- a/drivers/spi/s32cc_qspi.c
++++ b/drivers/spi/s32cc_qspi.c
+@@ -96,6 +96,10 @@ int s32cc_mem_exec_write_op(struct fsl_qspi_priv *priv,
+ 		if (len % 4)
+ 			words++;
+ 
++		if (check_uptr_overflow((uintptr_t)txbuf,
++					(uintptr_t)(words * sizeof(*txbuf))))
++			return -EOVERFLOW;
++
+ 		for (i = 0; i < words; i++) {
+ 			qspi_write32(priv->flags, &regs->tbdr, *txbuf);
+ 			txbuf++;
+-- 
+2.17.1
+

@@ -1,7 +1,7 @@
 From 9881f26e5be9f96f4a8c5a0a863bbf0ba082b5d2 Mon Sep 17 00:00:00 2001
 From: Zhantao <zhantao.tang@windriver.com>
 Date: Tue, 24 May 2022 17:02:20 +0800
-Subject: [PATCH 3/3] configs: s32g3xxaevb: add HSE_SECBOOT config
+Subject: [PATCH 3/3] configs: s32g3xxaevb: add NXP_HSE_SUPPORT config
 
 Upstream-Status: Pending
 
@@ -18,7 +18,7 @@ index 4f2c9df19c..e848afbb19 100644
  CONFIG_FAT_WRITE=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
-+CONFIG_HSE_SECBOOT=y
++CONFIG_NXP_HSE_SUPPORT=y
 -- 
 2.25.1
 

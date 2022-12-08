@@ -1,0 +1,36 @@
+From cac1def5dd8805afc8d463fb874afd6b3a36e4c8 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Nov 2022 13:10:04 +0200
+Subject: [PATCH 04/13] include/log.h: Return 0 from log function to fix return
+
+This fixes the following error reported by sparse on every 'pr_*'
+call:
+
+error: incompatible types in conditional expression (different base types):
+    void
+    int
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/log.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/log.h b/include/log.h
+index 62fb8afbd0..678872fd0d 100644
+--- a/include/log.h
++++ b/include/log.h
+@@ -139,6 +139,7 @@ static inline int _log_nop(enum log_category_t cat, enum log_level_t level,
+ 		_log((enum log_category_t)(_cat), _l, __FILE__, __LINE__, \
+ 		      __func__, \
+ 		      pr_fmt(_fmt), ##_args); \
++	0; \
+ 	})
+ #else
+ #define log(_cat, _level, _fmt, _args...)
+-- 
+2.17.1
+

@@ -1,0 +1,34 @@
+From 9eaf2824139e85c5f4ab71b85aca03ff714ed6bc Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 9 Nov 2022 10:05:19 +0200
+Subject: [PATCH 03/13] linux/kernel.h: Add a mechanism to detect size_t
+ overflow
+
+Issue: ALB-8357
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/linux/kernel.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 355594a7cc..a557479bd3 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -295,4 +295,11 @@
+ #define check_u32_overflow(_u32, _inc) \
+ 	((_u32) > (UINT32_MAX - (_inc)))
+ 
++/*
++ * Evaluates to 1 if (size_t + inc) overflows, 0 otherwise.
++ * Both arguments must be of size_t type.
++ */
++#define check_size_overflow(_sizet, _inc) \
++	((_sizet) > (SIZE_MAX - (_inc)))
++
+ #endif
+-- 
+2.17.1
+
