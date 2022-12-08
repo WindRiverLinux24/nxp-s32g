@@ -1,0 +1,92 @@
+From 953596b75bf29325703380103d62bd1a0a266a3d Mon Sep 17 00:00:00 2001
+From: "jan.petrous" <jan.petrous@nxp.com>
+Date: Mon, 5 Dec 2022 17:04:09 +0100
+Subject: [PATCH 3/3] version PFE_S32G_A53_LNX_1.2.0 RC4
+
+Flip the default for RX DDR stall W/A on S32G2
+
+pfe_linux.git: d5bb36399c1bcdb461f46051b3849d486f02cad2
+
+Upstream-Status: Pending
+
+Signed-off-by: Jan Petrous <jan.petrous@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ PFE_S32G_A53_LNX_RTM_1.2.0_SCR.txt | 48 ++++++++++++++++++++++++++++++
+ sw/linux-pfeng/pfeng-drv.c         |  4 +--
+ 2 files changed, 50 insertions(+), 2 deletions(-)
+ create mode 100644 PFE_S32G_A53_LNX_RTM_1.2.0_SCR.txt
+
+diff --git a/PFE_S32G_A53_LNX_RTM_1.2.0_SCR.txt b/PFE_S32G_A53_LNX_RTM_1.2.0_SCR.txt
+new file mode 100644
+index 0000000..fcfe0ad
+--- /dev/null
++++ b/PFE_S32G_A53_LNX_RTM_1.2.0_SCR.txt
+@@ -0,0 +1,48 @@
++NXP Software Content Register
++
++Release Name:           PFE-DRV_S32G_A53_LNX_RTM_1.2.0
++
++Outgoing License:       GPL-2.0
++
++Package:                PFE-DRV_S32G_A53_LNX
++    Description:        The PFE Linux driver
++    Version:            RTM 1.2.0
++    License:            GPL-2.0
++    Format:             source code
++    Release Location:   GITHUB
++
++Component:              LINUX_PFENG
++    Location:           sw/linux-pfeng/
++    Description:        Linux NAPI ethernet driver
++    License:            GPL-2.0
++
++Component:              PFE_PLATFORM
++    Location:           sw/pfe_platform/
++                        sw/pfe_hif_drv/
++    Description:        PFE platform
++    License:            GPL-2.0
++
++Component:              SUPPORT_LIBS
++    Location:           sw/bpool/
++                        sw/common/
++                        sw/elf/
++                        sw/hal/
++                        sw/oal/
++                        sw/fifo/
++    Description:        PFE platform dependant library
++    License:            GPL-2.0
++
++Component:              FCI
++    Location:           sw/fci/
++                        sw/xfci/
++    Description:        Fast control interface library
++    License:            GPL-2.0
++
++Component:              ct_assert.h
++    Description:        Compile-time assert implementation
++    License:            GNU All-Permissive License
++
++Component:              LIBFCI_CLI
++    Location:           sw/libfci_cli/
++    Description:        Example FCI config tool
++    License:            BSD-3
+diff --git a/sw/linux-pfeng/pfeng-drv.c b/sw/linux-pfeng/pfeng-drv.c
+index 025abf1..3c3200e 100644
+--- a/sw/linux-pfeng/pfeng-drv.c
++++ b/sw/linux-pfeng/pfeng-drv.c
+@@ -120,9 +120,9 @@ module_param(disable_master_detection, int, 0644);
+ MODULE_PARM_DESC(disable_master_detection, "\t 1 - disable Master detection signalization (default is 0)");
+ #endif /* PFE_CFG_MULTI_INSTANCE_SUPPORT */
+ 
+-static bool g2_ordered_class_writes = true;
++static bool g2_ordered_class_writes = false;
+ module_param(g2_ordered_class_writes, bool, 0644);
+-MODULE_PARM_DESC(g2_ordered_class_writes, "\t Enable ordered class writes on S32G2 (default: true)");
++MODULE_PARM_DESC(g2_ordered_class_writes, "\t Enable ordered class writes on S32G2 (default: false)");
+ 
+ static bool g3_rtable_in_lmem = false;
+ module_param(g3_rtable_in_lmem , bool, 0644);
+-- 
+2.25.1
+

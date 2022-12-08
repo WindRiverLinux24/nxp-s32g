@@ -11,6 +11,9 @@ SRC_URI = "${URL}"
 
 SRC_URI:append = " \
         file://bsp35/rc4/0001-version-PFE_S32G_A53_LNX_RTM_1.2.0-RC1.patch \
+        file://bsp35/rc9/0001-version-PFE_S32G_A53_LNX_1.2.0-RC2.patch \
+        file://bsp35/rc9/0002-version-PFE_S32G_A53_LNX_1.2.0-RC3.patch \
+        file://bsp35/rc9/0003-version-PFE_S32G_A53_LNX_1.2.0-RC4.patch \
 "
 
 SRCREV = "e7cce64f125892f41cd1695ba5d08e3b5d3e2704"
