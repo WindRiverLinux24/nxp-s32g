@@ -1,0 +1,30 @@
+From 58db2fd5dc42aecb984166bf7600f7dfa03133ba Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 2 Nov 2022 15:46:47 +0200
+Subject: [PATCH 04/11] s32cc: clk: Correct a typo
+
+Issue: ALB-9489
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/enable_clk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/nxp/s32/clk/enable_clk.c b/drivers/nxp/s32/clk/enable_clk.c
+index f0adc7982..66f0428e2 100644
+--- a/drivers/nxp/s32/clk/enable_clk.c
++++ b/drivers/nxp/s32/clk/enable_clk.c
+@@ -1377,7 +1377,7 @@ int s32gen1_enable(struct clk *c, int enable)
+ 
+ 	clk = get_clock(c->id);
+ 	if (!clk) {
+-		ERROR("Clock %" PRIu32 " is not part of the clcok tree\n",
++		ERROR("Clock %" PRIu32 " is not part of the clock tree\n",
+ 		      c->id);
+ 		return 0;
+ 	}
+-- 
+2.17.1
+

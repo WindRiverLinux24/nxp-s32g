@@ -96,6 +96,17 @@ SRC_URI += " \
     file://bsp35/rc7/0047-s32-perf-Implement-platform-specific-services-for-se.patch \
     file://bsp35/rc7/0048-plat-s32-enable-performance-domain-protocol-for-s32-.patch \
     file://bsp35/rc7/0049-s32-clock-Switch-cgm-mux-to-FIRC-before-changing-the.patch \
+    file://bsp35/rc9/0001-s32cc-avoid-unsigned-wrap-around.patch \
+    file://bsp35/rc9/0002-s32-io-memcpy-check-pointer-overflow.patch \
+    file://bsp35/rc9/0003-s32cc-clk-Correct-PFE-clock-names.patch \
+    file://bsp35/rc9/0004-s32cc-clk-Correct-a-typo.patch \
+    file://bsp35/rc9/0005-s32cc-clk-Rename-PFE-RMII-clocks.patch \
+    file://bsp35/rc9/0006-s32cc-clk-Enable-PFE-RMII-and-MII-clocks.patch \
+    file://bsp35/rc9/0007-plat-s32-Fix-the-list-of-implemented-SCMI-protocols.patch \
+    file://bsp35/rc9/0008-fdts-s32g-clk-Add-PFE-RMII-clocks.patch \
+    file://bsp35/rc9/0009-fdts-s32g-pfe-Add-TJA1101B-RMII-phy-support-on-s32g3.patch \
+    file://bsp35/rc9/0010-s32g-Add-build-target-s32g3xxaevb3rmii.patch \
+    file://bsp35/rc9/0011-secboot-hse-fix-timing-req-from-hse.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \

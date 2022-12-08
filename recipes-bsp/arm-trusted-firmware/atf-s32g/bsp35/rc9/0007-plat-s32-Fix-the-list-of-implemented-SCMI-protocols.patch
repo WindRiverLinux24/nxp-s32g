@@ -1,0 +1,46 @@
+From 5c379f54087c7ed23a1cc8e0eb5c18dbddc14fa7 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Mon, 21 Nov 2022 10:04:22 +0200
+Subject: [PATCH 07/11] plat: s32: Fix the list of implemented SCMI protocols
+
+Protocols should be ordered in ascending order and
+base protocol should be excluded from the list.
+
+Issue: ALB-9548
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32_svc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/plat/nxp/s32/s32_svc.c b/plat/nxp/s32/s32_svc.c
+index 937f93b89..473decb0b 100644
+--- a/plat/nxp/s32/s32_svc.c
++++ b/plat/nxp/s32/s32_svc.c
+@@ -37,10 +37,10 @@ struct response {
+ };
+ 
+ static const uint8_t s32_protocols[] = {
+-	SCMI_PROTOCOL_ID_BASE,
+-	SCMI_PROTOCOL_ID_CLOCK,
+ 	SCMI_PROTOCOL_ID_PERF,
++	SCMI_PROTOCOL_ID_CLOCK,
+ 	SCMI_PROTOCOL_ID_RESET_DOMAIN,
++	0U,
+ };
+ 
+ const char *plat_scmi_vendor_name(void)
+@@ -71,7 +71,7 @@ int32_t plat_scmi_reset_agent(unsigned int agent_id)
+ 
+ size_t plat_scmi_protocol_count(void)
+ {
+-	return sizeof(s32_protocols);
++	return ARRAY_SIZE(s32_protocols) - 1;
+ }
+ 
+ static int32_t s32_svc_smc_setup(void)
+-- 
+2.17.1
+

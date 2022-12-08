@@ -1,0 +1,42 @@
+From c86e6bbc8d7b328881105a0b93bde3c895fcebe3 Mon Sep 17 00:00:00 2001
+From: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Date: Thu, 10 Nov 2022 11:16:01 +0200
+Subject: [PATCH 02/11] s32: io: memcpy: check pointer overflow
+
+CIDs: 23346880
+
+Issue: ALB-9513
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Pirea <radu-nicolae.pirea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/io/io_memmap.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nxp/s32/io/io_memmap.c b/drivers/nxp/s32/io/io_memmap.c
+index cadee3695..bba1fd1f3 100644
+--- a/drivers/nxp/s32/io/io_memmap.c
++++ b/drivers/nxp/s32/io/io_memmap.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
+- * Copyright 2021 NXP
++ * Copyright 2021-2022 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -118,6 +118,9 @@ static void s32g_memcpy(uint8_t *dest, const uint8_t *src, size_t count)
+ 	if (src == dest)
+ 		return;
+ 
++	assert(!check_uptr_overflow((uintptr_t) dest, (uintptr_t)count));
++	assert(!check_uptr_overflow((uintptr_t) src, (uintptr_t)count));
++
+ 	dest64 = (uint64_t *)dest;
+ 	src64 = (uint64_t *)src;
+ 
+-- 
+2.17.1
+

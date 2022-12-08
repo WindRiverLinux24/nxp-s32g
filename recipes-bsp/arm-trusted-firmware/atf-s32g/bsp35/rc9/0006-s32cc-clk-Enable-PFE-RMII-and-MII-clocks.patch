@@ -1,0 +1,267 @@
+From 7b2b419eb959c7b1d3297be3995314f2b3a1998a Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 3 Nov 2022 09:40:35 +0200
+Subject: [PATCH 06/11] s32cc: clk: Enable PFE RMII and MII clocks
+
+Issue: ALB-9489
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/s32g_scmi_ids.c | 68 +++++++++++++++++++++--------
+ fdts/s32g.dtsi                      | 31 ++++++++++++-
+ fdts/s32gxxxa-evb.dtsi              | 12 +++++
+ 3 files changed, 92 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/s32g_scmi_ids.c b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+index 43c2f5021..c828cf0b5 100644
+--- a/drivers/nxp/s32/clk/s32g_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+@@ -89,48 +89,45 @@ static int s32g_compound2clkid(uint32_t scmi_clk_id, uint32_t *clk_id)
+ 	switch (scmi_clk_id) {
+ 	case S32G_SCMI_CLK_PFE0_RX_SGMII:
+ 	case S32G_SCMI_CLK_PFE0_RX_RGMII:
++	case S32G_SCMI_CLK_PFE0_RX_RMII:
++	case S32G_SCMI_CLK_PFE0_RX_MII:
+ 		if (clk_id)
+ 			*clk_id = S32G_CLK_PFE_MAC0_RX;
+ 		break;
+ 	case S32G_SCMI_CLK_PFE0_TX_SGMII:
+ 	case S32G_SCMI_CLK_PFE0_TX_RGMII:
++	case S32G_SCMI_CLK_PFE0_TX_RMII:
++	case S32G_SCMI_CLK_PFE0_TX_MII:
+ 		if (clk_id)
+ 			*clk_id = S32G_CLK_PFE_MAC0_TX_DIV;
+ 		break;
+ 	case S32G_SCMI_CLK_PFE1_RX_SGMII:
+ 	case S32G_SCMI_CLK_PFE1_RX_RGMII:
++	case S32G_SCMI_CLK_PFE1_RX_RMII:
++	case S32G_SCMI_CLK_PFE1_RX_MII:
+ 		if (clk_id)
+ 			*clk_id = S32G_CLK_PFE_MAC1_RX;
+ 		break;
+ 	case S32G_SCMI_CLK_PFE1_TX_SGMII:
+ 	case S32G_SCMI_CLK_PFE1_TX_RGMII:
++	case S32G_SCMI_CLK_PFE1_TX_RMII:
++	case S32G_SCMI_CLK_PFE1_TX_MII:
+ 		if (clk_id)
+ 			*clk_id = S32G_CLK_PFE_MAC1_TX;
+ 		break;
+ 	case S32G_SCMI_CLK_PFE2_RX_SGMII:
+ 	case S32G_SCMI_CLK_PFE2_RX_RGMII:
++	case S32G_SCMI_CLK_PFE2_RX_RMII:
++	case S32G_SCMI_CLK_PFE2_RX_MII:
+ 		if (clk_id)
+ 			*clk_id = S32G_CLK_PFE_MAC2_RX;
+ 		break;
+ 	case S32G_SCMI_CLK_PFE2_TX_SGMII:
+ 	case S32G_SCMI_CLK_PFE2_TX_RGMII:
+-		if (clk_id)
+-			*clk_id = S32G_CLK_PFE_MAC2_TX;
+-		break;
+-	case S32G_SCMI_CLK_PFE0_RX_RMII:
+-	case S32G_SCMI_CLK_PFE0_TX_RMII:
+-	case S32G_SCMI_CLK_PFE0_RX_MII:
+-	case S32G_SCMI_CLK_PFE0_TX_MII:
+-	case S32G_SCMI_CLK_PFE1_RX_RMII:
+-	case S32G_SCMI_CLK_PFE1_TX_RMII:
+-	case S32G_SCMI_CLK_PFE1_RX_MII:
+-	case S32G_SCMI_CLK_PFE1_TX_MII:
+-	case S32G_SCMI_CLK_PFE2_RX_RMII:
+ 	case S32G_SCMI_CLK_PFE2_TX_RMII:
+-	case S32G_SCMI_CLK_PFE2_RX_MII:
+ 	case S32G_SCMI_CLK_PFE2_TX_MII:
+ 		if (clk_id)
+-			*clk_id = S32GEN1_SCMI_NOT_IMPLEMENTED_CLK;
++			*clk_id = S32G_CLK_PFE_MAC2_TX;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -175,11 +172,19 @@ static int set_mac0_rx_parent(struct clk *clk)
+ {
+ 	uint32_t rx_id;
+ 	uint32_t clk_id = clk->id;
++	int ret;
+ 
+ 	if (clk_id == S32G_SCMI_CLK_PFE0_RX_SGMII) {
+ 		rx_id = S32G_CLK_SERDES1_LANE0_CDR;
+-	} else if (clk_id == S32G_SCMI_CLK_PFE0_RX_RGMII) {
++	} else if (clk_id == S32G_SCMI_CLK_PFE0_RX_RGMII ||
++		   clk_id == S32G_SCMI_CLK_PFE0_RX_MII) {
+ 		rx_id = S32G_CLK_PFE_MAC0_EXT_RX;
++	} else if (clk_id == S32G_SCMI_CLK_PFE0_RX_RMII) {
++		rx_id = S32G_CLK_PFE_MAC0_REF_DIV;
++		ret = cc_set_mux_parent(clk, S32G_CLK_MC_CGM2_MUX7,
++					S32G_CLK_PFE_MAC0_RMII_REF);
++		if (ret)
++			return ret;
+ 	} else {
+ 		ERROR("Invalid PFE0 RX mode\n");
+ 		return -EINVAL;
+@@ -197,6 +202,10 @@ static int set_mac0_tx_parent(struct clk *clk)
+ 		tx_id = S32G_CLK_SERDES1_LANE0_TX;
+ 	} else if (clk_id == S32G_SCMI_CLK_PFE0_TX_RGMII) {
+ 		tx_id = S32GEN1_CLK_PERIPH_PLL_PHI5;
++	} else if (clk_id == S32G_SCMI_CLK_PFE0_TX_RMII) {
++		tx_id = S32G_CLK_PFE_MAC0_RMII_REF;
++	} else if (clk_id == S32G_SCMI_CLK_PFE0_TX_MII) {
++		tx_id = S32G_CLK_PFE_MAC0_EXT_TX;
+ 	} else {
+ 		ERROR("Invalid PFE0 TX mode\n");
+ 		return -EINVAL;
+@@ -209,11 +218,19 @@ static int set_mac1_rx_parent(struct clk *clk)
+ {
+ 	uint32_t rx_id;
+ 	uint32_t clk_id = clk->id;
++	int ret;
+ 
+ 	if (clk_id == S32G_SCMI_CLK_PFE1_RX_SGMII) {
+ 		rx_id = S32G_CLK_SERDES1_LANE1_CDR;
+-	} else if (clk_id == S32G_SCMI_CLK_PFE1_RX_RGMII) {
++	} else if (clk_id == S32G_SCMI_CLK_PFE1_RX_RGMII ||
++		   clk_id == S32G_SCMI_CLK_PFE1_RX_MII) {
+ 		rx_id = S32G_CLK_PFE_MAC1_EXT_RX;
++	} else if (clk_id == S32G_SCMI_CLK_PFE1_RX_RMII) {
++		rx_id = S32G_CLK_PFE_MAC1_REF_DIV;
++		ret = cc_set_mux_parent(clk, S32G_CLK_MC_CGM2_MUX8,
++					S32G_CLK_PFE_MAC1_RMII_REF);
++		if (ret)
++			return ret;
+ 	} else {
+ 		ERROR("Invalid PFE1 RX mode\n");
+ 		return -EINVAL;
+@@ -231,6 +248,10 @@ static int set_mac1_tx_parent(struct clk *clk)
+ 		tx_id = S32G_CLK_SERDES1_LANE1_TX;
+ 	} else if (clk_id == S32G_SCMI_CLK_PFE1_TX_RGMII) {
+ 		tx_id = S32GEN1_CLK_PERIPH_PLL_PHI5;
++	} else if (clk_id == S32G_SCMI_CLK_PFE1_TX_RMII) {
++		tx_id = S32G_CLK_PFE_MAC1_RMII_REF;
++	} else if (clk_id == S32G_SCMI_CLK_PFE1_TX_MII) {
++		tx_id = S32G_CLK_PFE_MAC1_EXT_TX;
+ 	} else {
+ 		ERROR("Invalid PFE1 TX mode\n");
+ 		return -EINVAL;
+@@ -243,11 +264,20 @@ static int set_mac2_rx_parent(struct clk *clk)
+ {
+ 	uint32_t rx_id;
+ 	uint32_t clk_id = clk->id;
++	int ret;
+ 
+ 	if (clk_id == S32G_SCMI_CLK_PFE2_RX_SGMII) {
+ 		rx_id = S32G_CLK_SERDES0_LANE1_CDR;
+-	} else if (clk_id == S32G_SCMI_CLK_PFE2_RX_RGMII) {
++	} else if (clk_id == S32G_SCMI_CLK_PFE2_RX_RGMII ||
++		   clk_id == S32G_SCMI_CLK_PFE2_RX_MII) {
+ 		rx_id = S32G_CLK_PFE_MAC2_EXT_RX;
++	} else if (clk_id == S32G_SCMI_CLK_PFE2_RX_RMII) {
++		rx_id = S32G_CLK_PFE_MAC2_REF_DIV;
++		ret = cc_set_mux_parent(clk, S32G_CLK_MC_CGM2_MUX9,
++					S32G_CLK_PFE_MAC2_RMII_REF);
++		if (ret)
++			return ret;
++
+ 	} else {
+ 		ERROR("Invalid PFE2 RX mode\n");
+ 		return -EINVAL;
+@@ -265,6 +295,10 @@ static int set_mac2_tx_parent(struct clk *clk)
+ 		tx_id = S32G_CLK_SERDES0_LANE1_TX;
+ 	} else if (clk_id == S32G_SCMI_CLK_PFE2_TX_RGMII) {
+ 		tx_id = S32GEN1_CLK_PERIPH_PLL_PHI5;
++	} else if (clk_id == S32G_SCMI_CLK_PFE2_TX_RMII) {
++		tx_id = S32G_CLK_PFE_MAC2_RMII_REF;
++	} else if (clk_id == S32G_SCMI_CLK_PFE2_TX_MII) {
++		tx_id = S32G_CLK_PFE_MAC2_EXT_TX;
+ 	} else {
+ 		ERROR("Invalid PFE2 TX mode\n");
+ 		return -EINVAL;
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index 61290cbdc..e1385ad12 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -31,6 +31,27 @@
+ 		};
+ 	};
+ 
++	clocks {
++		pfe_mac0_rmii: pfe_mac0_rmii {
++			compatible = "fixed-clock";
++			/* Dummy frequency to avoid invalid freq when it's set on 0 */
++			clock-frequency = <1>;
++			#clock-cells = <1>;
++		};
++
++		pfe_mac1_rmii: pfe_mac1_rmii {
++			compatible = "fixed-clock";
++			clock-frequency = <1>;
++			#clock-cells = <1>;
++		};
++
++		pfe_mac2_rmii: pfe_mac2_rmii {
++			compatible = "fixed-clock";
++			clock-frequency = <1>;
++			#clock-cells = <1>;
++		};
++	};
++
+ 	soc {
+ 		siul2@4009c000 {
+ 			compatible = "simple-mfd";
+@@ -258,7 +279,6 @@
+ 		<&plat_clks S32GEN1_CLK_XBAR_DIV6>,
+ 		<&plat_clks S32GEN1_CLK_SPI>,
+ 		<&plat_clks S32GEN1_CLK_QSPI>;
+-
+ 	assigned-clocks =
+ 		<&plat_clks S32GEN1_CLK_FXOSC>,
+ 		<&plat_clks S32GEN1_CLK_FIRC>,
+@@ -272,6 +292,9 @@
+ 		<&plat_clks S32GEN1_CLK_SERDES0_LANE0_CDR>,
+ 		<&plat_clks S32G_CLK_SERDES0_LANE1_TX>,
+ 		<&plat_clks S32G_CLK_SERDES0_LANE1_CDR>,
++		<&plat_clks S32G_CLK_PFE_MAC0_RMII_REF>,
++		<&plat_clks S32G_CLK_PFE_MAC1_RMII_REF>,
++		<&plat_clks S32G_CLK_PFE_MAC2_RMII_REF>,
+ 		<&plat_clks S32GEN1_CLK_SERDES_REF>;
+ 	assigned-clock-parents =
+ 		<&fxosc 0>,
+@@ -285,11 +308,15 @@
+ 		<&serdes0_lane0_ext_tx 0>,
+ 		<&serdes0_lane0_ext_cdr 0>,
+ 		<&serdes0_lane1_ext_tx 0>,
+-		<&serdes0_lane1_ext_cdr 0>;
++		<&serdes0_lane1_ext_cdr 0>,
++		<&pfe_mac0_rmii 0>,
++		<&pfe_mac1_rmii 0>,
++		<&pfe_mac2_rmii 0>;
+ 	assigned-clock-rates =
+ 		<0>, <0>, <0>, <0>,
+ 		<0>, <0>, <0>, <0>,
+ 		<0>, <0>, <0>, <0>,
++		<0>, <0>, <0>,
+ 		<100000000>;
+ };
+ 
+diff --git a/fdts/s32gxxxa-evb.dtsi b/fdts/s32gxxxa-evb.dtsi
+index c3d9bc4cb..c71a2b062 100644
+--- a/fdts/s32gxxxa-evb.dtsi
++++ b/fdts/s32gxxxa-evb.dtsi
+@@ -468,3 +468,15 @@
+ 	pinctrl-names = "default";
+ 	status = "okay";
+ };
++
++&pfe_mac0_rmii {
++	clock-frequency = <50000000>;
++};
++
++&pfe_mac1_rmii {
++	clock-frequency = <50000000>;
++};
++
++&pfe_mac2_rmii {
++	clock-frequency = <50000000>;
++};
+-- 
+2.17.1
+

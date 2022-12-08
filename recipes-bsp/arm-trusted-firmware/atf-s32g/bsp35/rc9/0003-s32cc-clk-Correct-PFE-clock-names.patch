@@ -1,0 +1,58 @@
+From 11db1a6099f9288b7cd05043733fa45a5e365431 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 3 Nov 2022 10:34:21 +0200
+Subject: [PATCH 03/11] s32cc: clk: Correct PFE clock names
+
+Issue: ALB-9489
+Upstream-Status: Pending 
+
+Signed-off-by: Martin Hrdlicka <martin.hrdlicka@nxp.com>
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/nxp/s32/clk/s32g_scmi_ids.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/nxp/s32/clk/s32g_scmi_ids.c b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+index 6dd79fe8a..43c2f5021 100644
+--- a/drivers/nxp/s32/clk/s32g_scmi_ids.c
++++ b/drivers/nxp/s32/clk/s32g_scmi_ids.c
+@@ -53,13 +53,13 @@ struct s32gen1_scmi_clk s32g_scmi_clk[] = {
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE1_TX_RGMII,
+ 			 S32GEN1_SCMI_COMPLEX_CLK, "pfe1_tx_rgmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE1_RX_RMII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_rx_rmii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe1_rx_rmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE1_TX_RMII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_tx_rmii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe1_tx_rmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE1_RX_MII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_rx_mii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe1_rx_mii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE1_TX_MII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_tx_mii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe1_tx_mii"),
+ 	/* PFE2 */
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_RX_SGMII,
+ 			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_rx_sgmii"),
+@@ -70,13 +70,13 @@ struct s32gen1_scmi_clk s32g_scmi_clk[] = {
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_TX_RGMII,
+ 			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_tx_rgmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_RX_RMII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_rx_rmii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_rx_rmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_TX_RMII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_tx_rmii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_tx_rmii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_RX_MII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_rx_mii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_rx_mii"),
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_PFE2_TX_MII,
+-			 S32GEN1_SCMI_COMPLEX_CLK, "pfe0_tx_mii"),
++			 S32GEN1_SCMI_COMPLEX_CLK, "pfe2_tx_mii"),
+ 	/* LLCE */
+ 	SCMI_ARRAY_ENTRY(S32G_SCMI_CLK_LLCE_SYS,
+ 			 S32GEN1_CLK_XBAR_DIV2, "llce_sys"),
+-- 
+2.17.1
+

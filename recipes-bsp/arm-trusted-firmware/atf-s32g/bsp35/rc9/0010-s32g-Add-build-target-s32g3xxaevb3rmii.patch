@@ -1,0 +1,58 @@
+From cad2e12cf3aa81b3bb3be581123f1bc84ed95d86 Mon Sep 17 00:00:00 2001
+From: Martin Hrdlicka <martin.hrdlicka@nxp.com>
+Date: Sun, 13 Nov 2022 18:02:00 +0100
+Subject: [PATCH 10/11] s32g: Add build target s32g3xxaevb3rmii
+
+The new build target s32g3xxa-evb3-rmii for the s32g3 SOC
+
+Issue: ALB-9489
+Upstream-Status: Pending 
+
+Signed-off-by: Martin Hrdlicka <martin.hrdlicka@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../s32g3/s32g3xxaevb3rmii/include/platform_def.h   | 11 +++++++++++
+ .../nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/platform.mk | 13 +++++++++++++
+ 2 files changed, 24 insertions(+)
+ create mode 100644 plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/include/platform_def.h
+ create mode 100644 plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/platform.mk
+
+diff --git a/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/include/platform_def.h b/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/include/platform_def.h
+new file mode 100644
+index 000000000..1949f1a65
+--- /dev/null
++++ b/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/include/platform_def.h
+@@ -0,0 +1,11 @@
++/*
++ * Copyright 2022 NXP
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++#ifndef PLATFORM_DEF_H
++#define PLATFORM_DEF_H
++
++#include <s32g3_platform_def.h>
++
++#endif /* PLATFORM_DEF_H */
+diff --git a/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/platform.mk b/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/platform.mk
+new file mode 100644
+index 000000000..11e9d7219
+--- /dev/null
++++ b/plat/nxp/s32/s32g/s32g3/s32g3xxaevb3rmii/platform.mk
+@@ -0,0 +1,13 @@
++#
++# Copyright 2022 NXP
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++
++include plat/nxp/s32/s32g/s32g3/s32g3.mk
++
++S32_BOARD_PATH		:= ${PLAT_SOC_PATH}/s32g3xxaevb3rmii
++
++PLAT_INCLUDES		+= -I${S32_BOARD_PATH}/include \
++
++DTB_FILE_NAME		?= s32g3xxa-evb3-rmii.dtb
+-- 
+2.17.1
+

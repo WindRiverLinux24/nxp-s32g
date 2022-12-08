@@ -1,0 +1,74 @@
+From 08ef0179cff364150f98c1257ffaae15272c21bd Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Mon, 31 Oct 2022 17:54:27 +0200
+Subject: [PATCH 11/11] secboot: hse: fix timing req from hse
+
+hse has a period of 100ms between start-up and
+post-boot in parallel boot, during which the app
+core can finish it's init
+
+bl2 does not respect this requirement, which leads
+to a race on modifying some mmc clocks, causing
+the bl2 to loop endlessly waiting for a flag
+from mmc
+
+Issue: ALB-8842 ALB-8858
+Upstream-Status: Pending 
+
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32g/include/s32g_bl_common.h |  5 +++++
+ plat/nxp/s32/s32g/s32g_bl2_el3.c           | 13 +++++++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/plat/nxp/s32/s32g/include/s32g_bl_common.h b/plat/nxp/s32/s32g/include/s32g_bl_common.h
+index b396cecf2..4525636b3 100644
+--- a/plat/nxp/s32/s32g/include/s32g_bl_common.h
++++ b/plat/nxp/s32/s32g/include/s32g_bl_common.h
+@@ -10,6 +10,11 @@
+ #include <stdint.h>
+ #include "s32_bl_common.h"
+ 
++#define HSE_GCR (0x40210114UL)
++#define HSE_FSR (0x40210104UL)
++#define HSE_STATUS_INIT_OK BIT(24)
++#define HSE_PERIPH_CONFIG_DONE BIT(0)
++
+ void s32g_reinit_i2c(void);
+ 
+ bool s32gen1_is_wkp_short_boot(void);
+diff --git a/plat/nxp/s32/s32g/s32g_bl2_el3.c b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+index d81a97652..119036f32 100644
+--- a/plat/nxp/s32/s32g/s32g_bl2_el3.c
++++ b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+@@ -173,6 +173,12 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 	s32_early_plat_init(false);
+ 	console_s32_register();
+ 
++#ifdef HSE_SECBOOT
++	/* if HSE FW is present, write HSE_CONFIG_PERIPH_DONE
++	 * to signal clock config is done */
++	mmio_write_32(HSE_GCR, HSE_PERIPH_CONFIG_DONE);
++#endif
++
+ 	if ((reset_cause == CAUSE_WAKEUP_DURING_STANDBY) &&
+ 	    !ssram_mb->short_boot) {
+ 		/* Trampoline to bl31_warm_entrypoint */
+@@ -180,6 +186,13 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 		panic();
+ 	}
+ 
++#ifdef HSE_SECBOOT
++	/* if HSE FW is present, wait until HSE FW signals
++	 * that init is complete - HSE_STATUS_INIT_OK */
++	while ((mmio_read_32(HSE_FSR) & HSE_STATUS_INIT_OK) == 0)
++		;
++#endif
++
+ 	NOTICE("Reset status: %s\n", get_reset_cause_str(reset_cause));
+ 	s32_io_setup();
+ 
+-- 
+2.17.1
+
