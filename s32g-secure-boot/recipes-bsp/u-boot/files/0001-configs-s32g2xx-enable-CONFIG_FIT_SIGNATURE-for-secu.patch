@@ -19,7 +19,7 @@ index c2ac1d22cb..8d81194be1 100644
 @@ -5,3 +5,4 @@ CONFIG_SD_BOOT=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
- CONFIG_HSE_SECBOOT=y
+ CONFIG_NXP_HSE_SUPPORT=y
 +CONFIG_FIT_SIGNATURE=y
 diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
 index 0c744fda5d..eae1af6f92 100644
@@ -28,7 +28,7 @@ index 0c744fda5d..eae1af6f92 100644
 @@ -7,3 +7,4 @@ CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
- CONFIG_HSE_SECBOOT=y
+ CONFIG_NXP_HSE_SUPPORT=y
 +CONFIG_FIT_SIGNATURE=y
 diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
 index 5c121f049d..0095d30557 100644
@@ -37,7 +37,7 @@ index 5c121f049d..0095d30557 100644
 @@ -5,3 +5,4 @@ CONFIG_SD_BOOT=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
- CONFIG_HSE_SECBOOT=y
+ CONFIG_NXP_HSE_SUPPORT=y
 +CONFIG_FIT_SIGNATURE=y
 diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
 index 4f2c9df19c..b263a62d6b 100644
@@ -46,7 +46,7 @@ index 4f2c9df19c..b263a62d6b 100644
 @@ -7,3 +7,4 @@ CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
- CONFIG_HSE_SECBOOT=y
+ CONFIG_NXP_HSE_SUPPORT=y
 +CONFIG_FIT_SIGNATURE=y
 -- 
 2.36.0
