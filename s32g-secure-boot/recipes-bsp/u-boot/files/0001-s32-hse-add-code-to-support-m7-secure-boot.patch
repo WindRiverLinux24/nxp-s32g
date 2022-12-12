@@ -1,4 +1,4 @@
-From 81b64ebcb91ee6391579fc48ab4ffa73db75a0f8 Mon Sep 17 00:00:00 2001
+From 0afc0b86007c9b583de41b203c9b103d11fc2408 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 1 Nov 2022 17:13:26 +0800
 Subject: [PATCH] s32: hse: add code to support m7 secure boot
@@ -8,12 +8,12 @@ is enabled.
 
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- arch/arm/mach-s32/s32-cc/hse_adv_secboot.c | 127 ++++++++++++++++++---
+ arch/arm/mach-s32/s32-cc/hse_adv_secboot.c | 126 +++++++++++++++++++--
  include/hse/hse_abi.h                      |   8 +-
- 2 files changed, 121 insertions(+), 14 deletions(-)
+ 2 files changed, 121 insertions(+), 13 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index 18d8768ac3..edab040ca4 100644
+index cf5b21b99e..82c0bbb8b8 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -52,6 +52,9 @@ DECLARE_GLOBAL_DATA_PTR;
@@ -82,11 +82,10 @@ index 18d8768ac3..edab040ca4 100644
  	uintptr_t sign_offset;
  
  	sign_offset = (uintptr_t)get_fip_sign_offset(priv);
-@@ -227,9 +247,9 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
- 	memset((void *)&priv->cr_entry, 0, sizeof(struct hse_cr_entry));
- 	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
- 
--	priv->cr_entry.core_id = HSE_APP_CORE3;
+@@ -234,8 +254,9 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
+ #else
+ 	priv->cr_entry.core_id = HSE_APP_CORE3;
+ #endif
 +	priv->cr_entry.core_id = HSE_APP_M7_0;
  	priv->cr_entry.cr_sanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
 -	priv->cr_entry.preboot_smr_map = HSE_SMR_ENTRY_1;
@@ -94,7 +93,7 @@ index 18d8768ac3..edab040ca4 100644
  	priv->cr_entry.pass_reset = priv->app_boot_hdr.ram_entry;
  	priv->cr_entry.start_option = HSE_CR_AUTO_START;
  
-@@ -252,7 +272,7 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
+@@ -258,7 +279,7 @@ int hse_install_cr_entry(struct hse_private *priv, u32 *recv_buf)
  	return 0;
  }
  
@@ -103,7 +102,7 @@ index 18d8768ac3..edab040ca4 100644
  {
  	struct hse_smr_entry *smr_entry;
  	struct hse_smr_install_srv *smr_install_req;
-@@ -262,7 +282,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+@@ -268,7 +289,7 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
  	smr_entry = &(priv->smr_entry);
  	smr_install_req = &(priv->srv_desc.smr_install_req);
  
@@ -112,7 +111,7 @@ index 18d8768ac3..edab040ca4 100644
  	memset((void *)&priv->smr_entry, 0, sizeof(struct hse_smr_entry));
  	memset((void *)&priv->srv_desc, 0, sizeof(struct hse_srv_desc));
  
-@@ -281,10 +301,10 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+@@ -287,10 +308,10 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
  
  	/**
  	 * no address of actual code start, need to reference app bl header
@@ -126,7 +125,7 @@ index 18d8768ac3..edab040ca4 100644
  	smr_entry->smr_size = fip_size - HSE_FIP_AUTH_LEN;
  	smr_entry->config_flags = (HSE_SMR_CFG_FLAG_SD_FLASH |
  				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
-@@ -298,9 +318,9 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+@@ -304,9 +325,9 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
  
  	priv->srv_desc.srv_id = HSE_SRV_ID_SMR_ENTRY_INSTALL;
  	smr_install_req->access_mode = HSE_ACCESS_MODE_ONE_PASS;
@@ -138,7 +137,7 @@ index 18d8768ac3..edab040ca4 100644
  	smr_install_req->smr_data_len = fip_size - HSE_FIP_AUTH_LEN;
  	smr_install_req->smr_auth_tag_addr = (uintptr_t)priv->fip_signature;
  	smr_install_req->smr_auth_tag_len = HSE_FIP_AUTH_LEN;
-@@ -319,6 +339,74 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
+@@ -325,6 +346,74 @@ int hse_install_smr_entry(struct hse_private *priv, u32 *recv_buf)
  	return 0;
  }
  
@@ -213,7 +212,7 @@ index 18d8768ac3..edab040ca4 100644
  int hse_generate_sys_img(struct hse_private *priv, u32 *recv_buf)
  {
  	struct hse_publish_sys_img_srv *publish_sys_img_req;
-@@ -446,6 +534,8 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+@@ -452,6 +541,8 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
  	long long len_read;
  	int hse_nodeoffset, ret;
  	uintptr_t fip_sign_sram;
@@ -222,7 +221,7 @@ index 18d8768ac3..edab040ca4 100644
  
  	/* check if hse has been initialised */
  	hse_status_ret = hse_mu_check_status();
-@@ -495,6 +585,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+@@ -501,6 +592,13 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
  		return ret;
  	}
  
@@ -236,7 +235,7 @@ index 18d8768ac3..edab040ca4 100644
  	fip_sign_sram = get_fip_sign_sram(priv);
  	if (!fip_sign_sram) {
  		printf("ERROR: FIP signature read failed!\n");
-@@ -540,7 +637,11 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
+@@ -546,7 +644,11 @@ static int do_hse_secboot_enable(cmd_tbl_t *cmdtp, int flag,
  	if (ret)
  		return ret;
  
@@ -250,7 +249,7 @@ index 18d8768ac3..edab040ca4 100644
  		return ret;
  
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index 1233e4b859..627ddb84a5 100644
+index de5ed212de..90156b89a8 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -51,6 +51,8 @@
@@ -258,11 +257,11 @@ index 1233e4b859..627ddb84a5 100644
  #define HSE_ACCESS_MODE_ONE_PASS 0u
  
 +#define HSE_APP_M7_0 0u /* M7_0 */
-+#define HSE_APP_M7_1 1u /* M7_0 */
- #define HSE_APP_CORE3 3u /* A53_0 */
++#define HSE_APP_M7_1 1u /* M7_1 */
+ #define HSE_APP_CORE3 3u /* A53_0 of S32G2 SoC */
+ #define HSE_APP_CORE4 4u /* A53_0 of S32G3 SoC */
  
- #define HSE_PUBLISH_UPDATED_DATA_SET BIT(0)
-@@ -61,6 +63,7 @@
+@@ -62,6 +64,7 @@
  #define HSE_SMR_CFG_FLAG_SD_FLASH     0x2u
  #define HSE_SMR_CFG_FLAG_INSTALL_AUTH BIT(2)
  #define HSE_SMR_ENTRY_1               BIT(1)
@@ -270,7 +269,7 @@ index 1233e4b859..627ddb84a5 100644
  
  #define HSE_CR_SANCTION_KEEP_CORE_IN_RESET 0x7455u
  #define HSE_CR_AUTO_START                  0x35A5u
-@@ -192,7 +195,9 @@ struct ivt {
+@@ -193,7 +196,9 @@ struct ivt {
  	u32 sys_img_ext_flash_type;
  	u32 sys_img_flash_page_size;
  	u32 app_bsb_ext_flash_type;
@@ -281,7 +280,7 @@ index 1233e4b859..627ddb84a5 100644
  	u32 gmac[4];
  	/* pad to block size - 512 bytes */
  	u8 reserved4[256];
-@@ -473,6 +478,7 @@ struct hse_private {
+@@ -474,6 +479,7 @@ struct hse_private {
  	u8 rsa_exponent[3];
  	u8 reserved;
  	u8 fip_signature[256];
