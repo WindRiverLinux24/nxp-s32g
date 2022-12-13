@@ -181,6 +181,7 @@ do_deploy() {
 				install -d ${hse_keys_dir}
 				openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
 				openssl rsa -in ${hse_keys_dir}/${HSE_SEC_PRI_KEY} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
+				openssl rsa -in ${hse_keys_dir}/${HSE_SEC_PRI_KEY} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
 			fi
 
 			#calc the offset of need-to-sign part for fip.bin, it is same as the offset of "Trusted Boot Firmware BL2 certificate"
@@ -200,6 +201,7 @@ do_deploy() {
 			echo $dd_offset > ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset
 			#copy pub key and signed fip.bin to DEPLOY_DIR_IMAGE
 			cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
+			cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
 			cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
 
 		fi

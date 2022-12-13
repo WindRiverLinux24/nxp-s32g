@@ -6,6 +6,7 @@ HSE_FW_NAME_S32G3 ?= ""
 HSE_SEC_KEYS ?= "sec_keys"
 HSE_SEC_PRI_KEY ?= "rsa2048_private.pem"
 HSE_SEC_PUB_KEY ?= "rsa2048_public.der"
+HSE_SEC_PUB_KEY_PEM ?= "rsa2048_public.pem"
 HSE_SEC_PRI_KEY_BIT_LEN ?= "2048"
 
 HSE_SEC_SIGN_DST ?= "fip.bin.signature"
