@@ -224,6 +224,9 @@ Offset		Size(bytes)			Name
 
 3.3.3 Target Configuration
 --------------------------
+
+3.3.3.1 Enable First Stage Secure Boot With U-BOOT Command
+----------------------------------------------------------
 A below U-Boot command is provided to enable the target board enter secure boot mode.
 
 	=> hse_secboot_enable rsa2048_public.der
@@ -255,6 +258,26 @@ with below commands
 	800000020 d101 0060 0000 0000 0000 0000 0000 0000
 	800000030 0000 0000 0000 0000 0014 0000 0000 0000
 	800000040 00e6 0500 0000 0000 0900 0000 0000 0000
+
+3.3.3.2 Enable First Stage Secure Boot With User Space Application
+------------------------------------------------------------------
+Based on NXP SDK BSP35, there is a user space application that is able to be used to enable
+the first stage secure boot feature. Detailed steps as below:
+
+	1. Booting up system normally as usual.
+	2. Log in system with "root" as the account name, and then run below commands.
+		# mount /dev/mmcblk0p1 /mnt/
+		# cp /mnt/rsa2048_public.pem ./
+		# umount /mnt
+		# hse-secboot -s -k ./rsa2048_public.pem -d /dev/mmcblk0
+	3. Power off board.
+	4. Power on board, now secure boot had been enabled.
+	   If bootloader image is verified successfully by HSE firmware, board will enter u-boot normally.
+
+Note:
+The above 2 solutions of enabling secure boot exclude from each other, user should only use one of them to
+enable secure boot feature. If user enable secure boot with one solution and then run another one again,
+this may cause uncertain issues to secure boot feature. So please aovid enabling secure boot repeatedly.
 
 3.4 Secure Boot Second Stage
 ----------------------------
