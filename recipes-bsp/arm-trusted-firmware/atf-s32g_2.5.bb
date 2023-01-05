@@ -177,11 +177,19 @@ do_deploy() {
 		hse_keys_dir="${B}/${HSE_SEC_KEYS}"
 
 		if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+			if [ -n "${FIP_SIGN_KEYDIR}" ]; then
+				hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
+			else
+				hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
+			fi
+
 			if [ ! -d "${hse_keys_dir}" ]; then
 				install -d ${hse_keys_dir}
-				openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
-				openssl rsa -in ${hse_keys_dir}/${HSE_SEC_PRI_KEY} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
-				openssl rsa -in ${hse_keys_dir}/${HSE_SEC_PRI_KEY} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
+				if [ -z "${FIP_SIGN_KEYDIR}" ]; then
+					openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
+				fi
+				openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
+				openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
 			fi
 
 			#calc the offset of need-to-sign part for fip.bin, it is same as the offset of "Trusted Boot Firmware BL2 certificate"
@@ -192,7 +200,7 @@ do_deploy() {
 			dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.bin.tmp bs=1 count=`printf "%d" ${sign_offset}` conv=notrunc
 
 			#sign the part
-			openssl dgst -sha1 -sign ${hse_keys_dir}/${HSE_SEC_PRI_KEY} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin.tmp
+			openssl dgst -sha1 -sign ${hse_pri_key} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin.tmp
 			#put the signed part back into fip.bin
 			${S}/tools/fiptool/fiptool update --align 16 --tb-fw-cert ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin
 

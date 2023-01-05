@@ -31,3 +31,5 @@ ATF_PLATFORM:nxp-s32g = "s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
 
 ATF_DTB:aptiv_cvc_sousa = "aptiv-cvc-sousa.dtb"
 ATF_PLATFORM:aptiv_cvc_sousa = "aptiv_cvc_sousa"
+
+FIP_SIGN_KEYDIR ?= "${LAYER_PATH_s32g-secure-layer}/s32g-sample-key/fip-rsa2048-keys"

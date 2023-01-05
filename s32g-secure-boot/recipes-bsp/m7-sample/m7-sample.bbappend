@@ -71,7 +71,11 @@ do_compile:append() {
 		count=${m7_file_size} status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
 
 		# Sign m7_boot code with pre-padding that is from m7_boot_off to the start postion of m7 code
-		openssl dgst -sha1 -sign ${DEPLOY_DIR_IMAGE}/${HSE_SEC_PRI_KEY} -out ${m7_boot_signature} ${m7_boot_file}
+		if [ -n "${FIP_SIGN_KEYDIR}" ]; then
+			openssl dgst -sha1 -sign ${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY} -out ${m7_boot_signature} ${m7_boot_file}
+		else
+			openssl dgst -sha1 -sign ${DEPLOY_DIR_IMAGE}/${HSE_SEC_PRI_KEY} -out ${m7_boot_signature} ${m7_boot_file}
+		fi
 
 		# Write signature
 		cp $m7_ivt_file $m7_ivt_file_secure

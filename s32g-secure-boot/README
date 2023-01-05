@@ -108,13 +108,28 @@ Detail steps as below:
 	HSE_LOCAL_FIRMWARE_DIR = "<path of including HSE firmware files>"
 	HSE_FW_NAME_S32G2 = "s32g2xx_hse_fw_0.1.0_1.0.5_pb220413.bin.pink"
 	HSE_FW_NAME_S32G3 = "s32g3xx_hse_fw_0.20.0_0.21.0_pb220520.bin.pink"
+	below setting for RSA private key is optional
+	FIP_SIGN_KEYDIR = "<path of customer own RSA private key>"
+	HSE_SEC_PRI_KEY = "<name of customer own RSA private key>"
 	$ bitbake-layers add-layer <path_to_project>/layers/nxp-s32g/s32g-secure-boot
 	$ bitbake wrlinux-image-std
 
-Note:
+Note1:
 When building nxp-s32g BSP project with secure boot layer, the kernel image type is fitImage that
 includes dtb and kernel image. They are all signed by the private key of a RSA-2048 key that is in
-<path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/fitImage-rsa2048-keys
+<path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/fitImage-rsa2048-keys.
+
+Note2:
+When building nxp-s32g BSP project with secure boot layer, the atf+u-boot is signed by the private key
+that is in <path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/fip-rsa2048-keys.
+If customers want to use their own RSA key, they could generate it with below command:
+	# openssl genrsa -out <rsa-key-name>
+Customers have 2 methods to ingegrate their own RSA key into building project.
+ - Replace the sample key with their own RSA key in directory <path_to_project>/layers/nxp-s32g/
+   s32g-secure-boot/s32g-sample-key/fip-rsa2048-keys directly.
+ - Set the path and name of their own RSA key with below 2 variables in local.conf file
+	FIP_SIGN_KEYDIR = "<path of customer own RSA private key>"
+	HSE_SEC_PRI_KEY = "<name of customer own RSA private key>"
 
 The secure boot layer is an internal layer only for BSP nxp-s32g, it doesn't support to add
 this layer with --layer option during setup project.

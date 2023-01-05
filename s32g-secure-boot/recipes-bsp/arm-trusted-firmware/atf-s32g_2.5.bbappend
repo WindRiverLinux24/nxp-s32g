@@ -59,9 +59,11 @@ do_deploy:prepend() {
 
 do_deploy:append() {
 	if ${@bb.utils.contains('S32G_FEATURES', 'm7_boot', 'true', 'false', d)}; then
-		# Copy the private key for signing m7 boot binary
-		hse_keys_dir="${B}/${HSE_SEC_KEYS}"
-		cp -f ${hse_keys_dir}/${HSE_SEC_PRI_KEY} ${DEPLOY_DIR_IMAGE}/
+		if [ -z "${FIP_SIGN_KEYDIR}" ]; then
+			# Copy the private key for signing m7 boot binary
+			hse_keys_dir="${B}/${HSE_SEC_KEYS}"
+			cp -f ${hse_keys_dir}/${HSE_SEC_PRI_KEY} ${DEPLOY_DIR_IMAGE}/
+		fi
 
 		# Write signed fip.bin into fip.s32
 		for plat in ${PLATFORM}; do
