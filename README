@@ -261,8 +261,8 @@ Before to use the HSE, HSE firmware must be installed and the key catalogs must
 be formatted.
 
 If you get permission to use HSE, you can get packages "HSE_FW_S32G2_0_1_0_5.exe"
-and "HSE_FW_DEMOAPP_S32G2_0_1_0_5.exe" for S32G274A, "HSE_FW_S32G3_0_0_21_0"
-and "HSE_DEMOAPP_S32G3_0_0_21_0" for S32G399A from NXP's official website. you
+and "HSE_FW_DEMOAPP_S32G2_0_1_0_5.exe" for S32G274A, "HSE_FW_S32G3_0_2_16_1"
+and "HSE_DEMOAPP_S32G3_0_2_16_1" for S32G399A from NXP's official website. you
 can find the HSE firmware pink images from the related HSE_FW_S32Gx_xxx.exe.
 
 6.2.2 HSE Demo
@@ -336,28 +336,28 @@ The steps are as following:
 
  2. Initialize HSE firmware and format key stores
 
-    After step1, using the SD card to boot the board, and in U-Boot stage,
-    using the following command to format HSE key stores:
+    After step1, using the SD card to boot the board, and when linux system
+    starts up, using the following command to format HSE key stores:
 
-	hse_keystore_format
+	 hse-secboot -f -d /dev/mmcblk0
 
     If succeed, it should shows:
-
-	MMC read: dev # 0, block # 8, count 1 ...1 blocks read: OK
-	Enabling MUs...
-	Formatting NVM and RAM key stores...
-	Generating SYS_IMG...
-	Publishing SYS_IMG...
-	MMC write: dev # 0, block # 658, count 96...96 blocks written: OK
-	MMC write: dev # 0, block # 8, count 1...1 blocks written: OK
-
-    then boot the board as normal.
+	[INFO]hse-uio 40210000.mu0b: device hse-uio open
+	Formatting HSE key catalog
+	hse: device initialized, status 0x0920
+	[INFO] Retrieving IVT from device /dev/mmcblk0
+	[INFO] Enabling MUs
+	[INFO] Formatting NVM and RAM key catalogs
+	[INFO] Retrieving SYSIMG size
+	[INFO] Publishing SYSIMG
+	[INFO] Writing SYSIMG to /dev/mmcblk0
+	hse-uio 40210000.mu0b: device hse-uio released
 
  3. Run the HSE & PKCS#11 demo
 
-    When the linux starts up, run the following command:
+    After step2, run the following command:
 
-	pkcs-keyop /usr/lib64/libpkcs11-hse.so.1.0
+	pkcs-keyop /usr/lib64/libpkcs-hse.so.1.0
 
     If succeed, the messages should like:
 
@@ -380,34 +380,30 @@ The steps are as following:
 	hse: UIO device closed
 	root@nxp-s32g:~#
 
+	root@nxp-s32g:~# pkcs-keyop /usr/lib64/libpkcs-hse.so.1.0 
+	hse-uio 40210000.mu0b: device hse-uio open
+	hse: device initialized, status 0x0b20
+
+	1 slots available
+
+	Using token:
+	Manufacturer......: NXP-Semiconductors
+	Description.......: NXP-HSE-Slot
+	Token label.......: NXP-HSE-Token
+
+	Keys available: 0
+
+	Key pair #1 stored
+	Key pair #2 stored
+
+	Keys available: 2
+
+	Key removed
+	hse-uio 40210000.mu0b: device hse-uio released
+
 NOTICE:
 
     The linux HSE & PKCS#11 demo supports all S32G274A and S32G399A boards now.
-
-6.2.4 Known issue
------------------
-
-There is an known issue that, the test demo will fail with error, so can not
-work as normal, and the fail log as following:
-
-  pkcs-keyop /usr/lib64/libpkcs-hse.so.1.0 
-  hse-uio 40211000.mu1b: device hse-uio open
-  hse: device initialized, status 0x0b20
-  
-  1 slots available
-  
-  Using token:
-  Manufacturer......: NXP-Semiconductors
-  Description.......: NXP-HSE-Slot
-  Token label.......: NXP-HSE-Token
-  
-  Keys available: 0
-  
-  hse-uio 40211000.mu1b: device hse-uio released 
-  Bus error
-  
-We have submit a ticket to NXP to track the progress of this
-issue. This issue will be fixed later.
 
 
 6.3 PFE
@@ -426,7 +422,7 @@ NXP to get permission and download the PFE firmware.
 
 PFE is a firmware-based module. Load the firmware before using PFE.
 The firmwares name are "s32g_pfe_class.fw" and "s32g_pfe_util.fw" with
-version 1.4.0, which have to be downloaded from NXP Software.
+version 1.5.0, which have to be downloaded from NXP Software.
 
 6.3.2 Steps to verify
 ---------------------
@@ -459,7 +455,7 @@ more information.
 
 About the detailed pfe port map information can refer to the chapter "Ethernet
 Hardware Support on S32G2" and "Ethernet Hardware Support on S32G3" of the
-documents of Linux BSP 34.0 User Manual for S32G2 and S32G3 platforms.
+documents of Linux BSP 35.0 User Manual for S32G2 and S32G3 platforms.
 
 Note:
 
@@ -516,7 +512,7 @@ There are 4 LLCE firmwares:
 	ppe_tx.bin
 	ppe_rx.bin
 
-with version 1.0.4 to be downloaded from NXP Software.
+with version 1.0.5 to be downloaded from NXP Software.
 
 6.4.2 LLCE CAN verify steps
 ---------------------------
@@ -574,7 +570,7 @@ details of ATF, please refer to the sections
 and
 	"22 Power Management"
 
-in "S32G2_Linux_BSP34.0_User_Manual.pdf".
+in "S32G2_Linux_BSP35.0_User_Manual.pdf".
 
 NOTICE:
     For hardware reasons, the power management features are only supported
@@ -700,7 +696,7 @@ For ATF feature, there are some known issues.
      Same as SDK, the usb devices can not be identified after STR, because
      the USB driver does not support STR currentlly, there is a STR supported
      driver list in section:
-	"23.3 Suspend to RAM" in "S32G2_Linux_BSP34.0_User_Manual.pdf"
+	"23.3 Suspend to RAM" in "S32G2_Linux_BSP35.0_User_Manual.pdf"
 
      And this list will be updated in future.
 
