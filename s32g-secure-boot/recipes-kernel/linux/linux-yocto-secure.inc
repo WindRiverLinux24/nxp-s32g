@@ -107,5 +107,8 @@ fitimage_emit_section_config:prepend() {
 python __anonymous () {
     if d.getVar('ATF_SIGN_ENABLE') == "1":
         atf_pn = 'atf-s32g'
-        d.appendVarFlag('do_assemble_fitimage', 'depends', ' %s:do_populate_sysroot' % atf_pn)
+        if d.getVar('INITRAMFS_IMAGE_BUNDLE') == "1":
+            d.appendVarFlag('do_assemble_fitimage_initramfs', 'depends', ' %s:do_populate_sysroot' % atf_pn)
+        else:
+            d.appendVarFlag('do_assemble_fitimage', 'depends', ' %s:do_populate_sysroot' % atf_pn)
 }
