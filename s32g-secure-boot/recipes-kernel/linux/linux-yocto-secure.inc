@@ -39,6 +39,11 @@ do_deploy:append() {
 	for dtb in ${ATF_DTB}; do
 		install -m 0644 ${B}/atf-${dtb} $deployDir/
 	done
+
+	if [ "${OSTREE_USE_FIT}" = "1" ]; then
+		cp -af ${UBOOT_SIGN_KEYDIR}/${UBOOT_SIGN_KEYNAME}.key $deployDir/
+		cp -af ${UBOOT_SIGN_KEYDIR}/${UBOOT_SIGN_IMG_KEYNAME}.key $deployDir/
+	fi
 }
 
 # Emit signature of the fitImage ITS kernel section
