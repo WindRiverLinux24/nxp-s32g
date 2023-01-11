@@ -10,19 +10,10 @@ DEPENDS = "openssl libp11"
 
 SRC_URI = "https://bitbucket.sw.nxp.com/projects/ALBW/repos/pkcs11-hse/pkcs11-hse.tar.gz"
 
-SRCREV = "4be61dbaa14b6383abb11fad46a8371966606b82"
-SRC_URI[sha256sum] = "52b374f80af4f5f874695f5a0a6c11a936d09893dadbae8b62475f64f84afde0"
+SRCREV = "9acdc9238a248a0d2e4b3aa71d5b11149fef8f01"
+SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
 SRC_URI += " \
-    file://bsp35/rc7/0001-secboot-add-support-for-secboot-to-libhse-usrspc.patch \
-    file://bsp35/rc7/0002-pkcs-fix-wrong-jump-label-on-error-case.patch \
-    file://bsp35/rc9/0001-pkcs-fix-ec-key-import.patch \
-    file://bsp35/rc9/0002-secboot-change-coreID-based-on-HSE_PLATFORM.patch \
-    file://bsp35/rc9/0003-pkcs-fix-bus-error-when-writing-to-key_info.patch \
-    file://bsp35/rc9/0004-hse-add-support-for-hse_memcpy-and-hse_memset.patch \
-    file://bsp35/rc9/0005-hse-pkcs-secboot-set-hse-service-descriptors-to-0.patch \
-    file://bsp35/rc9/0006-pkcs-add-support-for-digest-ops-w-SHA1.patch \
-    file://bsp35/rc9/0007-pkcs-guard-EC-key-format-with-ifdef.patch \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0002-pkcs-fix-QA-error.patch \
 "
