@@ -16,6 +16,7 @@ SRC_URI:append = " \
         file://0001-pfe-fix-the-lock-inconsistent-warning-when-rmmod-the.patch \
         file://0001-pfe-update-to-fix-the-possible-circular-locking.patch \
         file://0001-pfe-fix-the-kernel-calltrace-when-dhcp-for-pfe-ports.patch \
+	file://0001-pfe-update-KERNEL_VERSION-to-v5.16.0-to-fix-build-er.patch \
         file://${PFE_LOCAL_FIRMWARE_DIR}\
 "
 

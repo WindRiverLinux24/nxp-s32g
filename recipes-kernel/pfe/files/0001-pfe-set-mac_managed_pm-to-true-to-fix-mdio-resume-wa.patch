@@ -1,7 +1,8 @@
-From 7d00a7cb39d837bc5342a44ea9c45919679ad8e2 Mon Sep 17 00:00:00 2001
+From beb31a0103e9923ee6c89f0caa7b2de4306d8b76 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Fri, 21 Oct 2022 21:39:13 +0800
-Subject: [PATCH] pfe: set mac_managed_pm to true to fix mdio resume warning
+Subject: [PATCH] pfe: set mac_managed_pm to true to fix mdio resume
+ warning
 
 This patch is to fix the following warning:
 
@@ -57,16 +58,17 @@ the issue will be fixed.
 Upstream-Status: Pending
 
 Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+
 ---
  sw/linux-pfeng/pfeng-netif.c | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/sw/linux-pfeng/pfeng-netif.c b/sw/linux-pfeng/pfeng-netif.c
-index 331f0eb..8cdde80 100644
+index 339ff14..2bca982 100644
 --- a/sw/linux-pfeng/pfeng-netif.c
 +++ b/sw/linux-pfeng/pfeng-netif.c
 @@ -159,6 +159,9 @@ static int pfeng_netif_logif_open(struct net_device *netdev)
- 			netdev_err(netdev, "Error connecting to the phy: %d\n", ret);
+ 			HM_MSG_NETDEV_ERR(netdev, "Error connecting to the phy: %d\n", ret);
  			goto err_pl_con;
  		} else {
 +                        /* Indicate that the MAC is responsible for PHY PM */

@@ -1,4 +1,4 @@
-From 09244ef161ca5b8a387cc76882bcc2d4586f7b52 Mon Sep 17 00:00:00 2001
+From d37fb3b8f42a3cbdc850cd2ec5160b4dd489c1c7 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Sat, 29 Oct 2022 23:39:27 +0800
 Subject: [PATCH] pfe: fix the kernel calltrace when dhcp for pfe ports
@@ -67,16 +67,17 @@ So add netdev->phydev check can fix the issue.
 Upstream-Status: Pending
 
 Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+
 ---
  sw/linux-pfeng/pfeng-netif.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/sw/linux-pfeng/pfeng-netif.c b/sw/linux-pfeng/pfeng-netif.c
-index 8cdde80..e9662a0 100644
+index 2bca982..a13447a 100644
 --- a/sw/linux-pfeng/pfeng-netif.c
 +++ b/sw/linux-pfeng/pfeng-netif.c
 @@ -159,8 +159,10 @@ static int pfeng_netif_logif_open(struct net_device *netdev)
- 			netdev_err(netdev, "Error connecting to the phy: %d\n", ret);
+ 			HM_MSG_NETDEV_ERR(netdev, "Error connecting to the phy: %d\n", ret);
  			goto err_pl_con;
  		} else {
 -                        /* Indicate that the MAC is responsible for PHY PM */
