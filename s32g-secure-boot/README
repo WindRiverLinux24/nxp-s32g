@@ -299,15 +299,15 @@ this may cause uncertain issues to secure boot feature. So please aovid enabling
 
 3.4.1 Load fitImage
 -------------------
-There are 4 images as below for 4 s32g boards separately in boot partition.
+There is a fitImage in boot partition, it can support below 4 boards.
 
-	fitImage-s32g2xxaevb
-	fitImage-s32g3xxaevb
-	fitImage-s32g274ardb2
-	fitImage-s32g399ardb3
+S32G2-EVB
+S32G274A-RDB2
+S32G3-EVB
+S32G399A-RDB3
 
 Load the fitImage with below command
-	=> fatload mmc 0:1 0xa0000000 fitImage-<board name>
+	=> fatload mmc 0:1 0xa0000000 fitImage
 
 
 3.4.2 Set Environment Variables
