@@ -374,3 +374,9 @@ The detailed signature and verification process as follows:
 [7] S32G2XX_HSE_Service_API_Reference_Manual.pdf
 [8] HSE_DEMOAPP_S32G274_0_0_8_5_ReadMe.pdf
 [9] RM649906-HSE_HM Firmware Reference Manual(0.6).pdf
+
+6. Known issue
+==============
+
+1. So far, secure boot image only is able to be deployed in SD card,
+   deployment in eMMC is not supported.
