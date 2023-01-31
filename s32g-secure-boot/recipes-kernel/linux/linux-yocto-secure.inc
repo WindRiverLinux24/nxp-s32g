@@ -1,22 +1,23 @@
 # Add public key to ATF dtb for multiple platforms
 fitimage_assemble:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
+	if [ "${VAULT_ENABLE}" != "1" ]; then
+		for dtb in ${ATF_DTB}; do
+			${UBOOT_MKIMAGE_SIGN} \
+				${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+				-f $1 \
+				arch/${ARCH}/boot/$2
 
-	for dtb in ${ATF_DTB}; do
-		${UBOOT_MKIMAGE_SIGN} \
-			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-			-f $1 \
-			arch/${ARCH}/boot/$2
+			cp -P ${STAGING_DATADIR}/atf-${dtb} ${B}
+			add_key_to_atf="-K ${B}/atf-${dtb}"
 
-		cp -P ${STAGING_DATADIR}/atf-${dtb} ${B}
-		add_key_to_atf="-K ${B}/atf-${dtb}"
-
-		${UBOOT_MKIMAGE_SIGN} \
-			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-			-F -k "${UBOOT_SIGN_KEYDIR}" \
-			$add_key_to_atf \
-			-r arch/${ARCH}/boot/$2
-	done
+			${UBOOT_MKIMAGE_SIGN} \
+				${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+				-F -k "${UBOOT_SIGN_KEYDIR}" \
+				$add_key_to_atf \
+				-r arch/${ARCH}/boot/$2
+		done
+	fi
 }
 
 do_deploy:append() {
