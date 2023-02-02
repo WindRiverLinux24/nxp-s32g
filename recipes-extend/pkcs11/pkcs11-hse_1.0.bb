@@ -16,6 +16,7 @@ SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef
 SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0002-pkcs-fix-QA-error.patch \
+    file://0001-hse-initialize-used-field-of-struct-node_data.patch \
 "
 
 PATCHTOOL = "git"

@@ -1,0 +1,34 @@
+From 6058a3f82fcdbe2f5a709655f06aafc20c57553f Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Thu, 2 Feb 2023 19:59:01 +0800
+Subject: [PATCH] hse: initialize used field of struct node_data
+
+The used field of struct node_data is a random value if it is used
+without initializing operation, and cause memory allocation failed.
+So, set it as 0 in function hse_mem_init() before memory allocated.
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ libhse/hse-mem.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libhse/hse-mem.c b/libhse/hse-mem.c
+index 3d5954a..abcc16d 100644
+--- a/libhse/hse-mem.c
++++ b/libhse/hse-mem.c
+@@ -62,10 +62,12 @@ int hse_mem_init(void *base_addr, uint64_t mem_size, bool intl)
+ 		intl_mem_start = (struct node_data *)base_addr;
+ 		intl_mem_start->size = mem_size - HSE_NODE_SIZE;
+ 		intl_mem_start->next = NULL;
++		intl_mem_start->used = 0;
+ 	} else {
+ 		mem_start = (struct node_data *)base_addr;
+ 		mem_start->size = mem_size - HSE_NODE_SIZE;
+ 		mem_start->next = NULL;
++		mem_start->used = 0;
+ 	}
+ 
+ 	return 0;
+-- 
+2.36.1
+
