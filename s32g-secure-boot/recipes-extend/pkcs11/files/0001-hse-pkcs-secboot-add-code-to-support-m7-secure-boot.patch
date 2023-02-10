@@ -130,7 +130,7 @@ index 0901664..6edcade 100644
 +	smr_entry.versionOffset = 0;
 +
 +	/* workaround for bus error on writing to hse rmem */
-+	memcpy(smr_entry_hse, &(smr_entry), sizeof(smr_entry));
++	hse_memcpy(smr_entry_hse, &(smr_entry), sizeof(smr_entry));
 +
 +	srv_desc.srvId = HSE_SRV_ID_SMR_ENTRY_INSTALL;
 +	srv_desc.hseSrv.smrEntryInstallReq.accessMode = HSE_ACCESS_MODE_ONE_PASS;

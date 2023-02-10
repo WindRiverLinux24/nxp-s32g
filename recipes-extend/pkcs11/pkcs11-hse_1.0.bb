@@ -17,6 +17,7 @@ SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0002-pkcs-fix-QA-error.patch \
     file://0001-hse-initialize-used-field-of-struct-node_data.patch \
+    file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \
 "
 
 PATCHTOOL = "git"
