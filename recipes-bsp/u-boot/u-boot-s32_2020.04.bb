@@ -10,12 +10,11 @@ DEPENDS:append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-n
 inherit nxp-u-boot-localversion
 
 do_compile:append() {
-    plats="s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
     if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-        for plat in $plats; do
+        for plat in ${UBOOT_CONFIG}; do
             cfgout="${B}/${plat}_defconfig/u-boot-s32.cfgout"
             if [ -e $cfgout ]; then
-                if [ $plat = "s32g2xxaevb" ] || [ $plat = "s32g274ardb2" ]; then
+                if [[ $plat = "s32g2*" ]]; then
                     sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
                 else
                     sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G3}|g' $cfgout
@@ -32,9 +31,14 @@ do_deploy:append() {
         for type in ${UBOOT_CONFIG}; do
             j=$(expr $j + 1)
             if  [ $j -eq $i ]; then
-                install -d ${DEPLOYDIR}/${type}/tools
+                install -d ${DEPLOYDIR}/${type}
                 install -m 0644 ${B}/${config}/${UBOOT_BINARY} ${DEPLOYDIR}/${type}/${UBOOT_BINARY}
-                install -m 0644 ${B}/${config}/${UBOOT_CFGOUT} ${DEPLOYDIR}/${type}/tools/${UBOOT_CFGOUT}
+                install -m 0644 ${B}/${config}/${UBOOT_CFGOUT} ${DEPLOYDIR}/${type}/${UBOOT_CFGOUT}
+
+                qspi_param_bin=${B}/${config}/${QSPI_DEFAULT_PARAM_BIN_NAME}
+                if [ -e ${qspi_param_bin} ]; then
+                    install -m 0644 ${qspi_param_bin} ${DEPLOYDIR}/${type}/
+                fi
             fi
         done
         unset j
