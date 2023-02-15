@@ -1,7 +1,9 @@
 make_nxp_s32g_wic() {
     set -e
     cd ${IMGDEPLOYDIR}
-    for plat in ${UBOOT_CONFIG}; do
+    plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+    for plat in ${plats}; do
+
         atf_s32="${DEPLOY_DIR_IMAGE}/atf-$plat.s32"
         ofname="${IMAGE_BASENAME}-${MACHINE}-$plat${IMAGE_VERSION_SUFFIX}.rootfs.wic"
         cp ${IMAGE_NAME}.rootfs.wic $ofname
