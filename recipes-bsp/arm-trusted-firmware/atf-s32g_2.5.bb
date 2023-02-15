@@ -55,83 +55,83 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  HOSTSTRIP=true'
 
 do_compile() {
-	unset LDFLAGS
-	unset CFLAGS
-	unset CPPFLAGS
+    unset LDFLAGS
+    unset CFLAGS
+    unset CPPFLAGS
 
-	for plat in ${PLATFORM}; do
-		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
-		bl33_bin="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}"
-		uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}"
+    for plat in ${PLATFORM}; do
+        ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+        bl33_bin="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}"
+        uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}"
 
-		if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
-			#get layout of fip.s32
-			mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
-			#get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
-			fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
-		else
-			oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
-		fi
-	done
+        if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+            oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
+            #get layout of fip.s32
+            mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
+            #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
+            fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
+            oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
+        else
+            oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
+        fi
+    done
 }
 
 do_install() {
-	install -d ${D}/boot
-	for plat in ${PLATFORM}; do
-		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
-		cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
-	done
+    install -d ${D}/boot
+    for plat in ${PLATFORM}; do
+        ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+        cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+    done
 }
 
 do_deploy() {
-	install -d ${DEPLOY_DIR_IMAGE}
+    install -d ${DEPLOY_DIR_IMAGE}
 
-	for plat in ${PLATFORM}; do
-		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
-		hse_keys_dir="${B}/${HSE_SEC_KEYS}"
+    for plat in ${PLATFORM}; do
+        ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+        hse_keys_dir="${B}/${HSE_SEC_KEYS}"
 
-		if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-			if [ -n "${FIP_SIGN_KEYDIR}" ]; then
-				hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
-			else
-				hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
-			fi
+        if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+            if [ -n "${FIP_SIGN_KEYDIR}" ]; then
+                hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
+            else
+                hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
+            fi
 
-			if [ ! -d "${hse_keys_dir}" ]; then
-				install -d ${hse_keys_dir}
-				if [ -z "${FIP_SIGN_KEYDIR}" ]; then
-					openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
-				fi
-				openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
-				openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
-			fi
+            if [ ! -d "${hse_keys_dir}" ]; then
+                install -d ${hse_keys_dir}
+                if [ -z "${FIP_SIGN_KEYDIR}" ]; then
+                    openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
+                fi
+                openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
+                openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
+            fi
 
-			#calc the offset of need-to-sign part for fip.bin, it is same as the offset of "Trusted Boot Firmware BL2 certificate"
-			bl2_cert_line=`${S}/tools/fiptool/fiptool info ${ATF_BINARIES}/fip.bin | grep "Trusted Boot Firmware BL2 certificate"`
-			sign_offset=`echo ${bl2_cert_line} | awk -F "," '{print $1}' | awk -F "=" '{print $2}'`
+            #calc the offset of need-to-sign part for fip.bin, it is same as the offset of "Trusted Boot Firmware BL2 certificate"
+            bl2_cert_line=`${S}/tools/fiptool/fiptool info ${ATF_BINARIES}/fip.bin | grep "Trusted Boot Firmware BL2 certificate"`
+            sign_offset=`echo ${bl2_cert_line} | awk -F "," '{print $1}' | awk -F "=" '{print $2}'`
 
-			#take the need-to-sign part of fip.bin
-			dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.bin.tmp bs=1 count=`printf "%d" ${sign_offset}` conv=notrunc
+            #take the need-to-sign part of fip.bin
+            dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.bin.tmp bs=1 count=`printf "%d" ${sign_offset}` conv=notrunc
 
-			#sign the part
-			openssl dgst -sha1 -sign ${hse_pri_key} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin.tmp
-			#put the signed part back into fip.bin
-			${S}/tools/fiptool/fiptool update --align 16 --tb-fw-cert ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin
+            #sign the part
+            openssl dgst -sha1 -sign ${hse_pri_key} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin.tmp
+            #put the signed part back into fip.bin
+            ${S}/tools/fiptool/fiptool update --align 16 --tb-fw-cert ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin
 
-			#get offset of fip.bin, which will be used when dd the fip.bin to SD card
-			dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
-			echo $dd_offset > ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset
-			#copy pub key and signed fip.bin to DEPLOY_DIR_IMAGE
-			cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
-			cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
-			cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
+            #get offset of fip.bin, which will be used when dd the fip.bin to SD card
+            dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
+            echo $dd_offset > ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset
+            #copy pub key and signed fip.bin to DEPLOY_DIR_IMAGE
+            cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
+            cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
+            cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
 
-		fi
+        fi
 
-		cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
-	done
+        cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
+    done
 }
 
 addtask deploy after do_compile before do_build
