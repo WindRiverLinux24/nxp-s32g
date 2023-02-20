@@ -361,25 +361,6 @@ The steps are as following:
 
     If succeed, the messages should like:
 
-	root@nxp-s32g:~# pkcs-keyop /usr/lib64/libpkcs11-hse.so.1.0
-	hse: UIO device open
-
-	1 slots available
-
-	Using token:
-	Manufacturer......: NXP Semiconductors
-	Description.......: NXP HSE Slot
-	Token label.......: NXP HSE Token
-
-	Key pair stored
-
-	Keys available: 1
-	Enumerated key label: HSE Key Pair
-
-	Key removed
-	hse: UIO device closed
-	root@nxp-s32g:~#
-
 	root@nxp-s32g:~# pkcs-keyop /usr/lib64/libpkcs-hse.so.1.0 
 	hse-uio 40210000.mu0b: device hse-uio open
 	hse: device initialized, status 0x0b20
