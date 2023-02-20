@@ -59,8 +59,7 @@ do_compile() {
     unset CFLAGS
     unset CPPFLAGS
 
-    boot_type="sd qspi"
-    for type in ${boot_type}; do
+    for type in ${BOOT_TYPE}; do
         for plat in ${PLATFORM}; do
             build_base="${B}/$type/"
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
@@ -103,8 +102,7 @@ do_install() {
 do_deploy() {
     install -d ${DEPLOY_DIR_IMAGE}
 
-    boot_type="sd qspi"
-    for type in ${boot_type}; do
+    for type in ${BOOT_TYPE}; do
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
             hse_keys_dir="${B}/${HSE_SEC_KEYS}"

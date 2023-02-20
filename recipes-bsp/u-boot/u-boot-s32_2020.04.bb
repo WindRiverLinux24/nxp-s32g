@@ -9,12 +9,12 @@ DEPENDS:append = " libgcc virtual/${TARGET_PREFIX}gcc python3 dtc-native bison-n
 
 inherit nxp-u-boot-localversion
 
-do_compile:append() {
+do_compile:append:nxp-s32g() {
     if [ "${HSE_SEC_ENABLED}" = "1" ]; then
         for plat in ${UBOOT_CONFIG}; do
             cfgout="${B}/${plat}_defconfig/u-boot-s32.cfgout"
             if [ -e $cfgout ]; then
-                if [[ $plat = "s32g2*" ]]; then
+                if echo $plat | grep -q s32g2; then
                     sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
                 else
                     sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G3}|g' $cfgout

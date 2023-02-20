@@ -1,7 +1,11 @@
 make_nxp_s32g_wic() {
     set -e
     cd ${IMGDEPLOYDIR}
-    plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+    if echo ${UBOOT_CONFIG} | grep -q s32g; then
+        plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+    else
+        plats="${UBOOT_CONFIG}"
+    fi
     for plat in ${plats}; do
 
         atf_s32="${DEPLOY_DIR_IMAGE}/atf-$plat.s32"
