@@ -16,7 +16,7 @@ do_install:append() {
 		for dtb in ${ATF_DTB}; do
 			j=$(expr $j + 1)
 			if  [ $j -eq $i ]; then
-				cd ${B}/${plat}/${BUILD_TYPE}/fdts
+				cd ${B}/${BOOT_TYPE}/${plat}/${BUILD_TYPE}/fdts
 				install -Dm 0644 ${dtb} ${D}${datadir}/atf-${dtb}
 			fi
 		done
@@ -36,14 +36,14 @@ do_deploy:prepend() {
 
 	unset i j
 	for plat in ${PLATFORM}; do
-		ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+		ATF_BINARIES="${B}/${BOOT_TYPE}/${plat}/${BUILD_TYPE}"
 		bl33_bin="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_BINARY}"
-		uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/tools/${UBOOT_CFGOUT}"
+		uboot_cfg="${DEPLOY_DIR_IMAGE}/${plat}/${UBOOT_CFGOUT}"
 		i=$(expr $i + 1);
 		for dtb in ${ATF_DTB}; do
 			j=$(expr $j + 1)
 			if  [ $j -eq $i ]; then
-				cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${plat}/${BUILD_TYPE}/fdts/${dtb}
+				cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${BOOT_TYPE}/${plat}/${BUILD_TYPE}/fdts/${dtb}
 				oe_runmake -C ${S} PLAT=${plat} BL33=$bl33_bin MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
 				#get layout of fip.s32
 				mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
@@ -67,7 +67,7 @@ do_deploy:append() {
 
 		# Write signed fip.bin into fip.s32
 		for plat in ${PLATFORM}; do
-			ATF_BINARIES="${B}/${plat}/${BUILD_TYPE}"
+			ATF_BINARIES="${B}/${BOOT_TYPE}/${plat}/${BUILD_TYPE}"
 			fip_dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
 			dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.s32 seek=`printf "%d" ${fip_dd_offset}` oflag=seek_bytes conv=notrunc,fsync
 			cp -f ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
