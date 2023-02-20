@@ -158,6 +158,125 @@ the GMAC driver. Run below commands in u-boot:
 # s32ccgmac enable
 # setenv ethact eth_eqos
 
+4.2 Boot Devices
+----------------
+
+For S32G platforms, there are 3 boot devices as following:
+    SD, eMMC, QSPI.
+
+If users want to use these devices to boot, the DIP switches on S32G boards
+should be configured correctly. And the following are the DIP switches setting
+for these 3 boot devies:
+
+For S32G2 EVB/S32G3 EVB GEN1:
+
+                eMMC            SD              QSPI
+    -------------------------------------------------------
+    J50         1 x x           x x 3           x x 3
+    -------------------------------------------------------
+    SW6         6,7 on          7 on            all off
+    -------------------------------------------------------
+    SW7
+    SW8         all off         all off         all off
+    SW9
+    -------------------------------------------------------
+    SW14        1 on, 2 off     1 on, 2 off     1 on, 2 off
+    -------------------------------------------------------
+    SW15        1,2 off         1,2 off         1,2 off
+
+For S32G2 RDB2/S32G3 RDB3:
+
+                eMMC            SD              QSPI
+    -------------------------------------------------------
+    SW3         off             on              off
+    -------------------------------------------------------
+    SW4         6,7 on          7 on            all off
+    -------------------------------------------------------
+    SW5
+    SW6         all off         all off         all off
+    SW7
+    -------------------------------------------------------
+    SW9         1,2 off         1,2 off         1,2 off
+    -------------------------------------------------------
+    SW10        1 on, 2 off     1 on, 2 off     1 on, 2 off
+
+The rest of the switches and jumpers are set to default position.
+
+4.3 QSPI Flash Boot
+-------------------
+
+Now the QSPI flash boot supported has been added for S32G platforms.
+For this boot type, please follow the below steps to boot the board:
+
+  0. build the nxp-s32g bsp as normal, then the required QSPI atf
+     images(with a _qspi suffix), will be built too and put in the deploy
+     directory along with SD WIC images
+  1. boot the board with SD WIC image as normal
+  2. copy the required QSPI atf image to a proper location of the
+     running system by network or other way
+  3. burn the QSPI atf image into QSPI flash
+
+     take S32G399ARDB3 as example, firstly, get the flash partitions like:
+        root@nxp-s32g:~# cat /proc/mtd
+        dev:    size   erasesize  name
+        mtd0: 04000000 00010000 "Flash-Image"
+        mtd1: 001e0000 00010000 "FIP"
+        mtd2: 00010000 00010000 "U-Boot-Env"
+        mtd3: 00e00000 00010000 "Kernel"
+        mtd4: 00100000 00010000 "DTB"
+        mtd5: 01f10000 00010000 "Rootfs"
+        mtd6: 01000000 00010000 "PFE-Firmware"
+     and the mtd1 is the location for atf image. So using command:
+        flashcp -v atf-s32g399ardb3_qspi.s32 /dev/mtd1
+     to burn the QSPI atf image into the mtd1 partition of the flash. The
+     output messages should like:
+        root@nxp-s32g:~# flashcp -v atf-s32g399ardb3_qspi.s32 /dev/mtd1
+        Erasing blocks: 23/23 (100%)
+	    Writing data: 1452k/1452k (100%)
+        Verifying data: 1452k/1452k (100%)
+  4. power down the board and change the related DIP switches to QSPI boot:
+        SW3: off
+        SW4: all off
+        other DIP switches keep same as SD boot.
+  5. then power up the board, there should be boot messages as following:
+        NOTICE:  Reset status: Power-On Reset
+        NOTICE:  BL2: v2.5(release):bsp35.0-2.5-10-ge3ce79a4c
+        NOTICE:  BL2: Built : 13:21:28, Nov 29 2022
+        NOTICE:  BL2: Booting BL31
+
+        U-Boot 2020.04+gf30287c440 (Nov 29 2022 - 16:57:39 +0000)
+
+        CPU:   NXP S32G399A rev. 1.0
+        Model: NXP S32G399A-RDB3
+        DRAM:  3.5 GiB
+        Ignore unsupported SCMI protocol 19
+        MMC:   FSL_SDHC: 0
+        Loading Environment from SPI Flash... SF: Detected mx25uw51245g with page size 256 Bytes, erase size 64 KiB, total 64 MiB
+        OK
+        ......
+
+The "Loading Environment from SPI Flash..." line indicates that the boot
+device is QSPI flash as expected.
+
+For SD WIC images, please refer to the following Section "5. Creating
+Partitioned Images(WIC)", there are detail information about how to use
+or configure SD WIC images to boot.
+
+NOTICE:
+    Currently, QSPI flash boot is only supported by S32G platforms and with
+    secure boot disabled, because non-S32G platforms and secure boot are only
+    supported by SD boot. And due to the current QSPI flash size(64MB)
+    limitation on current S32G boards, there are only QSPI atf image built, so
+    users need to use NFS or other way to load kernel image/dtb, etc. to fully
+    boot up the board to use. Moreover, for S32G RDB2/RDB3 boards, due to the
+    SW3 DIP switch is off when use QSPI boot, so only the eMMC device can be
+    seen and accessed.
+    And for detail informations of the boot description, please refer to the
+    section:
+        "4 How to boot"
+    in SDK user manual "S32Gx_LinuxBSP_35.0_User_Manual.pdf", the S32Gx is
+    S32G2 or S32G3 accordingly.
+
 5. Creating Partitioned Images(WIC)
 ===================================
 
@@ -217,6 +336,13 @@ To use Ethernet GMAC ports:
 
 To use PFE ports:
 => pfeng stop
+
+NOTICE:
+    The SD WIC images can be burnt into SD or eMMC devices to boot the S32G
+    boards, and please refer to section
+        "4 How to boot"
+    in SDK user manual "S32Gx_LinuxBSP_35.0_User_Manual.pdf"(S32Gx is S32G2
+    or S32G3 accordingly), to get the detail boot device information.
 
 6. Features
 ===========
