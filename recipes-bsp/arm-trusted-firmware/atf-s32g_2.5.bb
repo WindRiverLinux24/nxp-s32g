@@ -93,9 +93,15 @@ do_compile() {
 
 do_install() {
     install -d ${D}/boot
-    for plat in ${PLATFORM}; do
-        ATF_BINARIES="${B}/sd/${plat}/${BUILD_TYPE}"
-        cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+    for type in ${BOOT_TYPE}; do
+        for plat in ${PLATFORM}; do
+            ATF_BINARIES="${B}/${type}/${plat}/${BUILD_TYPE}"
+            if [ "${type}" = "sd" ]; then
+                cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+            else
+                cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}_${type}.s32
+            fi
+        done
     done
 }
 
