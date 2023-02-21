@@ -12,15 +12,24 @@ SRCREV ?= "39104f1b57cc40cb1e21042cfab01d25fde638ee"
 
 S = "${WORKDIR}/git"
 BUILD = "${WORKDIR}/build"
-BOOT_TYPE = "sdcard"
-#IVT_FILE_BASE = "fip.s32"
 
 do_compile() {
 	mkdir -p "${BUILD}"
+
+	if echo ${UBOOT_CONFIG} | grep -q s32g; then
+		plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+	else
+		plats="${UBOOT_CONFIG}"
+	fi
+
 	for suffix in ${BOOT_TYPE}
 	do
-		for plat in ${UBOOT_CONFIG}; do
-			ivt_file="atf-${plat}.s32"
+		for plat in ${plats}; do
+			if [ "$suffix" = "sd" ]; then
+				ivt_file="atf-${plat}.s32"
+			else
+				ivt_file="atf-${plat}_${suffix}.s32"
+			fi
 
 			BDIR="${BUILD}-${suffix}-${plat}"
 
@@ -42,10 +51,20 @@ do_compile() {
 do_deploy() {
 	install -d ${DEPLOY_DIR_IMAGE}
 
+	if echo ${UBOOT_CONFIG} | grep -q s32g; then
+		plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+	else
+		plats="${UBOOT_CONFIG}"
+	fi
+
 	for suffix in ${BOOT_TYPE}
 	do
-		for plat in ${UBOOT_CONFIG}; do
-			ivt_file="atf-${plat}.s32"
+		for plat in ${plats}; do
+			if [ "$suffix" = "sd" ]; then
+				ivt_file="atf-${plat}.s32"
+			else
+				ivt_file="atf-${plat}_${suffix}.s32"
+			fi
 
 			cp -vf "${BUILD}/${ivt_file}.m7" "${DEPLOY_DIR_IMAGE}/"
 		done

@@ -1,7 +1,12 @@
 make_m7_sample_wic() {
     set -e
     cd ${IMGDEPLOYDIR}
-    for plat in ${UBOOT_CONFIG}; do
+    if echo ${UBOOT_CONFIG} | grep -q s32g; then
+        plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+    else
+        plats="${UBOOT_CONFIG}"
+    fi
+    for plat in ${plats}; do
         if [ "${HSE_SEC_ENABLED}" = "1" ]; then
 	        atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32-secure.m7"
         else
