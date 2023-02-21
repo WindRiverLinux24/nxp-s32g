@@ -206,17 +206,18 @@ The rest of the switches and jumpers are set to default position.
 -------------------
 
 Now the QSPI flash boot supported has been added for S32G platforms.
-For this boot type, please follow the below steps to boot the board:
+Then take S32G399ARDB3 as example, users can follow the below steps
+to boot the board using QSPI atf image:
 
   0. build the nxp-s32g bsp as normal, then the required QSPI atf
-     images(with a _qspi suffix), will be built too and put in the deploy
-     directory along with SD WIC images
+     images(with a _qspi suffix), will be built and deployed along
+     with SD WIC images
   1. boot the board with SD WIC image as normal
   2. copy the required QSPI atf image to a proper location of the
      running system by network or other way
   3. burn the QSPI atf image into QSPI flash
 
-     take S32G399ARDB3 as example, firstly, get the flash partitions like:
+     firstly, get the flash partitions like:
         root@nxp-s32g:~# cat /proc/mtd
         dev:    size   erasesize  name
         mtd0: 04000000 00010000 "Flash-Image"
@@ -232,7 +233,7 @@ For this boot type, please follow the below steps to boot the board:
      output messages should like:
         root@nxp-s32g:~# flashcp -v atf-s32g399ardb3_qspi.s32 /dev/mtd1
         Erasing blocks: 23/23 (100%)
-	    Writing data: 1452k/1452k (100%)
+        Writing data: 1452k/1452k (100%)
         Verifying data: 1452k/1452k (100%)
   4. power down the board and change the related DIP switches to QSPI boot:
         SW3: off
@@ -257,6 +258,9 @@ For this boot type, please follow the below steps to boot the board:
 
 The "Loading Environment from SPI Flash..." line indicates that the boot
 device is QSPI flash as expected.
+
+For other S32G boards, please change the QSPI atf image name and
+jumpers/DIP switches accordingly.
 
 For SD WIC images, please refer to the following Section "5. Creating
 Partitioned Images(WIC)", there are detail information about how to use
