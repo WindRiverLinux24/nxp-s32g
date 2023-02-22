@@ -1,4 +1,3 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = " \
 	 file://0001-m7_boot-preserve-signature-space-for-m7-boot-code.patch \
 "
