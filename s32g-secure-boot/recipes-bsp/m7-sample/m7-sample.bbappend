@@ -44,6 +44,11 @@ signature_size="256"
 m7_size_off="80"
 m7_load_off="4"
 m7_entry_off="8"
+# 0x10 = 16
+m7_entry_bak_off="16"
+fip_entry_off="8"
+# 0x28 = 40
+bcw_addr_off="40"
 
 # Insert signature partition for m7_boot binary
 do_compile:append() {
@@ -89,6 +94,31 @@ do_compile:append() {
 			m7_file_size=$(printf "%08x" $m7_file_size)
 			str2bin $m7_file_size | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $ivt_header_off + ${m7_size_off}) \
 			conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+
+			if ${@bb.utils.contains('MACHINE_FEATURES', 'secure_boot_parallel', 'true', 'false', d)}; then
+				# In parallel secure boot mode, hse firmware brings up m7 code and fip.bin separately.
+				# But at the first time of booting up, it is in non-secure boot mode, and it needs to bring up
+				# fip.bin directly because m7 code doesn't bring up a53 any more. In this way, secure boot is able
+				# to be enabled with u-boot command.
+				# In addtional, save m7 entry address in reserve space, and it will be used to config m7 boot
+				# in u-boot command.
+				m7_entry_addr=$(printf "%08x" $m7_entry_addr)
+				str2bin $m7_entry_addr | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $app_header_off + ${m7_entry_bak_off}) \
+						conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+				# Get fip.bin entry address so that bring up it at the first time of non-secure boot.
+				PLAT_BDIR="${BUILD}-${suffix}-${plat}"
+				fip_header_addr=$(get_u32 "${PLAT_BDIR}/${ivt_file}" $(expr $ivt_header_off + ${app_boot_header_off}))
+				fip_entry_addr=$(get_u32 "${PLAT_BDIR}/${ivt_file}" $(expr $fip_header_addr + ${fip_entry_off}))
+				fip_entry_addr=$(printf "%08x" $fip_entry_addr)
+				str2bin $fip_entry_addr | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $app_header_off + ${m7_entry_off}) \
+						conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+				# Set the reset core as CortexA53
+				bcw_value=$(get_u32 "${m7_ivt_file_secure}" $(expr $ivt_header_off + ${bcw_addr_off}))
+				bcw_value=$(expr $bcw_value + "1")
+				bcw_value=$(printf "%08x" $bcw_value)
+				str2bin $bcw_value | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $ivt_header_off + ${bcw_addr_off}) \
+						conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+			fi
 		done
 	done
 }
