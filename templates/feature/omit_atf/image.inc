@@ -1,2 +1,2 @@
-S32G_FEATURES ?= ""
-S32G_FEATURES:append = " omit_atf"
+MACHINE_FEATURES ?= ""
+MACHINE_FEATURES:append = " omit_atf"

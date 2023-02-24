@@ -43,7 +43,7 @@ EXTRA_OEMAKE += " \
                 "
 
 M7BOOT_ARGS = " FIP_OFFSET_DELTA=0x2000"
-EXTRA_OEMAKE += "${@bb.utils.contains('S32G_FEATURES', 'm7_boot', '${M7BOOT_ARGS}', '', d)}"
+EXTRA_OEMAKE += "${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', '${M7BOOT_ARGS}', '', d)}"
 
 # FIXME: Allow linking of 'tools' binaries with native libraries
 #        used for generating the boot logo and other tools used

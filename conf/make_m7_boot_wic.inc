@@ -32,4 +32,4 @@ make_m7_sample_wic() {
 }
 
 do_image_wic[depends] += "m7-sample:do_deploy"
-do_image_wic[postfuncs] += "${@bb.utils.contains('S32G_FEATURES', 'omit_atf', '', 'make_m7_sample_wic', d)}"
+do_image_wic[postfuncs] += "${@bb.utils.contains('MACHINE_FEATURES', 'omit_atf', '', 'make_m7_sample_wic', d)}"

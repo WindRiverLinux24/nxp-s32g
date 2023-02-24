@@ -40,7 +40,7 @@ make_nxp_s32g_wic() {
     fi
 }
 
-do_image_wic[postfuncs] += "${@bb.utils.contains('S32G_FEATURES', 'omit_atf', '', 'make_nxp_s32g_wic', d)}"
+do_image_wic[postfuncs] += "${@bb.utils.contains('MACHINE_FEATURES', 'omit_atf', '', 'make_nxp_s32g_wic', d)}"
 
 BOOTFS_EXTRA_CMD ?= " \
     set -e; \
