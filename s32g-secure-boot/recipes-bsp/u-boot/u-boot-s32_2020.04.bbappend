@@ -5,6 +5,7 @@ SRC_URI:append = " \
     file://0002-u-boot-secboot-correct-the-secure-boot-config.patch \
     file://0003-s32-hse-support-secure-boot-feature-on-both-S32G2-an.patch \
     ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'file://0001-s32-hse-add-code-to-support-m7-secure-boot.patch', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'secure_boot_parallel', 'file://0001-hse-support-for-boot-up-m7-and-fip-images-parallel-i.patch', '', d)} \
 "
 
 python() {
