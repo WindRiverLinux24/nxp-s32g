@@ -1,5 +1,6 @@
 SRC_URI:append = " \
 	 file://0001-m7_boot-preserve-signature-space-for-m7-boot-code.patch \
+	 ${@bb.utils.contains('MACHINE_FEATURES', 'secure_boot_parallel', 'file://0001-m7-sample-remove-the-code-of-enabling-CortexA53.patch', '', d)} \
 "
 
 DEPENDS += "openssl-native"
