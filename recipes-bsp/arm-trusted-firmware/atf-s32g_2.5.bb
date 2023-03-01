@@ -4,7 +4,7 @@ DESCRIPTION = "ARM Trusted Firmware"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://license.rst;md5=1dd070c98a281d18d9eefd938729b031"
 
-DEPENDS += "dtc-native xxd-native bc-native u-boot-s32-tools-native openssl-native"
+DEPENDS += "dtc-native xxd-native bc-native u-boot-tools-native openssl-native"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
