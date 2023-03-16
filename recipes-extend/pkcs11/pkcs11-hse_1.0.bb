@@ -13,9 +13,21 @@ SRC_URI = "https://bitbucket.sw.nxp.com/projects/ALBW/repos/pkcs11-hse/pkcs11-hs
 SRCREV = "9acdc9238a248a0d2e4b3aa71d5b11149fef8f01"
 SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
+PKCS_BSP36_RC5_PATCHES = " \
+    file://bsp36/rc5/0001-examples-refactor-examples-build-structure.patch \
+    file://bsp36/rc5/0002-pkcs11-hse-add-examples-target-in-top-directory-Make.patch \
+    file://bsp36/rc5/0003-pkcs11-hse-add-versioning-for-libpkcs-hse-library.patch \
+    file://bsp36/rc5/0004-pkcs11-hse-add-install-Makefile-rule.patch \
+    file://bsp36/rc5/0005-examples-add-TrustZone-Key-Provisioning-feature.patch \
+    file://bsp36/rc5/0006-examples-make-all-builds-only-default-examples.patch \
+    file://bsp36/rc5/0007-examples-add-userspace-key-provisioning-using-the-TE.patch \
+    file://bsp36/rc5/0008-examples-generate-kek-encrypted-keys-on-the-host-mac.patch \
+    file://bsp36/rc5/0009-Add-Apache-v2.0-License-OpenSSL-Copyright-Notice.patch \
+"
+
 SRC_URI += " \
+    ${PKCS_BSP36_RC5_PATCHES} \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
-    file://0002-pkcs-fix-QA-error.patch \
     file://0001-hse-initialize-used-field-of-struct-node_data.patch \
     file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \
 "
@@ -43,15 +55,17 @@ do_compile() {
 
         # compile share libraries(libhse and libpkcs) firstly, they are all same either S32G2 or S32G3
         oe_runmake HSE_FWDIR=${S}/hse-fw/${plat}  CFLAGS="${CFLAGS} -shared -fPIC -Wall -fno-builtin"
+
+        # clean the example binaries because they are needed to be compiled with different options
+        oe_runmake -C examples clean
         # compile demo apps which may not be same between S32G2 and S32G3
-        oe_runmake -C examples HSE_FWDIR=${S}/hse-fw/${plat} LIBS="-L${STAGING_LIBDIR}/" INCLUDE="-I${STAGING_INCDIR}" LDFLAGS="${LDFLAGS} -lcrypto -lp11"
+        oe_runmake -C examples HSE_FWDIR=${S}/hse-fw/${plat} PKCS11HSE_DIR=${S} LIBS="-L${STAGING_LIBDIR}/" INCLUDE="-I${STAGING_INCDIR}" LDFLAGS="${LDFLAGS} -lcrypto -lp11"
 
         #copy result files to related dir
-        mkdir -p ${S}/${plat}
         mkdir -p ${S}/examples/${plat}
 
         for bin in ${bins}; do
-            mv ${S}/examples/${bin} ${S}/examples/${plat}
+            cp ${S}/examples/${bin}/${bin} ${S}/examples/${plat}
         done
 
     done
@@ -60,8 +74,7 @@ do_compile() {
 do_install() {
 
     install -d ${D}${libdir}
-    install -m 0755 ${S}/libpkcs-hse.so ${D}${libdir}/libpkcs-hse.so.1.0
-    ln -s libpkcs-hse.so.1.0 ${D}${libdir}/libpkcs-hse.so
+    install -m 0755 ${S}/libpkcs-hse.so.1.0 ${D}${libdir}/libpkcs-hse.so.1.0
     install -m 0755 ${S}/libhse.so.1.0 ${D}${libdir}/libhse.so.1.0
     ln -s libhse.so.1.0 ${D}${libdir}/libhse.so.1
 

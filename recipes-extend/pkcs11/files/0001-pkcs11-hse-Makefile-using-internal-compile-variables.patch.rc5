@@ -1,4 +1,4 @@
-From 07c88ac6228fc4cb53bcdf97c975f96d2b387d36 Mon Sep 17 00:00:00 2001
+From a325e4253c854826adc5735a40e12440dc016043 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Mon, 18 Oct 2021 19:05:04 +0800
 Subject: [PATCH] pkcs11-hse: Makefile: using internal compile variables in
@@ -15,14 +15,18 @@ Upstream-Status: Pending
 
 Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
 
+%% original patch: 0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch
+
+squash! pkcs11-hse: Makefile: using internal compile variables in bitbake system
 ---
- Makefile                             | 6 +++---
- examples/hse-encrypt/Makefile        | 4 ++--
- examples/hse-secboot/Makefile        | 2 +-
- examples/hse-sysimg/Makefile         | 4 ++--
- examples/pkcs-key-provision/Makefile | 4 ++--
- examples/pkcs-keyop/Makefile         | 4 ++--
- 6 files changed, 12 insertions(+), 12 deletions(-)
+ Makefile                                         | 6 +++---
+ examples/hse-encrypt/Makefile                    | 4 ++--
+ examples/hse-secboot/Makefile                    | 2 +-
+ examples/hse-sysimg/Makefile                     | 4 ++--
+ examples/pkcs-key-provision/Makefile             | 4 ++--
+ examples/pkcs-keyop/Makefile                     | 4 ++--
+ examples/trustzone-key-provision/target/Makefile | 4 ++--
+ 7 files changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/Makefile b/Makefile
 index 0618b58..1627093 100644
@@ -133,6 +137,23 @@ index 3a68f42..88c6aca 100644
 -	install pkcs-keyop $(EXAMPLES_INSTALLDIR)
 \ No newline at end of file
 +	install pkcs-keyop $(EXAMPLES_INSTALLDIR)
+diff --git a/examples/trustzone-key-provision/target/Makefile b/examples/trustzone-key-provision/target/Makefile
+index f592afc..eabba04 100644
+--- a/examples/trustzone-key-provision/target/Makefile
++++ b/examples/trustzone-key-provision/target/Makefile
+@@ -15,10 +15,10 @@ TEEC_INCLUDE := -I$(TEEC_EXPORT)/include
+ all: hse-kek-provision hse-symkey-provision
+ 
+ hse-kek-provision: hse-kek-provision.c
+-	$(CROSS_COMPILE)gcc $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
++	$(CC) $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
+ 
+ hse-symkey-provision: hse-symkey-provision.c
+-	$(CROSS_COMPILE)gcc $(LDFLAGS) $(INCLUDE_LIBHSE) $(INCDIR) $(TEEC_INCLUDE) \
++	$(CC) $(LDFLAGS) $(INCLUDE_LIBHSE) $(INCDIR) $(TEEC_INCLUDE) \
+ 	$(CFLAGS) $^ -o $@ $(TEEC_LIB)
+ 
+ clean:
 -- 
 2.25.1
 

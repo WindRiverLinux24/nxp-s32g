@@ -1,0 +1,54 @@
+From d754800575952c39804b4ee2a10c8fd531bcbb43 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Tue, 28 Feb 2023 16:17:54 +0200
+Subject: [PATCH 6/9] examples: 'make all' builds only default examples
+
+Add a new list of examples, default_examples, which will be built upon
+calling make all. This change is needed for examples which have
+dependencies to external components (i.e. TEE Client API) or special
+build needs and do not rely on the default set of build parameters,
+libraries, etc.
+Mainly, new examples will be added to the examples list and should also
+be included in the default_examples list if they're to be built by
+default.
+Add trustzone-key-provisioning only to examples list.
+
+Issue: ALB-9773
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/Makefile | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/examples/Makefile b/examples/Makefile
+index edd3317..a80f8ad 100644
+--- a/examples/Makefile
++++ b/examples/Makefile
+@@ -2,9 +2,10 @@
+ # Copyright 2021, 2023 NXP
+ #
+ 
+-examples :=  pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg hse-secboot
+-clean_examples = $(addprefix clean_,$(examples))
+-install_examples = $(addprefix install_,$(examples))
++examples := pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg hse-secboot trustzone-key-provision
++default_examples := pkcs-keyop pkcs-key-provision hse-encrypt hse-sysimg hse-secboot
++clean_examples = $(addprefix clean_,$(default_examples))
++install_examples = $(addprefix install_,$(default_examples))
+ 
+ .PHONY: all clean $(examples) $(clean_examples)
+ 
+@@ -23,7 +24,7 @@ install_$(1):
+ 	make -C ./$(1) install
+ endef
+ 
+-all: $(examples)
++all: $(default_examples)
+ clean: $(clean_examples)
+ install: $(install_examples)
+ 
+-- 
+2.25.1
+

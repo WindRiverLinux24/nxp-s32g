@@ -1,0 +1,69 @@
+From f77d5ef50b0007965173eba34c8cc774a224cf95 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Wed, 15 Feb 2023 17:59:28 +0200
+Subject: [PATCH 4/9] pkcs11-hse: add install Makefile rule
+
+The rule 'install' creates an install dir, 'out', in the top-level
+directory of the repository and copies lib & example executables into
+'out/lib' and 'out/bin respectively.
+Altenatively, the install directory can be specified through the
+INSTALL_DIR variable. INSTALL_LIBDIR/INSTALL_BINDIR variables will point
+to library and binaries output directories.
+
+Issue: ALB-9734
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .gitignore |  1 +
+ Makefile   | 20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/.gitignore b/.gitignore
+index e651679..9a24ad9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,3 +6,4 @@ examples/hse-secboot/hse-secboot
+ *.so*
+ libhse/obj
+ libpkcs/obj
++out/*
+diff --git a/Makefile b/Makefile
+index 393875b..0618b58 100644
+--- a/Makefile
++++ b/Makefile
+@@ -32,6 +32,10 @@ ifeq (,$(UIO_DEV))
+     $(warning HSE UIO device not defined, using default device $(UIO_DEV))
+ endif
+ 
++INSTALL_DIR := $(CURDIR)/out
++INSTALL_LIBDIR := $(INSTALL_DIR)/lib
++INSTALL_BINDIR := $(INSTALL_DIR)/bin
++
+ # Build libraries
+ CC := $(CROSS_COMPILE)gcc
+ LD := $(CROSS_COMPILE)ld
+@@ -96,4 +100,18 @@ clean:
+ 	rm -rf $(PKCS_ODIR) $(HSE_ODIR)
+ 	make -C examples clean
+ 
+-.PHONY: clean all
++install: $(PKCS_LIB).$(PKCS_LIBVER) examples
++	@mkdir -p $(INSTALL_LIBDIR)
++	@mkdir -p $(INSTALL_BINDIR)
++
++	@echo "Installing pkcs11 libraries in $(INSTALL_LIBDIR)"
++	@install $(PKCS_LIB).$(PKCS_LIBVER) $(INSTALL_LIBDIR)
++	@ln -sf $(PKCS_LIB).$(PKCS_LIBVER) $(INSTALL_LIBDIR)/$(PKCS_LIB).$(PKCS_LIBVER_MAJOR)
++
++	@install $(HSE_LIB).$(HSE_LIBVER) $(INSTALL_LIBDIR)
++	@ln -sf $(HSE_LIB).$(HSE_LIBVER) $(INSTALL_LIBDIR)/$(HSE_LIB).$(HSE_LIBVER_MAJOR)
++
++	@echo "Installing example binaries in $(INSTALL_BINDIR)"
++	make -C examples install EXAMPLES_INSTALLDIR=$(INSTALL_BINDIR)
++
++.PHONY: clean all install
+-- 
+2.25.1
+

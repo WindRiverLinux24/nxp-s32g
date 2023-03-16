@@ -1,0 +1,254 @@
+From 63e63ebaeeacf0164cc2af3ddfca397350e29781 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Mon, 13 Feb 2023 20:25:48 +0200
+Subject: [PATCH 5/9] examples: add TrustZone Key Provisioning feature
+
+This commit creates the TrustZone Key Provisioning directory structure
+and adds the KEK Provisioning source file, hse-kek-provision.c.
+
+The Trustzone Key Provisioning feature has two separate actors: the host
+platform and target platform. The target platform is S32G/S32R, while
+the host is up to the choice of the user. Each actor performs its own
+set of actions, reflected through the files in each directory.
+
+Using hse-kek-provision, the target platform can import the KEK into
+HSE's NVM Catalog. The executable takes as input a file containing
+the KEK, then performs the import service request. Please note that the
+KEK cannot be overwritten. The KEK can only be used for decryption and
+key provisioning.
+
+Issue: ALB-9773
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .gitignore                                    |   1 +
+ examples/trustzone-key-provision/Makefile     |  12 ++
+ .../trustzone-key-provision/include/hse_kp.h  |  34 ++++++
+ .../trustzone-key-provision/target/Makefile   |  16 +++
+ .../target/hse-kek-provision.c                | 115 ++++++++++++++++++
+ 5 files changed, 178 insertions(+)
+ create mode 100644 examples/trustzone-key-provision/Makefile
+ create mode 100644 examples/trustzone-key-provision/include/hse_kp.h
+ create mode 100644 examples/trustzone-key-provision/target/Makefile
+ create mode 100644 examples/trustzone-key-provision/target/hse-kek-provision.c
+
+diff --git a/.gitignore b/.gitignore
+index 9a24ad9..328d686 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -3,6 +3,7 @@ examples/pkcs-key-provision/pkcs-key-provision
+ examples/hse-sysimg/hse-sysimg
+ examples/hse-encrypt/hse-encrypt
+ examples/hse-secboot/hse-secboot
++examples/trustzone-key-provision/target/hse-kek-provision
+ *.so*
+ libhse/obj
+ libpkcs/obj
+diff --git a/examples/trustzone-key-provision/Makefile b/examples/trustzone-key-provision/Makefile
+new file mode 100644
+index 0000000..7a7feb2
+--- /dev/null
++++ b/examples/trustzone-key-provision/Makefile
+@@ -0,0 +1,12 @@
++#
++# Copyright 2023 NXP
++#
++
++export INCDIR := -I$(CURDIR)/include
++
++all:
++	make -C target all
++clean:
++	make -C target clean
++install:
++	make -C target install
+\ No newline at end of file
+diff --git a/examples/trustzone-key-provision/include/hse_kp.h b/examples/trustzone-key-provision/include/hse_kp.h
+new file mode 100644
+index 0000000..a90e63a
+--- /dev/null
++++ b/examples/trustzone-key-provision/include/hse_kp.h
+@@ -0,0 +1,34 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2023 NXP
++ */
++
++#include <hse_interface.h>
++
++#define HSE_NVM_KEK_GROUP	1
++#define HSE_NVM_KEK_HANDLE	GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_NVM_KEK_GROUP, 0)
++
++#define HSE_NVM_AES_GROUP	1
++#define HSE_NVM_AES_KEY1	GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_NVM_AES_GROUP, 1)
++#define HSE_NVM_AES_KEY2	GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_NVM_AES_GROUP, 2)
++
++#define HSE_NVM_HMAC_GROUP	2
++#define HSE_NVM_HMAC_KEY0	GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_NVM_HMAC_GROUP, 0)
++#define HSE_NVM_HMAC_KEY1	GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_NVM_HMAC_GROUP, 1)
++
++#define HSE_NVM_SYM_KEYS	{ HSE_NVM_AES_KEY1, HSE_NVM_AES_KEY2, \
++				  HSE_NVM_HMAC_KEY0, HSE_NVM_HMAC_KEY1 }
++
++#define HSE_GCM_TAG_SIZE	16
++#define HSE_GCM_IV_SIZE		12
++
++#define HSE_SYM_KEY_SIZE	64
++#define HSE_KEK_SIZE		32
++
++struct hse_kp_payload {
++	hseKeyInfo_t key_info;
++	uint8_t tag[HSE_GCM_TAG_SIZE];
++	uint8_t iv[HSE_GCM_IV_SIZE];
++	uint32_t enckey_size;
++	uint8_t enckey[HSE_SYM_KEY_SIZE];
++};
+diff --git a/examples/trustzone-key-provision/target/Makefile b/examples/trustzone-key-provision/target/Makefile
+new file mode 100644
+index 0000000..108586e
+--- /dev/null
++++ b/examples/trustzone-key-provision/target/Makefile
+@@ -0,0 +1,16 @@
++#
++# Copyright 2023 NXP
++#
++
++include ../../common.mk
++
++all: hse-kek-provision
++
++hse-kek-provision: hse-kek-provision.c
++	$(CROSS_COMPILE)gcc $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
++
++clean:
++	rm -f hse-kek-provision
++
++install:
++	install hse-kek-provision $(EXAMPLES_INSTALLDIR)
+\ No newline at end of file
+diff --git a/examples/trustzone-key-provision/target/hse-kek-provision.c b/examples/trustzone-key-provision/target/hse-kek-provision.c
+new file mode 100644
+index 0000000..d50e8f9
+--- /dev/null
++++ b/examples/trustzone-key-provision/target/hse-kek-provision.c
+@@ -0,0 +1,115 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright 2023 NXP
++ */
++
++#include <stdio.h>
++#include <stdint.h>
++#include <errno.h>
++
++#include <libhse.h>
++#include <hse_kp.h>
++
++#define ERROR(fmt, ...) printf("[ERROR] " fmt, ##__VA_ARGS__)
++#define INFO(fmt, ...) printf("[INFO] " fmt, ##__VA_ARGS__)
++
++int main(int argc, char *argv[])
++{
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
++	DECLARE_SET_ZERO(hseImportKeySrv_t, import_key_req);
++
++	FILE *file;
++	uint16_t status;
++	int err;
++	char kek[HSE_KEK_SIZE];
++	void *kek_buff, *key_info;
++	hseKeyInfo_t *key_info_ptr;
++	size_t bytes_read;
++
++	switch (argc) {
++	case 2:
++		file = fopen(argv[1], "r");
++		if (!file) {
++			ERROR("Cannot open file %s\n", argv[1]);
++			return -EINVAL;
++		}
++		break;
++	default:
++		INFO("Usage: %s <path/to/file>\n", argv[0]);
++		INFO("- path to a file containing the KEK (Key Encryption Key)\n");
++		return -EINVAL;
++	}
++
++	bytes_read = fread(kek, sizeof(uint8_t), HSE_KEK_SIZE, file);
++	if (bytes_read != HSE_KEK_SIZE) {
++		err = -EIO;
++		goto out_file_close;
++	}
++
++	/* Open HSE device */
++	err = hse_dev_open();
++	if (err) {
++		ERROR("Failed to open HSE device: error %d\n", err);
++		goto out_file_close;
++	}
++
++	/* Check firmware global status */
++	status = hse_check_status();
++	if (!(status & HSE_STATUS_INSTALL_OK)) {
++		ERROR("Key catalogs not formatted\n");
++		err = -ENODEV;
++		goto out_dev_close;
++	}
++
++	kek_buff = hse_mem_alloc(HSE_KEK_SIZE);
++	if (!kek_buff) {
++		err = -ENOMEM;
++		goto out_dev_close;
++	}
++	hse_memcpy(kek_buff, kek, HSE_KEK_SIZE);
++
++	key_info = hse_mem_alloc(sizeof(hseKeyInfo_t));
++	if (!key_info) {
++		err = -ENOMEM;
++		goto out_free_kek;
++	}
++	hse_memset(key_info, 0, sizeof(hseKeyInfo_t));
++
++	key_info_ptr = (hseKeyInfo_t *)key_info;
++	key_info_ptr->keyFlags = HSE_KF_ACCESS_WRITE_PROT | HSE_KF_USAGE_DECRYPT |
++				 HSE_KF_USAGE_KEY_PROVISION;
++	key_info_ptr->keyBitLen = HSE_KEK_SIZE * 8;
++	key_info_ptr->keyType = HSE_KEY_TYPE_AES;
++	key_info_ptr->smrFlags = 0;
++
++	srv_desc.srvId = HSE_SRV_ID_IMPORT_KEY;
++	import_key_req.targetKeyHandle = HSE_NVM_KEK_HANDLE;
++	import_key_req.pKeyInfo = hse_virt_to_dma(key_info);
++	import_key_req.pKey[2] = hse_virt_to_dma(kek_buff);
++	import_key_req.keyLen[2] = HSE_KEK_SIZE;
++	import_key_req.cipher.cipherKeyHandle = HSE_INVALID_KEY_HANDLE;
++	import_key_req.keyContainer.authKeyHandle = HSE_INVALID_KEY_HANDLE;
++
++	srv_desc.hseSrv.importKeyReq = import_key_req;
++
++	INFO("Importing KEK into NVM Catalog\n");
++
++	/* Issue key import service request */
++	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	if (err) {
++		ERROR("Key Import service request failed: error %d\n", err);
++		goto out_free_key;
++	}
++
++	INFO("KEK was successfully imported\n");
++
++out_free_key:
++	hse_mem_free(key_info);
++out_free_kek:
++	hse_mem_free(kek_buff);
++out_dev_close:
++	hse_dev_close();
++out_file_close:
++	fclose(file);
++	return err;
++}
+-- 
+2.25.1
+

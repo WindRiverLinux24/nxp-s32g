@@ -1,0 +1,235 @@
+From cfbf3d1497bab502feabf6ca5e2d9c39bd00bbf1 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Tue, 14 Feb 2023 00:56:23 +0200
+Subject: [PATCH 7/9] examples: add userspace key provisioning using the TEE
+ Client API
+
+'hse-symkey-provision' uses the TEE Client API to invoke the optee core
+and import the symmetric key provided in a file through a payload
+structure.
+
+The hse-symkey-provision program takes 3 arguments: a file containing
+the symmetric key and its meta-data (the payload), the group where the
+symmetric key will be imported and the slot from the same group. The
+bytes read from the file are transmitted unaltered to the optee core.
+
+'pta_hse_kp' is the interface exposed by optee_os' PTA. The file must be
+kept in sync with optee_os' lib/libutee/include/pta_hse_kp.h.
+
+Issue: ALB-9773
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .gitignore                                    |   1 +
+ .../include/pta_hse_kp.h                      |  29 +++++
+ .../trustzone-key-provision/target/Makefile   |  19 ++-
+ .../target/hse-symkey-provision.c             | 112 ++++++++++++++++++
+ 4 files changed, 158 insertions(+), 3 deletions(-)
+ create mode 100644 examples/trustzone-key-provision/include/pta_hse_kp.h
+ create mode 100644 examples/trustzone-key-provision/target/hse-symkey-provision.c
+
+diff --git a/.gitignore b/.gitignore
+index 328d686..8b0a513 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -4,6 +4,7 @@ examples/hse-sysimg/hse-sysimg
+ examples/hse-encrypt/hse-encrypt
+ examples/hse-secboot/hse-secboot
+ examples/trustzone-key-provision/target/hse-kek-provision
++examples/trustzone-key-provision/target/hse-symkey-provision
+ *.so*
+ libhse/obj
+ libpkcs/obj
+diff --git a/examples/trustzone-key-provision/include/pta_hse_kp.h b/examples/trustzone-key-provision/include/pta_hse_kp.h
+new file mode 100644
+index 0000000..da2c2e3
+--- /dev/null
++++ b/examples/trustzone-key-provision/include/pta_hse_kp.h
+@@ -0,0 +1,29 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2023 NXP
++ */
++
++#ifndef __PTA_HSE_KP_H
++#define __PTA_HSE_KP_H
++
++#define PTA_HSE_KP_UUID \
++		{ 0xcbc3d171, 0x0e92, 0x436d, \
++		{ 0x83, 0xbc, 0x33, 0xcb, 0x3a, 0x8f, 0xcc, 0x99} }
++
++/*
++ * PTA_CMD_SYM_KEY_PROVISION - Imports a ciphetext symmetric key into HSE's
++ *			       RAM Key Catalog. The key is decrypted & authenticated
++ *			       using HSE's KEK (Key Encryption Key) with AES-GCM algo
++ *
++ * [in]     memref[0]        Ciphertext key
++ * [in]     value[1].a       Key group
++ * [in]     value[2].b       Key slot
++ *
++ * Return codes:
++ * TEE_SUCCESS - Invoke command success
++ * TEE_ERROR_BAD_PARAMETERS - Incorrect input parameters
++ * TEE_ERROR_OUT_OF_MEMORY - No memory left for allocations
++ */
++#define PTA_CMD_SYM_KEY_PROVISION	0x0
++
++#endif /* __PTA_HSE_KP_H */
+diff --git a/examples/trustzone-key-provision/target/Makefile b/examples/trustzone-key-provision/target/Makefile
+index 108586e..f592afc 100644
+--- a/examples/trustzone-key-provision/target/Makefile
++++ b/examples/trustzone-key-provision/target/Makefile
+@@ -4,13 +4,26 @@
+ 
+ include ../../common.mk
+ 
+-all: hse-kek-provision
++ifeq (,$(TEEC_EXPORT))
++$(warning Path to TEE Client API not defined, using default location)
++endif
++TEEC_EXPORT ?= $(HOME)/optee_client/out/export/usr
++
++TEEC_LIB := -L$(TEEC_EXPORT)/lib -lteec
++TEEC_INCLUDE := -I$(TEEC_EXPORT)/include
++
++all: hse-kek-provision hse-symkey-provision
+ 
+ hse-kek-provision: hse-kek-provision.c
+ 	$(CROSS_COMPILE)gcc $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
+ 
++hse-symkey-provision: hse-symkey-provision.c
++	$(CROSS_COMPILE)gcc $(LDFLAGS) $(INCLUDE_LIBHSE) $(INCDIR) $(TEEC_INCLUDE) \
++	$(CFLAGS) $^ -o $@ $(TEEC_LIB)
++
+ clean:
+-	rm -f hse-kek-provision
++	rm -f hse-kek-provision hse-symkey-provision
+ 
+ install:
+-	install hse-kek-provision $(EXAMPLES_INSTALLDIR)
+\ No newline at end of file
++	install hse-kek-provision $(EXAMPLES_INSTALLDIR)
++	install hse-symkey-provision $(EXAMPLES_INSTALLDIR)
+diff --git a/examples/trustzone-key-provision/target/hse-symkey-provision.c b/examples/trustzone-key-provision/target/hse-symkey-provision.c
+new file mode 100644
+index 0000000..280a647
+--- /dev/null
++++ b/examples/trustzone-key-provision/target/hse-symkey-provision.c
+@@ -0,0 +1,112 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright 2023 NXP
++ */
++
++#include <err.h>
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#include <tee_client_api.h>
++#include <pta_hse_kp.h>
++
++#define ERROR(fmt, ...) printf("[ERROR] " fmt, ##__VA_ARGS__)
++#define INFO(fmt, ...) printf("[INFO] " fmt, ##__VA_ARGS__)
++
++#define MAX_PAYLOAD_SIZE	128
++
++/* TEE resources */
++struct hse_ctx {
++	TEEC_Context ctx;
++	TEEC_Session sess;
++};
++
++void prepare_tee_session(struct hse_ctx *ctx)
++{
++	TEEC_UUID uuid = PTA_HSE_KP_UUID;
++	uint32_t origin;
++	TEEC_Result res;
++
++	/* Initialize a context connecting us to the TEE */
++	res = TEEC_InitializeContext(NULL, &ctx->ctx);
++	if (res != TEEC_SUCCESS)
++		errx(1, "TEEC_InitializeContext failed with code 0x%x", res);
++
++	/* Open a session with the TA */
++	res = TEEC_OpenSession(&ctx->ctx, &ctx->sess, &uuid,
++			       TEEC_LOGIN_PUBLIC, NULL, NULL, &origin);
++	if (res != TEEC_SUCCESS)
++		errx(1, "TEEC_Opensession failed with code 0x%x origin 0x%x",
++			res, origin);
++}
++
++void terminate_tee_session(struct hse_ctx *ctx)
++{
++	TEEC_CloseSession(&ctx->sess);
++	TEEC_FinalizeContext(&ctx->ctx);
++}
++
++int main(int argc, char *argv[])
++{
++	struct hse_ctx ctx;
++	TEEC_Result res;
++	TEEC_Operation op;
++	uint32_t origin;
++	FILE *file;
++	size_t bytes_read;
++	uint8_t key_payload[MAX_PAYLOAD_SIZE];
++	int group, slot;
++
++	switch (argc) {
++	case 4:
++		file = fopen(argv[1], "rb");
++		if (!file) {
++			ERROR("Cannot open file %s\n", argv[1]);
++			return -EINVAL;
++		}
++
++		group = atoi(argv[2]);
++		slot = atoi(argv[3]);
++
++		break;
++	default:
++		INFO("Usage: %s <path/to/file> <key-group> <key-slot>\n", argv[0]);
++		INFO("- imports the key from <file> in the specified key slot\n");
++
++		ERROR("Wrong number of arguments\n");
++		return -EINVAL;
++	}
++
++	bytes_read = fread(key_payload, sizeof(uint8_t), MAX_PAYLOAD_SIZE, file);
++	if (bytes_read == 0) {
++		ERROR("Could not read file\n");
++		return -EIO;
++	}
++
++	prepare_tee_session(&ctx);
++
++	memset(&op, 0, sizeof(op));
++	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT,
++					 TEEC_VALUE_INPUT,
++					 TEEC_NONE,
++					 TEEC_NONE);
++
++	op.params[0].tmpref.buffer = key_payload;
++	op.params[0].tmpref.size = MAX_PAYLOAD_SIZE;
++
++	op.params[1].value.a = group;
++	op.params[1].value.b = slot;
++
++	res = TEEC_InvokeCommand(&ctx.sess, PTA_CMD_SYM_KEY_PROVISION, &op, &origin);
++	if (res != TEEC_SUCCESS)
++		ERROR("TEEC_InvokeCommand failed with code 0x%x origin 0x%x\n",
++		      res, origin);
++	else
++		INFO("TEEC_InvokeCommand successfully executed\n");
++
++	terminate_tee_session(&ctx);
++
++	return res;
++}
+-- 
+2.25.1
+
