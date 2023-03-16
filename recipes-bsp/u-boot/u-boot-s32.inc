@@ -30,6 +30,7 @@ SRC_URI += " \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', '${HSE_SUPPORT_PATCHES}', '', d)} \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
     file://0001-pinctrl-fix-pinctrl_gpio_get_pinctrl_and_offset-for-.patch \
+    file://0001-hse-enable-eFUSE-power-on-s32g399-RDB3-platform.patch \
 "
 
 SRCREV = "f30287c440b5371df683aac37b7521048d164d05"

@@ -1,0 +1,37 @@
+From fbd408b2e99826e826b9cd4baa615b0b58280860 Mon Sep 17 00:00:00 2001
+From: Meng Li <Meng.Li@windriver.com>
+Date: Thu, 16 Mar 2023 10:37:01 +0800
+Subject: [PATCH] hse:  enable eFUSE power on s32g399-RDB3 platform
+
+Enable eFUSE power with DCD(device configuration work) before running
+any software, so that HSE firmware can read SYS_IMG configuration data
+normally.
+
+Signed-off-by: Meng Li <Meng.Li@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/s32cc.cfg | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/mach-s32/s32-cc/s32cc.cfg b/arch/arm/mach-s32/s32-cc/s32cc.cfg
+index b41e0270b5..8306d268b0 100644
+--- a/arch/arm/mach-s32/s32-cc/s32cc.cfg
++++ b/arch/arm/mach-s32/s32-cc/s32cc.cfg
+@@ -86,6 +86,15 @@ DCD WRITE 0x4 0x4009c2a4 0x21c000
+ DCD WRITE 0x1 0x4009d31a 0x1
+ #endif
+ 
++#ifdef CONFIG_TARGET_S32G399ARDB3
++/**
++ * Enable VDD_EFUSE, so that HSE can read SYS_IMG.
++ * VDD_EFUSE is disabled by default on s32g399ardb3
++ */
++DCD WRITE 0x4 0x4009c2a4 0x21c000
++DCD WRITE 0x1 0x4009d31a 0x1
++#endif
++
+ #if defined(CONFIG_ERR051257_WORKAROUND)
+ /**
+  * ERR051257 workaround.
+-- 
+2.36.1
+
