@@ -1,0 +1,91 @@
+From 9819f015ab5a45ae0e19f6711bf01a843405691a Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 27 Feb 2023 10:40:51 +0200
+Subject: [PATCH 10/11] s32cc: Add config for GPIO SCMI fixup
+
+S32CC_SCMI_GPIO_FIXUP switch will be use to control the dynamic
+fixup needed to enable SCMI GPIO nodes from Linux device tree.
+
+Issue: ALB-9758
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/fdt.c | 24 +++++++++++++++++++-----
+ board/nxp/s32-cc/Kconfig       |  4 ++++
+ 2 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/fdt.c b/arch/arm/mach-s32/s32-cc/fdt.c
+index e6cc90f859..860136256d 100644
+--- a/arch/arm/mach-s32/s32-cc/fdt.c
++++ b/arch/arm/mach-s32/s32-cc/fdt.c
+@@ -25,6 +25,8 @@
+ #define FDT_CLUSTER1_PATH	"/cpus/cpu-map/cluster1"
+ 
+ const static char *s32cc_gpio_compatible = "nxp,s32cc-siul2-gpio";
++const static char *scmi_gpio_node_path = "/firmware/scmi/protocol@81";
++
+ 
+ static int get_core_id(u32 core_mpidr, u32 max_cores_per_cluster)
+ {
+@@ -361,9 +363,8 @@ static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
+ 
+ static int enable_scmi_gpio_node(void *blob, uint32_t phandle)
+ {
+-	const char *path = "/firmware/scmi/protocol@81";
+ 
+-	return enable_scmi_protocol(blob, path, phandle);
++	return enable_scmi_protocol(blob, scmi_gpio_node_path, phandle);
+ }
+ 
+ static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
+@@ -378,6 +379,17 @@ static int enable_scmi_gpio(void *blob)
+ 	u32 phandle;
+ 	int ret;
+ 
++	node = ofnode_path(scmi_gpio_node_path);
++	if (!ofnode_valid(node)) {
++		printf("%s: Couldn't find \"%s\" node\n", __func__,
++		       scmi_gpio_node_path);
++		return -EINVAL;
++	}
++
++	/* SCMI GPIO isn't enabled for U-Boot */
++	if (!ofnode_is_available(node))
++		return 0;
++
+ 	node = ofnode_by_compatible(ofnode_null(), s32cc_gpio_compatible);
+ 	if (!ofnode_valid(node)) {
+ 		printf("%s: Couldn't find \"%s\" node\n", __func__,
+@@ -440,9 +452,11 @@ int ft_system_setup(void *blob, bd_t *bd)
+ 	if (ret)
+ 		goto exit;
+ 
+-	ret = enable_scmi_gpio(blob);
+-	if (ret)
+-		return ret;
++	if (CONFIG_IS_ENABLED(S32CC_SCMI_GPIO_FIXUP)) {
++		ret = enable_scmi_gpio(blob);
++		if (ret)
++			return ret;
++	}
+ exit:
+ 	return ret;
+ }
+diff --git a/board/nxp/s32-cc/Kconfig b/board/nxp/s32-cc/Kconfig
+index dfaa1896fa..63f27d15c8 100644
+--- a/board/nxp/s32-cc/Kconfig
++++ b/board/nxp/s32-cc/Kconfig
+@@ -38,4 +38,8 @@ config ENV_SECT_SIZE
+ endif
+ endif
+ 
++config S32CC_SCMI_GPIO_FIXUP
++	bool "Device tree fixup for SCMI GPIO protocol"
++	default n
++
+ endif
+-- 
+2.25.1
+

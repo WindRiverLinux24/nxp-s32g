@@ -1,0 +1,52 @@
+From 04ef320c1827793c4dd899b45a1c6f4280ca6767 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 28 Feb 2023 09:42:45 +0200
+Subject: [PATCH 11/11] tools: dtb_node: Add parameters for each SIUL2 fixup
+
+Issue: ALB-9758
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ tools/nxp/scmi_dtb_node_change.py | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/tools/nxp/scmi_dtb_node_change.py b/tools/nxp/scmi_dtb_node_change.py
+index c4fa95a52d..bf576624cd 100644
+--- a/tools/nxp/scmi_dtb_node_change.py
++++ b/tools/nxp/scmi_dtb_node_change.py
+@@ -59,6 +59,12 @@ def main():
+     parser = argparse.ArgumentParser(description=description)
+     parser.add_argument('dtb_file', metavar='dtb_file', type=pathlib.Path,
+                         nargs=1, help="path to the dtb file to be processed")
++    parser.add_argument('--pinctrl', action='store_true', help="use SCMI pinctrl protocol")
++    parser.add_argument('--no-pinctrl', dest='pinctrl', action='store_false')
++    parser.set_defaults(pinctrl=True)
++    parser.add_argument('--gpio', action='store_true', help="use SCMI GPIO protocol")
++    parser.add_argument('--no-gpio', dest='gpio', action='store_false')
++    parser.set_defaults(gpio=True)
+     args = parser.parse_args()
+ 
+     dtb_file = args.dtb_file[0]
+@@ -70,10 +76,13 @@ def main():
+ 
+     dtb = fdt.parse_dtb(data)
+ 
+-    print("Replacing pinctrl")
+-    switch_node(dtb, SCMI_PINCTRL_NAME, SIUL2_PINCTRL_NAME)
+-    print("Replacing GPIO")
+-    switch_node(dtb, SCMI_GPIO_NAME, SIUL2_GPIO_NAME)
++    if args.pinctrl:
++        print("Enabling SCMI pinctrl")
++        switch_node(dtb, SCMI_PINCTRL_NAME, SIUL2_PINCTRL_NAME)
++
++    if args.gpio:
++        print("Enabling SCMI GPIO")
++        switch_node(dtb, SCMI_GPIO_NAME, SIUL2_GPIO_NAME)
+ 
+     with open(dtb_file, "wb") as file:
+         file.write(dtb.to_dtb())
+-- 
+2.25.1
+

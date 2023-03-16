@@ -1,0 +1,49 @@
+From 14ade54e9776ff0e508aadad23e45a904db23bc4 Mon Sep 17 00:00:00 2001
+From: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Date: Thu, 9 Feb 2023 18:01:03 +0200
+Subject: [PATCH 08/11] clk: scmi: Make CLOCK_RATE_SET synchronous
+
+The CLOCK_RATE_SET command was issuing an asynchronous SCMI
+request, which are not currently supported by SCP Firmware.
+
+This led to various CLOCK_RATE_SET commands (i.e. for GMAC/PFE)
+which SCP was unable to serve and, thus, rejecting.
+
+Removed the SCMI_CLK_RATE_ASYNC_NORESP flag from the SCMI
+message payload.
+
+Issue: ALB-9731
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Cherechesu <andrei.cherechesu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/clk/clk_scmi.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clk/clk_scmi.c b/drivers/clk/clk_scmi.c
+index 767196bbf4..96c3745750 100644
+--- a/drivers/clk/clk_scmi.c
++++ b/drivers/clk/clk_scmi.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+ /*
+  * Copyright (C) 2019-2020 Linaro Limited
+- * Copyright 2021 NXP
++ * Copyright 2021, 2023 NXP
+  */
+ #include <common.h>
+ #include <clk-uclass.h>
+@@ -116,8 +116,7 @@ static ulong scmi_clk_set_rate(struct clk *clk, ulong rate)
+ {
+ 	struct scmi_clk_rate_set_in in = {
+ 		.clock_id = clk->id,
+-		.flags = SCMI_CLK_RATE_ASYNC_NORESP |
+-			 SCMI_CLK_RATE_ROUND_CLOSEST,
++		.flags = SCMI_CLK_RATE_ROUND_CLOSEST,
+ 		.rate_lsb = (u32)rate,
+ 		.rate_msb = (u32)((u64)rate >> 32),
+ 	};
+-- 
+2.25.1
+
