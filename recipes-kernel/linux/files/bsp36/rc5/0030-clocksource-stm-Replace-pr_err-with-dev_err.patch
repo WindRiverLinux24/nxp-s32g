@@ -1,0 +1,41 @@
+From 3c3981068527523815da06f6e32d89f809060a49 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 12 Jan 2023 13:59:37 +0200
+Subject: [PATCH 30/63] clocksource: stm: Replace pr_err with dev_err
+
+Issue: ALB-9261
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/clocksource/timer-fsl-stm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clocksource/timer-fsl-stm.c b/drivers/clocksource/timer-fsl-stm.c
+index 8dc29dfccbb9..f67c7712d49a 100644
+--- a/drivers/clocksource/timer-fsl-stm.c
++++ b/drivers/clocksource/timer-fsl-stm.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ /*
+  * Copyright 2016 Freescale Semiconductor, Inc.
+- * Copyright 2018,2021 NXP
++ * Copyright 2018,2021-2023 NXP
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -344,8 +344,8 @@ static int __init fsl_stm_timer_probe(struct platform_device *pdev)
+ 
+ 	of_property_read_u32(np, "cpu", &cpu);
+ 	if (cpu >= num_possible_cpus()) {
+-		pr_err("%s: please specify a cpu number between 0 and %d.\n",
+-		       STM_TIMER_NAME, num_possible_cpus() - 1);
++		dev_err(dev, "please specify a cpu number between 0 and %d.\n",
++			num_possible_cpus() - 1);
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+2.25.1
+

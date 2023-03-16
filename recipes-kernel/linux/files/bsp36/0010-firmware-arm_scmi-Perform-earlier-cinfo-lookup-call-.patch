@@ -1,0 +1,58 @@
+From 8cf3b916833863604786593298021805028f17e6 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Mon, 29 Nov 2021 19:11:41 +0000
+Subject: [PATCH 10/25] firmware: arm_scmi: Perform earlier cinfo lookup call
+ in do_xfer
+
+Lookup cinfo data early in do_xfer so as to avoid any further init work
+on xfer structure in case of error.
+
+No functional change.
+
+This is a cherry-pick of:
+commit d211ddeb511a ("firmware: arm_scmi: Perform earlier cinfo lookup
+		     call in do_xfer")
+
+Link: https://lore.kernel.org/r/20211129191156.29322-2-cristian.marussi@arm.com
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Upstream-Status: Pending 
+
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+
+Issue: ALB-9523
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
+index 3dcc45766b3f..e1ae1737d7ba 100644
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -767,6 +767,10 @@ static int do_xfer(const struct scmi_protocol_handle *ph,
+ 		return -EINVAL;
+ 	}
+ 
++	cinfo = idr_find(&info->tx_idr, pi->proto->id);
++	if (unlikely(!cinfo))
++		return -EINVAL;
++
+ 	/*
+ 	 * Initialise protocol id now from protocol handle to avoid it being
+ 	 * overridden by mistake (or malice) by the protocol code mangling with
+@@ -775,10 +779,6 @@ static int do_xfer(const struct scmi_protocol_handle *ph,
+ 	xfer->hdr.protocol_id = pi->proto->id;
+ 	reinit_completion(&xfer->done);
+ 
+-	cinfo = idr_find(&info->tx_idr, xfer->hdr.protocol_id);
+-	if (unlikely(!cinfo))
+-		return -EINVAL;
+-
+ 	trace_scmi_xfer_begin(xfer->transfer_id, xfer->hdr.id,
+ 			      xfer->hdr.protocol_id, xfer->hdr.seq,
+ 			      xfer->hdr.poll_completion);
+-- 
+2.25.1
+

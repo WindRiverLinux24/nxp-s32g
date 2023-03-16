@@ -1,0 +1,133 @@
+From 34552b51312242ad5e714ee4a116976ae90c5f06 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Mon, 20 Dec 2021 19:56:38 +0000
+Subject: [PATCH 15/25] firmware: arm_scmi: Add sync_cmds_completed_on_ret
+ transport flag
+
+Add a flag to let the transport signal to the core if its handling of sync
+command implies that, after .send_message has returned successfully, the
+requested command can be assumed to be fully and completely executed on
+SCMI platform side so that any possible response value is already
+immediately available to be retrieved by a .fetch_response: in other words
+the polling phase can be skipped in such a case and the response values
+accessed straight away.
+
+Note that all of the above applies only when polling mode of operation was
+selected by the core: if instead a completion IRQ was found to be available
+the normal response processing path based on completions will still be
+followed.
+
+This is a cherry-pick of:
+commit 31d2f803c19c ("firmware: arm_scmi: Add sync_cmds_completed_on_ret
+		     transport flag")
+
+Link: https://lore.kernel.org/r/20211220195646.44498-4-cristian.marussi@arm.com
+Upstream-Status: Pending 
+
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+
+Issue: ALB-9523
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/firmware/arm_scmi/common.h |  8 +++++++
+ drivers/firmware/arm_scmi/driver.c | 34 +++++++++++++++++++++---------
+ 2 files changed, 32 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/firmware/arm_scmi/common.h b/drivers/firmware/arm_scmi/common.h
+index fd3b71e078bf..bab422a3912a 100644
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -410,6 +410,13 @@ struct scmi_device *scmi_child_dev_find(struct device *parent,
+  * @max_msg_size: Maximum size of data per message that can be handled.
+  * @force_polling: Flag to force this whole transport to use SCMI core polling
+  *		   mechanism instead of completion interrupts even if available.
++ * @sync_cmds_completed_on_ret: Flag to indicate that the transport assures
++ *				synchronous-command messages are atomically
++ *				completed on .send_message: no need to poll
++ *				actively waiting for a response.
++ *				Used by core internally only when polling is
++ *				selected as a waiting for reply method: i.e.
++ *				if a completion irq was found use that anyway.
+  */
+ struct scmi_desc {
+ 	int (*transport_init)(void);
+@@ -419,6 +426,7 @@ struct scmi_desc {
+ 	int max_msg;
+ 	int max_msg_size;
+ 	const bool force_polling;
++	const bool sync_cmds_completed_on_ret;
+ };
+ 
+ #ifdef CONFIG_ARM_SCMI_TRANSPORT_MAILBOX
+diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
+index decd8d06937f..fe2594e47fbc 100644
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -617,7 +617,8 @@ static inline bool is_polling_required(struct scmi_chan_info *cinfo,
+ 
+ static inline bool is_transport_polling_capable(struct scmi_info *info)
+ {
+-	return info->desc->ops->poll_done;
++	return info->desc->ops->poll_done ||
++		info->desc->sync_cmds_completed_on_ret;
+ }
+ 
+ static inline bool is_polling_enabled(struct scmi_chan_info *cinfo,
+@@ -782,10 +783,28 @@ static int scmi_wait_for_message_response(struct scmi_chan_info *cinfo,
+ 				      xfer->hdr.poll_completion);
+ 
+ 	if (xfer->hdr.poll_completion) {
+-		ktime_t stop = ktime_add_ms(ktime_get(), timeout_ms);
++		/*
++		 * Real polling is needed only if transport has NOT declared
++		 * itself to support synchronous commands replies.
++		 */
++		if (!info->desc->sync_cmds_completed_on_ret) {
++			/*
++			 * Poll on xfer using transport provided .poll_done();
++			 * assumes no completion interrupt was available.
++			 */
++			ktime_t stop = ktime_add_ms(ktime_get(), timeout_ms);
++
++			spin_until_cond(scmi_xfer_done_no_timeout(cinfo,
++								  xfer, stop));
++			if (ktime_after(ktime_get(), stop)) {
++				dev_err(dev,
++					"timed out in resp(caller: %pS) - polling\n",
++					(void *)_RET_IP_);
++				ret = -ETIMEDOUT;
++			}
++		}
+ 
+-		spin_until_cond(scmi_xfer_done_no_timeout(cinfo, xfer, stop));
+-		if (ktime_before(ktime_get(), stop)) {
++		if (!ret) {
+ 			unsigned long flags;
+ 
+ 			/*
+@@ -798,11 +817,6 @@ static int scmi_wait_for_message_response(struct scmi_chan_info *cinfo,
+ 				xfer->state = SCMI_XFER_RESP_OK;
+ 			}
+ 			spin_unlock_irqrestore(&xfer->lock, flags);
+-		} else {
+-			dev_err(dev,
+-				"timed out in resp(caller: %pS) - polling\n",
+-				(void *)_RET_IP_);
+-			ret = -ETIMEDOUT;
+ 		}
+ 	} else {
+ 		/* And we wait for the response. */
+@@ -837,7 +851,7 @@ static int do_xfer(const struct scmi_protocol_handle *ph,
+ 	struct scmi_chan_info *cinfo;
+ 
+ 	/* Check for polling request on custom command xfers at first */
+-	if (xfer->hdr.poll_completion && !info->desc->ops->poll_done) {
++	if (xfer->hdr.poll_completion && !is_transport_polling_capable(info)) {
+ 		dev_warn_once(dev,
+ 			      "Polling mode is not supported by transport.\n");
+ 		return -EINVAL;
+-- 
+2.25.1
+

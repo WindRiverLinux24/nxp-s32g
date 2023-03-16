@@ -1,0 +1,58 @@
+From e2b3d93a67c0cbf1b84eb30e282fc618a8963d33 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 23 Nov 2022 13:48:53 +0200
+Subject: [PATCH 22/25] firmware: arm_scmi: Add a method to verify mailbox's
+ status
+
+Issue: ALB-9523
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/firmware/arm_scmi/common.h | 1 +
+ drivers/firmware/arm_scmi/shmem.c  | 9 +++++++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/arm_scmi/common.h b/drivers/firmware/arm_scmi/common.h
+index 68b2789adc89..fd02aa82d654 100644
+--- a/drivers/firmware/arm_scmi/common.h
++++ b/drivers/firmware/arm_scmi/common.h
+@@ -452,6 +452,7 @@ void scmi_free_channel(struct scmi_chan_info *cinfo, struct idr *idr, int id);
+ /* shmem related declarations */
+ struct scmi_shared_mem;
+ 
++bool shmem_is_free(struct scmi_shared_mem __iomem *shmem);
+ void shmem_tx_prepare(struct scmi_shared_mem __iomem *shmem,
+ 		      struct scmi_xfer *xfer);
+ u32 shmem_read_header(struct scmi_shared_mem __iomem *shmem);
+diff --git a/drivers/firmware/arm_scmi/shmem.c b/drivers/firmware/arm_scmi/shmem.c
+index 56a1f61aa3ff..6ad63dd5a3b2 100644
+--- a/drivers/firmware/arm_scmi/shmem.c
++++ b/drivers/firmware/arm_scmi/shmem.c
+@@ -29,6 +29,12 @@ struct scmi_shared_mem {
+ 	u8 msg_payload[];
+ };
+ 
++bool shmem_is_free(struct scmi_shared_mem __iomem *shmem)
++{
++	return ioread32(&shmem->channel_status) &
++	    SCMI_SHMEM_CHAN_STAT_CHANNEL_FREE;
++}
++
+ void shmem_tx_prepare(struct scmi_shared_mem __iomem *shmem,
+ 		      struct scmi_xfer *xfer)
+ {
+@@ -38,8 +44,7 @@ void shmem_tx_prepare(struct scmi_shared_mem __iomem *shmem,
+ 	 * until it releases the shared memory, otherwise we may endup
+ 	 * overwriting its response with new message payload or vice-versa
+ 	 */
+-	spin_until_cond(ioread32(&shmem->channel_status) &
+-			SCMI_SHMEM_CHAN_STAT_CHANNEL_FREE);
++	spin_until_cond(shmem_is_free(shmem));
+ 	/* Mark channel busy + clear error */
+ 	iowrite32(0x0, &shmem->channel_status);
+ 	iowrite32(xfer->hdr.poll_completion ? 0 : SCMI_SHMEM_FLAG_INTR_ENABLED,
+-- 
+2.25.1
+

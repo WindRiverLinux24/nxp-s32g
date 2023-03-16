@@ -1,0 +1,45 @@
+From 320c566032f3dd43c0144a06b25479d051c01648 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 24 Oct 2022 13:59:40 +0300
+Subject: [PATCH 48/63] arm64: dts: s32g: Add GPIO SCMI protocol to SCMI node
+
+Issue: ALB-9425
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/boot/dts/freescale/s32g.dtsi | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/s32g.dtsi b/arch/arm64/boot/dts/freescale/s32g.dtsi
+index 08d2f2f5d6c3..a23e39f07dc9 100644
+--- a/arch/arm64/boot/dts/freescale/s32g.dtsi
++++ b/arch/arm64/boot/dts/freescale/s32g.dtsi
+@@ -48,6 +48,23 @@ pfe_reserved_bdr: pfebufs@835e0000 {
+ 		/* ends 0x83600000 */
+ 	};
+ 
++	firmware {
++		scmi {
++			gpio_scmi: protocol@81 {
++				reg = <0x81>;
++				#gpio-cells = <2>;
++				gpio-controller;
++				#interrupt-cells = <2>;
++				interrupt-controller;
++
++				/* GPIO ranges : 0-101 & 112-190 */
++				gpio-ranges = <&pinctrl 0   0   102>,
++					      <&pinctrl 112 112 79>;
++				status = "disabled";
++			};
++		};
++	};
++
+ 	soc {
+ 		siul2@4009c000 {
+ 			compatible = "simple-mfd";
+-- 
+2.25.1
+

@@ -1,0 +1,67 @@
+From ed87cf180ac85cd634e1776fc97674f655cd1e79 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Thu, 2 Mar 2023 15:02:23 +0800
+Subject: [PATCH 2/3] xpcs: s32: rename fsl-s32gen1-xpcs.h to nxp-s32cc-xpcs.h
+ for compatibility with pfe codes
+
+This patch update the fsl-s32gen1-xpcs.h to nxp-s32cc-xpcs.h, to compatible
+with pfe driver codes
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+
+---
+ drivers/net/ethernet/stmicro/stmmac/dwmac-s32cc.c          | 2 +-
+ drivers/net/pcs/fsl-s32gen1-xpcs.c                         | 2 +-
+ drivers/phy/freescale/phy-fsl-s32gen1-serdes.c             | 2 +-
+ include/linux/pcs/{fsl-s32gen1-xpcs.h => nxp-s32cc-xpcs.h} | 0
+ 4 files changed, 3 insertions(+), 3 deletions(-)
+ rename include/linux/pcs/{fsl-s32gen1-xpcs.h => nxp-s32cc-xpcs.h} (100%)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-s32cc.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-s32cc.c
+index 758eaae4053e..5b23e3c477d9 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-s32cc.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-s32cc.c
+@@ -22,7 +22,7 @@
+ 
+ /* S32 Serdes */
+ #include <linux/pcs/pcs-xpcs.h>
+-#include <linux/pcs/fsl-s32gen1-xpcs.h>
++#include <linux/pcs/nxp-s32cc-xpcs.h>
+ 
+ #include "stmmac_platform.h"
+ 
+diff --git a/drivers/net/pcs/fsl-s32gen1-xpcs.c b/drivers/net/pcs/fsl-s32gen1-xpcs.c
+index 8a11f848807a..fc58d97a5bda 100644
+--- a/drivers/net/pcs/fsl-s32gen1-xpcs.c
++++ b/drivers/net/pcs/fsl-s32gen1-xpcs.c
+@@ -5,7 +5,7 @@
+ #include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/io.h>
+-#include <linux/pcs/fsl-s32gen1-xpcs.h>
++#include <linux/pcs/nxp-s32cc-xpcs.h>
+ #include <linux/processor.h>
+ #include <linux/regmap.h>
+ 
+diff --git a/drivers/phy/freescale/phy-fsl-s32gen1-serdes.c b/drivers/phy/freescale/phy-fsl-s32gen1-serdes.c
+index 8ac3df5b9975..5b360e5df4d6 100644
+--- a/drivers/phy/freescale/phy-fsl-s32gen1-serdes.c
++++ b/drivers/phy/freescale/phy-fsl-s32gen1-serdes.c
+@@ -9,7 +9,7 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ #include <linux/of_address.h>
+-#include <linux/pcs/fsl-s32gen1-xpcs.h>
++#include <linux/pcs/nxp-s32cc-xpcs.h>
+ #include <linux/phy/fsl/fsl-s32cc-pcie-phy-submode.h>
+ #include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
+diff --git a/include/linux/pcs/fsl-s32gen1-xpcs.h b/include/linux/pcs/nxp-s32cc-xpcs.h
+similarity index 100%
+rename from include/linux/pcs/fsl-s32gen1-xpcs.h
+rename to include/linux/pcs/nxp-s32cc-xpcs.h
+-- 
+2.25.1
+

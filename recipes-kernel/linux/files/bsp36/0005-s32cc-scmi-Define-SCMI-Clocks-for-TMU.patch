@@ -1,0 +1,41 @@
+From 5d6e24048e70cbda24751411fb8b6230a95559bd Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Tue, 17 Jan 2023 11:06:16 +0200
+Subject: [PATCH 05/25] s32cc: scmi: Define SCMI Clocks for TMU
+
+Issue: ALB-9659
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/dt-bindings/clock/s32cc-scmi-clock.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/include/dt-bindings/clock/s32cc-scmi-clock.h b/include/dt-bindings/clock/s32cc-scmi-clock.h
+index 14ec701dc2f2..7748e5f542b5 100644
+--- a/include/dt-bindings/clock/s32cc-scmi-clock.h
++++ b/include/dt-bindings/clock/s32cc-scmi-clock.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: BSD-3-Clause */
+ /*
+- * Copyright 2020-2022 NXP
++ * Copyright 2020-2023 NXP
+  */
+ #ifndef __DT_BINDINGS_SCMI_CLOCK_S32CC_H
+ #define __DT_BINDINGS_SCMI_CLOCK_S32CC_H
+@@ -79,7 +79,10 @@
+ #define S32CC_SCMI_CLK_EDMA_AHB			S32CC_SCMI_CLK(65)
+ /* SAR-ADC */
+ #define S32CC_SCMI_CLK_SAR_ADC_BUS		S32CC_SCMI_CLK(66)
++/* TMU */
++#define S32CC_SCMI_CLK_TMU_MODULE		S32CC_SCMI_CLK(69)
++#define S32CC_SCMI_CLK_TMU_REG			S32CC_SCMI_CLK(70)
+ 
+-#define S32CC_SCMI_PLAT_CLK_BASE_ID		S32CC_SCMI_CLK(69)
++#define S32CC_SCMI_PLAT_CLK_BASE_ID		S32CC_SCMI_CLK(71)
+ 
+ #endif /* __DT_BINDINGS_SCMI_CLOCK_S32CC_H */
+-- 
+2.25.1
+

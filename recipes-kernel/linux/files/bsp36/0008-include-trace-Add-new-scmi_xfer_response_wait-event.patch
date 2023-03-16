@@ -1,0 +1,69 @@
+From cef63019d082a262e3e4150aea6a3fb1ac4f2382 Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Mon, 29 Nov 2021 19:11:44 +0000
+Subject: [PATCH 08/25] include: trace: Add new scmi_xfer_response_wait event
+
+Having a new step to trace SCMI stack while it waits for synchronous
+responses is useful to analyze system performance when changing waiting
+mode between polling and interrupt completion.
+
+This is a cherry-pick of:
+commit 8b276b59ccf9 ("include: trace: Add new scmi_xfer_response_wait
+		     event")
+
+Link: https://lore.kernel.org/r/20211129191156.29322-5-cristian.marussi@arm.com
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+Upstream-Status: Pending 
+
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+
+Issue: ALB-9523
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/trace/events/scmi.h | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/include/trace/events/scmi.h b/include/trace/events/scmi.h
+index f3a4b4d60714..cee4b2b64ae4 100644
+--- a/include/trace/events/scmi.h
++++ b/include/trace/events/scmi.h
+@@ -33,6 +33,34 @@ TRACE_EVENT(scmi_xfer_begin,
+ 		__entry->seq, __entry->poll)
+ );
+ 
++TRACE_EVENT(scmi_xfer_response_wait,
++	TP_PROTO(int transfer_id, u8 msg_id, u8 protocol_id, u16 seq,
++		 u32 timeout, bool poll),
++	TP_ARGS(transfer_id, msg_id, protocol_id, seq, timeout, poll),
++
++	TP_STRUCT__entry(
++		__field(int, transfer_id)
++		__field(u8, msg_id)
++		__field(u8, protocol_id)
++		__field(u16, seq)
++		__field(u32, timeout)
++		__field(bool, poll)
++	),
++
++	TP_fast_assign(
++		__entry->transfer_id = transfer_id;
++		__entry->msg_id = msg_id;
++		__entry->protocol_id = protocol_id;
++		__entry->seq = seq;
++		__entry->timeout = timeout;
++		__entry->poll = poll;
++	),
++
++	TP_printk("transfer_id=%d msg_id=%u protocol_id=%u seq=%u tmo_ms=%u poll=%u",
++		__entry->transfer_id, __entry->msg_id, __entry->protocol_id,
++		__entry->seq, __entry->timeout, __entry->poll)
++);
++
+ TRACE_EVENT(scmi_xfer_end,
+ 	TP_PROTO(int transfer_id, u8 msg_id, u8 protocol_id, u16 seq,
+ 		 int status),
+-- 
+2.25.1
+

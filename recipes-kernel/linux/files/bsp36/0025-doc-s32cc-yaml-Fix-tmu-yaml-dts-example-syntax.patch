@@ -1,0 +1,30 @@
+From 0e9cecd990a2d0784930dc49d2fa6ac840062989 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Thu, 2 Feb 2023 14:35:31 +0200
+Subject: [PATCH 25/25] doc: s32cc: yaml: Fix 'tmu' yaml dts example syntax
+
+Issue: ALB-9727
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Documentation/devicetree/bindings/thermal/s32-thermal.yaml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml b/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
+index e3fc474475cd..cad16fa09c26 100644
+--- a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
++++ b/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
+@@ -49,7 +49,7 @@ examples:
+       compatible = "nxp,s32g2-tmu";
+       reg = <0x0 0x400A8000 0x0 0x3000>,
+           <0x0 0x400A4200 0x0 0x1FC>;
+-      clocks = <&clks S32CC_SCMI_CLK_TMU_MODULE>
++      clocks = <&clks S32CC_SCMI_CLK_TMU_MODULE>,
+           <&clks S32CC_SCMI_CLK_TMU_REG>;
+       clock-names = "tmu_module", "tmu_reg";
+       status = "okay";
+-- 
+2.25.1
+

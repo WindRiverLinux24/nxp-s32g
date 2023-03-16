@@ -1,0 +1,63 @@
+From 18e80d7e2e0f2b28393d4cdcc126e040077558d8 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Mon, 30 Jan 2023 11:35:40 +0200
+Subject: [PATCH 45/63] doc: bindings: tmu: Update S32CC TMU devicetree
+ bindings
+
+Issue: ALB-9677
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../{s32-thermal.yaml => s32cc-thermal.yaml}     | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+ rename Documentation/devicetree/bindings/thermal/{s32-thermal.yaml => s32cc-thermal.yaml} (78%)
+
+diff --git a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml b/Documentation/devicetree/bindings/thermal/s32cc-thermal.yaml
+similarity index 78%
+rename from Documentation/devicetree/bindings/thermal/s32-thermal.yaml
+rename to Documentation/devicetree/bindings/thermal/s32cc-thermal.yaml
+index cad16fa09c26..dc65451bda52 100644
+--- a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
++++ b/Documentation/devicetree/bindings/thermal/s32cc-thermal.yaml
+@@ -33,11 +33,22 @@ properties:
+   clock-names:
+     description: tmu_module, tmu_reg
+ 
++  nvmem-cells:
++    maxItems: 1
++    description:
++      phandle to the temperature calibration fuse cells
++
++  nvmem-cell-names:
++    maxItems: 1
++    const: tmu_fuse_val
++
+ required:
+   - compatible
+   - reg
+   - clocks
+   - clock-names
++  - nvmem-cells
++  - nvmem-cell-names
+ 
+ additionalProperties: false
+ 
+@@ -47,10 +58,11 @@ examples:
+ 
+     tmu: tmu@400A8000 {
+       compatible = "nxp,s32g2-tmu";
+-      reg = <0x0 0x400A8000 0x0 0x3000>,
+-          <0x0 0x400A4200 0x0 0x1FC>;
++      reg = <0x0 0x400a8000 0x0 0x3000>;
+       clocks = <&clks S32CC_SCMI_CLK_TMU_MODULE>,
+           <&clks S32CC_SCMI_CLK_TMU_REG>;
+       clock-names = "tmu_module", "tmu_reg";
++      nvmem-cell-names = "tmu_fuse_val";
++      nvmem-cells = <&tmu_fuse_val>;
+       status = "okay";
+     };
+-- 
+2.25.1
+

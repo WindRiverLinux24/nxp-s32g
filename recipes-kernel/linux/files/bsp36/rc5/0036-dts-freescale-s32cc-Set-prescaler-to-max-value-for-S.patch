@@ -1,0 +1,33 @@
+From d796b53748c148a5b605445c79bd8b5abef58753 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Thu, 12 Jan 2023 15:30:07 +0200
+Subject: [PATCH 36/63] dts/freescale: s32cc: Set prescaler to max value for
+ STM2
+
+This is needed to keep the same functionality before introducing
+clock prescaler.
+
+Issue: ALB-9261
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm64/boot/dts/freescale/s32cc.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/s32cc.dtsi b/arch/arm64/boot/dts/freescale/s32cc.dtsi
+index d0db16c108de..7f73c92a668c 100644
+--- a/arch/arm64/boot/dts/freescale/s32cc.dtsi
++++ b/arch/arm64/boot/dts/freescale/s32cc.dtsi
+@@ -331,6 +331,7 @@ stm2: stm@40124000 {
+ 			reg = <0x0 0x40124000 0x0 0x3000>;
+ 			clocks = <&clks S32CC_SCMI_CLK_STM_MODULE>;
+ 			clock-names = "stm";
++			nxp,prescaler = <256>;
+ 			status = "disabled";
+ 		};
+ 
+-- 
+2.25.1
+

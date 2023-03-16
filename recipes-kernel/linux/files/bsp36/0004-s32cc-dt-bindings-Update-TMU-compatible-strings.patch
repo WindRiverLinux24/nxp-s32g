@@ -1,0 +1,62 @@
+From e79ca483df15f5ef15c5ded18b152218275f8a07 Mon Sep 17 00:00:00 2001
+From: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Date: Thu, 12 Jan 2023 14:49:45 +0200
+Subject: [PATCH 04/25] s32cc: dt-bindings: Update TMU compatible strings
+
+Issue: ALB-9659
+Upstream-Status: Pending 
+
+Signed-off-by: Ciprian Costea <ciprianmarian.costea@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ .../bindings/thermal/s32-thermal.yaml         | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml b/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
+index 3802b1ecd447..e3fc474475cd 100644
+--- a/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
++++ b/Documentation/devicetree/bindings/thermal/s32-thermal.yaml
+@@ -18,22 +18,39 @@ properties:
+   compatible:
+     enum:
+       - nxp,s32cc-tmu
++      - nxp,s32g2-tmu
++      - nxp,s32g3-tmu
++      - nxp,s32r45-tmu
+ 
+   reg:
+     description:
+       Address range of the TMU registers
+ 
++  clocks:
++    description: |
++      The clock for the TMU device
++
++  clock-names:
++    description: tmu_module, tmu_reg
++
+ required:
+   - compatible
+   - reg
++  - clocks
++  - clock-names
+ 
+ additionalProperties: false
+ 
+ examples:
+   - |
++    #include <dt-bindings/clock/s32cc-scmi-clock.h>
++
+     tmu: tmu@400A8000 {
+-      compatible = "nxp,s32cc-tmu";
++      compatible = "nxp,s32g2-tmu";
+       reg = <0x0 0x400A8000 0x0 0x3000>,
+           <0x0 0x400A4200 0x0 0x1FC>;
++      clocks = <&clks S32CC_SCMI_CLK_TMU_MODULE>
++          <&clks S32CC_SCMI_CLK_TMU_REG>;
++      clock-names = "tmu_module", "tmu_reg";
+       status = "okay";
+     };
+-- 
+2.25.1
+

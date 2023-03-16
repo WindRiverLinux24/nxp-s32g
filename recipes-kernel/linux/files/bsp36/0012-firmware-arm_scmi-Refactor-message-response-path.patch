@@ -1,0 +1,143 @@
+From c193ada249a1f3c11a981aeadc735856b85e56dc Mon Sep 17 00:00:00 2001
+From: Cristian Marussi <cristian.marussi@arm.com>
+Date: Mon, 29 Nov 2021 19:11:43 +0000
+Subject: [PATCH 12/25] firmware: arm_scmi: Refactor message response path
+
+Refactor code path waiting for message responses into a dedicated helper
+function.
+
+No functional change.
+
+This is a cherry-pick of:
+commit 5a731aebd31b ("firmware: arm_scmi: Refactor message response
+		     path")
+
+Link: https://lore.kernel.org/r/20211129191156.29322-4-cristian.marussi@arm.com
+Upstream-Status: Pending 
+
+Signed-off-by: Cristian Marussi <cristian.marussi@arm.com>
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+
+Issue: ALB-9523
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/firmware/arm_scmi/driver.c | 88 +++++++++++++++++++-----------
+ 1 file changed, 56 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/firmware/arm_scmi/driver.c b/drivers/firmware/arm_scmi/driver.c
+index 6db617081fe6..ab384385e9d7 100644
+--- a/drivers/firmware/arm_scmi/driver.c
++++ b/drivers/firmware/arm_scmi/driver.c
+@@ -739,6 +739,61 @@ static bool scmi_xfer_done_no_timeout(struct scmi_chan_info *cinfo,
+ 	       ktime_after(ktime_get(), stop);
+ }
+ 
++/**
++ * scmi_wait_for_message_response  - An helper to group all the possible ways of
++ * waiting for a synchronous message response.
++ *
++ * @cinfo: SCMI channel info
++ * @xfer: Reference to the transfer being waited for.
++ *
++ * Chooses waiting strategy (sleep-waiting vs busy-waiting) depending on
++ * configuration flags like xfer->hdr.poll_completion.
++ *
++ * Return: 0 on Success, error otherwise.
++ */
++static int scmi_wait_for_message_response(struct scmi_chan_info *cinfo,
++					  struct scmi_xfer *xfer)
++{
++	struct scmi_info *info = handle_to_scmi_info(cinfo->handle);
++	struct device *dev = info->dev;
++	int ret = 0, timeout_ms = info->desc->max_rx_timeout_ms;
++
++	if (xfer->hdr.poll_completion) {
++		ktime_t stop = ktime_add_ms(ktime_get(), timeout_ms);
++
++		spin_until_cond(scmi_xfer_done_no_timeout(cinfo, xfer, stop));
++		if (ktime_before(ktime_get(), stop)) {
++			unsigned long flags;
++
++			/*
++			 * Do not fetch_response if an out-of-order delayed
++			 * response is being processed.
++			 */
++			spin_lock_irqsave(&xfer->lock, flags);
++			if (xfer->state == SCMI_XFER_SENT_OK) {
++				info->desc->ops->fetch_response(cinfo, xfer);
++				xfer->state = SCMI_XFER_RESP_OK;
++			}
++			spin_unlock_irqrestore(&xfer->lock, flags);
++		} else {
++			dev_err(dev,
++				"timed out in resp(caller: %pS) - polling\n",
++				(void *)_RET_IP_);
++			ret = -ETIMEDOUT;
++		}
++	} else {
++		/* And we wait for the response. */
++		if (!wait_for_completion_timeout(&xfer->done,
++						 msecs_to_jiffies(timeout_ms))) {
++			dev_err(dev, "timed out in resp(caller: %pS)\n",
++				(void *)_RET_IP_);
++			ret = -ETIMEDOUT;
++		}
++	}
++
++	return ret;
++}
++
+ /**
+  * do_xfer() - Do one transfer
+  *
+@@ -753,7 +808,6 @@ static int do_xfer(const struct scmi_protocol_handle *ph,
+ 		   struct scmi_xfer *xfer)
+ {
+ 	int ret;
+-	int timeout;
+ 	const struct scmi_protocol_instance *pi = ph_to_pi(ph);
+ 	struct scmi_info *info = handle_to_scmi_info(pi->handle);
+ 	struct device *dev = info->dev;
+@@ -799,37 +853,7 @@ static int do_xfer(const struct scmi_protocol_handle *ph,
+ 		return ret;
+ 	}
+ 
+-	if (xfer->hdr.poll_completion) {
+-		ktime_t stop = ktime_add_ms(ktime_get(),
+-					    info->desc->max_rx_timeout_ms);
+-
+-		spin_until_cond(scmi_xfer_done_no_timeout(cinfo, xfer, stop));
+-		if (ktime_before(ktime_get(), stop)) {
+-			unsigned long flags;
+-
+-			/*
+-			 * Do not fetch_response if an out-of-order delayed
+-			 * response is being processed.
+-			 */
+-			spin_lock_irqsave(&xfer->lock, flags);
+-			if (xfer->state == SCMI_XFER_SENT_OK) {
+-				info->desc->ops->fetch_response(cinfo, xfer);
+-				xfer->state = SCMI_XFER_RESP_OK;
+-			}
+-			spin_unlock_irqrestore(&xfer->lock, flags);
+-		} else {
+-			ret = -ETIMEDOUT;
+-		}
+-	} else {
+-		/* And we wait for the response. */
+-		timeout = msecs_to_jiffies(info->desc->max_rx_timeout_ms);
+-		if (!wait_for_completion_timeout(&xfer->done, timeout)) {
+-			dev_err(dev, "timed out in resp(caller: %pS)\n",
+-				(void *)_RET_IP_);
+-			ret = -ETIMEDOUT;
+-		}
+-	}
+-
++	ret = scmi_wait_for_message_response(cinfo, xfer);
+ 	if (!ret && xfer->hdr.status)
+ 		ret = scmi_to_linux_errno(xfer->hdr.status);
+ 
+-- 
+2.25.1
+
