@@ -1,0 +1,56 @@
+From 265a4b95bcb7fe4e84e908a722736c79e6d05f03 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 21 Feb 2023 11:42:30 +0200
+Subject: [PATCH 39/54] s32cc: Place all SCP related calls from BL2 in one file
+
+Issue: ALB-9757
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/{s32_scp_early_clocks.c => s32_bl2_scp.c} | 2 +-
+ plat/nxp/s32/s32_common.mk                             | 3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+ rename plat/nxp/s32/{s32_scp_early_clocks.c => s32_bl2_scp.c} (99%)
+
+diff --git a/plat/nxp/s32/s32_scp_early_clocks.c b/plat/nxp/s32/s32_bl2_scp.c
+similarity index 99%
+rename from plat/nxp/s32/s32_scp_early_clocks.c
+rename to plat/nxp/s32/s32_bl2_scp.c
+index ea74b2240..5b0d191f0 100644
+--- a/plat/nxp/s32/s32_scp_early_clocks.c
++++ b/plat/nxp/s32/s32_bl2_scp.c
+@@ -64,7 +64,7 @@ static int scp_scmi_reset_set_state(uint32_t domain_id, bool assert)
+ 	payload_resp = (struct scmi_reset_domain_request_p2a *)mbx_mem->payload;
+ 	ret = payload_resp->status;
+ 	if (ret != SCMI_E_SUCCESS) {
+-		ERROR("Failed to reset doamin %u\n", domain_id);
++		ERROR("Failed to reset domain %u\n", domain_id);
+ 		return ret;
+ 	}
+ 
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 3fb8a2a49..68234f802 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -100,7 +100,7 @@ BL2_SOURCES += \
+ 			${S32_PLAT}/s32_bl2_el3.c \
+ 			${S32_PLAT}/s32_storage.c \
+ 			${S32_PLAT}/s32_lowlevel_bl2.S \
+-			${S32_PLAT}/s32_scp_early_clocks.c \
++			${S32_PLAT}/s32_bl2_scp.c \
+ 			${S32_PLAT}/s32_scp_scmi.c \
+ 			drivers/arm/css/scmi/scmi_common.c \
+ 
+@@ -126,7 +126,6 @@ BL31_SOURCES += \
+ 			${S32_PLAT}/s32_scmi_rst.c \
+ 			${S32_PLAT}/s32_svc.c \
+ 			${S32_PLAT}/s32_psci.c \
+-			${S32_PLAT}/s32_scp_early_clocks.c \
+ 			${S32_PLAT}/s32_scp_scmi.c \
+ 			drivers/arm/css/scmi/scmi_common.c \
+ 			drivers/arm/css/scmi/scmi_ap_core_proto.c \
+-- 
+2.25.1
+

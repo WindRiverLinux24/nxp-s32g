@@ -1,0 +1,160 @@
+From ae6f58e613ffe0d3bc638f8549c7ed64b55bb0a6 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Fri, 10 Feb 2023 15:45:36 +0200
+Subject: [PATCH 31/54] plat: nxp: change HSE_SECBOOT into HSE_SUPPORT
+
+The name of 'HSE_SECBOOT' Build parameter was confusing because enabling
+it did not guarantee that secure boot would be performed right away.
+Rather, further steps must be performed in linux userspace to enable
+seucre boot. Since the 'HSE_SECBOOT' parameter is also enabling certain
+HSE features which do not necessarily relate to secure boot, change its
+name to HSE_SUPPORT to better reflect its utility.
+
+Issue: ALB-9771
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32cc.dtsi                  |  4 ++--
+ plat/nxp/s32/s32_bl31.c          |  8 ++++----
+ plat/nxp/s32/s32_common.mk       | 12 ++++++------
+ plat/nxp/s32/s32g/s32g_bl2_el3.c |  6 +++---
+ 4 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/fdts/s32cc.dtsi b/fdts/s32cc.dtsi
+index d7029dc20..e88e3fb2b 100644
+--- a/fdts/s32cc.dtsi
++++ b/fdts/s32cc.dtsi
+@@ -2,7 +2,7 @@
+ /*
+  * Device Tree Include file for NXP S32CC family SoCs.
+  *
+- * Copyright 2019-2022 NXP
++ * Copyright 2019-2023 NXP
+  */
+ 
+ #include <dt-bindings/clock/s32gen1-clock-freq.h>
+@@ -13,7 +13,7 @@
+ #include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/reset/s32gen1-scmi-reset.h>
+ #include <dt-bindings/reset/s32gen1-wkpu.h>
+-#if defined(HSE_SECBOOT)
++#if defined(HSE_SUPPORT)
+ #include "s32cc-crypto.dtsi"
+ #endif
+ 
+diff --git a/plat/nxp/s32/s32_bl31.c b/plat/nxp/s32/s32_bl31.c
+index db2c1b038..a375d17b7 100644
+--- a/plat/nxp/s32/s32_bl31.c
++++ b/plat/nxp/s32/s32_bl31.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2021-2022 NXP
++ * Copyright 2021-2023 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -28,7 +28,7 @@
+ 	(((x) & ~0xfffU) == (x) ? (x) : ((x) & ~0xfffU) + 0x1000U)
+ 
+ #define INTR_PROPS_NUM	2
+-#if defined(HSE_SECBOOT) && defined(SPD_opteed)
++#if defined(HSE_SUPPORT) && defined(SPD_opteed)
+ #define MAX_INTR_PROPS	(INTR_PROPS_NUM + HSE_MU_INST)
+ #else
+ #define MAX_INTR_PROPS	INTR_PROPS_NUM
+@@ -384,7 +384,7 @@ static void s32_el3_mmu_fixup(void)
+ 	enable_mmu_el3(0);
+ }
+ 
+-#if defined(HSE_SECBOOT) && defined(SPD_opteed)
++#if defined(HSE_SUPPORT) && defined(SPD_opteed)
+ static void s32_add_hse_irqs(void)
+ {
+ 	int offs = -1, ret = 0, rx_irq_off, rx_irq_num;
+@@ -483,7 +483,7 @@ void bl31_plat_arch_setup(void)
+ 	console_s32_register();
+ #endif
+ 
+-#if defined(HSE_SECBOOT) && defined(SPD_opteed)
++#if defined(HSE_SUPPORT) && defined(SPD_opteed)
+ 	s32_add_hse_irqs();
+ #endif
+ 
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index c30851c27..cd0b807e4 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -194,9 +194,9 @@ $(eval $(call add_define_val,S32_HAS_HV,$(S32_HAS_HV)))
+ S32_SET_NEAREST_FREQ	?= 0
+ $(eval $(call add_define_val,S32_SET_NEAREST_FREQ,$(S32_SET_NEAREST_FREQ)))
+ 
+-# Process HSE_SECBOOT flag
+-ifneq (${HSE_SECBOOT},)
+-$(eval $(call add_define,HSE_SECBOOT))
++# Process HSE_SUPPORT flag
++ifneq (${HSE_SUPPORT},)
++$(eval $(call add_define,HSE_SUPPORT))
+ $(eval $(call add_define,HSE_MU_INST,4))
+ endif
+ 
+@@ -281,7 +281,7 @@ ${DUMMY_FIP}: fiptool ${DUMMY_STAGE} | ${BUILD_PLAT}
+ 	${ECHO} "  FIP     $@"
+ 	${Q}ARGS=$$(echo "${FIP_ARGS}" | sed "s#\(--[^ a]\+\)\s\+\([^ ]\+\)#\1 ${DUMMY_STAGE}#g"); \
+ 		${FIPTOOL} create $${ARGS} "$@_temp"
+-ifneq (${HSE_SECBOOT},)
++ifneq (${HSE_SUPPORT},)
+ 	${Q}$(call update_fip_cert, ${DUMMY_STAGE}, ${DUMMY_STAGE}, ${DUMMY_STAGE}, "$@_temp")
+ else
+ 	${Q}$(call update_fip, ${DUMMY_STAGE}, ${DUMMY_STAGE}, "$@_temp")
+@@ -415,7 +415,7 @@ FIP_ALIGN := 16
+ all: add_to_fip
+ add_to_fip: fip ${BL2_W_DTB}
+ 	$(eval FIP_MAXIMUM_SIZE_10 = $(shell printf "%d\n" ${FIP_MAXIMUM_SIZE}))
+-ifneq (${HSE_SECBOOT},)
++ifneq (${HSE_SUPPORT},)
+ 	@${DD} if=/dev/urandom of=${BUILD_PLAT}/dummy_cert bs=1 count=256
+ 	${Q}$(call update_fip_cert, ${BL2_W_DTB}, ${BUILD_PLAT}/fdts/${DTB_FILE_NAME}, ${BUILD_PLAT}/dummy_cert, ${BUILD_PLAT}/${FIP_NAME})
+ else
+@@ -431,7 +431,7 @@ endif
+ 		false; \
+ 	fi
+ 
+-ifneq (${HSE_SECBOOT},)
++ifneq (${HSE_SUPPORT},)
+ BL2_BASE		?= 0x34080000
+ else
+ BL2_BASE		?= 0x34302000
+diff --git a/plat/nxp/s32/s32g/s32g_bl2_el3.c b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+index b7ae879fc..9f021df91 100644
+--- a/plat/nxp/s32/s32g/s32g_bl2_el3.c
++++ b/plat/nxp/s32/s32g/s32g_bl2_el3.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2019-2022 NXP
++ * Copyright 2019-2023 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -169,7 +169,7 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 	s32_early_plat_init(false);
+ 	console_s32_register();
+ 
+-#ifdef HSE_SECBOOT
++#ifdef HSE_SUPPORT
+ 	/* if HSE FW is present, write HSE_CONFIG_PERIPH_DONE
+ 	 * to signal clock config is done */
+ 	mmio_write_32(HSE_GCR, HSE_PERIPH_CONFIG_DONE);
+@@ -181,7 +181,7 @@ void bl2_el3_early_platform_setup(u_register_t arg0, u_register_t arg1,
+ 		panic();
+ 	}
+ 
+-#ifdef HSE_SECBOOT
++#ifdef HSE_SUPPORT
+ 	/* if HSE FW is present, wait until HSE FW signals
+ 	 * that init is complete - HSE_STATUS_INIT_OK */
+ 	while ((mmio_read_32(HSE_FSR) & HSE_STATUS_INIT_OK) == 0)
+-- 
+2.25.1
+

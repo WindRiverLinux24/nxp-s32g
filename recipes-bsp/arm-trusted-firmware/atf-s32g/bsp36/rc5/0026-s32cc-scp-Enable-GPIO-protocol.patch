@@ -1,0 +1,575 @@
+From 086c9c58db77777a68b133892239b45bf80f4013 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 28 Nov 2022 15:13:33 +0200
+Subject: [PATCH 26/54] s32cc: scp: Enable GPIO protocol
+
+This support enables the SCMI GPIO protocol by:
+    * forwarding all messages received over SMC to SCP
+    * forwarding all incoming notifications from SCP to OS
+
+The notifications are received using an IRQ handler on MSCM IRQ#0
+and forwarded to OS using an unused SPI.
+
+Issue: ALB-9425
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/arm/css/scmi/scmi_private.h           |   3 +
+ plat/nxp/s32/include/s32_platform_def.h       |  14 ++
+ plat/nxp/s32/include/s32_scp_scmi.h           |   2 +-
+ plat/nxp/s32/s32_bl2_el3.c                    |   5 +
+ plat/nxp/s32/s32_bl31.c                       |  19 +-
+ plat/nxp/s32/s32_bl_common.c                  |   2 +-
+ plat/nxp/s32/s32_scp_scmi.c                   | 238 ++++++++++++++++--
+ plat/nxp/s32/s32_svc.c                        |   1 +
+ plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c   |   7 +-
+ .../s32g/s32g2/include/s32g2_platform_def.h   |   6 +-
+ .../s32g/s32g3/include/s32g3_platform_def.h   |   6 +-
+ plat/nxp/s32/s32r/include/s32r_platform_def.h |   6 +
+ 12 files changed, 272 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/arm/css/scmi/scmi_private.h b/drivers/arm/css/scmi/scmi_private.h
+index 4e58a1c3b..8d4feb32e 100644
+--- a/drivers/arm/css/scmi/scmi_private.h
++++ b/drivers/arm/css/scmi/scmi_private.h
+@@ -76,6 +76,9 @@
+ #define SCMI_MSG_GET_PROTO(_hdr)	\
+ 	(((_hdr) >> SCMI_MSG_PROTO_ID_SHIFT) & SCMI_MSG_PROTO_ID_MASK)
+ 
++#define SCMI_MSG_GET_MSG_ID(_hdr)	\
++	(((_hdr) >> SCMI_MSG_ID_SHIFT) & SCMI_MSG_ID_MASK)
++
+ /* Helper macro to get the token from a SCMI message header */
+ #define SCMI_MSG_GET_TOKEN(_msg)				\
+ 	(((_msg) >> SCMI_MSG_TOKEN_SHIFT) & SCMI_MSG_TOKEN_MASK)
+diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
+index dcf5c0948..26534fe1e 100644
+--- a/plat/nxp/s32/include/s32_platform_def.h
++++ b/plat/nxp/s32/include/s32_platform_def.h
+@@ -168,6 +168,7 @@
+ #endif
+ 
+ #define S32_OSPM_SCMI_MEM	(0xd0000000U)
++#define S32_OSPM_SCMI_NOTIF_MEM	(0xd0000080U)
+ #define S32_OSPM_SCMI_MEM_SIZE	(0x400000U)
+ 
+ #define S32_QSPI_BASE		(0x40134000ul)
+@@ -184,6 +185,19 @@
+ #define MSCM_BASE_ADDR		(0x40198000U)
+ #define MSCM_SIZE		(0xfa0u)
+ 
++/**
++ * Memory map used for SCP SCMI communication:
++ *
++ * -----------------  S32_SCP_SCMI_MEM
++ * |  Mailboxes     |
++ * |  for each core | cores * S32_SCP_CH_MEM_SIZE
++ * |                |
++ * ------------------
++ * | RX channel for |
++ * | notifications  | S32_SCP_CH_MEM_SIZE
++ * ------------------
++ */
++
+ /* Placed at 5MB offset to avoid overlaps, as some drivers require
+  * reserved areas at the beginning of the SRAM memory.
+  */
+diff --git a/plat/nxp/s32/include/s32_scp_scmi.h b/plat/nxp/s32/include/s32_scp_scmi.h
+index ab3bf7bd4..9ce79750e 100644
+--- a/plat/nxp/s32/include/s32_scp_scmi.h
++++ b/plat/nxp/s32/include/s32_scp_scmi.h
+@@ -10,7 +10,7 @@
+ 
+ typedef int (*scmi_msg_callback_t)(void *payload);
+ 
+-void scp_scmi_init(void);
++void scp_scmi_init(bool request_irq);
+ int send_scmi_to_scp(uintptr_t scmi_mem);
+ void scp_set_core_reset_addr(uintptr_t addr);
+ int scp_get_cpu_state(uint32_t core);
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 8e8896d85..29b4615e0 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -39,6 +39,11 @@ void bakery_lock_release(bakery_lock_t *bakery)
+ {
+ }
+ 
++/* No irq during bl31sram */
++void plat_ic_set_interrupt_pending(unsigned int id)
++{
++}
++
+ #if (ERRATA_S32_050543 == 1)
+ #include <dt-bindings/ddr-errata/s32-ddr-errata.h>
+ #endif
+diff --git a/plat/nxp/s32/s32_bl31.c b/plat/nxp/s32/s32_bl31.c
+index de12c7476..db2c1b038 100644
+--- a/plat/nxp/s32/s32_bl31.c
++++ b/plat/nxp/s32/s32_bl31.c
+@@ -27,7 +27,7 @@
+ #define MMU_ROUND_UP_TO_4K(x)	\
+ 	(((x) & ~0xfffU) == (x) ? (x) : ((x) & ~0xfffU) + 0x1000U)
+ 
+-#define INTR_PROPS_NUM	1
++#define INTR_PROPS_NUM	2
+ #if defined(HSE_SECBOOT) && defined(SPD_opteed)
+ #define MAX_INTR_PROPS	(INTR_PROPS_NUM + HSE_MU_INST)
+ #else
+@@ -154,6 +154,8 @@ static uintptr_t rdistif_base_addrs[PLATFORM_CORE_COUNT];
+ static interrupt_prop_t interrupt_props[MAX_INTR_PROPS] = {
+ 	INTR_PROP_DESC(S32_SECONDARY_WAKE_SGI, GIC_HIGHEST_SEC_PRIORITY,
+ 		       INTR_GROUP0, GIC_INTR_CFG_EDGE),
++	INTR_PROP_DESC(S32CC_MSCM_CORE_0_IRQ, GIC_HIGHEST_SEC_PRIORITY,
++		       INTR_GROUP0, GIC_INTR_CFG_EDGE),
+ };
+ 
+ static unsigned int plat_s32_mpidr_to_core_pos(unsigned long mpidr);
+@@ -486,7 +488,7 @@ void bl31_plat_arch_setup(void)
+ #endif
+ 
+ 	if (is_scp_used())
+-		scp_scmi_init();
++		scp_scmi_init(true);
+ }
+ 
+ static unsigned int plat_s32_mpidr_to_core_pos(unsigned long mpidr)
+@@ -494,12 +496,15 @@ static unsigned int plat_s32_mpidr_to_core_pos(unsigned long mpidr)
+ 	return (unsigned int)plat_core_pos_by_mpidr(mpidr);
+ }
+ 
+-/* TODO: Last-minute modifications before exiting BL31:
+- *  - restrict the S32_PMEM_START..S32_PMEM_END DRAM area only to
+- *    secure privileged contexts;
+- *  - lock XRDC until the next reset
+- */
+ void bl31_plat_runtime_setup(void)
+ {
++	if (is_scp_used()) {
++		s32cc_el3_interrupt_config();
++
++		/* Route the irq to any available core */
++		plat_ic_set_spi_routing(S32CC_MSCM_CORE_0_IRQ,
++					INTR_ROUTING_MODE_ANY,
++					read_mpidr());
++	}
+ }
+ 
+diff --git a/plat/nxp/s32/s32_bl_common.c b/plat/nxp/s32/s32_bl_common.c
+index 444170fa4..74bf0cf8e 100644
+--- a/plat/nxp/s32/s32_bl_common.c
++++ b/plat/nxp/s32/s32_bl_common.c
+@@ -46,7 +46,7 @@ void s32_early_plat_init(bool skip_ddr_clk)
+ 	if (!is_scp_used()) {
+ 		s32_plat_clock_init(skip_ddr_clk);
+ 	} else {
+-		scp_scmi_init();
++		scp_scmi_init(false);
+ 		s32_scp_plat_clock_init(skip_ddr_clk);
+ 	}
+ 	/* Restore (clear) the CAIUTC[IsolEn] bit for the primay cluster, which
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index efa6110dc..584d537e2 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -15,21 +15,70 @@
+ #include <s32_bl_common.h>
+ #include <dt-bindings/power/s32gen1-scmi-pd.h>
+ #include <s32_interrupt_mgmt.h>
++#include <plat/common/platform.h>
+ #include <s32_scp_scmi.h>
+ 
++/* M7 Core0, Interrupt 0 will be used to send SCMI messages */
++#define TX_CPN		(4u)
++#define MSCM_TX_IRQ	(0u)
++
++/* A53 Core0, Interrupt 0 will be used to send SCMI messages */
++#define RX_CPN		(0u)
++#define MSCM_RX_IRQ	(0u)
++
++#define SCMI_GPIO_ACK_IRQ	(0xFFu)
++#define MAX_INTERNAL_MSGS	(1)
++#define SCP_GPIO_GIC_NOTIF_IRQ	(332)
++
++enum irpc_reg_type {
++	IRPC_ISR,
++	IRPC_IGR,
++};
++
++struct scmi_intern_msg {
++	uint32_t proto;
++	uint32_t msg_id;
++	scmi_msg_callback_t cb;
++};
++
++static struct scmi_intern_msg intern_msgs[MAX_INTERNAL_MSGS];
++static size_t used_intern_msgs;
++
+ static scmi_channel_t scmi_channels[PLATFORM_CORE_COUNT];
+ static scmi_channel_plat_info_t s32_scmi_plat_info[PLATFORM_CORE_COUNT];
+ static void *scmi_handles[PLATFORM_CORE_COUNT];
+ DEFINE_BAKERY_LOCK(s32_scmi_locks[PLATFORM_CORE_COUNT]);
+ 
+-void mscm_ring_doorbell(struct scmi_channel_plat_info *plat_info)
++static uintptr_t get_irpc_reg_addr(uintptr_t base, uint32_t cpn, uint32_t irq,
++				   enum irpc_reg_type reg_type)
+ {
+-	uintptr_t reg;
++	uintptr_t offset = base;
++
++	assert(cpn <= MSCM_MAX_CPN);
++	assert(irq <= MSCM_MAX_C2C_IRQ);
++
++	switch (reg_type) {
++	case IRPC_IGR:
++		assert(!check_uptr_overflow(offset, 0x4u));
++		offset += 0x4u;
++		/* Fallthrough */
++	case IRPC_ISR:
++		assert(!check_uptr_overflow(offset, MSCM_IRPC_OFFSET));
++		offset += MSCM_IRPC_OFFSET;
++		assert(!check_uptr_overflow(offset, cpn * MSCM_CPN_SIZE));
++		offset += cpn * MSCM_CPN_SIZE;
++		assert(!check_uptr_overflow(offset, irq * 0x8));
++		offset += irq * 0x8;
++		return offset;
++	default:
++		return offset;
++	}
++}
+ 
+-	/* Request for M7 Core0, Interrupt 0 */
+-	assert(!check_uptr_overflow(plat_info->db_reg_addr,
+-				    MSCM_IRCP4IGR0 - 1));
+-	reg = plat_info->db_reg_addr + MSCM_IRCP4IGR0;
++void mscm_ring_doorbell(struct scmi_channel_plat_info *plat_info)
++{
++	uintptr_t reg = get_irpc_reg_addr(plat_info->db_reg_addr, TX_CPN,
++					  MSCM_TX_IRQ, IRPC_IGR);
+ 
+ 	mmio_write_32(reg, 1);
+ }
+@@ -39,9 +88,67 @@ static uintptr_t get_mb_addr(uint32_t core)
+ 	return S32_SCP_SCMI_MEM + core * S32_SCP_CH_MEM_SIZE;
+ }
+ 
+-void scp_scmi_init(void)
++/* RX mailbox is placed right after tx mailboxes */
++static uintptr_t get_rx_mb_addr(void)
++{
++	return get_mb_addr(PLATFORM_CORE_COUNT);
++}
++
++static size_t get_packet_size(uintptr_t scmi_packet)
++{
++	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)scmi_packet;
++
++	return offsetof(mailbox_mem_t, msg_header) + mbx_mem->len;
++}
++
++static int scmi_gpio_eirq_ack(void *payload)
++{
++	uintptr_t mb_addr = get_rx_mb_addr();
++	mailbox_mem_t *mb = (mailbox_mem_t *)mb_addr;
++
++	/* Nothing to perform other than marking the channel as free */
++	SCMI_MARK_CHANNEL_FREE(mb->status);
++
++	return 0;
++}
++
++static void process_gpio_notification(mailbox_mem_t *mb)
++{
++	uintptr_t mb_addr = (uintptr_t)mb;
++	size_t msg_size;
++
++	msg_size = get_packet_size(mb_addr);
++	if (msg_size > S32_SCP_CH_MEM_SIZE)
++		return;
++
++	memcpy((void *)S32_OSPM_SCMI_NOTIF_MEM, mb, msg_size);
++
++	plat_ic_set_interrupt_pending(SCP_GPIO_GIC_NOTIF_IRQ);
++}
++
++static uint64_t mscm_interrupt_handler(uint32_t id, uint32_t flags,
++				       void *handle, void *cookie)
++{
++	uintptr_t mb_addr = get_rx_mb_addr();
++	mailbox_mem_t *mb = (mailbox_mem_t *)mb_addr;
++	uint32_t proto;
++
++	assert(!SCMI_IS_CHANNEL_FREE(mb->status));
++	assert(get_packet_size(mb_addr) <= S32_SCP_CH_MEM_SIZE);
++
++	proto = SCMI_MSG_GET_PROTO(mb->msg_header);
++
++	if (proto == SCMI_PROTOCOL_ID_GPIO) {
++		process_gpio_notification(mb);
++	}
++
++	return 0;
++}
++
++void scp_scmi_init(bool request_irq)
+ {
+ 	size_t i;
++	int ret;
+ 
+ 	assert(ARRAY_SIZE(scmi_channels) == ARRAY_SIZE(s32_scmi_locks));
+ 	assert(ARRAY_SIZE(scmi_channels) == ARRAY_SIZE(s32_scmi_plat_info));
+@@ -61,6 +168,22 @@ void scp_scmi_init(void)
+ 			.lock = &s32_scmi_locks[i],
+ 		};
+ 	}
++
++	if (!request_irq)
++		return;
++
++	ret = request_intr_type_el3(S32CC_MSCM_CORE_0_IRQ,
++				    mscm_interrupt_handler);
++	if (ret) {
++		ERROR("Failed to request MSCM interrupt\n");
++		panic();
++	}
++
++	ret = register_scmi_internal_msg_handler(SCMI_PROTOCOL_ID_GPIO,
++						 SCMI_GPIO_ACK_IRQ,
++						 scmi_gpio_eirq_ack);
++	if (ret)
++		panic();
+ }
+ 
+ static scmi_channel_t *get_scmi_channel(unsigned int *ch_id)
+@@ -101,13 +224,6 @@ static void *get_scmi_handle(void)
+ 	return scmi_handles[ch_id];
+ }
+ 
+-static size_t get_packet_size(uintptr_t scmi_packet)
+-{
+-	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)scmi_packet;
+-
+-	return offsetof(mailbox_mem_t, msg_header) + mbx_mem->len;
+-}
+-
+ static void copy_scmi_msg(uintptr_t to, uintptr_t from)
+ {
+ 	size_t copy_len;
+@@ -259,37 +375,94 @@ static bool is_proto_allowed(mailbox_mem_t *mbx_mem)
+ 	case SCMI_PROTOCOL_ID_PERF:
+ 	case SCMI_PROTOCOL_ID_CLOCK:
+ 	case SCMI_PROTOCOL_ID_RESET_DOMAIN:
++	case SCMI_PROTOCOL_ID_GPIO:
+ 		return true;
+ 	}
+ 
+ 	return false;
+ }
+ 
+-int send_scmi_to_scp(uintptr_t scmi_mem)
++int register_scmi_internal_msg_handler(uint32_t protocol, uint32_t msg_id,
++				       scmi_msg_callback_t callback)
++{
++	if (used_intern_msgs >= ARRAY_SIZE(intern_msgs))
++		return -ENOMEM;
++
++	intern_msgs[used_intern_msgs] = (struct scmi_intern_msg) {
++		.proto = protocol,
++		.msg_id = msg_id,
++		.cb = callback,
++	};
++	used_intern_msgs++;
++
++	return 0;
++}
++
++static struct scmi_intern_msg *get_internal_msg(uint32_t protocol,
++						uint32_t msg_id)
++{
++	struct scmi_intern_msg *msg;
++	size_t i;
++
++	for (i = 0u; i < used_intern_msgs; i++) {
++		msg = &intern_msgs[i];
++
++		if (msg->proto == protocol && msg->msg_id == msg_id)
++			return msg;
++	}
++
++	return NULL;
++}
++
++static bool is_internal_msg(mailbox_mem_t *mbx_mem)
++{
++	uint32_t proto = SCMI_MSG_GET_PROTO(mbx_mem->msg_header);
++	uint32_t msg_id = SCMI_MSG_GET_MSG_ID(mbx_mem->msg_header);
++
++	return (get_internal_msg(proto, msg_id) != NULL);
++}
++
++static int handle_internal_msg(uintptr_t scmi_mem)
++{
++	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)scmi_mem;
++	uint32_t proto = SCMI_MSG_GET_PROTO(mbx_mem->msg_header);
++	uint32_t msg_id = SCMI_MSG_GET_MSG_ID(mbx_mem->msg_header);
++	struct scmi_intern_msg *msg = get_internal_msg(proto, msg_id);
++	int ret;
++
++	if (!msg)
++		return SCMI_GENERIC_ERROR;
++
++	ret = msg->cb(&mbx_mem->payload[0]);
++	if (ret)
++		return SCMI_GENERIC_ERROR;
++
++	SCMI_MARK_CHANNEL_FREE(mbx_mem->status);
++	return SCMI_SUCCESS;
++}
++
++static int forward_to_scp(uintptr_t scmi_mem)
+ {
+-	scmi_channel_plat_info_t *ch_info;
+-	mailbox_mem_t *mbx_mem;
+ 	unsigned int ch_id;
++	scmi_channel_plat_info_t *ch_info;
+ 	scmi_channel_t *ch = get_scmi_channel(&ch_id);
++	mailbox_mem_t *mbx_mem;
++	size_t packet_size;
+ 
+ 	if (!ch)
+ 		return SCMI_GENERIC_ERROR;
+ 
+-	/* Filter OSPM specific call */
+-	if (!is_proto_allowed((mailbox_mem_t *)scmi_mem))
+-		return SCMI_DENIED;
+-
+-	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
+-		return SCMI_OUT_OF_RANGE;
+-
+ 	ch_info = ch->info;
+ 	mbx_mem = (mailbox_mem_t *)(ch_info->scmi_mbx_mem);
+ 
+ 	while (!SCMI_IS_CHANNEL_FREE(mbx_mem->status))
+ 		;
+ 
++	packet_size = get_packet_size(scmi_mem);
++	assert(!check_uptr_overflow(ch_info->scmi_mbx_mem, packet_size));
++
+ 	/* Transfer request into SRAM mailbox */
+-	if (ch_info->scmi_mbx_mem + get_packet_size(scmi_mem) >
++	if (ch_info->scmi_mbx_mem + packet_size >
+ 	    S32_SCP_SCMI_MEM + S32_SCP_SCMI_MEM_SIZE)
+ 		return SCMI_OUT_OF_RANGE;
+ 
+@@ -316,3 +489,18 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 
+ 	return SCMI_SUCCESS;
+ }
++
++int send_scmi_to_scp(uintptr_t scmi_mem)
++{
++	/* Filter OSPM specific call */
++	if (!is_proto_allowed((mailbox_mem_t *)scmi_mem))
++		return SCMI_DENIED;
++
++	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
++		return SCMI_OUT_OF_RANGE;
++
++	if (is_internal_msg((mailbox_mem_t *)scmi_mem))
++		return handle_internal_msg(scmi_mem);
++
++	return forward_to_scp(scmi_mem);
++}
+diff --git a/plat/nxp/s32/s32_svc.c b/plat/nxp/s32/s32_svc.c
+index 3538fa963..345c4747f 100644
+--- a/plat/nxp/s32/s32_svc.c
++++ b/plat/nxp/s32/s32_svc.c
+@@ -41,6 +41,7 @@ static const uint8_t s32_protocols[] = {
+ 	SCMI_PROTOCOL_ID_PERF,
+ 	SCMI_PROTOCOL_ID_CLOCK,
+ 	SCMI_PROTOCOL_ID_RESET_DOMAIN,
++	SCMI_PROTOCOL_ID_GPIO,
+ 	0U,
+ };
+ 
+diff --git a/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c b/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
+index 07ab5843a..dcb21e094 100644
+--- a/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
++++ b/plat/nxp/s32/s32g/bl31_sram/bl31sram_main.c
+@@ -27,6 +27,11 @@ void bakery_lock_release(bakery_lock_t *bakery)
+ {
+ }
+ 
++/* No irq during bl31sram */
++void plat_ic_set_interrupt_pending(unsigned int id)
++{
++}
++
+ static void disable_ddr_clk(void)
+ {
+ 	s32_disable_cofb_clk(S32_MC_ME_USDHC_PART, 0);
+@@ -48,7 +53,7 @@ void bl31sram_main(void)
+ 		s32g_set_stby_master_core(S32G_STBY_MASTER_PART,
+ 					  plat_my_core_pos());
+ 	} else {
+-		scp_scmi_init();
++		scp_scmi_init(false);
+ 		scp_suspend_platform();
+ 	}
+ 
+diff --git a/plat/nxp/s32/s32g/s32g2/include/s32g2_platform_def.h b/plat/nxp/s32/s32g/s32g2/include/s32g2_platform_def.h
+index 2ba962548..4c3f5f2b9 100644
+--- a/plat/nxp/s32/s32g/s32g2/include/s32g2_platform_def.h
++++ b/plat/nxp/s32/s32g/s32g2/include/s32g2_platform_def.h
+@@ -27,7 +27,11 @@
+ 
+ #define S32_SRAM_SIZE			0x00800000
+ 
+-#define MSCM_IRCP4IGR0		(0x284)
++/* MSCM settings */
++#define MSCM_IRPC_OFFSET	(0x200u)
++#define MSCM_CPN_SIZE		(0x20u)
++#define MSCM_MAX_CPN		(6u)
++#define MSCM_MAX_C2C_IRQ	(2u)
+ 
+ #if defined IMAGE_BL1
+ /* To use in blX_platform_setup() */
+diff --git a/plat/nxp/s32/s32g/s32g3/include/s32g3_platform_def.h b/plat/nxp/s32/s32g/s32g3/include/s32g3_platform_def.h
+index 9ae13163f..3cb35885d 100644
+--- a/plat/nxp/s32/s32g/s32g3/include/s32g3_platform_def.h
++++ b/plat/nxp/s32/s32g/s32g3/include/s32g3_platform_def.h
+@@ -37,7 +37,11 @@
+ 
+ #define S32_SRAM_SIZE			0x1400000
+ 
+-#define MSCM_IRCP4IGR0		(0xC24)
++/* MSCM settings */
++#define MSCM_IRPC_OFFSET	(0xa60u)
++#define MSCM_CPN_SIZE		(0x70u)
++#define MSCM_MAX_CPN		(11u)
++#define MSCM_MAX_C2C_IRQ	(11u)
+ 
+ #if defined IMAGE_BL1
+ /* To use in blX_platform_setup() */
+diff --git a/plat/nxp/s32/s32r/include/s32r_platform_def.h b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+index 9e2ce65b9..32fef5a67 100644
+--- a/plat/nxp/s32/s32r/include/s32r_platform_def.h
++++ b/plat/nxp/s32/s32r/include/s32r_platform_def.h
+@@ -30,6 +30,12 @@
+ 
+ #define S32_SRAM_SIZE		0x00800000
+ 
++/* MSCM settings */
++#define MSCM_IRPC_OFFSET	(0x200u)
++#define MSCM_CPN_SIZE		(0x20u)
++#define MSCM_MAX_CPN		(6u)
++#define MSCM_MAX_C2C_IRQ	(2u)
++
+ #if defined IMAGE_BL1
+ /* To use in blX_platform_setup() */
+ #define FIRMWARE_WELCOME_STR_S32R	"This is S32R BL1\n"
+-- 
+2.25.1
+

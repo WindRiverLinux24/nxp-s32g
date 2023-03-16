@@ -1,0 +1,171 @@
+From 3c9a898fb579a4134a8b642e16680933ac4a852b Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Mon, 27 Feb 2023 10:38:49 +0200
+Subject: [PATCH 41/54] s32cc: Disable GPIO over SCMI using a compilation flag
+
+S32CC_SCMI_GPIO_ENABLED=0 should be used to disable GPIO
+fixups when a SCP boot is used.
+
+Issue: ALB-9758
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32g.dtsi                       |  1 +
+ plat/nxp/s32/include/s32_bl_common.h |  5 ++++
+ plat/nxp/s32/s32_bl2_el3.c           | 45 ++++++++++++++++++++++------
+ plat/nxp/s32/s32_common.mk           |  4 +++
+ 4 files changed, 46 insertions(+), 9 deletions(-)
+
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index 6fae23dde..56deacfbc 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -49,6 +49,7 @@
+ 				/* GPIO ranges : 0-101 & 112-190 */
+ 				gpio-ranges = <&pinctrl 0   0   102>,
+ 					      <&pinctrl 112 112 79>;
++				status = "disabled";
+ 			};
+ 		};
+ 	};
+diff --git a/plat/nxp/s32/include/s32_bl_common.h b/plat/nxp/s32/include/s32_bl_common.h
+index a055c36b0..fe91bc0eb 100644
+--- a/plat/nxp/s32/include/s32_bl_common.h
++++ b/plat/nxp/s32/include/s32_bl_common.h
+@@ -97,6 +97,11 @@ static inline bool is_scp_used(void)
+ 	return S32CC_USE_SCP;
+ }
+ 
++static inline bool is_gpio_scmi_fixup_enabled(void)
++{
++	return S32CC_SCMI_GPIO_FIXUP;
++}
++
+ static inline uintptr_t get_fip_mem_addr(void)
+ {
+ 	return fip_mem_offset;
+diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
+index 1e9da76f5..4040add1b 100644
+--- a/plat/nxp/s32/s32_bl2_el3.c
++++ b/plat/nxp/s32/s32_bl2_el3.c
+@@ -72,6 +72,8 @@ void plat_ic_set_interrupt_pending(unsigned int id)
+ #define DDRSS_BASE_ADDR		(0x40380000)
+ #define DDRSS_SIZE		(0x80000)
+ 
++static const char *gpio_scmi_node_path = "/firmware/scmi/protocol@81";
++
+ int add_bl31_img_to_mem_params_descs(bl_mem_params_node_t *params,
+ 				     size_t *index, size_t size)
+ {
+@@ -546,6 +548,18 @@ static int ft_fixup_resmem_node(void *blob)
+ 	return 0;
+ }
+ 
++static int fdt_set_node_status(void *blob, int nodeoff, bool enable)
++{
++	const char *str;
++
++	if (enable)
++		str = "okay";
++	else
++		str = "disabled";
++
++	return fdt_setprop_string(blob, nodeoff, "status", str);
++}
++
+ static int disable_node_by_compatible(void *blob, const char *compatible,
+ 				      uint32_t *phandle)
+ {
+@@ -567,7 +581,7 @@ static int disable_node_by_compatible(void *blob, const char *compatible,
+ 		return *phandle;
+ 	}
+ 
+-	ret = fdt_setprop_string(blob, nodeoff, "status", "disabled");
++	ret = fdt_set_node_status(blob, nodeoff, false);
+ 	if (ret) {
+ 		ERROR("Failed to disable '%s' node (%s)\n",
+ 		      node_name, fdt_strerror(ret));
+@@ -584,7 +598,8 @@ static int disable_node_by_compatible(void *blob, const char *compatible,
+ 	return 0;
+ }
+ 
+-static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
++static int set_scmi_protocol_node_status(void *blob, const char *path,
++					 uint32_t phandle, bool enable)
+ {
+ 	int nodeoff, ret;
+ 
+@@ -595,16 +610,30 @@ static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
+ 		return nodeoff;
+ 	}
+ 
+-	ret = fdt_setprop_u32(blob, nodeoff, "phandle", phandle);
++	if (phandle) {
++		ret = fdt_setprop_u32(blob, nodeoff, "phandle", phandle);
++		if (ret) {
++			ERROR("Failed to set phandle property of '%s' node (%s)\n",
++			      path, fdt_strerror(ret));
++			return ret;
++		}
++	}
++
++	ret = fdt_set_node_status(blob, nodeoff, enable);
+ 	if (ret) {
+-		ERROR("Failed to set phandle property of '%s' node (%s)\n",
+-		      path, fdt_strerror(ret));
++		ERROR("Failed to set status (%s) for node (%s)\n",
++		      fdt_strerror(ret), path);
+ 		return ret;
+ 	}
+ 
+ 	return 0;
+ }
+ 
++static int enable_scmi_protocol(void *blob, const char *path, uint32_t phandle)
++{
++	return set_scmi_protocol_node_status(blob, path, phandle, true);
++}
++
+ static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
+ {
+ 	return disable_node_by_compatible(blob, "nxp,s32cc-siul2-gpio",
+@@ -613,9 +642,7 @@ static int disable_siul2_gpio_node(void *blob, uint32_t *phandle)
+ 
+ static int enable_scmi_gpio_node(void *blob, uint32_t phandle)
+ {
+-	const char *path = "/firmware/scmi/protocol@81";
+-
+-	return enable_scmi_protocol(blob, path, phandle);
++	return enable_scmi_protocol(blob, gpio_scmi_node_path, phandle);
+ }
+ 
+ static int ft_fixup_gpio(void *blob)
+@@ -652,7 +679,7 @@ static int ft_fixups(void *blob)
+ 	if (ret)
+ 		goto out;
+ 
+-	if (is_scp_used()) {
++	if (is_scp_used() && is_gpio_scmi_fixup_enabled()) {
+ 		ret = ft_fixup_gpio(blob);
+ 		if (ret)
+ 			goto out;
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index 68234f802..3f40ed7ee 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -38,6 +38,10 @@ $(eval $(call add_define_val,S32GEN1_DRAM_INLINE_ECC,$(S32GEN1_DRAM_INLINE_ECC))
+ S32CC_USE_SCP		?= 0
+ $(eval $(call add_define_val,S32CC_USE_SCP,$(S32CC_USE_SCP)))
+ 
++# SCMI GPIO fixup of the U-Boot dtb
++S32CC_SCMI_GPIO_FIXUP ?= 0
++$(eval $(call add_define_val,S32CC_SCMI_GPIO_FIXUP,$(S32CC_SCMI_GPIO_FIXUP)))
++
+ BL2_AT_EL3		:= 1
+ 
+ PLAT_INCLUDES 	+= \
+-- 
+2.25.1
+

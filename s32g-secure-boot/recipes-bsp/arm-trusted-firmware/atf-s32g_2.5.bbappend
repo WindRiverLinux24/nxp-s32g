@@ -51,13 +51,13 @@ do_deploy:prepend() {
                 j=$(expr $j + 1)
                 if  [ $j -eq $i ]; then
                     cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${type}/${plat}/${BUILD_TYPE}/fdts/${dtb}
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
+                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 all
                     #get layout of fip.s32
                     mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
                     #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
                     fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage \
-                                FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
+                                FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 all
                 fi
             done
             unset j

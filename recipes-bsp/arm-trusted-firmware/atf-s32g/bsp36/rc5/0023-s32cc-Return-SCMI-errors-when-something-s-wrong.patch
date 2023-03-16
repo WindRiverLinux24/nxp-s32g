@@ -1,0 +1,81 @@
+From 05975752bd32638a8346315ffc88ebdcf5a1e310 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 25 Oct 2022 10:57:07 +0300
+Subject: [PATCH 23/54] s32cc: Return SCMI errors when something's wrong
+
+Issue: ALB-9425
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32_scp_scmi.c | 10 +++++-----
+ plat/nxp/s32/s32_svc.c      | 14 +++++++++++++-
+ 2 files changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index 9d7304af6..f46003cca 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -270,14 +270,14 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 	scmi_channel_t *ch = get_scmi_channel(&ch_id);
+ 
+ 	if (!ch)
+-		return -EINVAL;
++		return SCMI_GENERIC_ERROR;
+ 
+ 	/* Filter OSPM specific call */
+ 	if (!is_proto_allowed((mailbox_mem_t *)scmi_mem))
+-		return -EINVAL;
++		return SCMI_DENIED;
+ 
+ 	if (get_packet_size(scmi_mem) > S32_SCP_CH_MEM_SIZE)
+-		return -EINVAL;
++		return SCMI_OUT_OF_RANGE;
+ 
+ 	ch_info = ch->info;
+ 	mbx_mem = (mailbox_mem_t *)(ch_info->scmi_mbx_mem);
+@@ -288,7 +288,7 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 	/* Transfer request into SRAM mailbox */
+ 	if (ch_info->scmi_mbx_mem + get_packet_size(scmi_mem) >
+ 	    S32_SCP_SCMI_MEM + S32_SCP_SCMI_MEM_SIZE)
+-		return -EINVAL;
++		return SCMI_OUT_OF_RANGE;
+ 
+ 	copy_scmi_msg((uintptr_t)mbx_mem, scmi_mem);
+ 
+@@ -311,5 +311,5 @@ int send_scmi_to_scp(uintptr_t scmi_mem)
+ 	/* Copy the result to agent's space */
+ 	copy_scmi_msg(scmi_mem, (uintptr_t)mbx_mem);
+ 
+-	return 0;
++	return SCMI_SUCCESS;
+ }
+diff --git a/plat/nxp/s32/s32_svc.c b/plat/nxp/s32/s32_svc.c
+index 473decb0b..fb68f782b 100644
+--- a/plat/nxp/s32/s32_svc.c
++++ b/plat/nxp/s32/s32_svc.c
+@@ -109,7 +109,19 @@ static int scmi_handler(uint32_t smc_fid, u_register_t x1,
+ static int scp_scmi_handler(uint32_t smc_fid, u_register_t x1,
+ 			    u_register_t x2, u_register_t x3)
+ {
+-	return send_scmi_to_scp(S32_OSPM_SCMI_MEM);
++	struct scmi_shared_mem *mem = (void *)S32_OSPM_SCMI_MEM;
++	struct response *response = (struct response *)&mem->msg_payload[0];
++	int ret;
++
++	ret = send_scmi_to_scp(S32_OSPM_SCMI_MEM);
++
++	if (ret != SCMI_SUCCESS) {
++		response->status = ret;
++		mem->channel_status = 1;
++		return SMC_UNK;
++	}
++
++	return SMC_OK;
+ }
+ 
+ uintptr_t s32_svc_smc_handler(uint32_t smc_fid,
+-- 
+2.25.1
+

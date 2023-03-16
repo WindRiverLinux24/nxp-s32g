@@ -1,0 +1,35 @@
+From 843782bcf3c3a55f9655e58f41fb52fdd320964f Mon Sep 17 00:00:00 2001
+From: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Date: Tue, 3 Jan 2023 13:12:29 +0200
+Subject: [PATCH 34/54] fdt: s32g: add pinctrl SCMI node
+
+Issue: ALB-9556
+
+Upstream-Status: Pending 
+
+Signed-off-by: Andrei Stefanescu <andrei.stefanescu@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32g.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/fdts/s32g.dtsi b/fdts/s32g.dtsi
+index dee789fd1..6fae23dde 100644
+--- a/fdts/s32g.dtsi
++++ b/fdts/s32g.dtsi
+@@ -33,6 +33,12 @@
+ 
+ 	firmware {
+ 		scmi {
++			pinctrl_scmi: protocol@80 {
++				reg = <0x80>;
++				#pinctrl-cells = <2>;
++				status = "disabled";
++			};
++
+ 			gpio_scmi: protocol@81 {
+ 				reg = <0x81>;
+ 				#gpio-cells = <2>;
+-- 
+2.25.1
+

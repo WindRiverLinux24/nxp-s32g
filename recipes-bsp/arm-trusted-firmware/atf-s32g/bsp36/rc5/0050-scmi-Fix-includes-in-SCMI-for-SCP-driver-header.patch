@@ -1,0 +1,31 @@
+From 1e32344782145d125670af5e651eeb6086ff08e7 Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Wed, 15 Feb 2023 10:57:44 +0200
+Subject: [PATCH 50/54] scmi: Fix includes in SCMI for SCP driver header
+
+Issue: ALB-9436
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/arm/css/scmi/scmi_private.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/arm/css/scmi/scmi_private.h b/drivers/arm/css/scmi/scmi_private.h
+index 8d4feb32e..2c7559106 100644
+--- a/drivers/arm/css/scmi/scmi_private.h
++++ b/drivers/arm/css/scmi/scmi_private.h
+@@ -7,7 +7,9 @@
+ #ifndef SCMI_PRIVATE_H
+ #define SCMI_PRIVATE_H
+ 
++#include <assert.h>
+ #include <lib/mmio.h>
++#include <drivers/arm/css/scmi.h>
+ 
+ /*
+  * SCMI power domain management protocol message and response lengths. It is
+-- 
+2.25.1
+

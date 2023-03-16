@@ -11,13 +11,49 @@ B = "${WORKDIR}/build"
 
 # ATF repository
 URL ?= "git://github.com/nxp-auto-linux/arm-trusted-firmware.git;protocol=https"
-BRANCH ?= "release/bsp35.0-2.5"
+BRANCH ?= "release/bsp36.0_cd-2.5"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "08ef0179cff364150f98c1257ffaae15272c21bd"
+SRCREV ?= "f28f8bb855e3ba15329603070e8b95657357641e"
 SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dddede07"
+
+ATF_BSP36_RC5_PATCHES = " \
+    file://bsp36/rc5/0023-s32cc-Return-SCMI-errors-when-something-s-wrong.patch \
+    file://bsp36/rc5/0024-s32cc-Prevent-SCMI-message-overflow.patch \
+    file://bsp36/rc5/0025-s32cc-Add-interrupt-management-system.patch \
+    file://bsp36/rc5/0026-s32cc-scp-Enable-GPIO-protocol.patch \
+    file://bsp36/rc5/0027-s32-Check-the-size-of-SCMI-destination-buffer.patch \
+    file://bsp36/rc5/0028-s32cc-Sync-ATF-and-Linux-GPIO-nodes.patch \
+    file://bsp36/rc5/0029-s32g-fdts-Add-SCMI-GPIO-node.patch \
+    file://bsp36/rc5/0030-s32cc-Add-GPIO-SCMI-fixups.patch \
+    file://bsp36/rc5/0031-plat-nxp-change-HSE_SECBOOT-into-HSE_SUPPORT.patch \
+    file://bsp36/rc5/0032-fdts-s32cc-add-generic-compatible-for-SIUL2-pinctrl-.patch \
+    file://bsp36/rc5/0033-s32-scmi-add-support-for-pinctrl-vendor-extension-pr.patch \
+    file://bsp36/rc5/0034-fdt-s32g-add-pinctrl-SCMI-node.patch \
+    file://bsp36/rc5/0035-fdts-s32r45-disable-gmac1-from-SoC-dtsi.patch \
+    file://bsp36/rc5/0036-fdts-s32r45-evb-remove-unnecesary-clock-binding-chan.patch \
+    file://bsp36/rc5/0037-plat-s32-change-BL2_BASE-address-when-HSE_SUPPORT-1.patch \
+    file://bsp36/rc5/0038-s32cc-ddr-Avoid-raw-accesses-to-MC_-from-DDR-driver.patch \
+    file://bsp36/rc5/0039-s32cc-Place-all-SCP-related-calls-from-BL2-in-one-fi.patch \
+    file://bsp36/rc5/0040-feat-debug-update-print_memory_map.py.patch \
+    file://bsp36/rc5/0041-s32cc-Disable-GPIO-over-SCMI-using-a-compilation-fla.patch \
+    file://bsp36/rc5/0042-s32-ddr-Update-to-driver-fw-from-S32CT-1.6-Update-6.patch \
+    file://bsp36/rc5/0043-Revert-s32g3-rdb3-Enable-SAR_ADC-early-clock-via-SCM.patch \
+    file://bsp36/rc5/0044-Revert-fdts-s32cc-use-dt-bindings-defines-for-PHI1-a.patch \
+    file://bsp36/rc5/0045-Revert-s32cc-clocks-early-enable-adc-clock.patch \
+    file://bsp36/rc5/0046-Revert-s32g399ardb3-add-ddr-config-fixup-for-revisio.patch \
+    file://bsp36/rc5/0047-Revert-drivers-s32-add-adc-driver.patch \
+    file://bsp36/rc5/0048-Revert-s32cc-mmu-add-adc0-entry.patch \
+    file://bsp36/rc5/0049-scmi-Add-metadata-address-to-scmi_plat_channel_info-.patch \
+    file://bsp36/rc5/0050-scmi-Fix-includes-in-SCMI-for-SCP-driver-header.patch \
+    file://bsp36/rc5/0051-scmi-Add-generic-SCMI-logger.patch \
+    file://bsp36/rc5/0052-plat-s32-Define-optional-channel-metadata-region.patch \
+    file://bsp36/rc5/0053-plat-s32-Add-STM-timer.patch \
+    file://bsp36/rc5/0054-plat-s32-Add-SCMI-platform-logger.patch \
+"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
+    ${ATF_BSP36_RC5_PATCHES} \
     file://0001-fix-auth-forbid-junk-after-extensions.patch \
     file://0002-fix-auth-require-at-least-one-extension-to-be-presen.patch \
     file://0003-fix-auth-avoid-out-of-bounds-read-in-auth_nvctr.patch \
@@ -35,6 +71,8 @@ PLATFORM = "s32g2xxaevb s32g274ardb2 s32g399ardb3 s32g3xxaevb"
 BUILD_TYPE = "release"
 
 ATF_S32G_ENABLE = "1"
+
+HSE_BUILD_OPT = "HSE_SUPPORT"
 
 EXTRA_OEMAKE += " \
                 CROSS_COMPILE=${TARGET_PREFIX} \
@@ -75,13 +113,13 @@ do_compile() {
                 oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
             else
                 if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage HSE_SECBOOT=1 all
+                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 all
                     #get layout of fip.s32
                     mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
                     #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
                     fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage \
-                               FIP_MEMORY_OFFSET=$fip_offset HSE_SECBOOT=1 all
+                               FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 all
                 else
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
                 fi

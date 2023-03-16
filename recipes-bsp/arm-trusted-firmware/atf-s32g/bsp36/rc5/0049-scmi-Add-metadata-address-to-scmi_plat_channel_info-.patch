@@ -1,0 +1,34 @@
+From 859d183eb7257b64dd55e0cc70a1403aa8f2974b Mon Sep 17 00:00:00 2001
+From: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Date: Wed, 15 Feb 2023 14:26:23 +0200
+Subject: [PATCH 49/54] scmi: Add metadata address to scmi_plat_channel_info
+ structure
+
+An optional memory zone of metadata for each mailbox
+could be used in debugging scenarios.
+
+Issue: ALB-9436
+Upstream-Status: Pending 
+
+Signed-off-by: Andra-Teodora Ilie <andra.ilie@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/drivers/arm/css/scmi.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/drivers/arm/css/scmi.h b/include/drivers/arm/css/scmi.h
+index 4fe979474..e792c8e28 100644
+--- a/include/drivers/arm/css/scmi.h
++++ b/include/drivers/arm/css/scmi.h
+@@ -109,6 +109,8 @@ typedef struct scmi_channel_plat_info {
+ 	uintptr_t scmi_mbx_mem;
+ 	/* SCMI mailbox memory size */
+ 	size_t scmi_mbx_size;
++	/* SCMI mailbox metadata */
++	uintptr_t scmi_md_mem;
+ 	/* The door bell register address */
+ 	uintptr_t db_reg_addr;
+ 	/* The bit mask that need to be preserved when ringing doorbell */
+-- 
+2.25.1
+

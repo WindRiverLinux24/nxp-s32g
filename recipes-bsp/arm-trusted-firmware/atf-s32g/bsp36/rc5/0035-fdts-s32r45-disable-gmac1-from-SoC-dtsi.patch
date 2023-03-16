@@ -1,0 +1,52 @@
+From 029725c0bffd06d6c1610deadd26ccf9faf5b21b Mon Sep 17 00:00:00 2001
+From: "Radu Nicolae Pirea (OSS)" <radu-nicolae.pirea@oss.nxp.com>
+Date: Mon, 20 Feb 2023 11:20:41 +0200
+Subject: [PATCH 35/54] fdts: s32r45: disable gmac1 from SoC dtsi
+
+Issue: ALB-9817
+
+Upstream-Status: Pending 
+
+Signed-off-by: Radu Nicolae Pirea (OSS) <radu-nicolae.pirea@oss.nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32r45-evb.dts | 3 ++-
+ fdts/s32r45.dtsi    | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fdts/s32r45-evb.dts b/fdts/s32r45-evb.dts
+index 65b86b7d8..f7e111c6f 100644
+--- a/fdts/s32r45-evb.dts
++++ b/fdts/s32r45-evb.dts
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+ /*
+- * Copyright 2017-2022 NXP
++ * Copyright 2017-2023 NXP
+  */
+ #include <dt-bindings/clock/s32r45-scmi-clock.h>
+ #include <dt-bindings/gpio/gpio.h>
+@@ -69,6 +69,7 @@
+ 	pinctrl-0 = <&gmac1_mdio_pins>;
+ 	pinctrl-names = "gmac_sgmii";
+ 	phy-mode = "sgmii";
++	status = "okay";
+ 
+ 	/* Aquantia driver is broken in U-Boot.
+ 	 * Use fixed-link instead of phy-handle.
+diff --git a/fdts/s32r45.dtsi b/fdts/s32r45.dtsi
+index 1c74a5d2b..3cf2a4f31 100644
+--- a/fdts/s32r45.dtsi
++++ b/fdts/s32r45.dtsi
+@@ -235,7 +235,7 @@
+ 			interrupt-names = "macirq";
+ 			tx-fifo-depth = <20480>;
+ 			rx-fifo-depth = <20480>;
+-			status = "okay";
++			status = "disabled";
+ 			phy-names = "gmac_xpcs";
+ 			phys = <&serdes1 PHY_TYPE_XPCS 0 0>;
+ 			clocks = <&clks S32R45_SCMI_CLK_GMAC1_AXI>,
+-- 
+2.25.1
+

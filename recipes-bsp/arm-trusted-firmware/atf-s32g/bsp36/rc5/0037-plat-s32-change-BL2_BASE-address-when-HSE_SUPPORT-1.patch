@@ -1,0 +1,35 @@
+From a59f0a4d1fa81b2b20bed5f3420e878a8eb743c6 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Wed, 1 Mar 2023 15:17:25 +0200
+Subject: [PATCH 37/54] plat: s32: change BL2_BASE address when HSE_SUPPORT=1
+
+With the past 0x34080000 BL2 Base, the computed Load Address would go
+into s32g3's reserved SRAM space and mkimage would fail to build the fip.
+Move BL2 Base address at a greater offset so that the load address
+would not overlap with SRAM Reserved Space.
+
+Issue: ALB-9863
+Upstream-Status: Pending 
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32_common.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
+index cd0b807e4..3fb8a2a49 100644
+--- a/plat/nxp/s32/s32_common.mk
++++ b/plat/nxp/s32/s32_common.mk
+@@ -432,7 +432,7 @@ endif
+ 	fi
+ 
+ ifneq (${HSE_SUPPORT},)
+-BL2_BASE		?= 0x34080000
++BL2_BASE		?= 0x34082000
+ else
+ BL2_BASE		?= 0x34302000
+ endif
+-- 
+2.25.1
+

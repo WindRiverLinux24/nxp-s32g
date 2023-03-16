@@ -1,0 +1,152 @@
+From 0f466c02afb31f6e93f01566c7e99e453ebe04c8 Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Wed, 16 Nov 2022 10:45:19 +0200
+Subject: [PATCH 24/54] s32cc: Prevent SCMI message overflow
+
+Three checkpoints are added to prevent mailboxes overflow:
+   1. Check the size of the message before sending it to SCP
+   2. Add a marker at the end of the mailbox to identify the
+      cases when the SCP has written over the allowed area.
+   3. Verify the size of the reply message
+
+Issue: ALB-9425
+Upstream-Status: Pending 
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ drivers/arm/css/scmi/scmi_common.c | 70 ++++++++++++++++++++++++++++++
+ include/drivers/arm/css/scmi.h     |  2 +
+ plat/nxp/s32/s32_scp_scmi.c        |  1 +
+ 3 files changed, 73 insertions(+)
+
+diff --git a/drivers/arm/css/scmi/scmi_common.c b/drivers/arm/css/scmi/scmi_common.c
+index 5b3724ace..57249fa35 100644
+--- a/drivers/arm/css/scmi/scmi_common.c
++++ b/drivers/arm/css/scmi/scmi_common.c
+@@ -22,6 +22,64 @@
+ #define scmi_lock_release(lock)		bakery_lock_release(lock)
+ #endif
+ 
++#define CHANNEL_POISON			(0xa5a5a5a5u)
++
++static bool __unused is_message_too_big(scmi_channel_t *ch)
++{
++	size_t mb_size = ch->info->scmi_mbx_size;
++	mailbox_mem_t *mb = (mailbox_mem_t *)ch->info->scmi_mbx_mem;
++	size_t msg_size = offsetof(mailbox_mem_t, msg_header) + mb->len;
++
++	return msg_size > mb_size;
++}
++
++static uint32_t *get_poison_addr(scmi_channel_t *ch)
++{
++	size_t mb_size = ch->info->scmi_mbx_size;
++	uintptr_t addr;
++
++	if (check_uptr_overflow(ch->info->scmi_mbx_mem, mb_size))
++		return NULL;
++
++	addr = ch->info->scmi_mbx_mem + mb_size;
++
++	if (addr < sizeof(uint32_t))
++		return NULL;
++
++	addr -= sizeof(uint32_t);
++
++	return (uint32_t *)addr;
++}
++
++static void set_channel_poison(scmi_channel_t *ch)
++{
++	uint32_t *poison = get_poison_addr(ch);
++
++	if (!poison)
++		return;
++
++	*poison = CHANNEL_POISON;
++}
++
++static bool __unused check_poison(scmi_channel_t *ch)
++{
++	uint32_t *poison = get_poison_addr(ch);
++	mailbox_mem_t *mb = (mailbox_mem_t *)ch->info->scmi_mbx_mem;
++	size_t msg_size = offsetof(mailbox_mem_t, msg_header) + mb->len;
++	uintptr_t msg_end = ch->info->scmi_mbx_mem + msg_size;
++
++	/**
++	 * Skip this check for the messages where it was needed to overwrite
++	 * the poison due to actual needs.
++	 */
++	if (msg_end > (uintptr_t)poison)
++		return true;
++
++	if (!poison)
++		return false;
++
++	return (*poison == CHANNEL_POISON);
++}
+ 
+ /*
+  * Private helper function to get exclusive access to SCMI channel.
+@@ -43,6 +101,10 @@ void scmi_send_sync_command(scmi_channel_t *ch)
+ {
+ 	mailbox_mem_t *mbx_mem = (mailbox_mem_t *)(ch->info->scmi_mbx_mem);
+ 
++	assert(!is_message_too_big(ch));
++	if (DEBUG)
++		set_channel_poison(ch);
++
+ 	SCMI_MARK_CHANNEL_BUSY(mbx_mem->status);
+ 
+ 	/*
+@@ -69,6 +131,10 @@ void scmi_send_sync_command(scmi_channel_t *ch)
+ 	 * read invalid payload data
+ 	 */
+ 	dmbld();
++
++	assert(!is_message_too_big(ch));
++	if (DEBUG)
++		assert(check_poison(ch));
+ }
+ 
+ /*
+@@ -171,6 +237,10 @@ void *scmi_init(scmi_channel_t *ch)
+ 
+ 	ch->is_initialized = 1;
+ 
++	/* SMT messages are 128 bytes long by default */
++	if (!ch->info->scmi_mbx_size)
++		ch->info->scmi_mbx_size = 0x80;
++
+ 	ret = scmi_proto_version(ch, SCMI_PWR_DMN_PROTO_ID, &version);
+ 	if (ret != SCMI_E_SUCCESS) {
+ 		WARN("SCMI power domain protocol version message failed");
+diff --git a/include/drivers/arm/css/scmi.h b/include/drivers/arm/css/scmi.h
+index adce7a62c..4fe979474 100644
+--- a/include/drivers/arm/css/scmi.h
++++ b/include/drivers/arm/css/scmi.h
+@@ -107,6 +107,8 @@
+ typedef struct scmi_channel_plat_info {
+ 	/* SCMI mailbox memory */
+ 	uintptr_t scmi_mbx_mem;
++	/* SCMI mailbox memory size */
++	size_t scmi_mbx_size;
+ 	/* The door bell register address */
+ 	uintptr_t db_reg_addr;
+ 	/* The bit mask that need to be preserved when ringing doorbell */
+diff --git a/plat/nxp/s32/s32_scp_scmi.c b/plat/nxp/s32/s32_scp_scmi.c
+index f46003cca..3cdbae88d 100644
+--- a/plat/nxp/s32/s32_scp_scmi.c
++++ b/plat/nxp/s32/s32_scp_scmi.c
+@@ -47,6 +47,7 @@ void scp_scmi_init(void)
+ 	for (i = 0u; i < ARRAY_SIZE(scmi_channels); i++) {
+ 		s32_scmi_plat_info[i] = (scmi_channel_plat_info_t) {
+ 			.scmi_mbx_mem = get_mb_addr(i),
++			.scmi_mbx_size = S32_SCP_CH_MEM_SIZE,
+ 			.db_reg_addr = MSCM_BASE_ADDR,
+ 			.db_preserve_mask = 0xfffffffe,
+ 			.db_modify_mask = 0x1,
+-- 
+2.25.1
+
