@@ -1,4 +1,4 @@
-From de5a187e42f408d25acc0ebe529e36987d4ae34b Mon Sep 17 00:00:00 2001
+From 764e87320169b3ee8a2e3c11cdb5caea7cf0e1a4 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Thu, 23 Dec 2021 16:32:59 +0800
 Subject: [PATCH] fix hwts kmemleak
@@ -43,35 +43,35 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  1 file changed, 14 insertions(+), 4 deletions(-)
 
 diff --git a/sw/linux-pfeng/pfeng-hwts.c b/sw/linux-pfeng/pfeng-hwts.c
-index a21d514..cffdca8 100644
+index a0c619b..00d731d 100644
 --- a/sw/linux-pfeng/pfeng-hwts.c
 +++ b/sw/linux-pfeng/pfeng-hwts.c
-@@ -249,11 +249,21 @@ int pfeng_hwts_init(struct pfeng_netif *netif)
- {
- #ifdef PFE_CFG_PFE_MASTER
+@@ -210,11 +210,21 @@ int pfeng_hwts_ethtool(struct pfeng_netif *netif, struct ethtool_ts_info *info)
  
+ int pfeng_hwts_init(struct pfeng_netif *netif)
+ {
 -	if (kfifo_alloc(&netif->ts_skb_fifo, 32, GFP_KERNEL))
 -		return -ENOMEM;
-+	int ret = EOK;
-+	if (!kfifo_initialized(&netif->ts_skb_fifo))
-+	{
-+		ret = kfifo_alloc(&netif->ts_skb_fifo, 32, GFP_KERNEL);
-+		if (ret)
-+			return -ENOMEM;
-+	}
-+
-+	if (!kfifo_initialized(&netif->ts_tx_fifo))
-+	{
-+		ret = kfifo_alloc(&netif->ts_tx_fifo, 32, GFP_KERNEL);
-+		if (ret)
-+			return -ENOMEM;
-+	}
  
 -	if (kfifo_alloc(&netif->ts_tx_fifo, 32, GFP_KERNEL))
 -		return -ENOMEM;
- #endif /* PFE_CFG_PFE_MASTER */
++    int ret = EOK;
++    if (!kfifo_initialized(&netif->ts_skb_fifo))
++    {
++        ret = kfifo_alloc(&netif->ts_skb_fifo, 32, GFP_KERNEL);
++        if (ret)
++            return -ENOMEM;
++    }
++
++    if (!kfifo_initialized(&netif->ts_tx_fifo))
++    {
++        ret = kfifo_alloc(&netif->ts_tx_fifo, 32, GFP_KERNEL);
++        if (ret)
++            return -ENOMEM;
++    }
  
  	/* Initialize for master and slave to have easier cleanup */
+ 	INIT_LIST_HEAD(&netif->ts_skb_list);
 -- 
 2.25.1
 

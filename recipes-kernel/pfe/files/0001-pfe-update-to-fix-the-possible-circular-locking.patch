@@ -1,4 +1,4 @@
-From 6affe6003b03f28467fab728923ab26b1120d8fc Mon Sep 17 00:00:00 2001
+From 6ca7f891a31eb67c1184a04e13b0234d6f66dbeb Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Thu, 27 Oct 2022 20:03:09 +0800
 Subject: [PATCH] pfe: update to fix the possible circular locking

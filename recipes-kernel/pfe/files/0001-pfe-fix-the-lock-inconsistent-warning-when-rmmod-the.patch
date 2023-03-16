@@ -1,4 +1,4 @@
-From cd12cbca80ccfd7294ffd1a86e5a0bd42dd3e20d Mon Sep 17 00:00:00 2001
+From 413123bcf12d559797bf2f49a73ba4b4a844e6bd Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Mon, 24 Oct 2022 14:43:30 +0800
 Subject: [PATCH] pfe: fix the lock inconsistent warning when rmmod the kernel
@@ -73,10 +73,10 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/sw/oal/src/oal_irq_linux.c b/sw/oal/src/oal_irq_linux.c
-index d8d61c4..cd146ee 100644
+index 76ba6fd..5617531 100644
 --- a/sw/oal/src/oal_irq_linux.c
 +++ b/sw/oal/src/oal_irq_linux.c
-@@ -232,6 +232,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+@@ -233,6 +233,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
  	errno_t ret;
  	oal_irq_list_entry_t *entry = NULL;
  	LLIST_t *item, *aux;
@@ -84,7 +84,7 @@ index d8d61c4..cd146ee 100644
  
  #if defined(PFE_CFG_NULL_ARG_CHECK)
  	if (unlikely(NULL == irq))
-@@ -243,7 +244,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+@@ -244,7 +245,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
  
  	/*	Search the handle */
  	ret = ENOENT;
@@ -93,7 +93,7 @@ index d8d61c4..cd146ee 100644
  
  	LLIST_ForEachRemovable(item, aux, &irq->handlers)
  	{
-@@ -258,7 +259,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
+@@ -259,7 +260,7 @@ errno_t oal_irq_del_handler(oal_irq_t *irq, oal_irq_isr_handle_t handle)
  
  	} /* ForEachRemovable */
  
