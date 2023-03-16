@@ -29,6 +29,7 @@ SRC_URI += " \
     file://0001-s32g-remove-SAF1508-phy-driver-and-use-common-ulpi-i.patch \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', '${HSE_SUPPORT_PATCHES}', '', d)} \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
+    file://0001-pinctrl-fix-pinctrl_gpio_get_pinctrl_and_offset-for-.patch \
 "
 
 SRCREV = "f30287c440b5371df683aac37b7521048d164d05"
