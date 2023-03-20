@@ -980,3 +980,40 @@ This template is to skip the operation that installing fip.s32 to wic image.
 To build a wic image without fip.s32, enable omit_atf template in your local.conf file:
 
 	WRTEMPLATE = "feature/omit_atf"
+
+6.8.2 m7_boot
+-------------
+
+This template is used to boot up NXP s32g platforms with cortex-M7 core.
+
+6.8.2.1 m7 non-secure boot mode
+-------------------------------
+
+With this kind of boot up mode, Cortex-M7 core is brought up with m7-sample code firstly when powering on
+NXP s32g platforms. And then the m7-sample code brings up Cortex-A53 core with atf code. This is called serial
+boot up mode.
+If users want to enable m7 boot mode, please add below contents in local.conf file when building WRLinux project.
+
+	BB_NO_NETWORK = '0'
+	WRTEMPLATE:append = " feature/m7_boot"
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'cortex-m-toolchain'
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'm7-sample'
+
+6.8.2.2 m7 secure boot mode
+---------------------------
+
+m7 boot feature can be used to work with secure boot feature, it is called as m7 secure boot mode. With this mode,
+HSE firmware verifies the m7-sample and atf images firstly, and then brings up the Cortex-M7 core with m7-sample image,
+and then the m7-sample image brings up the Cortex-A53 core with atf image.
+If users want to enable m7 secure boot mode, please add below contents in local.conf file when building WRLinux project.
+
+	HSE_LOCAL_FIRMWARE_DIR = "<HSE firmware path>"
+	HSE_FW_NAME_S32G2 = "<S32G2 HSE firmware name>"
+	HSE_FW_NAME_S32G3 = "<S32G2 HSE firmware name>"
+	BB_NO_NETWORK = '0'
+	WRTEMPLATE:append = " feature/m7_boot"
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'cortex-m-toolchain'
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'm7-sample'
+
+Note:
+About the secure boot information, please refer to the README in s32g-secure-boot layer.
