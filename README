@@ -1017,3 +1017,22 @@ If users want to enable m7 secure boot mode, please add below contents in local.
 
 Note:
 About the secure boot information, please refer to the README in s32g-secure-boot layer.
+
+6.8.3 secure-boot-parallel
+--------------------------
+
+This template is used to bring up Cortex-M7 and Cortex-A53 parallel under secure boot mode.
+With this boot up mode, HSE firmware verifies the m7-sample and atf images firstly, and then brings up the Cortex-M7 and
+Cortex-A53 cores parallel.
+If users want to enable parallel secure boot mode, please add below contents in local.conf file when building WRLinux project.
+
+	HSE_LOCAL_FIRMWARE_DIR = "<HSE firmware path>"
+	HSE_FW_NAME_S32G2 = "<S32G2 HSE firmware name>"
+	HSE_FW_NAME_S32G3 = "<S32G2 HSE firmware name>"
+	BB_NO_NETWORK = '0'
+	WRTEMPLATE:append = " feature/secure-boot-parallel"
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'cortex-m-toolchain'
+	CUSTOMER_RECIPES:wr-nxp-s32g += 'm7-sample'
+
+Note:
+The parallel boot mode only can be supported under secure boot mode.
