@@ -1,0 +1,36 @@
+From ff3d19e546e9473a9a3b4c9a533d4e524d291c10 Mon Sep 17 00:00:00 2001
+From: Robert Yang <liezhi.yang@windriver.com>
+Date: Tue, 21 Mar 2023 10:08:21 +0000
+Subject: [PATCH] Makefile: Make examples depend on libhse.so to fix a race
+ issue
+
+Fixed a race issue when parallel build:
+ld: cannot find -lhse: No such file or directory
+
+It is because examples/common.mk requires libhse.so (-lhse), but examples
+doesn't depend on libhse.so, so the error may happen when paralle build,
+this patch fixes the problem.
+
+Upstream-Status: Pending
+
+Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 1627093..185c18c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -92,7 +92,7 @@ $(HSE_ODIR):
+ 	mkdir -p $@
+ 
+ .PHONY: examples
+-examples:
++examples: $(HSE_LIB).$(HSE_LIBVER)
+ 	make -C examples PKCS11HSE_DIR=$(CURDIR)
+ 
+ clean:
+-- 
+2.32.0
+
