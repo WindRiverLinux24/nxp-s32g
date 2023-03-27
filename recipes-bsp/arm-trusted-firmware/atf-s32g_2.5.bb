@@ -101,6 +101,18 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
+# There are 256 bytes space following IVT, it is able to be used save BSP specific flags
+# Boot Types, offset is 0x1100 from the beginning of bootloader image
+# The default value 0 represents for Non-secboot, it doesn't need to set it explicitly.
+boot_type_off = "4352"
+non_secboot = "00000000"
+a53_secboot = "00000001"
+
+str2bin () {
+	# write binary as little endian
+	printf $(echo $1 | sed -E -e 's/(..)(..)(..)(..)/\4\3\2\1/' -e 's/../\\x&/g')
+}
+
 do_compile() {
     unset LDFLAGS
     unset CFLAGS
@@ -195,7 +207,9 @@ do_deploy() {
                 cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
                 cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
                 cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
-
+                # Set the boot type
+                str2bin ${a53_secboot} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
+                                  conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
             fi
 
             if [ "${type}" = "sd" ]; then
