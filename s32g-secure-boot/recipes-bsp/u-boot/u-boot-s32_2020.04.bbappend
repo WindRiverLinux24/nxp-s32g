@@ -4,6 +4,7 @@ SRC_URI:append = " \
     file://0001-Revert-hse-secboot-remove-unused-u-boot-secboot-code.patch \
     file://0002-u-boot-secboot-correct-the-secure-boot-config.patch \
     file://0003-s32-hse-support-secure-boot-feature-on-both-S32G2-an.patch \
+    file://0001-s32g-hse-reconstruct-the-code-used-to-enable-secure-.patch \
 "
 
 python() {
