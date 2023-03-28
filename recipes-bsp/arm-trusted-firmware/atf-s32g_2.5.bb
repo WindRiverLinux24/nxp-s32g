@@ -107,6 +107,7 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
 boot_type_off = "4352"
 non_secboot = "00000000"
 a53_secboot = "00000001"
+m7_secboot = "00000002"
 
 str2bin () {
 	# write binary as little endian
@@ -208,7 +209,11 @@ do_deploy() {
                 cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
                 cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
                 # Set the boot type
-                str2bin ${a53_secboot} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
+                secboot_type=${a53_secboot}
+                if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then
+                    secboot_type=${m7_secboot}
+                fi
+                str2bin ${secboot_type} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
                                   conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
             fi
 
