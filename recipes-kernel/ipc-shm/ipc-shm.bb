@@ -15,6 +15,10 @@ BRANCH ?= "release/bsp35.0"
 SRC_URI = "${URL};branch=${BRANCH}"
 SRCREV = "48cff2400c268c61ecd60749c4a95ef6aa9b077f"
 
+FILESEXTRAPATHS:prepend:nxp-s32g := "${THISDIR}/files:"
+SRC_URI:append:nxp-s32g = " \
+    file://0001-ipc-shm-update-to-compatible-with-v5.15-kernel-codes.patch \
+"
 
 S = "${WORKDIR}/git"
 DESTDIR="${D}"
