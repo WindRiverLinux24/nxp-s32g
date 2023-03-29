@@ -6,6 +6,7 @@ SRC_URI:append = " \
     file://0003-s32-hse-support-secure-boot-feature-on-both-S32G2-an.patch \
     file://0001-s32g-hse-reconstruct-the-code-used-to-enable-secure-.patch \
     file://0001-s32g-hse-support-M7-secure-boot-feature.patch \
+    file://0001-s32g-hse-support-NXP-parallel-secure-boot-feature.patch \
 "
 
 python() {
