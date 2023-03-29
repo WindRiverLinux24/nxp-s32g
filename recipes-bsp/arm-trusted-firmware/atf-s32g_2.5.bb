@@ -108,6 +108,7 @@ boot_type_off = "4352"
 non_secboot = "00000000"
 a53_secboot = "00000001"
 m7_secboot = "00000002"
+nxp_parallel_secboot = "00000003"
 
 str2bin () {
 	# write binary as little endian
@@ -212,6 +213,9 @@ do_deploy() {
                 secboot_type=${a53_secboot}
                 if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then
                     secboot_type=${m7_secboot}
+                    if ${@bb.utils.contains('MACHINE_FEATURES', 'secure_boot_parallel', 'true', 'false', d)}; then
+                        secboot_type=${nxp_parallel_secboot}
+                    fi
                 fi
                 str2bin ${secboot_type} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
                                   conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
