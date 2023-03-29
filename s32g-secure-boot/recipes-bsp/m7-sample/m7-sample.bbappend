@@ -45,8 +45,8 @@ signature_size="256"
 m7_size_off="260"
 m7_load_off="4"
 m7_entry_off="8"
-# 0x10 = 16
-m7_entry_bak_off="16"
+# 0x108 = 264
+m7_entry_bak_off="264"
 fip_entry_off="8"
 # 0x28 = 40
 bcw_addr_off="40"
@@ -104,7 +104,7 @@ do_compile:append() {
 				# In addtional, save m7 entry address in reserve space, and it will be used to config m7 boot
 				# in u-boot command.
 				m7_entry_addr=$(printf "%08x" $m7_entry_addr)
-				str2bin $m7_entry_addr | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $app_header_off + ${m7_entry_bak_off}) \
+				str2bin $m7_entry_addr | dd of="${m7_ivt_file_secure}" count=4 seek=$(expr $ivt_header_off + ${m7_entry_bak_off}) \
 						conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
 				# Get fip.bin entry address so that bring up it at the first time of non-secure boot.
 				PLAT_BDIR="${BUILD}-${suffix}-${plat}"
