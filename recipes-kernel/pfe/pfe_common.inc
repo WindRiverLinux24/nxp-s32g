@@ -14,7 +14,8 @@ SRCREV = "caf8de596a5a5dcb5c23c16c9271a8536b69c9f8"
 
 SRC_URI += " \
     file://bsp36/rc5/0001-version-PFE_S32G_A53_LNX_1.3.0-RC1.patch \
-    file://bsp36/rc5/0002-f9c1fd1b253ea8c8a668d18f5a302acffcc42d47.patch \
+    file://bsp36/rc6/0001-version-PFE_S32G_A53_LNX_1.3.0-RC2.patch \
+    file://bsp36/rc6/0002-ae7a32e25179843691f62704b850ed1168a3d15c.patch \
 "
 
 PATCHTOOL = "git"

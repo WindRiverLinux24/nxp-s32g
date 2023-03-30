@@ -1,0 +1,3268 @@
+From 2e21e95f14e76132e04e801a072de7a550fe405d Mon Sep 17 00:00:00 2001
+From: Eth Robot <eth.robot@nxp.com>
+Date: Fri, 24 Mar 2023 10:34:53 +0000
+Subject: [PATCH 2/2] ae7a32e25179843691f62704b850ed1168a3d15c
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/build_env.mak                              |   8 +-
+ sw/fci/src/fci_connections.c                  | 797 ++++++++++--------
+ sw/fci/src/fci_internal.h                     |   3 +-
+ sw/fci/src/fci_routes.c                       |   4 +-
+ sw/libfci_cli/Makefile                        |   4 +-
+ sw/libfci_cli/src/daemon/daemon_fciev2txt.c   | 142 +++-
+ sw/libfci_cli/src/libfci_cli_common.h         |   4 +-
+ sw/linux-pfeng/pfeng-bman.c                   |  47 ++
+ sw/linux-pfeng/pfeng-debugfs.c                |   2 -
+ sw/linux-pfeng/pfeng-drv.c                    |  13 +
+ sw/linux-pfeng/pfeng-dt.c                     |  12 +-
+ sw/linux-pfeng/pfeng-hif.c                    |  20 +-
+ sw/linux-pfeng/pfeng-netif.c                  | 425 +++++++++-
+ sw/linux-pfeng/pfeng-slave-drv.c              | 124 +++
+ sw/linux-pfeng/pfeng.h                        |  34 +-
+ sw/pfe_platform/Makefile                      |  10 +-
+ sw/pfe_platform/hw/s32g/pfe_class_csr.c       |   2 +-
+ sw/pfe_platform/hw/s32g/pfe_platform_master.c |  11 +-
+ sw/pfe_platform/hw/s32g/pfe_tmu_csr.c         |  26 +
+ sw/pfe_platform/public/pfe_hif_chnl_linux.h   |   3 +-
+ sw/pfe_platform/public/pfe_hif_ring_linux.h   |   2 +-
+ sw/pfe_platform/public/pfe_platform.h         |   9 +-
+ sw/pfe_platform/public/pfe_rtable.h           |   2 +-
+ sw/pfe_platform/src/pfe_hif_chnl_linux.c      |  29 +-
+ sw/pfe_platform/src/pfe_hif_ring_linux.c      |  32 +-
+ sw/pfe_platform/src/pfe_idex.c                |  62 +-
+ sw/pfe_platform/src/pfe_l2br.c                |   6 +-
+ sw/pfe_platform/src/pfe_log_if_slave.c        |  29 +-
+ sw/pfe_platform/src/pfe_phy_if.c              |  86 +-
+ sw/pfe_platform/src/pfe_phy_if_slave.c        |  32 +-
+ sw/pfe_platform/src/pfe_rtable.c              |  23 +-
+ sw/xfci/libfci/public/libfci.h                |  30 +-
+ 32 files changed, 1432 insertions(+), 601 deletions(-)
+
+diff --git a/sw/build_env.mak b/sw/build_env.mak
+index 0914b53..7e3f95e 100644
+--- a/sw/build_env.mak
++++ b/sw/build_env.mak
+@@ -1,5 +1,5 @@
+ # =========================================================================
+-#  Copyright 2018-2022 NXP
++#  Copyright 2018-2023 NXP
+ #
+ #  SPDX-License-Identifier: GPL-2.0
+ #
+@@ -72,8 +72,6 @@ export PFE_CFG_HIF_SEQNUM_CHECK?=0
+ export PFE_CFG_BUFFERS_COHERENT?=1
+ #Build of rtable feature. 1 - enable, 0 - disable
+ export PFE_CFG_RTABLE_ENABLE?=1
+-#Build of l2bridge feature. 1 - enable, 0 - disable
+-export PFE_CFG_L2BRIDGE_ENABLE?=1
+ #Build support for FCI. 1 - enable, 0 - disable
+ export PFE_CFG_FCI_ENABLE?=1
+ #Build support for thread detecting PFE errors in polling mode. 1 - enable, 0 - disable
+@@ -257,10 +255,6 @@ ifneq ($(PFE_CFG_RTABLE_ENABLE),0)
+     GLOBAL_CCFLAGS+= -DPFE_CFG_RTABLE_ENABLE
+ endif
+ 
+-ifneq ($(PFE_CFG_L2BRIDGE_ENABLE),0)
+-    GLOBAL_CCFLAGS+= -DPFE_CFG_L2BRIDGE_ENABLE
+-endif
+-
+ ifneq ($(PFE_CFG_FCI_ENABLE),0)
+     GLOBAL_CCFLAGS+= -DPFE_CFG_FCI_ENABLE
+ endif
+diff --git a/sw/fci/src/fci_connections.c b/sw/fci/src/fci_connections.c
+index ee5a97b..e711c4b 100644
+--- a/sw/fci/src/fci_connections.c
++++ b/sw/fci/src/fci_connections.c
+@@ -60,12 +60,15 @@ static errno_t fci_connections_ipv4_cmd_to_entry(const fpp_ct_cmd_t *ct_cmd, pfe
+ static errno_t fci_connections_ipv4_cmd_to_rep_entry(const fpp_ct_cmd_t *ct_cmd, pfe_rtable_entry_t **entry, pfe_phy_if_t **iface);
+ static errno_t fci_connections_ipv6_cmd_to_entry(const fpp_ct6_cmd_t *ct6_cmd, pfe_rtable_entry_t **entry, pfe_phy_if_t **iface);
+ static errno_t fci_connections_ipv6_cmd_to_rep_entry(const fpp_ct6_cmd_t *ct6_cmd, pfe_rtable_entry_t **entry, pfe_phy_if_t **iface);
++static errno_t fci_connections_entry_to_ipv4_cmd(pfe_rtable_entry_t *entry, pfe_rtable_entry_t *rep_entry, fpp_ct_cmd_t *ct_cmd);
++static errno_t fci_connections_entry_to_ipv6_cmd(pfe_rtable_entry_t *entry, pfe_rtable_entry_t *rep_entry, fpp_ct6_cmd_t *ct6_cmd);
++static void fci_connections_ipv4_cbk(pfe_rtable_entry_t *entry, pfe_rtable_cbk_event_t event);
++static void fci_connections_ipv6_cbk(pfe_rtable_entry_t *entry, pfe_rtable_cbk_event_t event);
+ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, uint16_t *fci_ret, void *reply_buf, uint32_t *reply_len);
+ #if (PFE_CFG_VERBOSITY_LEVEL >= 8)
+ #ifdef NXP_LOG_ENABLED
+ static char_t * fci_connections_ipv4_cmd_to_str(fpp_ct_cmd_t *ct_cmd);
+ static char_t * fci_connections_ipv6_cmd_to_str(fpp_ct6_cmd_t *ct6_cmd);
+-static char_t * fci_connections_entry_to_str(pfe_rtable_entry_t *entry);
+ static char_t * fci_connections_build_str(bool_t ipv6, uint8_t *sip, uint8_t *dip, uint16_t *sport, uint16_t *dport,
+ 									uint8_t *sip_out, uint8_t *dip_out, uint16_t *sport_out, uint16_t *dport_out, uint8_t *proto);
+ 
+@@ -79,16 +82,6 @@ static char_t * fci_connections_build_str(bool_t ipv6, uint8_t *sip, uint8_t *di
+ /* usage scope: fci_connections_build_str */
+ static char_t fci_connections_build_str_buf[FCI_CONNECTIONS_CFG_MAX_STR_LEN];
+ 
+-#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+-#define ETH_43_PFE_STOP_SEC_VAR_CLEARED_8
+-#include "Eth_43_PFE_MemMap.h"
+-#define ETH_43_PFE_START_SEC_CONST_UNSPECIFIED
+-#include "Eth_43_PFE_MemMap.h"
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+-
+-/* usage scope: fci_connections_entry_to_str */
+-static char_t * const fci_connections_entry_to_str_err_str = "Entry-to-string conversion failed";
+-
+ #ifdef PFE_CFG_TARGET_OS_AUTOSAR
+ #define ETH_43_PFE_STOP_SEC_CONST_UNSPECIFIED
+ #include "Eth_43_PFE_MemMap.h"
+@@ -243,67 +236,6 @@ static char_t * fci_connections_build_str(bool_t ipv6, uint8_t *sip, uint8_t *di
+ 
+ 	return fci_connections_build_str_buf;
+ }
+-
+-/**
+- * @brief		Convert routing table entry to a string representation
+- * @param[in]	entry The entry
+- * @return		Pointer to memory where the output string is located
+- */
+-static char_t * fci_connections_entry_to_str(pfe_rtable_entry_t *entry)
+-{
+-	pfe_5_tuple_t tuple;
+-	pfe_5_tuple_t tuple_out;
+-
+-#if defined(PFE_CFG_NULL_ARG_CHECK)
+-	if (unlikely(NULL == entry))
+-	{
+-		NXP_LOG_ERROR("NULL argument received\n");
+-		return NULL;
+-	}
+-#endif /* PFE_CFG_NULL_ARG_CHECK */
+-
+-	if (EOK != pfe_rtable_entry_to_5t(entry, &tuple))
+-	{
+-		return fci_connections_entry_to_str_err_str;
+-	}
+-
+-	if (EOK != pfe_rtable_entry_to_5t_out(entry, &tuple_out))
+-	{
+-		return fci_connections_entry_to_str_err_str;
+-	}
+-
+-	tuple.sport = oal_htons(tuple.sport);
+-	tuple.dport = oal_htons(tuple.dport);
+-	tuple_out.sport = oal_htons(tuple_out.sport);
+-	tuple_out.dport = oal_htons(tuple_out.dport);
+-
+-	if (tuple.src_ip.is_ipv4)
+-	{
+-		return fci_connections_build_str(FALSE,
+-											(uint8_t *)&tuple.src_ip.v4,
+-											(uint8_t *)&tuple.dst_ip.v4,
+-											&tuple.sport,
+-											&tuple.dport,
+-											(uint8_t *)&tuple_out.src_ip.v4,
+-											(uint8_t *)&tuple_out.dst_ip.v4,
+-											&tuple_out.sport,
+-											&tuple_out.dport,
+-											(uint8_t *)&tuple.proto);
+-	}
+-	else
+-	{
+-		return fci_connections_build_str(TRUE,
+-											(uint8_t *)&tuple.src_ip.v6,
+-											(uint8_t *)&tuple.dst_ip.v6,
+-											&tuple.sport,
+-											&tuple.dport,
+-											(uint8_t *)&tuple_out.src_ip.v6,
+-											(uint8_t *)&tuple_out.dst_ip.v6,
+-											&tuple_out.sport,
+-											&tuple_out.dport,
+-											(uint8_t *)&tuple.proto);
+-	}
+-}
+ #endif /* NXP_LOG_ENABLED */
+ #endif /* PFE_CFG_VERBOSITY_LEVEL */
+ 
+@@ -580,6 +512,10 @@ static errno_t fci_connections_ipv4_cmd_to_entry(const fpp_ct_cmd_t *ct_cmd, pfe
+ 				}
+ 				else
+ 				{
++					/*	Set callback */
++					pfe_rtable_entry_set_callback(*entry, fci_connections_ipv4_cbk, NULL);
++
++					/*	Set vlan (if applicable) */
+ 					if (0U != ct_cmd->vlan)
+ 					{
+ 						pfe_rtable_entry_set_out_vlan(*entry, oal_ntohs(ct_cmd->vlan), TRUE);
+@@ -659,6 +595,13 @@ static errno_t fci_connections_ipv4_cmd_to_rep_entry(const fpp_ct_cmd_t *ct_cmd,
+ 				}
+ 				else
+ 				{
++					/*	Set callback only if this is a lone reply entry (does not have paired orig entry) */
++					if (0U != (oal_ntohs(ct_cmd->flags) & CTCMD_FLAGS_ORIG_DISABLED))
++					{
++						pfe_rtable_entry_set_callback(*entry, fci_connections_ipv4_cbk, NULL);
++					}
++
++					/*	Set vlan (if applicable) */
+ 					if (0U != ct_cmd->vlan_reply)
+ 					{
+ 						pfe_rtable_entry_set_out_vlan(*entry, oal_ntohs(ct_cmd->vlan_reply), TRUE);
+@@ -735,6 +678,10 @@ static errno_t fci_connections_ipv6_cmd_to_entry(const fpp_ct6_cmd_t *ct6_cmd, p
+ 				}
+ 				else
+ 				{
++					/*	Set callback */
++					pfe_rtable_entry_set_callback(*entry, fci_connections_ipv6_cbk, NULL);
++
++					/*	Set vlan (if applicable) */
+ 					if (0U != ct6_cmd->vlan)
+ 					{
+ 						pfe_rtable_entry_set_out_vlan(*entry, oal_ntohs(ct6_cmd->vlan), TRUE);
+@@ -813,6 +760,13 @@ static errno_t fci_connections_ipv6_cmd_to_rep_entry(const fpp_ct6_cmd_t *ct6_cm
+ 				}
+ 				else
+ 				{
++					/*	Set callback only if this is a lone reply entry (does not have paired orig entry) */
++					if (0U != (oal_ntohs(ct6_cmd->flags) & CTCMD_FLAGS_ORIG_DISABLED))
++					{
++						pfe_rtable_entry_set_callback(*entry, fci_connections_ipv6_cbk, NULL);
++					}
++
++					/*	Set vlan (if applicable) */
+ 					if (0U != ct6_cmd->vlan_reply)
+ 					{
+ 						pfe_rtable_entry_set_out_vlan(*entry, oal_ntohs(ct6_cmd->vlan_reply), TRUE);
+@@ -829,6 +783,406 @@ static errno_t fci_connections_ipv6_cmd_to_rep_entry(const fpp_ct6_cmd_t *ct6_cm
+ 	return ret;
+ }
+ 
++/**
++ * @brief		Convert data of routing table entry into CT command data (IPv4).
++ * @details		Handles reply direction as well (if reply dir is present).
++ * @param[in]	entry		Pointer to routing table entry.
++ * @param[in]	rep_entry	Pointer to routing table entry in reply direction. Can be NULL.
++ * @param[out]	ct_cmd		Pointer to the command struct whch shall be filled.
++ * @return		EOK if success, error code otherwise
++ */
++static errno_t fci_connections_entry_to_ipv4_cmd(pfe_rtable_entry_t *entry, pfe_rtable_entry_t *rep_entry, fpp_ct_cmd_t *ct_cmd)
++{
++	errno_t ret = EINVAL;
++	fci_t *fci_context = (fci_t *)&__context;
++	pfe_ip_addr_t sip, dip;
++	uint32_t route_id = 0U;
++	pfe_5_tuple_t tuple;
++	pfe_ct_route_actions_t actions;
++	uint16_t vlan;
++	pfe_ct_conntrack_stats_t stats = {0U};
++
++#if defined(PFE_CFG_NULL_ARG_CHECK)
++	if (unlikely((NULL == entry) || (NULL == ct_cmd)))
++	{
++		NXP_LOG_ERROR("NULL argument received\n");
++		ret = EINVAL;
++	}
++	else if (unlikely(FALSE == fci_context->fci_initialized))
++	{
++		NXP_LOG_ERROR("Context not initialized\n");
++		ret = EPERM;
++	}
++	else
++#endif /* PFE_CFG_NULL_ARG_CHECK */
++	{
++		/*	Prepare statistics data */
++		ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(entry));
++		if (EOK != ret)
++		{
++			NXP_LOG_ERROR("Failed to get routing entry statistics: %d", ret);
++		}
++
++		/*	Build reply structure */
++		pfe_rtable_entry_get_sip(entry, &sip);
++		pfe_rtable_entry_get_dip(entry, &dip);
++		(void)pfe_rtable_entry_get_route_id(entry, &route_id);
++		vlan = pfe_rtable_entry_get_out_vlan(entry);
++
++		/*	Fill basic info */
++		(void)memcpy(&ct_cmd->saddr, &sip.v4, 4);
++		(void)memcpy(&ct_cmd->daddr, &dip.v4, 4);
++		ct_cmd->sport = oal_htons(pfe_rtable_entry_get_sport(entry));
++		ct_cmd->dport = oal_htons(pfe_rtable_entry_get_dport(entry));
++		ct_cmd->vlan = oal_htons(vlan);
++		(void)memcpy(&ct_cmd->saddr_reply, &ct_cmd->daddr, 4);
++		(void)memcpy(&ct_cmd->daddr_reply, &ct_cmd->saddr, 4);
++		ct_cmd->sport_reply = ct_cmd->dport;
++		ct_cmd->dport_reply = ct_cmd->sport;
++		ct_cmd->protocol = oal_ntohs(pfe_rtable_entry_get_proto(entry));
++		ct_cmd->flags = 0U;
++		ct_cmd->route_id = route_id;
++		ct_cmd->stats.hit = oal_htonl(stats.hit);
++		ct_cmd->stats.hit_bytes = oal_htonl(stats.hit_bytes);
++
++		/*	Check if reply direction exists */
++		if (NULL == rep_entry)
++		{
++			/*	This means that entry in 'reply' direction has not been requested
++				so the appropriate flag shall be set to indicate that. */
++			ct_cmd->flags |= oal_htons(CTCMD_FLAGS_REP_DISABLED);
++		}
++		else
++		{
++			/*	Prepare reply direction statistics data */
++			ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(rep_entry));
++			if (EOK != ret)
++			{
++				NXP_LOG_ERROR("Failed to get reply routing entry statistics: %d", ret);
++			}
++
++			/*	Prepare reply direction vlan data */
++			vlan = pfe_rtable_entry_get_out_vlan(rep_entry);
++			ct_cmd->vlan_reply = oal_htons(vlan);
++
++			/*	Prepare reply direction statistics data */
++			ct_cmd->stats_reply.hit = oal_htonl(stats.hit);
++			ct_cmd->stats_reply.hit_bytes = oal_htonl(stats.hit_bytes);
++
++			/*	Prepare reply direction route id */
++			pfe_rtable_entry_get_route_id(rep_entry, &route_id);
++			ct_cmd->route_id_reply = route_id;
++		}
++
++		/*
++			Check if some modifications (NAT) are enabled. If so, update the
++			'reply' direction values as defined by the FCI API. Note that
++			modification are enabled when entry is being added. See
++			FPP_ACTION_REGISTER and fci_connections_create_entry().
++		*/
++		actions = pfe_rtable_entry_get_action_flags(entry);
++		if (EOK != pfe_rtable_entry_to_5t_out(entry, &tuple))
++		{
++			NXP_LOG_ERROR("Couldn't get output tuple\n");
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_DEC_TTL))
++		{
++			ct_cmd->flags |= oal_htons(CTCMD_FLAGS_TTL_DECREMENT);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SIP_ADDR))
++		{
++			(void)memcpy(&ct_cmd->daddr_reply, &tuple.src_ip.v4, 4);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DIP_ADDR))
++		{
++			(void)memcpy(&ct_cmd->saddr_reply, &tuple.dst_ip.v4, 4);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SPORT))
++		{
++			ct_cmd->dport_reply = oal_htons(tuple.sport);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DPORT))
++		{
++			ct_cmd->sport_reply = oal_htons(tuple.dport);
++		}
++	}
++
++	return ret;
++}
++
++/**
++ * @brief		Convert data of routing table entry into CT command data (IPv6).
++ * @details		Handles reply direction as well (if reply dir is present).
++ * @param[in]	entry		Pointer to routing table entry.
++ * @param[in]	rep_entry	Pointer to routing table entry in reply direction. Can be NULL.
++ * @param[out]	ct6_cmd		Pointer to the command struct whch shall be filled.
++ * @return		EOK if success, error code otherwise
++ */
++static errno_t fci_connections_entry_to_ipv6_cmd(pfe_rtable_entry_t *entry, pfe_rtable_entry_t *rep_entry, fpp_ct6_cmd_t *ct6_cmd)
++{
++	errno_t ret = EINVAL;
++	fci_t *fci_context = (fci_t *)&__context;
++	pfe_ip_addr_t sip, dip;
++	uint32_t route_id = 0U;
++	pfe_5_tuple_t tuple;
++	pfe_ct_route_actions_t actions;
++	uint16_t vlan;
++	pfe_ct_conntrack_stats_t stats = {0U};
++
++#if defined(PFE_CFG_NULL_ARG_CHECK)
++	if (unlikely((NULL == entry) || (NULL == ct6_cmd)))
++	{
++		NXP_LOG_ERROR("NULL argument received\n");
++		ret = EINVAL;
++	}
++	else if (unlikely(FALSE == fci_context->fci_initialized))
++	{
++		NXP_LOG_ERROR("Context not initialized\n");
++		ret = EPERM;
++	}
++	else
++#endif /* PFE_CFG_NULL_ARG_CHECK */
++	{
++		/*	Prepare statistics data */
++		ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(entry));
++		if (EOK != ret)
++		{
++			NXP_LOG_ERROR("Failed to get routing entry statistics: %d", ret);
++		}
++
++		/*	Build reply structure */
++		pfe_rtable_entry_get_sip(entry, &sip);
++		pfe_rtable_entry_get_dip(entry, &dip);
++		(void)pfe_rtable_entry_get_route_id(entry, &route_id);
++		vlan = pfe_rtable_entry_get_out_vlan(entry);
++
++		/*	Fill basic info */
++		(void)memcpy(ct6_cmd->saddr, &sip.v6, 16);
++		(void)memcpy(ct6_cmd->daddr, &dip.v6, 16);
++		ct6_cmd->sport = oal_htons(pfe_rtable_entry_get_sport(entry));
++		ct6_cmd->dport = oal_htons(pfe_rtable_entry_get_dport(entry));
++		ct6_cmd->vlan = oal_htons(vlan);
++		(void)memcpy(ct6_cmd->saddr_reply, ct6_cmd->daddr, 16);
++		(void)memcpy(ct6_cmd->daddr_reply, ct6_cmd->saddr, 16);
++		ct6_cmd->sport_reply = ct6_cmd->dport;
++		ct6_cmd->dport_reply = ct6_cmd->sport;
++		ct6_cmd->protocol = oal_ntohs(pfe_rtable_entry_get_proto(entry));
++		ct6_cmd->flags = 0U;
++		ct6_cmd->route_id = route_id;
++		ct6_cmd->stats.hit = oal_htonl(stats.hit);
++		ct6_cmd->stats.hit_bytes = oal_htonl(stats.hit_bytes);
++
++		/*	Check if reply direction exists */
++		if (NULL == rep_entry)
++		{
++			/*	This means that entry in 'reply' direction has not been requested
++				so the appropriate flag shall be set to indicate that. */
++			ct6_cmd->flags |= oal_htons(CTCMD_FLAGS_REP_DISABLED);
++		}
++		else
++		{
++			/*	Prepare reply direction statistics data */
++			ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(rep_entry));
++			if (EOK != ret)
++			{
++				NXP_LOG_ERROR("Failed to get reply routing entry statistics: %d", ret);
++			}
++
++			/*	Prepare reply direction vlan data */
++			vlan = pfe_rtable_entry_get_out_vlan(rep_entry);
++			ct6_cmd->vlan_reply = oal_htons(vlan);
++
++			/*	Prepare reply direction statistics data */
++			ct6_cmd->stats_reply.hit = oal_htonl(stats.hit);
++			ct6_cmd->stats_reply.hit_bytes = oal_htonl(stats.hit_bytes);
++
++			/*	Prepare reply direction route id */
++			pfe_rtable_entry_get_route_id(rep_entry, &route_id);
++			ct6_cmd->route_id_reply = route_id;
++		}
++
++		/*
++			Check if some modifications (NAT) are enabled. If so, update the
++			'reply' direction values as defined by the FCI API. Note that
++			modification are enabled when entry is being added. See
++			FPP_ACTION_REGISTER and fci_connections_create_entry().
++		*/
++		actions = pfe_rtable_entry_get_action_flags(entry);
++		if (EOK != pfe_rtable_entry_to_5t_out(entry, &tuple))
++		{
++			NXP_LOG_ERROR("Couldn't get output tuple\n");
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_DEC_TTL))
++		{
++			ct6_cmd->flags |= oal_htons(CTCMD_FLAGS_TTL_DECREMENT);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SIP_ADDR))
++		{
++			(void)memcpy(ct6_cmd->daddr_reply, &tuple.src_ip.v6, 16);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DIP_ADDR))
++		{
++			(void)memcpy(ct6_cmd->saddr_reply, &tuple.dst_ip.v6, 16);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SPORT))
++		{
++			ct6_cmd->dport_reply = oal_htons(tuple.sport);
++		}
++
++		if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DPORT))
++		{
++			ct6_cmd->sport_reply = oal_htons(tuple.dport);
++		}
++	}
++
++	return ret;
++}
++
++/**
++ * @brief		Callback for routing table entries (IPv4).
++ * @details		Function prototype of this function must conform to
++ *				routing table callback prototype. See [pfe_rtable.c].
++ * @param[in]	entry	Pointer to affected routing table entry.
++ * @param[out]	event	What happened with the entry.
++ *
++ * @warning		This callback is called from routing table mutex locked context.
++ *				Do NOT call functions that lock routing table mutex in this callback.
++ *				It would cause a deadlock.
++ */
++static void fci_connections_ipv4_cbk(pfe_rtable_entry_t *entry, pfe_rtable_cbk_event_t event)
++{
++	errno_t ret = -1;
++	fci_msg_t msg = {0};
++	fpp_ct_cmd_t *msg_payload = (fpp_ct_cmd_t *)msg.msg_cmd.payload;
++	fci_core_client_t *client = NULL;
++	pfe_rtable_entry_t *rep_entry = NULL;
++
++#if defined(PFE_CFG_NULL_ARG_CHECK)
++	if (unlikely(NULL == entry))
++	{
++		NXP_LOG_ERROR("NULL argument received\n");
++	}
++	else
++#endif /* PFE_CFG_NULL_ARG_CHECK */
++	{
++		/*	FCI-created routing entries use refptr to store FCI client reference */
++		client = (fci_core_client_t *)pfe_rtable_entry_get_refptr(entry);
++		if (NULL == client)
++		{
++			NXP_LOG_DEBUG("NULL refptr. This routing entry was created by a NULL FCI client.\n");
++			return;
++		}
++
++		/*	prepare message general data */
++		msg.type = FCI_MSG_CMD;
++		msg.msg_cmd.code = FPP_CMD_IPV4_CONNTRACK_CHANGE;
++		msg.msg_cmd.length = sizeof(fpp_ct_cmd_t);
++		if (RTABLE_ENTRY_TIMEOUT == event)
++		{
++			msg_payload->action = FPP_ACTION_REMOVED;
++		}
++		else
++		{
++			NXP_LOG_WARNING("Routing entry event %d not mapped to any FCI event action\n.", event);
++			return;
++		}
++
++		/*	prepare message payload data */
++		rep_entry = pfe_rtable_entry_get_child(NULL, entry);  /* NULL is OK. It is assumed the rtable mutex is already locked. */
++		ret = fci_connections_entry_to_ipv4_cmd(entry, rep_entry, msg_payload);
++		pfe_rtable_entry_free(NULL, rep_entry);  /* NULL is OK. It is assumed the rtable mutex is already locked. */
++		if (EOK != ret)
++		{
++			NXP_LOG_WARNING("Can't convert entry to FCI cmd: %d\n", ret);
++			return;
++		}
++
++		/*	send unsolicited FCI event message */
++		ret = fci_core_client_send(client, &msg, NULL);
++		if (EOK != ret)
++		{
++			NXP_LOG_WARNING("Could not notify FCI client.\n");
++		}
++	}
++}
++
++/**
++ * @brief		Callback for routing table entries (IPv6).
++ * @details		Function prototype of this function must conform to
++ *				routing table callback prototype. See [pfe_rtable.c].
++ * @param[in]	entry	Pointer to affected routing table entry.
++ * @param[out]	event	What happened with the entry.
++ *
++ * @warning		This callback is called from routing table mutex locked context.
++ *				Do NOT call functions that lock routing table mutex in this callback.
++ *				It would cause a deadlock.
++ */
++static void fci_connections_ipv6_cbk(pfe_rtable_entry_t *entry, pfe_rtable_cbk_event_t event)
++{
++	errno_t ret = -1;
++	fci_msg_t msg = {0};
++	fpp_ct6_cmd_t *msg_payload = (fpp_ct6_cmd_t *)msg.msg_cmd.payload;
++	fci_core_client_t *client = NULL;
++	pfe_rtable_entry_t *rep_entry = NULL;
++
++#if defined(PFE_CFG_NULL_ARG_CHECK)
++	if (unlikely(NULL == entry))
++	{
++		NXP_LOG_ERROR("NULL argument received\n");
++	}
++	else
++#endif /* PFE_CFG_NULL_ARG_CHECK */
++	{
++		/*	FCI-created routing entries use refptr to store FCI client reference */
++		client = (fci_core_client_t *)pfe_rtable_entry_get_refptr(entry);
++		if (NULL == client)
++		{
++			NXP_LOG_DEBUG("NULL refptr. This routing entry was created by a NULL FCI client.\n");
++			return;
++		}
++
++		/*	prepare message general data */
++		msg.type = FCI_MSG_CMD;
++		msg.msg_cmd.code = FPP_CMD_IPV6_CONNTRACK_CHANGE;
++		msg.msg_cmd.length = sizeof(fpp_ct6_cmd_t);
++		if (RTABLE_ENTRY_TIMEOUT == event)
++		{
++			msg_payload->action = FPP_ACTION_REMOVED;
++		}
++		else
++		{
++			NXP_LOG_WARNING("Routing entry event %d not mapped to any FCI event action\n.", event);
++			return;
++		}
++
++		/*	prepare message payload data */
++		rep_entry = pfe_rtable_entry_get_child(NULL, entry);  /* NULL is OK. It is assumed the rtable mutex is already locked. */
++		ret = fci_connections_entry_to_ipv6_cmd(entry, rep_entry, msg_payload);
++		pfe_rtable_entry_free(NULL, rep_entry);  /* NULL is OK. It is assumed the rtable mutex is already locked. */
++		if (EOK != ret)
++		{
++			NXP_LOG_WARNING("Can't convert entry to FCI cmd: %d\n", ret);
++			return;
++		}
++
++		/*	send unsolicited FCI event message */
++		ret = fci_core_client_send(client, &msg, NULL);
++		if (EOK != ret)
++		{
++			NXP_LOG_WARNING("Could not notify FCI client.\n");
++		}
++	}
++}
++
+ /**
+  * @brief			Process FPP_CMD_IPV4_CONNTRACK/FPP_CMD_IPV6_CONNTRACK commands
+  * @param[in]		ipv6 If TRUE then message carries FPP_CMD_IPV6_CONNTRACK. Else it contains FPP_CMD_IPV4_CONNTRACK.
+@@ -846,14 +1200,9 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 	fpp_ct_cmd_t *ct_cmd, *ct_reply;
+ 	fpp_ct6_cmd_t *ct6_cmd, *ct6_reply;
+ 	errno_t ret = EOK;
+-	pfe_ip_addr_t sip, dip;
+-	uint32_t route_id = 0U;
+ 	pfe_rtable_entry_t *entry = NULL, *rep_entry = NULL;
+ 	pfe_5_tuple_t tuple;
+-	pfe_ct_route_actions_t actions;
+ 	pfe_phy_if_t *phy_if = NULL, *phy_if_reply = NULL;
+-	uint16_t vlan;
+-	pfe_ct_conntrack_stats_t stats = {0U};
+ 
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+ 	if (unlikely((NULL == msg) || (NULL == fci_ret) || (NULL == reply_buf) || (NULL == reply_len)))
+@@ -963,9 +1312,9 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 					/*	Add entry into the routing table */
+ 					if (NULL != entry)
+ 					{
+-						/*	Remember that there is an associated entry */
+-						pfe_rtable_entry_set_child(entry, rep_entry);
++						/*	Remember the issuing FCI client and the associated reply entry */
+ 						pfe_rtable_entry_set_refptr(entry, msg->client);
++						pfe_rtable_entry_set_child(entry, rep_entry);
+ 
+ 						ret = pfe_rtable_add_entry(fci_context->rtable, entry);
+ 						if (EEXIST == ret)
+@@ -1024,6 +1373,9 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 					/*	Add entry also for reply direction if requested */
+ 					if (NULL != rep_entry)
+ 					{
++						/*	Remember the issuing FCI client */
++						pfe_rtable_entry_set_refptr(rep_entry, msg->client);
++
+ 						ret = pfe_rtable_add_entry(fci_context->rtable, rep_entry);
+ 						if (EEXIST == ret)
+ 						{
+@@ -1251,177 +1603,22 @@ static errno_t fci_connections_ipvx_ct_cmd(bool_t ipv6, const fci_msg_t *msg, ui
+ 						}
+ 					}
+ 
++					/* Get partner of the entry. */
++					rep_entry = pfe_rtable_entry_get_child(fci_context->rtable, entry);
++
+ 					ct6_reply = (fpp_ct6_cmd_t *)(reply_buf);
+ 					ct_reply = (fpp_ct_cmd_t *)(reply_buf);
+ 
+-					/*	Set the reply length */
++					/*	Set the reply length + reply data */
+ 					if (TRUE == ipv6)
+ 					{
+ 						*reply_len = sizeof(fpp_ct6_cmd_t);
++						ret = fci_connections_entry_to_ipv6_cmd(entry, rep_entry, ct6_reply);
+ 					}
+ 					else
+ 					{
+ 						*reply_len = sizeof(fpp_ct_cmd_t);
+-					}
+-
+-					/*	Prepare statistics data */
+-					ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(entry));
+-					if (EOK != ret)
+-					{
+-						NXP_LOG_ERROR("Failed to get routing entry statistics: %d", ret);
+-					}
+-
+-					/*	Build reply structure */
+-					pfe_rtable_entry_get_sip(entry, &sip);
+-					pfe_rtable_entry_get_dip(entry, &dip);
+-					(void)pfe_rtable_entry_get_route_id(entry, &route_id);
+-					vlan = pfe_rtable_entry_get_out_vlan(entry);
+-
+-					if (TRUE == ipv6)
+-					{
+-						(void)memcpy(ct6_reply->saddr, &sip.v6, 16);
+-						(void)memcpy(ct6_reply->daddr, &dip.v6, 16);
+-						ct6_reply->sport = oal_htons(pfe_rtable_entry_get_sport(entry));
+-						ct6_reply->dport = oal_htons(pfe_rtable_entry_get_dport(entry));
+-						ct6_reply->vlan = oal_htons(vlan);
+-						(void)memcpy(ct6_reply->saddr_reply, ct6_reply->daddr, 16);
+-						(void)memcpy(ct6_reply->daddr_reply, ct6_reply->saddr, 16);
+-						ct6_reply->sport_reply = ct6_reply->dport;
+-						ct6_reply->dport_reply = ct6_reply->sport;
+-						ct6_reply->protocol = oal_ntohs(pfe_rtable_entry_get_proto(entry));
+-						ct6_reply->flags = 0U;
+-						ct6_reply->route_id = route_id;
+-						ct6_reply->stats.hit = oal_htonl(stats.hit);
+-						ct6_reply->stats.hit_bytes = oal_htonl(stats.hit_bytes);
+-					}
+-					else
+-					{
+-						(void)memcpy(&ct_reply->saddr, &sip.v4, 4);
+-						(void)memcpy(&ct_reply->daddr, &dip.v4, 4);
+-						ct_reply->sport = oal_htons(pfe_rtable_entry_get_sport(entry));
+-						ct_reply->dport = oal_htons(pfe_rtable_entry_get_dport(entry));
+-						ct_reply->vlan = oal_htons(vlan);
+-						(void)memcpy(&ct_reply->saddr_reply, &ct_reply->daddr, 4);
+-						(void)memcpy(&ct_reply->daddr_reply, &ct_reply->saddr, 4);
+-						ct_reply->sport_reply = ct_reply->dport;
+-						ct_reply->dport_reply = ct_reply->sport;
+-						ct_reply->protocol = oal_ntohs(pfe_rtable_entry_get_proto(entry));
+-						ct_reply->flags = 0U;
+-						ct_reply->route_id = route_id;
+-						ct_reply->stats.hit = oal_htonl(stats.hit);
+-						ct_reply->stats.hit_bytes = oal_htonl(stats.hit_bytes);
+-					}
+-
+-					/*	Check if reply direction does exist */
+-					rep_entry = pfe_rtable_entry_get_child(fci_context->rtable, entry);
+-					if (NULL == rep_entry)
+-					{
+-						/*	This means that entry in 'reply' direction has not been requested
+-							so the appropriate flag shall be set to indicate that. */
+-						if (TRUE == ipv6)
+-						{
+-							ct6_reply->flags |= oal_htons(CTCMD_FLAGS_REP_DISABLED);
+-						}
+-						else
+-						{
+-							ct_reply->flags |= oal_htons(CTCMD_FLAGS_REP_DISABLED);
+-						}
+-					}
+-					else
+-					{
+-						/*	Prepare reply direction statistics data */
+-						ret = pfe_rtable_get_stats(fci_context->rtable, &stats, pfe_rtable_entry_get_stats_index(rep_entry));
+-						if (EOK != ret)
+-						{
+-							NXP_LOG_ERROR("Failed to get reply routing entry statistics: %d", ret);
+-						}
+-
+-						/*	Prepare reply direction vlan data */
+-						vlan = pfe_rtable_entry_get_out_vlan(rep_entry);
+-						if (TRUE == ipv6)
+-						{
+-							ct6_reply->vlan_reply = oal_htons(vlan);
+-							ct6_reply->stats_reply.hit = oal_htonl(stats.hit);
+-							ct6_reply->stats_reply.hit_bytes = oal_htonl(stats.hit_bytes);
+-						}
+-						else
+-						{
+-							ct_reply->vlan_reply = oal_htons(vlan);
+-							ct_reply->stats_reply.hit = oal_htonl(stats.hit);
+-							ct_reply->stats_reply.hit_bytes = oal_htonl(stats.hit_bytes);
+-						}
+-					}
+-
+-					/*
+-						Check if some modifications (NAT) are enabled. If so, update the
+-						'reply' direction values as defined by the FCI API. Note that
+-						modification are enabled when entry is being added. See
+-						FPP_ACTION_REGISTER and fci_connections_create_entry().
+-					*/
+-					actions = pfe_rtable_entry_get_action_flags(entry);
+-					if (EOK != pfe_rtable_entry_to_5t_out(entry, &tuple))
+-					{
+-						NXP_LOG_ERROR("Couldn't get output tuple\n");
+-					}
+-
+-					if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_DEC_TTL))
+-					{
+-						if (TRUE == ipv6)
+-						{
+-							ct6_reply->flags |= oal_htons(CTCMD_FLAGS_TTL_DECREMENT);
+-						}
+-						else
+-						{
+-							ct_reply->flags |= oal_htons(CTCMD_FLAGS_TTL_DECREMENT);
+-						}
+-					}
+-
+-					if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SIP_ADDR))
+-					{
+-						if (TRUE == ipv6)
+-						{
+-							(void)memcpy(ct6_reply->daddr_reply, &tuple.src_ip.v6, 16);
+-						}
+-						else
+-						{
+-							(void)memcpy(&ct_reply->daddr_reply, &tuple.src_ip.v4, 4);
+-						}
+-					}
+-
+-					if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DIP_ADDR))
+-					{
+-						if (TRUE == ipv6)
+-						{
+-							(void)memcpy(ct6_reply->saddr_reply, &tuple.dst_ip.v6, 16);
+-						}
+-						else
+-						{
+-							(void)memcpy(&ct_reply->saddr_reply, &tuple.dst_ip.v4, 4);
+-						}
+-					}
+-
+-					if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_SPORT))
+-					{
+-						if (TRUE == ipv6)
+-						{
+-							ct6_reply->dport_reply = oal_htons(tuple.sport);
+-						}
+-						else
+-						{
+-							ct_reply->dport_reply = oal_htons(tuple.sport);
+-						}
+-					}
+-
+-					if (0U != ((uint32_t)actions & (uint32_t)RT_ACT_CHANGE_DPORT))
+-					{
+-						if (TRUE == ipv6)
+-						{
+-							ct6_reply->sport_reply = oal_htons(tuple.dport);
+-						}
+-						else
+-						{
+-							ct_reply->sport_reply = oal_htons(tuple.dport);
+-						}
++						ret = fci_connections_entry_to_ipv4_cmd(entry, rep_entry, ct_reply);
+ 					}
+ 
+ 					/*	Notify rtable module we are done working with this rtable entry */
+@@ -1587,124 +1784,6 @@ errno_t fci_connections_ipv4_timeout_cmd(fci_msg_t *msg, uint16_t *fci_ret, fpp_
+ 	return ret;
+ }
+ 
+-/**
+- * @brief		Remove a single connection, inform clients
+- * @param[in]	entry The routing table entry to be removed
+- * @note		Function is only called within the FCI worker thread context.
+- * @note		Must run with route DB protected against concurrent accesses.
+- */
+-errno_t fci_connections_drop_one(pfe_rtable_entry_t *entry)
+-{
+-	const fci_t *fci_context = (fci_t *)&__context;
+-	fpp_ct_cmd_t *ct_cmd = NULL;
+-	fpp_ct6_cmd_t *ct6_cmd = NULL;
+-	fci_msg_t msg;
+-	fci_core_client_t *client;
+-	pfe_5_tuple_t tuple;
+-	errno_t ret;
+-
+-#if defined(PFE_CFG_NULL_ARG_CHECK)
+-	if (unlikely((NULL == entry)))
+-	{
+-		NXP_LOG_ERROR("NULL argument received\n");
+-		ret = EINVAL;
+-	}
+-	else if (unlikely(FALSE == fci_context->fci_initialized))
+-	{
+-    	NXP_LOG_ERROR("Context not initialized\n");
+-		ret = EPERM;
+-	}
+-	else
+-#endif /* PFE_CFG_NULL_ARG_CHECK */
+-	{
+-		ret = pfe_rtable_entry_to_5t(entry, &tuple);
+-		if (EOK != ret)
+-		{
+-			NXP_LOG_ERROR("Can't convert entry to 5 tuple: %d\n", ret);
+-		}
+-		else
+-		{
+-			(void)memset(&msg, 0, sizeof(fci_msg_t));
+-			msg.type = FCI_MSG_CMD;
+-
+-			if (TRUE == tuple.src_ip.is_ipv4)
+-			{
+-		#if (PFE_CFG_VERBOSITY_LEVEL >= 8)
+-				/*	IPv4 */
+-				NXP_LOG_DEBUG("Removing IPv4 connection:\n%s\n", fci_connections_entry_to_str(entry));
+-		#endif /* PFE_CFG_VERBOSITY_LEVEL */
+-
+-				client = (fci_core_client_t *)pfe_rtable_entry_get_refptr(entry);
+-				if (NULL != client)
+-				{
+-					msg.msg_cmd.code = FPP_CMD_IPV4_CONNTRACK;
+-					ct_cmd = (fpp_ct_cmd_t *)msg.msg_cmd.payload;
+-					ct_cmd->action = FPP_ACTION_REMOVED;
+-
+-					(void)memcpy(&ct_cmd->saddr, &tuple.src_ip.v4, 4);
+-					(void)memcpy(&ct_cmd->daddr, &tuple.dst_ip.v4, 4);
+-					ct_cmd->sport = oal_htons(tuple.sport);
+-					ct_cmd->dport = oal_htons(tuple.dport);
+-					ct_cmd->protocol = oal_htons(tuple.proto);
+-
+-					ret = fci_core_client_send(client, &msg, NULL);
+-					if (EOK != ret)
+-					{
+-						NXP_LOG_ERROR("Could not notify FCI client\n");
+-					}
+-				}
+-				else
+-				{
+-					; /*	No client ID, notification not required */
+-				}
+-			}
+-			else
+-			{
+-		#if (PFE_CFG_VERBOSITY_LEVEL >= 8)
+-				/*	IPv6 */
+-				NXP_LOG_DEBUG("Removing IPv6 connection:\n%s\n", fci_connections_entry_to_str(entry));
+-		#endif /* PFE_CFG_VERBOSITY_LEVEL */
+-
+-				client = (fci_core_client_t *)pfe_rtable_entry_get_refptr(entry);
+-				if (NULL != client)
+-				{
+-					msg.msg_cmd.code = FPP_CMD_IPV6_CONNTRACK;
+-					ct6_cmd = (fpp_ct6_cmd_t *)msg.msg_cmd.payload;
+-					ct6_cmd->action = FPP_ACTION_REMOVED;
+-
+-					(void)memcpy(&ct6_cmd->saddr[0], &tuple.src_ip.v6, 16);
+-					(void)memcpy(&ct6_cmd->daddr[0], &tuple.dst_ip.v6, 16);
+-					ct6_cmd->sport = oal_htons(tuple.sport);
+-					ct6_cmd->dport = oal_htons(tuple.dport);
+-					ct6_cmd->protocol = oal_htons(tuple.proto);
+-
+-					ret = fci_core_client_send(client, &msg, NULL);
+-					if (EOK != ret)
+-					{
+-						NXP_LOG_ERROR("Could not notify FCI client\n");
+-					}
+-				}
+-				else
+-				{
+-					; /*	No client ID, notification not required */
+-				}
+-			}
+-
+-			/*	Remove entry from the routing table */
+-			ret = pfe_rtable_del_entry(fci_context->rtable, entry);
+-			if (EOK != ret)
+-			{
+-				NXP_LOG_ERROR("Fatal: Can't remove rtable entry = memory leak\n");
+-			}
+-
+-			/*	Release (deallocation) of the entry is done by the caller. */
+-
+-		}
+-	}
+-
+-	return ret;
+-}
+-
+ /**
+  * @brief		Remove all connections, inform clients, resolve dependencies
+  * @note		Function is only called within the FCI worker thread context.
+@@ -1729,7 +1808,7 @@ void fci_connections_drop_all(void)
+ 		entry = pfe_rtable_get_first(fci_context->rtable, RTABLE_CRIT_ALL, NULL);
+ 		while (NULL != entry)
+ 		{
+-			ret = fci_connections_drop_one(entry);
++			ret = pfe_rtable_del_entry(fci_context->rtable, entry);
+ 			if (EOK != ret)
+ 			{
+ 				NXP_LOG_WARNING("Couldn't properly drop a connection: %d\n", ret);
+diff --git a/sw/fci/src/fci_internal.h b/sw/fci/src/fci_internal.h
+index 92f9ec2..d6926aa 100644
+--- a/sw/fci/src/fci_internal.h
++++ b/sw/fci/src/fci_internal.h
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2018-2022 NXP
++ *  Copyright 2018-2023 NXP
+  *
+  *  SPDX-License-Identifier: GPL-2.0
+  *
+@@ -114,7 +114,6 @@ errno_t fci_routes_drop_one(fci_rt_db_entry_t *route);
+ void fci_routes_drop_all(void);
+ void fci_routes_drop_all_ipv4(void);
+ void fci_routes_drop_all_ipv6(void);
+-errno_t fci_connections_drop_one(pfe_rtable_entry_t *entry);
+ void fci_connections_drop_all(void);
+ errno_t fci_connections_set_default_timeout(uint8_t ip_proto, uint32_t timeout);
+ uint32_t fci_connections_get_default_timeout(uint8_t ip_proto);
+diff --git a/sw/fci/src/fci_routes.c b/sw/fci/src/fci_routes.c
+index 9aab5e5..068ad6c 100644
+--- a/sw/fci/src/fci_routes.c
++++ b/sw/fci/src/fci_routes.c
+@@ -64,7 +64,7 @@ static void fci_routes_remove_related_connections(fci_rt_db_entry_t *route)
+ 		entry = pfe_rtable_get_first(fci_context->rtable, RTABLE_CRIT_BY_ROUTE_ID, &route->id);
+ 		while (NULL != entry)
+ 		{
+-			ret = fci_connections_drop_one(entry);
++			ret = pfe_rtable_del_entry(fci_context->rtable, entry);
+ 			if (EOK != ret)
+ 			{
+ 				NXP_LOG_WARNING("Couldn't properly drop a connection: %d\n", ret);
+@@ -378,7 +378,7 @@ errno_t fci_routes_drop_one(fci_rt_db_entry_t *route)
+ 			ret = fci_core_client_send((fci_core_client_t *)route->refptr, &msg, NULL);
+ 			if (EOK != ret)
+ 			{
+-				NXP_LOG_ERROR("Could not notify FCI client\n");
++				NXP_LOG_WARNING("Could not notify FCI client\n");
+ 			}
+ 		}
+ 
+diff --git a/sw/libfci_cli/Makefile b/sw/libfci_cli/Makefile
+index 1f2995e..4be6bea 100644
+--- a/sw/libfci_cli/Makefile
++++ b/sw/libfci_cli/Makefile
+@@ -61,8 +61,8 @@ ifeq ($(TARGET_OS),LINUX)
+ 	GLOBAL_CCFLAGS := $(shell echo $(GLOBAL_CCFLAGS))
+ 	
+ 	CLI_TARGET_OS = "LNX"
+-	CLI_DRV_VERSION = "1.3.0 RC2"
+-	CLI_DRV_COMMIT_HASH = "M4_DRIVER_COMMIT_HASH"
++	CLI_DRV_VERSION = "1.3.0"
++	CLI_DRV_COMMIT_HASH = "ae7a32e25179843691f62704b850ed1168a3d15c"
+ else
+ #This branch by defaut means QNX.
+ 	LIBS += -L../xfci/libfci/build/$(PLATFORM)-$(BUILD_PROFILE) -l:libfci.a
+diff --git a/sw/libfci_cli/src/daemon/daemon_fciev2txt.c b/sw/libfci_cli/src/daemon/daemon_fciev2txt.c
+index eee37a1..5b4c679 100644
+--- a/sw/libfci_cli/src/daemon/daemon_fciev2txt.c
++++ b/sw/libfci_cli/src/daemon/daemon_fciev2txt.c
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2020-2022 NXP
++ *  Copyright 2020-2023 NXP
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+@@ -64,6 +64,8 @@ static int fciev_snprintf(char**const pp_rtn_dst, int* p_rtn_dst_ln, const char*
+ 
+ static int fciev_print_ip_route(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload);
+ static int fciev_print_health_monitor_event(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload);
++static int fciev_print_ipv4_conntrack_change(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload);
++static int fciev_print_ipv6_conntrack_change(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload);
+ 
+ /* ==== PRIVATE FUNCTIONS : aux ============================================ */
+ 
+@@ -92,6 +94,14 @@ static int fciev_print_payload_decoded(char**const pp_rtn_dst, int* p_rtn_dst_ln
+                 rtn = fciev_print_health_monitor_event(pp_rtn_dst, p_rtn_dst_ln, len, payload);
+             break;
+             
++            case FPP_CMD_IPV4_CONNTRACK_CHANGE:
++                rtn = fciev_print_ipv4_conntrack_change(pp_rtn_dst, p_rtn_dst_ln, len, payload);
++            break;
++            
++            case FPP_CMD_IPV6_CONNTRACK_CHANGE:
++                rtn = fciev_print_ipv6_conntrack_change(pp_rtn_dst, p_rtn_dst_ln, len, payload);
++            break;
++            
+             default:
+                 rtn = fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln, "  libfci_cli version " CLI_VERSION_STRING " cannot decode payload of this FCI event \n");
+             break;
+@@ -125,6 +135,14 @@ static const char* fciev_fcode2txt(unsigned short fcode)
+             p_txt = TXT_STRINGIFY(FPP_CMD_HEALTH_MONITOR_EVENT);
+         break;
+         
++        case FPP_CMD_IPV4_CONNTRACK_CHANGE:
++            p_txt = TXT_STRINGIFY(FPP_CMD_IPV4_CONNTRACK_CHANGE);
++        break;
++        
++        case FPP_CMD_IPV6_CONNTRACK_CHANGE:
++            p_txt = TXT_STRINGIFY(FPP_CMD_IPV6_CONNTRACK_CHANGE);
++        break;
++        
+         default:
+             p_txt = "---";
+         break;
+@@ -284,6 +302,128 @@ static int fciev_print_health_monitor_event(char** pp_rtn_dst, int* p_rtn_dst_ln
+            );
+ }
+ 
++/* print decoded FPP_CMD_IPV4_CONNTRACK_CHANGE ; NOTE: non-zero len and non-NULL payload are assumed */
++static int fciev_print_ipv4_conntrack_change(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload)
++{
++    UNUSED(len);  /* just to suppress gcc warning */
++    
++    const fpp_ct_cmd_t* p_ct = (fpp_ct_cmd_t*)(payload);
++    
++    const uint32_t s   = demo_ct_ld_get_saddr(p_ct);
++    const uint8_t* p_s = (const uint8_t*)(&s);
++    
++    const uint32_t d   = demo_ct_ld_get_daddr(p_ct);
++    const uint8_t* p_d = (const uint8_t*)(&d);
++    
++    const uint32_t sr   = demo_ct_ld_get_saddr_reply(p_ct);
++    const uint8_t* p_sr = (const uint8_t*)(&sr);
++    
++    const uint32_t dr   = demo_ct_ld_get_daddr_reply(p_ct);
++    const uint8_t* p_dr = (const uint8_t*)(&dr);
++    
++    return fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln,
++                "  action                = %"PRIu16" (%s)\n"
++                "  saddr                 = %"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n"
++                "  daddr                 = %"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n"
++                "  sport                 = %"PRIu16"\n"
++                "  dport                 = %"PRIu16"\n"
++                "  saddr_reply           = %"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n"
++                "  daddr_reply           = %"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n"
++                "  sport_reply           = %"PRIu16"\n"
++                "  dport_reply           = %"PRIu16"\n"
++                "  protocol              = %"PRIu16"\n"
++                "  flags                 = 0x%04"PRIx16"\n"
++                "  route_id              = %"PRIu32"\n"
++                "  route_id_reply        = %"PRIu32"\n"
++                "  vlan                  = %"PRIu16"\n"
++                "  vlan_reply            = %"PRIu16"\n"
++                "  stats.hit             = %"PRIu32"\n"
++                "  stats.hit_bytes       = %"PRIu32"\n"
++                "  stats_reply.hit       = %"PRIu32"\n"
++                "  stats_reply.hit_bytes = %"PRIu32"\n",
++                p_ct->action, fciev_action2txt(p_ct->action),
++                p_s[3],p_s[2],p_s[1],p_s[0],
++                p_d[3],p_d[2],p_d[1],p_d[0],
++                demo_ct_ld_get_sport(p_ct),
++                demo_ct_ld_get_dport(p_ct),
++                p_sr[3],p_sr[2],p_sr[1],p_sr[0],
++                p_dr[3],p_dr[2],p_dr[1],p_dr[0],
++                demo_ct_ld_get_sport_reply(p_ct),
++                demo_ct_ld_get_dport_reply(p_ct),
++                demo_ct_ld_get_protocol(p_ct),
++                demo_ct_ld_get_flags(p_ct),
++                demo_ct_ld_get_route_id(p_ct),
++                demo_ct_ld_get_route_id_reply(p_ct),
++                demo_ct_ld_get_vlan(p_ct),
++                demo_ct_ld_get_vlan_reply(p_ct),
++                demo_ct_ld_get_stt_hit(p_ct),
++                demo_ct_ld_get_stt_hit_bytes(p_ct),
++                demo_ct_ld_get_stt_reply_hit(p_ct),
++                demo_ct_ld_get_stt_reply_hit_bytes(p_ct)
++           );
++}
++
++/* print decoded FPP_CMD_IPV6_CONNTRACK_CHANGE ; NOTE: non-zero len and non-NULL payload are assumed */
++static int fciev_print_ipv6_conntrack_change(char** pp_rtn_dst, int* p_rtn_dst_ln, const unsigned short len, const unsigned short* payload)
++{
++    UNUSED(len);  /* just to suppress gcc warning */
++    
++    const fpp_ct6_cmd_t* p_ct6 = (fpp_ct6_cmd_t*)(payload);
++    
++    const uint32_t* p_s32 = demo_ct6_ld_get_saddr(p_ct6);
++    const uint8_t*  p_s   = (const uint8_t*)(p_s32);
++    
++    const uint32_t* p_d32 = demo_ct6_ld_get_daddr(p_ct6);
++    const uint8_t*  p_d   = (const uint8_t*)(p_d32);
++    
++    const uint32_t* p_sr32 = demo_ct6_ld_get_saddr_reply(p_ct6);
++    const uint8_t*  p_sr   = (const uint8_t*)(p_sr32);
++    
++    const uint32_t* p_dr32 = demo_ct6_ld_get_daddr_reply(p_ct6);
++    const uint8_t*  p_dr   = (const uint8_t*)(p_dr32);
++    
++    return fciev_snprintf(pp_rtn_dst, p_rtn_dst_ln,
++                "  action                = %"PRIu16" (%s)\n"
++                "  saddr                 = %02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8"\n"
++                "  daddr                 = %02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8"\n"
++                "  sport                 = %"PRIu16"\n"
++                "  dport                 = %"PRIu16"\n"
++                "  saddr_reply           = %02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8"\n"
++                "  daddr_reply           = %02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8":%02"PRIx8"%02"PRIx8"\n"
++                "  sport_reply           = %"PRIu16"\n"
++                "  dport_reply           = %"PRIu16"\n"
++                "  protocol              = %"PRIu16"\n"
++                "  flags                 = 0x%04"PRIx16"\n"
++                "  route_id              = %"PRIu32"\n"
++                "  route_id_reply        = %"PRIu32"\n"
++                "  vlan                  = %"PRIu16"\n"
++                "  vlan_reply            = %"PRIu16"\n"
++                "  stats.hit             = %"PRIu32"\n"
++                "  stats.hit_bytes       = %"PRIu32"\n"
++                "  stats_reply.hit       = %"PRIu32"\n"
++                "  stats_reply.hit_bytes = %"PRIu32"\n",
++                p_ct6->action, fciev_action2txt(p_ct6->action),
++                p_s[3],p_s[2],p_s[1],p_s[0], p_s[7],p_s[6],p_s[5],p_s[4], p_s[11],p_s[10],p_s[9],p_s[8], p_s[15],p_s[14],p_s[13],p_s[12],
++                p_d[3],p_d[2],p_d[1],p_d[0], p_d[7],p_d[6],p_d[5],p_d[4], p_d[11],p_d[10],p_d[9],p_d[8], p_d[15],p_d[14],p_d[13],p_d[12],
++                demo_ct6_ld_get_sport(p_ct6),
++                demo_ct6_ld_get_dport(p_ct6),
++                p_sr[3],p_sr[2],p_sr[1],p_sr[0], p_sr[7],p_sr[6],p_sr[5],p_sr[4], p_sr[11],p_sr[10],p_sr[9],p_sr[8], p_sr[15],p_sr[14],p_sr[13],p_sr[12],
++                p_dr[3],p_dr[2],p_dr[1],p_dr[0], p_dr[7],p_dr[6],p_dr[5],p_dr[4], p_dr[11],p_dr[10],p_dr[9],p_dr[8], p_dr[15],p_dr[14],p_dr[13],p_dr[12],
++                demo_ct6_ld_get_sport_reply(p_ct6),
++                demo_ct6_ld_get_dport_reply(p_ct6),
++                demo_ct6_ld_get_protocol(p_ct6),
++                demo_ct6_ld_get_flags(p_ct6),
++                demo_ct6_ld_get_route_id(p_ct6),
++                demo_ct6_ld_get_route_id_reply(p_ct6),
++                demo_ct6_ld_get_vlan(p_ct6),
++                demo_ct6_ld_get_vlan_reply(p_ct6),
++                demo_ct6_ld_get_stt_hit(p_ct6),
++                demo_ct6_ld_get_stt_hit_bytes(p_ct6),
++                demo_ct6_ld_get_stt_reply_hit(p_ct6),
++                demo_ct6_ld_get_stt_reply_hit_bytes(p_ct6)
++           );
++}
++
+ /* ==== PUBLIC FUNCTIONS =================================================== */ 
+ 
+ /* print txt representation of FCI event */
+diff --git a/sw/libfci_cli/src/libfci_cli_common.h b/sw/libfci_cli/src/libfci_cli_common.h
+index e7efea1..c63d336 100644
+--- a/sw/libfci_cli/src/libfci_cli_common.h
++++ b/sw/libfci_cli/src/libfci_cli_common.h
+@@ -1,5 +1,5 @@
+ /* =========================================================================
+- *  Copyright 2020-2022 NXP
++ *  Copyright 2020-2023 NXP
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+@@ -43,7 +43,7 @@
+ 
+ /* app version */
+ #define CLI_VERSION_MAJOR   "2"
+-#define CLI_VERSION_MINOR   "11"
++#define CLI_VERSION_MINOR   "12"
+ #define CLI_VERSION_PATCH   "0"
+ #define CLI_VERSION_STRING  CLI_VERSION_MAJOR"."CLI_VERSION_MINOR"."CLI_VERSION_PATCH
+ 
+diff --git a/sw/linux-pfeng/pfeng-bman.c b/sw/linux-pfeng/pfeng-bman.c
+index 4ae8bf0..9abaa56 100644
+--- a/sw/linux-pfeng/pfeng-bman.c
++++ b/sw/linux-pfeng/pfeng-bman.c
+@@ -108,6 +108,53 @@ err:
+ 	return -ENOMEM;
+ }
+ 
++static void pfeng_bman_skb_dump(struct pfeng_tx_chnl_pool *pool, u32 base_idx, struct net_device *ndev, void (*dbg_print)(void *ndev, const char *fmt, ...))
++{
++	struct sk_buff *skb = NULL;
++	u32 idx;
++	int i;
++
++	for (i = 0, idx = base_idx; i < MAX_SKB_FRAGS; i++) {
++		dbg_print(ndev, "%3d: (p0x%llx/v0x%px, %d, 0x%02x),\n", idx,
++			  pool->tx_tbl[idx].pa_addr, pool->tx_tbl[idx].skb,
++			  pool->tx_tbl[idx].size, pool->tx_tbl[idx].flags);
++
++		if (pool->tx_tbl[idx].skb) {
++			skb = pool->tx_tbl[idx].skb;
++			break;
++		}
++
++		idx = (idx > 0) ? idx - 1 : pool->depth - 1;
++	}
++
++	if (unlikely(i == 0)) {
++		idx = (base_idx > 0) ? base_idx - 1 : pool->depth - 1;
++		dbg_print(ndev, "%3d: (p0x%llx/v0x%px, %d, 0x%02x),\n", idx,
++			  pool->tx_tbl[idx].pa_addr, pool->tx_tbl[idx].skb,
++			  pool->tx_tbl[idx].size, pool->tx_tbl[idx].flags);
++	}
++
++	if (skb)
++		skb_dump(KERN_ERR, skb, false);
++}
++
++void pfeng_bman_tx_pool_dump(struct pfeng_hif_chnl *chnl, struct net_device *ndev, void (*dbg_print)(void *ndev, const char *fmt, ...))
++{
++	struct pfeng_tx_chnl_pool *pool = chnl->bman.tx_pool;
++	u32 rd = READ_ONCE(pool->rd_idx) & pool->idx_mask;
++	u32 wr = READ_ONCE(pool->wr_idx) & pool->idx_mask;
++
++	dbg_print(ndev, "depth: %d, rd: %d, wr: %d,\n", pool->depth, rd, wr);
++
++	dbg_print(ndev, "Write index dump:\n");
++	pfeng_bman_skb_dump(pool, wr, ndev, dbg_print);
++
++	if (rd != wr) {
++		dbg_print(ndev, "Read index dump:\n");
++		pfeng_bman_skb_dump(pool, rd, ndev, dbg_print);
++	}
++}
++
+ int pfeng_hif_chnl_txbd_unused(struct pfeng_hif_chnl *chnl)
+ {
+ 	struct pfeng_tx_chnl_pool *pool = chnl->bman.tx_pool;
+diff --git a/sw/linux-pfeng/pfeng-debugfs.c b/sw/linux-pfeng/pfeng-debugfs.c
+index 46e9f4d..24d3d4f 100644
+--- a/sw/linux-pfeng/pfeng-debugfs.c
++++ b/sw/linux-pfeng/pfeng-debugfs.c
+@@ -116,10 +116,8 @@ int pfeng_debugfs_create(struct pfeng_priv *priv)
+ 
+ #ifdef PFE_CFG_PFE_MASTER
+ 	ADD_DEBUGFS_ENTRY("class", class, priv->dbgfs, priv->pfe_platform->classifier, &dsav);
+-#ifdef PFE_CFG_L2BRIDGE_ENABLE
+ 	ADD_DEBUGFS_ENTRY("l2br", l2br, priv->dbgfs, priv->pfe_platform->l2_bridge, &dsav);
+ 	ADD_DEBUGFS_ENTRY("l2br_domain", l2br_domain, priv->dbgfs, priv->pfe_platform->l2_bridge, &dsav);
+-#endif
+ 	ADD_DEBUGFS_ENTRY("bmu1", bmu, priv->dbgfs, priv->pfe_platform->bmu[0], &dsav);
+ 	ADD_DEBUGFS_ENTRY("bmu2", bmu, priv->dbgfs, priv->pfe_platform->bmu[1], &dsav);
+ 	ADD_DEBUGFS_ENTRY("egpi1", gpi, priv->dbgfs, priv->pfe_platform->gpi[0], &dsav);
+diff --git a/sw/linux-pfeng/pfeng-drv.c b/sw/linux-pfeng/pfeng-drv.c
+index efa14e5..81edc1c 100644
+--- a/sw/linux-pfeng/pfeng-drv.c
++++ b/sw/linux-pfeng/pfeng-drv.c
+@@ -128,6 +128,10 @@ static bool g3_rtable_in_lmem = true;
+ module_param(g3_rtable_in_lmem , bool, 0644);
+ MODULE_PARM_DESC(g3_rtable_in_lmem , "\t Allocate PFE's Routing Table in local memory on S32G3 (default: true)");
+ 
++static int lltx_res_tmu_q_id = 255;
++module_param(lltx_res_tmu_q_id, int, 0644);
++MODULE_PARM_DESC(lltx_res_tmu_q_id, "\t Reserved TMU queue ID for Host lossless Tx (LLTX), range: 0-7; use 255 to disable LLTX (default: 255)");
++
+ uint32_t get_pfeng_pfe_cfg_master_if(void)
+ {
+ 	return pfeng_pfe_cfg_master_if;
+@@ -691,6 +695,15 @@ static int pfeng_drv_probe(struct platform_device *pdev)
+ 	/* Routing Table allocation option for S32G3 */
+ 	priv->pfe_cfg->g3_rtable_in_lmem = g3_rtable_in_lmem;
+ 
++	/* reserved TMU queue ID for lossless Tx (LLTX) */
++	if (lltx_res_tmu_q_id < 0 || (lltx_res_tmu_q_id > 7 && lltx_res_tmu_q_id != PFENG_TMU_LLTX_DISABLE_MODE_Q_ID)) {
++		HM_MSG_DEV_ERR(dev, "Invalid LLTX TMU queue id (%d)\n", lltx_res_tmu_q_id);
++		ret = -EINVAL;
++		goto err_drv;
++	}
++
++	priv->pfe_cfg->lltx_res_tmu_q_id = (u8)lltx_res_tmu_q_id;
++
+ 	/* Start PFE Platform */
+ 	ret = pfe_platform_init(priv->pfe_cfg);
+ 	if (ret) {
+diff --git a/sw/linux-pfeng/pfeng-dt.c b/sw/linux-pfeng/pfeng-dt.c
+index 22a8f6b..9339867 100644
+--- a/sw/linux-pfeng/pfeng-dt.c
++++ b/sw/linux-pfeng/pfeng-dt.c
+@@ -131,8 +131,8 @@ int pfeng_dt_create_config(struct pfeng_priv *priv)
+ 	pfe_cfg->cbus_len = res->end - res->start + 1;
+ 	HM_MSG_DEV_INFO(dev, "Cbus addr 0x%llx size 0x%llx\n", pfe_cfg->cbus_base, pfe_cfg->cbus_len);
+ 
+-#ifdef PFE_CFG_PFE_MASTER
+ 	/* S32G Main GPRs */
++#ifdef PFE_CFG_PFE_MASTER
+ 	res = platform_get_resource_byname(priv->pdev, IORESOURCE_MEM, PFE_RES_NAME_S32G_MAIN_GPR);
+ 	if(unlikely(!res)) {
+ 		HM_MSG_DEV_ERR(dev, "Cannot find syscon resource by '%s', aborting\n", PFE_RES_NAME_S32G_MAIN_GPR);
+@@ -141,7 +141,17 @@ int pfeng_dt_create_config(struct pfeng_priv *priv)
+ 	priv->syscon.start = res->start;
+ 	priv->syscon.end = res->end;
+ 	HM_MSG_DEV_DBG(dev, "Syscon addr 0x%llx size 0x%llx\n", priv->syscon.start, priv->syscon.end - priv->syscon.start + 1);
++#else
++	/* It's only optional on Slave */
++	res = platform_get_resource_byname(priv->pdev, IORESOURCE_MEM, PFE_RES_NAME_S32G_MAIN_GPR);
++	if(res) {
++		priv->syscon.start = res->start;
++		priv->syscon.end = res->end;
++		HM_MSG_DEV_DBG(dev, "Syscon addr 0x%llx size 0x%llx\n", priv->syscon.start, priv->syscon.end - priv->syscon.start + 1);
++	}
++#endif /* PFE_CFG_PFE_MASTER */
+ 
++#ifdef PFE_CFG_PFE_MASTER
+ 	/* Firmware CLASS name */
+ 	if (of_find_property(np, "nxp,fw-class-name", NULL))
+ 		if (!of_property_read_string(np, "nxp,fw-class-name", &priv->fw_class_name)) {
+diff --git a/sw/linux-pfeng/pfeng-hif.c b/sw/linux-pfeng/pfeng-hif.c
+index 82ed72b..b815468 100644
+--- a/sw/linux-pfeng/pfeng-hif.c
++++ b/sw/linux-pfeng/pfeng-hif.c
+@@ -429,21 +429,19 @@ static bool pfeng_hif_chnl_tx_conf(struct pfeng_hif_chnl *chnl, int napi_budget)
+ 		done++;
+ 	}
+ 
+-	if (unlikely(chnl->queues_stopped)) {
+-		if (pfeng_hif_chnl_txbd_unused(chnl) >= PFE_TXBDS_MAX_NEEDED) {
+-			int i;
++	if (pfeng_hif_chnl_txbd_unused(chnl) >= PFE_TXBDS_MAX_NEEDED) {
++		int i;
+ 
+-			for (i = 0; i < PFENG_NETIFS_CNT; i++) {
+-				struct pfeng_netif *netif = chnl->netifs[i];
++		for (i = 0; i < PFENG_NETIFS_CNT; i++) {
++			struct pfeng_netif *netif = chnl->netifs[i];
+ 
+-				if (!netif)
+-					continue;
++			if (!netif)
++				continue;
+ 
+-				if (unlikely(netif_carrier_ok(netif->netdev) &&
+-					     __netif_subqueue_stopped(netif->netdev, 0))) {
+-					/* only one queue per netdev used at this point */
++			if (__netif_subqueue_stopped(netif->netdev, 0)) {
++				smp_rmb();
++				if (!test_bit(PFENG_TMU_FULL, &netif->tx_queue_status)) {
+ 					netif_wake_subqueue(netif->netdev, 0);
+-					chnl->queues_stopped = false;
+ 				}
+ 			}
+ 		}
+diff --git a/sw/linux-pfeng/pfeng-netif.c b/sw/linux-pfeng/pfeng-netif.c
+index f09631b..ec864a8 100644
+--- a/sw/linux-pfeng/pfeng-netif.c
++++ b/sw/linux-pfeng/pfeng-netif.c
+@@ -8,6 +8,7 @@
+ #include <linux/net.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/list.h>
++#include <linux/refcount.h>
+ #include <linux/clk.h>
+ #include <linux/if_vlan.h>
+ #include <linux/tcp.h>
+@@ -26,6 +27,10 @@
+ 		chnl_idx < PFENG_PFE_HIF_CHANNELS;				\
+ 		chnl_idx++, chnl = &netif->priv->hif_chnl[chnl_idx])
+ 
++#define TMU_RES_Q_MAX_SIZE	0xFFU
++#define TMU_RES_Q_W_FACT	2U
++#define TMU_RES_Q_MIN_TX_THR	8U
++
+ typedef struct
+ {
+ 	pfe_mac_addr_t addr;		/* The MAC address */
+@@ -199,6 +204,168 @@ static struct pfeng_hif_chnl *pfeng_netif_map_tx_channel(struct pfeng_netif *net
+ 	return &netif->priv->hif_chnl[id - 1];
+ }
+ 
++#ifdef PFE_CFG_PFE_MASTER
++static int pfe_get_tmu_pkts_conf(const pfe_tmu_t *tmu, pfe_ct_phy_if_id_t phy_id, u8 tx_queue, u32 *pkts_conf)
++{
++	int ret;
++
++	ret = pfe_tmu_queue_get_tx_count(tmu, phy_id, tx_queue, pkts_conf);
++	if (unlikely(ret != 0)) {
++		*pkts_conf = 0;
++		return -ret;
++	}
++
++	return 0;
++}
++
++static int pfe_get_tmu_fill(const pfe_tmu_t *tmu, pfe_ct_phy_if_id_t phy_id, u8 tx_queue, u8 *fill)
++{
++	u32 level;
++	int ret;
++
++	ret = pfe_tmu_queue_get_fill_level(tmu, phy_id, tx_queue, &level);
++	if (unlikely(ret != 0)) {
++		*fill = 0;
++		return -ret;
++	}
++
++	if (likely(level < U8_MAX)) {
++		*fill = level;
++	} else {
++		*fill = U8_MAX;
++	}
++
++	return 0;
++}
++
++#else
++static int pfe_get_tmu_pkts_conf(const pfe_tmu_t *tmu, pfe_ct_phy_if_id_t phy_id, u8 tx_queue, u32 *pkts_conf)
++{
++	return 0;
++}
++
++static int pfe_get_tmu_fill(const pfe_tmu_t *tmu, pfe_ct_phy_if_id_t phy_id, u8 tx_queue, u8 *fill)
++{
++	return 0;
++}
++
++#endif
++
++static u8 pfeng_tmu_q_window_size(struct pfeng_tmu_q_cfg *cfg)
++{
++	return cfg->q_size >> TMU_RES_Q_W_FACT;
++}
++
++static bool pfeng_tmu_lltx_enabled(struct pfeng_tmu_q_cfg* cfg)
++{
++#ifdef PFE_CFG_PFE_MASTER
++	return cfg->q_id != PFENG_TMU_LLTX_DISABLE_MODE_Q_ID;
++#else
++	return false; /* LLTX disable for Slave (compile time optimization) */
++#endif
++}
++
++static void pfeng_tmu_disable_lltx(struct pfeng_tmu_q_cfg* cfg)
++{
++	cfg->q_id = PFENG_TMU_LLTX_DISABLE_MODE_Q_ID;
++}
++
++static u8 pfeng_tmu_get_q_id(struct pfeng_tmu_q_cfg* cfg)
++{
++	if (likely(pfeng_tmu_lltx_enabled(cfg))) {
++		 return cfg->q_id;
++	} else {
++#ifdef PFE_CFG_HIF_PRIO_CTRL
++		/* Firmware will assign queue/priority */
++		return PFENG_TMU_LLTX_DISABLE_MODE_Q_ID;
++#else
++		return 0;
++#endif
++	}
++}
++
++static bool pfeng_tmu_can_tx(pfe_tmu_t *tmu, struct pfeng_tmu_q_cfg* tmu_q_cfg, struct pfeng_tmu_q *tmu_q)
++{
++	u8 w = pfeng_tmu_q_window_size(tmu_q_cfg);
++	u32 pkts = tmu_q->pkts;
++	u8 fill, cap, delta;
++	bool can_tx = true;
++	u32 pkts_conf;
++	int err;
++
++	if (likely(tmu_q->cap)) {
++		tmu_q->cap--;
++		tmu_q->pkts++;
++		return true;
++	}
++
++	err = pfe_get_tmu_pkts_conf(tmu, tmu_q_cfg->phy_id, tmu_q_cfg->q_id, &pkts_conf);
++	if (unlikely(err != 0)) {
++		return false;
++	}
++
++	delta = (u8)((pkts - pkts_conf) & 0xFFU);
++
++	/*
++	 * External perturbation handling, i.e.:
++	 * - fast-path flow sharing the same queue, causing
++	 *   pkts_conf increase; (1)
++	 * - cumulative errors in 'pkts' due to unexpected drops. (2)
++	 * Re-adjust 'pkts' for robustness.
++	 */
++
++	if (unlikely(pkts_conf > pkts && delta > w)) {
++		pkts = pkts_conf; /* (1) */
++		delta = 0;
++	}
++
++	if (unlikely(pkts > (pkts_conf + w))) {
++		pkts = pkts_conf; /* (2) */
++		delta = 0;
++	}
++
++	cap = w - delta;
++
++	if (unlikely(cap <= tmu_q_cfg->min_thr)) {
++		can_tx = false;
++		goto out;
++	}
++
++	err = pfe_get_tmu_fill(tmu, tmu_q_cfg->phy_id, tmu_q_cfg->q_id, &fill);
++	if (unlikely(err != 0)) {
++		can_tx = false;
++		goto out;
++	}
++
++	if (unlikely(cap > tmu_q_cfg->q_size - delta - fill)) {
++		can_tx = false;
++		goto out;
++	}
++
++	/* store the available capacity for next iterations */
++	tmu_q->cap = cap;
++
++out:
++	tmu_q->pkts = pkts;
++
++	return can_tx;
++}
++
++static void pfeng_tmu_status_check(struct work_struct *work)
++{
++	struct pfeng_netif* netif = container_of(work, struct pfeng_netif, tmu_status_check);
++	bool tmu_full = !pfeng_tmu_can_tx(netif->tmu, &netif->tmu_q_cfg, &netif->tmu_q);
++
++	if (tmu_full) {
++		schedule_work(&netif->tmu_status_check);
++		return;
++	}
++
++	if (test_and_clear_bit(PFENG_TMU_FULL, &netif->tx_queue_status)) {
++		netif_wake_subqueue(netif->netdev, 0);
++	}
++}
++
+ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device *netdev)
+ {
+ 	struct pfeng_netif *netif = netdev_priv(netdev);
+@@ -229,7 +396,26 @@ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device
+ 	/* Check for ring space */
+ 	if (unlikely(pfeng_hif_chnl_txbd_unused(chnl) < PFE_TXBDS_NEEDED(nfrags + 1))) {
+ 		netif_stop_subqueue(netdev, skb->queue_mapping);
+-		chnl->queues_stopped = true;
++
++		/* mb() to see the txbd ring updates from the NAPI thread after queue stop */
++		smp_mb();
++
++		/* prevent a (unlikely but possible) race condition with the NAPI thread,
++		 * which may have just finished cleaning up the ring
++		 */
++		if (pfeng_hif_chnl_txbd_unused(chnl) >= PFE_TXBDS_MAX_NEEDED) {
++			netif_start_subqueue(netif->netdev, skb->queue_mapping);
++		} else {
++			goto busy_drop;
++		}
++	}
++
++	if (likely(pfeng_tmu_lltx_enabled(&netif->tmu_q_cfg)) &&
++		   !pfeng_tmu_can_tx(netif->tmu, &netif->tmu_q_cfg, &netif->tmu_q)) {
++		set_bit(PFENG_TMU_FULL, &netif->tx_queue_status);
++		smp_wmb();
++		netif_stop_subqueue(netdev, skb->queue_mapping);
++		schedule_work(&netif->tmu_status_check);
+ 		goto busy_drop;
+ 	}
+ 
+@@ -244,6 +430,9 @@ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device
+ 		skb = skb_new;
+ 	}
+ 
++	/* record sw tx timestamp before pushing PFE metadata to skb->data */
++	skb_tx_timestamp(skb);
++
+ 	skb_push(skb, PFENG_TX_PKT_HEADER_SIZE);
+ 
+ 	len = skb_headlen(skb);
+@@ -253,12 +442,7 @@ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device
+ 	memset(tx_hdr, 0, sizeof(*tx_hdr));
+ 	tx_hdr->chid = chnl->idx;
+ 
+-#ifdef PFE_CFG_HIF_PRIO_CTRL
+-	/* Firmware will assign queue/priority */
+-	tx_hdr->queue = 255;
+-#else
+-	tx_hdr->queue = 0;
+-#endif /* PFE_CFG_HIF_PRIO_CTRL */
++	tx_hdr->queue = pfeng_tmu_get_q_id(&netif->tmu_q_cfg);
+ 
+ 	/* Use correct TX mode */
+ 	if (unlikely(!pfeng_netif_is_aux(netif))) {
+@@ -271,10 +455,12 @@ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device
+ 	}
+ 
+ 	if (likely(skb->ip_summed == CHECKSUM_PARTIAL)) {
+-		if (likely(skb->csum_offset == offsetof(struct udphdr, check))) {
++		if (likely(skb->csum_offset == offsetof(struct udphdr, check) &&
++			   pktlen <= PFENG_CSUM_OFF_PKT_LIMIT)) {
+ 			tx_hdr->flags |= HIF_TX_UDP_CSUM;
+ 		}
+-		else if (likely(skb->csum_offset == offsetof(struct tcphdr, check))) {
++		else if (likely(skb->csum_offset == offsetof(struct tcphdr, check) &&
++				pktlen <= PFENG_CSUM_OFF_PKT_LIMIT)) {
+ 			tx_hdr->flags |= HIF_TX_TCP_CSUM;
+ 		} else {
+ 			skb_checksum_help(skb);
+@@ -307,9 +493,6 @@ static netdev_tx_t pfeng_netif_logif_xmit(struct sk_buff *skb, struct net_device
+ 	/* store the linear part info */
+ 	pfeng_hif_chnl_txconf_put_map_frag(chnl, dma, len, skb, PFENG_MAP_PKT_NORMAL, 0);
+ 
+-	/* Software tx time stamp */
+-	skb_tx_timestamp(skb);
+-
+ 	/* Put linear part */
+ 	ret = pfe_hif_chnl_tx(chnl->priv, (void *)dma, skb->data, len, !nfrags);
+ 	if (unlikely(EOK != ret)) {
+@@ -366,6 +549,11 @@ static int pfeng_netif_logif_stop(struct net_device *netdev)
+ 	struct pfeng_netif *netif = netdev_priv(netdev);
+ 	pfe_phy_if_t *phyif_emac = pfeng_netif_get_emac_phyif(netif);
+ 
++	if (pfeng_tmu_lltx_enabled(&netif->tmu_q_cfg)) {
++		cancel_work_sync(&netif->tmu_status_check);
++		netif->tx_queue_status = 0;
++	}
++
+ 	if (phyif_emac) {
+ 		pfe_phy_if_flush_mac_addrs(phyif_emac, MAC_DB_CRIT_BY_OWNER_AND_TYPE,
+ 					   PFE_TYPE_MC, netif->priv->local_drv_id);
+@@ -650,6 +838,57 @@ static netdev_features_t pfeng_netif_fix_features(struct net_device *netdev, net
+ 	return features;
+ }
+ 
++static void pfeng_ndev_print(void *dev, const char *fmt, ...)
++{
++	struct net_device *ndev = (struct net_device *)dev;
++	struct pfeng_netif *netif = netdev_priv(ndev);
++	static char buf[256];
++	va_list args;
++
++	va_start(args, fmt);
++	vsnprintf(buf, sizeof(buf), fmt, args);
++	netif_crit(netif->priv, drv, ndev, "%s", buf);
++	va_end(args);
++}
++
++static void pfeng_netif_tx_timeout(struct net_device *ndev, unsigned int txq)
++{
++	struct netdev_queue *dev_queue = netdev_get_tx_queue(ndev, txq);
++	struct pfeng_netif *netif = netdev_priv(ndev);
++	struct pfeng_hif_chnl *chnl;
++	int i;
++
++	if (netif->dbg_info_dumped)
++		return;
++
++	netif->dbg_info_dumped = true;
++
++	pfeng_ndev_print(ndev, "-----[ Tx queue #%u timed out: debug info start ]-----", txq);
++	pfeng_ndev_print(ndev, "netdev state: 0x%lx, Tx queue state: 0x%lx, pkts: %lu, dropped: %lu (%u ms)",
++			 ndev->state, dev_queue->state, ndev->stats.tx_packets, ndev->stats.tx_dropped,
++			 jiffies_to_msecs(jiffies - dev_trans_start(ndev)));
++
++	pfeng_netif_for_each_chnl(netif, i, chnl) {
++		if (!(netif->cfg->hifmap & (1 << i)))
++			continue;
++
++		pfeng_ndev_print(ndev, "chid: %d, txbd_unused: %d, napi: 0x%lx",
++				 i, pfeng_hif_chnl_txbd_unused(chnl), chnl->napi.state);
++
++		pfeng_bman_tx_pool_dump(chnl, ndev, pfeng_ndev_print);
++
++		pfe_hif_chnl_dump_tx_ring_to_ndev(chnl->priv, ndev, pfeng_ndev_print);
++	}
++
++	pfeng_ndev_print(ndev, "-----[ Tx queue #%u timed out: debug info stop  ]-----", txq);
++
++	if (netif_running(ndev)) {
++		/* try timeout recovery */
++		netif_info(netif->priv, drv, ndev, "Resetting netdevice for Tx queue %d", txq);
++		schedule_work(&netif->ndev_reset_work);
++	}
++}
++
+ static const struct net_device_ops pfeng_netdev_ops = {
+ 	.ndo_open		= pfeng_netif_logif_open,
+ 	.ndo_start_xmit		= pfeng_netif_logif_xmit,
+@@ -663,6 +902,7 @@ static const struct net_device_ops pfeng_netdev_ops = {
+ 	.ndo_set_mac_address	= pfeng_netif_set_mac_address,
+ 	.ndo_set_rx_mode	= pfeng_netif_set_rx_mode,
+ 	.ndo_fix_features	= pfeng_netif_fix_features,
++	.ndo_tx_timeout		= pfeng_netif_tx_timeout,
+ };
+ 
+ static void pfeng_netif_detach_hifs(struct pfeng_netif *netif)
+@@ -719,7 +959,9 @@ err:
+ 
+ static void pfeng_netif_logif_remove(struct pfeng_netif *netif)
+ {
+-	pfe_log_if_t *logif_emac;
++	pfe_log_if_t *logif;
++	struct pfeng_hif_chnl *chnl;
++	int i;
+ 
+ 	if (!netif->netdev)
+ 		return;
+@@ -729,6 +971,7 @@ static void pfeng_netif_logif_remove(struct pfeng_netif *netif)
+ 		netif->priv->lower_ndev = NULL;
+ 	}
+ 
++	cancel_work_sync(&netif->ndev_reset_work);
+ 	unregister_netdev(netif->netdev); /* calls ndo_stop */
+ 
+ #ifdef PFE_CFG_PFE_SLAVE
+@@ -741,16 +984,34 @@ static void pfeng_netif_logif_remove(struct pfeng_netif *netif)
+ #endif /* PFE_CFG_PFE_MASTER */
+ 
+ 	/* Stop EMAC logif */
+-	logif_emac = pfeng_netif_get_emac_logif(netif);
+-	if (logif_emac) {
+-		pfe_log_if_disable(logif_emac);
+-		if (EOK != pfe_platform_unregister_log_if(netif->priv->pfe_platform, logif_emac))
++	logif = pfeng_netif_get_emac_logif(netif);
++	if (logif) {
++		pfe_log_if_disable(logif);
++		if (EOK != pfe_platform_unregister_log_if(netif->priv->pfe_platform, logif))
+ 			HM_MSG_NETDEV_WARN(netif->netdev, "Can't unregister EMAC Logif\n");
+ 		else
+-			pfe_log_if_destroy(logif_emac);
++			pfe_log_if_destroy(logif);
+ 		netif->priv->emac[netif->cfg->phyif_id].logif_emac = NULL;
+ 	}
+ 
++	/* Remove created HIF logif(s) */
++	pfeng_netif_for_each_chnl(netif, i, chnl) {
++
++		if (!(netif->cfg->hifmap & (1 << i)))
++			continue;
++
++		logif = chnl->logif_hif;
++		if (logif && refcount_dec_and_test(&chnl->logif_hif_count)) {
++			pfe_log_if_disable(logif);
++			if (EOK != pfe_platform_unregister_log_if(netif->priv->pfe_platform, logif))
++				HM_MSG_NETDEV_WARN(netif->netdev, "Can't unregister HIF Logif\n");
++			else
++				pfe_log_if_destroy(logif);
++
++			chnl->logif_hif = NULL;
++		}
++	}
++
+ 	HM_MSG_NETDEV_INFO(netif->netdev, "unregisted\n");
+ 
+ 	if (!pfeng_netif_is_aux(netif)) {
+@@ -886,9 +1147,12 @@ static int pfeng_netif_control_platform_ifs(struct pfeng_netif *netif)
+ 				HM_MSG_NETDEV_ERR(netdev, "Can't register HIF Logif\n");
+ 				goto err;
+ 			}
++			refcount_set(&chnl->logif_hif_count, 1);
+ 			HM_MSG_NETDEV_DBG(netdev, "HIF Logif created: %s @%px\n", hifname, chnl->logif_hif);
+-		} else
++		} else {
++			refcount_inc(&chnl->logif_hif_count);
+ 			HM_MSG_NETDEV_DBG(netdev, "HIF Logif reused: %s @%px\n", hifname, chnl->logif_hif);
++		}
+ 
+ 		if (emac) {
+ 			if (pfeng_netif_is_aux(netif)) {
+@@ -935,12 +1199,87 @@ err:
+ 	return -EINVAL;
+ }
+ 
++#ifdef PFE_CFG_PFE_MASTER
++static u32 pfeng_tmu_get_q_size(struct pfeng_netif *netif)
++{
++	struct pfeng_tmu_q_cfg *cfg = &netif->tmu_q_cfg;
++	u32 min, max;
++	int err;
++
++	err = pfe_tmu_queue_get_mode(netif->tmu, cfg->phy_id, cfg->q_id, &min, &max);
++	if (err) {
++		HM_MSG_NETDEV_ERR(netif->netdev, "TMU queue mode read error for PHY_ID#%u/ Q_ID#%u (err: %d)\n",
++				  cfg->phy_id, cfg->q_id, err);
++		return 0;
++	}
++
++	return max;
++}
++#else
++static u32 pfeng_tmu_get_q_size(struct pfeng_netif *netif)
++{
++	return 0;
++}
++#endif
++
++static void pfeng_netif_tmu_lltx_init(struct pfeng_netif *netif)
++{
++	struct pfeng_tmu_q_cfg *cfg = &netif->tmu_q_cfg;
++	const struct pfeng_priv *priv = netif->priv;
++	struct pfeng_tmu_q *tmu_q = &netif->tmu_q;
++	u8 cap, min_thr;
++	u32 q_size;
++
++	cfg->q_id = (u8)priv->pfe_cfg->lltx_res_tmu_q_id;
++
++	if (!pfeng_tmu_lltx_enabled(cfg))
++		goto out_disabled;
++
++	if (pfeng_netif_is_aux(netif))
++		goto disable_lltx;
++
++	netif->tmu = priv->pfe_platform->tmu;
++	cfg->phy_id = PFE_PHY_IF_ID_EMAC0 + netif->cfg->phyif_id;
++
++	q_size = pfeng_tmu_get_q_size(netif);
++	if (q_size == 0 || q_size > TMU_RES_Q_MAX_SIZE) {
++		HM_MSG_NETDEV_ERR(netif->netdev, "TMU returned invalid size for PHY_ID#%u/ Q_ID#%u (size: %u)\n", cfg->phy_id, cfg->q_id, q_size);
++		goto disable_lltx;
++	}
++
++	cfg->q_size = q_size;
++
++	cap = pfeng_tmu_q_window_size(cfg);
++	min_thr = cap >> TMU_RES_Q_W_FACT;
++	if (min_thr > TMU_RES_Q_MIN_TX_THR)
++		min_thr = TMU_RES_Q_MIN_TX_THR;
++
++	cfg->min_thr = min_thr;
++	tmu_q->cap = cap;
++
++	INIT_WORK(&netif->tmu_status_check, pfeng_tmu_status_check);
++
++	HM_MSG_NETDEV_INFO(netif->netdev, "Host LLTX enabled for TMU PHY_ID#%u/ Q_ID#%u\n",
++			   netif->tmu_q_cfg.phy_id, netif->tmu_q_cfg.q_id);
++
++	return;
++
++disable_lltx:
++	pfeng_tmu_disable_lltx(cfg);
++out_disabled:
++	HM_MSG_NETDEV_INFO(netif->netdev, "Host LLTX disabled\n");
++
++	return;
++}
++
+ static int pfeng_netif_logif_init_second_stage(struct pfeng_netif *netif)
+ {
+ 	struct net_device *netdev = netif->netdev;
+ 	struct sockaddr saddr;
+ 	int ret;
+ 
++	pfeng_netif_tmu_lltx_init(netif);
++
+ 	/* Set PFE platform phyifs */
+ 	ret = pfeng_netif_control_platform_ifs(netif);
+ 	if (ret)
+@@ -966,6 +1305,19 @@ static int pfeng_netif_logif_init_second_stage(struct pfeng_netif *netif)
+ #endif /* PFE_CFG_PFE_MASTER */
+ 	}
+ 
++	if (!netif->priv->in_suspend) {
++		ret = register_netdev(netdev);
++		if (ret) {
++			HM_MSG_NETDEV_ERR(netdev, "Error registering the device: %d\n", ret);
++			goto err;
++		}
++
++		/* start without the RUNNING flag, phylink/idex controls it later */
++		netif_carrier_off(netdev);
++
++		HM_MSG_NETDEV_INFO(netdev, "registered\n");
++	}
++
+ 	return 0;
+ 
+ err:
+@@ -1064,6 +1416,24 @@ static int pfeng_netif_register_dsa_notifier(struct pfeng_netif *netif)
+ #define pfeng_netif_register_dsa_notifier(netif) 0
+ #endif
+ 
++static void pfeng_reset_ndev(struct work_struct *work)
++{
++	struct pfeng_netif *netif = container_of(work, struct pfeng_netif, ndev_reset_work);
++	struct net_device *ndev = netif->netdev;
++	bool reset = false;
++
++	rtnl_lock();
++	if (netif_running(ndev)) {
++		dev_close(ndev);
++		dev_open(ndev, NULL);
++		reset = true;
++	}
++	rtnl_unlock();
++
++	netif->dbg_info_dumped = false; /* re-arm debug dump */
++	netif_info(netif->priv, drv, ndev, "netdevice reset %s", reset ? "done" : "skipped");
++}
++
+ static struct pfeng_netif *pfeng_netif_logif_create(struct pfeng_priv *priv, struct pfeng_netif_cfg *netif_cfg)
+ {
+ 	struct device *dev = &priv->pdev->dev;
+@@ -1138,6 +1508,7 @@ static struct pfeng_netif *pfeng_netif_logif_create(struct pfeng_priv *priv, str
+ #ifdef PFE_CFG_PFE_MASTER
+ 	netdev->priv_flags |= IFF_UNICAST_FLT;
+ #endif
++	INIT_WORK(&netif->ndev_reset_work, pfeng_reset_ndev);
+ 
+ 	ret = pfeng_netif_register_dsa_notifier(netif);
+ 	if (ret) {
+@@ -1145,17 +1516,6 @@ static struct pfeng_netif *pfeng_netif_logif_create(struct pfeng_priv *priv, str
+ 		goto err_netdev_reg;
+ 	}
+ 
+-	ret = register_netdev(netdev);
+-	if (ret) {
+-		HM_MSG_DEV_ERR(dev, "Error registering the device: %d\n", ret);
+-		goto err_netdev_reg;
+-	}
+-
+-	/* start without the RUNNING flag, phylink/idex controls it later */
+-	netif_carrier_off(netdev);
+-
+-	HM_MSG_NETDEV_INFO(netdev, "registered\n");
+-
+ 	/* Attach netif to HIF(s) */
+ 	ret = pfeng_netif_attach_hifs(netif);
+ 	if (ret)
+@@ -1231,6 +1591,11 @@ static int pfeng_netif_logif_suspend(struct pfeng_netif *netif)
+ 		pfeng_phylink_mac_change(netif, false);
+ #endif /* PFE_CFG_PFE_MASTER */
+ 
++	if (pfeng_tmu_lltx_enabled(&netif->tmu_q_cfg)) {
++		cancel_work_sync(&netif->tmu_status_check);
++		netif->tx_queue_status = 0;
++	}
++
+ 	netif_device_detach(netif->netdev);
+ 
+ 	rtnl_lock();
+diff --git a/sw/linux-pfeng/pfeng-slave-drv.c b/sw/linux-pfeng/pfeng-slave-drv.c
+index 3f51526..4a497ce 100644
+--- a/sw/linux-pfeng/pfeng-slave-drv.c
++++ b/sw/linux-pfeng/pfeng-slave-drv.c
+@@ -26,6 +26,19 @@
+ #include "hal.h"
+ #include "pfeng.h"
+ 
++/*
++ * S32G soc specific addresses
++ */
++#define S32G_MAIN_GPR_PFE_COH_EN		0x0
++#define GPR_PFE_COH_EN_UTIL			(1 << 5)
++#define GPR_PFE_COH_EN_HIF3			(1 << 4)
++#define GPR_PFE_COH_EN_HIF2			(1 << 3)
++#define GPR_PFE_COH_EN_HIF1			(1 << 2)
++#define GPR_PFE_COH_EN_HIF0			(1 << 1)
++#define GPR_PFE_COH_EN_HIF_0_3_MASK		(GPR_PFE_COH_EN_HIF0 | GPR_PFE_COH_EN_HIF1 | \
++						 GPR_PFE_COH_EN_HIF2 | GPR_PFE_COH_EN_HIF3)
++#define GPR_PFE_COH_EN_DDR			(1 << 0)
++
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Jan Petrous <jan.petrous@nxp.com>");
+ MODULE_DESCRIPTION("PFEng SLAVE driver");
+@@ -59,6 +72,15 @@ static int ipready_tmout = PFE_CFG_IP_READY_MS_TMOUT;
+ module_param(ipready_tmout, int, 0644);
+ MODULE_PARM_DESC(ipready_tmout, "\t 0 - nn, timeout for IP-ready, 0 means 'no timeout'");
+ 
++/* Note: setting HIF port coherency should be done once for A53 domain!
++ *       The recommended way is to use external solution, to not
++ *       get conflict when two A53 Slave instances are trying to manage
++ *       coherency register concurrently
++ */
++static int manage_port_coherency = 0;
++module_param(manage_port_coherency, int, 0644);
++MODULE_PARM_DESC(manage_port_coherency, "\t 1 - enable HIF port coherency management, default is 0");
++
+ uint32_t get_pfeng_pfe_cfg_master_if(void)
+ {
+ 	/* Needed for compilation */
+@@ -109,6 +131,80 @@ err_cfg_alloc:
+ 	return NULL;
+ }
+ 
++static int pfeng_s32g_set_port_coherency(struct pfeng_priv *priv)
++{
++	struct device *dev = &priv->pdev->dev;
++	void *syscon;
++	int ret = 0;
++	u32 val;
++
++	if (!manage_port_coherency)
++		return 0;
++
++	syscon = ioremap(priv->syscon.start, priv->syscon.end - priv->syscon.start + 1);
++	if(!syscon) {
++		HM_MSG_DEV_ERR(dev, "cannot map GPR, aborting (INTF_SEL)\n");
++		return -EIO;
++	}
++
++	val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++	if ((val & GPR_PFE_COH_EN_HIF_0_3_MASK) == GPR_PFE_COH_EN_HIF_0_3_MASK) {
++		HM_MSG_DEV_INFO(dev, "PFE port coherency already enabled, mask 0x%x\n", val);
++	} else {
++		val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++		val |= GPR_PFE_COH_EN_HIF_0_3_MASK;
++		hal_write32(val, syscon + S32G_MAIN_GPR_PFE_COH_EN);
++
++		val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++		if ((val & GPR_PFE_COH_EN_HIF_0_3_MASK) != GPR_PFE_COH_EN_HIF_0_3_MASK) {
++			HM_MSG_DEV_ERR(dev, "Failed to enable port coherency, mask 0x%x\n", val);
++			ret = -EINVAL;
++		} else
++			HM_MSG_DEV_INFO(dev, "PFE port coherency enabled, mask 0x%x\n", val);
++	}
++
++	iounmap(syscon);
++
++	return ret;
++}
++
++static int pfeng_s32g_clear_port_coherency(struct pfeng_priv *priv)
++{
++	struct device *dev = &priv->pdev->dev;
++	void *syscon;
++	int ret = 0;
++	u32 val;
++
++	if (!manage_port_coherency)
++		return 0;
++
++	syscon = ioremap(priv->syscon.start, priv->syscon.end - priv->syscon.start + 1);
++	if(!syscon) {
++		HM_MSG_DEV_ERR(dev, "cannot map GPR, aborting (INTF_SEL)\n");
++		return -EIO;
++	}
++
++	val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++	if (!(val & GPR_PFE_COH_EN_HIF_0_3_MASK)) {
++		HM_MSG_DEV_INFO(dev, "PFE port coherency already cleared\n");
++	} else {
++		val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++		val &= ~GPR_PFE_COH_EN_HIF_0_3_MASK;
++		hal_write32(val, syscon + S32G_MAIN_GPR_PFE_COH_EN);
++
++		val = hal_read32(syscon + S32G_MAIN_GPR_PFE_COH_EN);
++		if (val & GPR_PFE_COH_EN_HIF_0_3_MASK) {
++			HM_MSG_DEV_ERR(dev, "Failed to clear port coherency, mask 0x%x\n", val);
++			ret = -EINVAL;
++		} else
++			HM_MSG_DEV_INFO(dev, "PFE port coherency cleared\n");
++	}
++
++	iounmap(syscon);
++
++	return ret;
++}
++
+ /**
+  * pfeng_s32g_remove
+  *
+@@ -156,6 +252,10 @@ static int pfeng_drv_remove(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	/* Clear HIF channels coherency */
++	if (of_dma_is_coherent(dev->of_node))
++		pfeng_s32g_clear_port_coherency(priv);
++
+ 	if (priv->ihc_wq)
+ 		destroy_workqueue(priv->ihc_wq);
+ 	if (kfifo_initialized(&priv->ihc_tx_fifo))
+@@ -215,6 +315,13 @@ static int pfeng_drv_deferred_probe(void *arg)
+ 	if (ret)
+ 		goto err_drv;
+ 
++	if (!priv->syscon.start && manage_port_coherency) {
++		HM_MSG_DEV_ERR(dev, "Cannot find syscon resource, aborting\n");
++		manage_port_coherency = 0;
++		ret = -EINVAL;
++		goto err_drv;
++	}
++
+ 	/* HIF IHC channel number */
+ 	if (master_ihc_chnl < (HIF_CFG_MAX_CHANNELS + 1))
+ 		priv->ihc_master_chnl = master_ihc_chnl;
+@@ -231,6 +338,13 @@ static int pfeng_drv_deferred_probe(void *arg)
+ 		goto err_drv;
+ 	}
+ 
++	/* Set HIF channels coherency */
++	if (of_dma_is_coherent(dev->of_node)) {
++		ret = pfeng_s32g_set_port_coherency(priv);
++		if (ret)
++			goto err_drv;
++	}
++
+ 	pm_runtime_get_noresume(dev);
+ 	ret = pm_runtime_set_active(dev);
+ 	if (ret) {
+@@ -247,6 +361,8 @@ static int pfeng_drv_deferred_probe(void *arg)
+ 		goto err_drv;
+ 	}
+ 
++	priv->pfe_cfg->lltx_res_tmu_q_id = PFENG_TMU_LLTX_DISABLE_MODE_Q_ID; /* disable LLTX for Slave */
++
+ 	/* Start PFE Platform */
+ 	ret = pfe_platform_init(priv->pfe_cfg);
+ 	if (ret) {
+@@ -388,6 +504,10 @@ static int pfeng_drv_pm_suspend(struct device *dev)
+ 	/* HIFs stop */
+ 	pfeng_hif_slave_suspend(priv);
+ 
++	/* Clear HIF channels coherency */
++	if (of_dma_is_coherent(dev->of_node))
++		pfeng_s32g_clear_port_coherency(priv);
++
+ 	HM_MSG_DEV_INFO(dev, "PFE Platform suspended\n");
+ 
+ 	return -ENOTSUP;
+@@ -399,6 +519,10 @@ static int pfeng_drv_pm_resume(struct device *dev)
+ 
+ 	HM_MSG_DEV_INFO(dev, "Resuming driver\n");
+ 
++	/* Set HIF channels coherency */
++	if (of_dma_is_coherent(dev->of_node))
++		pfeng_s32g_set_port_coherency(priv);
++
+ 	/* Create debugfs */
+ 	pfeng_debugfs_create(priv);
+ 
+diff --git a/sw/linux-pfeng/pfeng.h b/sw/linux-pfeng/pfeng.h
+index 03fedfc..43617f4 100644
+--- a/sw/linux-pfeng/pfeng.h
++++ b/sw/linux-pfeng/pfeng.h
+@@ -44,12 +44,12 @@
+ #else
+ #error Incorrect configuration!
+ #endif
+-#define PFENG_DRIVER_VERSION		"1.3.0 RC2"
++#define PFENG_DRIVER_VERSION		"1.3.0"
+ 
+ #define PFENG_FW_CLASS_NAME		"s32g_pfe_class.fw"
+ #define PFENG_FW_UTIL_NAME		"s32g_pfe_util.fw"
+ 
+-#define PFENG_DRIVER_COMMIT_HASH	"M4_DRIVER_COMMIT_HASH"
++#define PFENG_DRIVER_COMMIT_HASH	"ae7a32e25179843691f62704b850ed1168a3d15c"
+ 
+ static const pfe_ct_phy_if_id_t pfeng_emac_ids[] = {
+ 	PFE_PHY_IF_ID_EMAC0,
+@@ -99,6 +99,7 @@ enum {
+ 
+ #define PFENG_TX_PKT_HEADER_SIZE	(sizeof(pfe_ct_hif_tx_hdr_t))
+ #define PFENG_RX_PKT_HEADER_SIZE	(sizeof(pfe_ct_hif_rx_hdr_t))
++#define PFENG_CSUM_OFF_PKT_LIMIT	3028 /* bytes */
+ 
+ #define PFENG_INT_TIMER_DEFAULT		256 /* usecs */
+ 
+@@ -133,8 +134,28 @@ struct pfeng_netif_cfg {
+ 	bool				only_mgmt;
+ };
+ 
++enum tx_queue_status {
++	PFENG_TMU_FULL
++};
++
++#define PFENG_TMU_LLTX_DISABLE_MODE_Q_ID	255U
++
++struct pfeng_tmu_q_cfg {
++	u8 q_id;
++	pfe_ct_phy_if_id_t phy_id;
++	u8 q_size; /* cannot exceed 255 */
++	u8 min_thr;
++};
++
++struct pfeng_tmu_q {
++	u32 pkts;
++	u8 cap;
++};
++
+ /* net interface private data */
+ struct pfeng_netif {
++	struct work_struct		tmu_status_check ____cacheline_aligned_in_smp;
++	unsigned long 			tx_queue_status;
+ 	struct list_head		lnode;
+ 	struct device			*dev;
+ 	struct net_device		*netdev;
+@@ -151,6 +172,10 @@ struct pfeng_netif {
+ 	bool mc_unsynced;
+ 	bool uc_unsynced;
+ 
++	pfe_tmu_t 			*tmu; /* fast access to the TMU handle */
++	struct pfeng_tmu_q_cfg 		tmu_q_cfg;
++	struct pfeng_tmu_q 		tmu_q;
++
+ 	/* PTP/Time stamping*/
+ 	struct ptp_clock_info           ptp_ops;
+ 	struct ptp_clock                *ptp_clock;
+@@ -161,6 +186,8 @@ struct pfeng_netif {
+ 	struct list_head                ts_skb_list;
+ 	uint16_t                        ts_ref_num;
+ 	bool				ts_work_on;
++	bool				dbg_info_dumped;
++	struct work_struct              ndev_reset_work;
+ };
+ 
+ #ifdef PFE_CFG_MULTI_INSTANCE_SUPPORT
+@@ -196,7 +223,6 @@ struct pfeng_hif_chnl {
+ 	pfe_hif_chnl_t			*priv;
+ 	u8				refcount;
+ 	bool				ihc;
+-	bool				queues_stopped;
+ 	u8				status;
+ 	u8				idx;
+ 	u32				features;
+@@ -216,6 +242,7 @@ struct pfeng_hif_chnl {
+ 
+ 	pfe_phy_if_t			*phyif_hif;
+ 	pfe_log_if_t			*logif_hif;
++	refcount_t			logif_hif_count;
+ 
+ 	u32				cfg_rx_max_coalesced_frames;
+ 	u32				cfg_rx_coalesce_usecs;
+@@ -409,6 +436,7 @@ void pfeng_hif_chnl_txconf_unroll_map_full(struct pfeng_hif_chnl *chnl, int i);
+ void pfeng_hif_chnl_txconf_free_map_full(struct pfeng_hif_chnl *chnl, int napi_budget);
+ int pfeng_hif_chnl_txbd_unused(struct pfeng_hif_chnl *chnl);
+ void pfeng_hif_chnl_txconf_update_wr_idx(struct pfeng_hif_chnl *chnl, int count);
++void pfeng_bman_tx_pool_dump(struct pfeng_hif_chnl *chnl, struct net_device *ndev, void (*dbg_print)(void *ndev, const char *fmt, ...));
+ 
+ /* netif */
+ int pfeng_netif_create(struct pfeng_priv *priv);
+diff --git a/sw/pfe_platform/Makefile b/sw/pfe_platform/Makefile
+index 29e47df..9e24529 100644
+--- a/sw/pfe_platform/Makefile
++++ b/sw/pfe_platform/Makefile
+@@ -1,5 +1,5 @@
+ # =========================================================================
+-#  Copyright 2018-2022 NXP
++#  Copyright 2018-2023 NXP
+ #
+ #  SPDX-License-Identifier: GPL-2.0
+ #
+@@ -227,15 +227,13 @@ pfe_platform-y := src/pfe_bmu.o \
+ 	src/pfe_spd.o \
+ 	src/pfe_spd_acc.o \
+ 	src/pfe_mac_db.o \
+-	src/pfe_hm.o
++	src/pfe_hm.o \
++	src/pfe_l2br.o \
++	src/pfe_l2br_table.o
+ 
+ ifeq ($(PFE_CFG_RTABLE_ENABLE),1)
+     pfe_platform-y += src/pfe_rtable.o
+ endif
+-ifeq ($(PFE_CFG_L2BRIDGE_ENABLE),1)
+-    pfe_platform-y += src/pfe_l2br.o \
+-        src/pfe_l2br_table.o
+-endif
+ endif
+ 
+ ifeq ($(PFE_CFG_PFE_MASTER),0)
+diff --git a/sw/pfe_platform/hw/s32g/pfe_class_csr.c b/sw/pfe_platform/hw/s32g/pfe_class_csr.c
+index 7d0efe2..e6f4d48 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_class_csr.c
++++ b/sw/pfe_platform/hw/s32g/pfe_class_csr.c
+@@ -56,7 +56,7 @@ void pfe_class_cfg_set_config(addr_t base_va, const pfe_class_cfg_t *cfg)
+ 	if (TRUE == pfe_feature_mgr_is_available(PFE_HW_FEATURE_RUN_ON_G3))
+ 	{
+ 		regval &= ~AXI_DBUS_BURST_SIZE(0x3ffU);
+-		regval |= AXI_DBUS_BURST_SIZE(0x100U);
++		regval |= AXI_DBUS_BURST_SIZE(0x200U);
+ 		regval |= 0x3U;
+ 		hal_write32(regval, base_va + CLASS_AXI_CTRL_ADDR);
+ 	}
+diff --git a/sw/pfe_platform/hw/s32g/pfe_platform_master.c b/sw/pfe_platform/hw/s32g/pfe_platform_master.c
+index 76c38b8..af20cf6 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_platform_master.c
++++ b/sw/pfe_platform/hw/s32g/pfe_platform_master.c
+@@ -2303,7 +2303,6 @@ static void pfe_platform_destroy_class(pfe_platform_t *platform)
+ 	}
+ }
+ 
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
+ /**
+  * @brief		Assign L2 Bridge to the platform
+  */
+@@ -2381,7 +2380,6 @@ static void pfe_platform_destroy_l2_bridge(pfe_platform_t *platform)
+ 		platform->vlantab = NULL;
+ 	}
+ }
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
+ 
+ #if defined(PFE_CFG_RTABLE_ENABLE)
+ 
+@@ -2954,9 +2952,7 @@ static errno_t pfe_platform_create_fci(pfe_platform_t *platform)
+ #if defined(PFE_CFG_RTABLE_ENABLE)
+ 	fci_init_info.rtable = platform->rtable;
+ #endif /* PFE_CFG_RTABLE_ENABLE */
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
+ 	fci_init_info.l2_bridge = platform->l2_bridge;
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
+ 	fci_init_info.class = platform->classifier;
+ 	fci_init_info.phy_if_db = platform->phy_if_db;
+ 	fci_init_info.log_if_db = platform->log_if_db;
+@@ -3774,14 +3770,14 @@ errno_t pfe_platform_init(const pfe_platform_config_t *config)
+ 	{
+ 		goto exit;
+ 	}
+-#ifdef PFE_CFG_FCI_ENABLE
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
++
+ 	/*	L2 Bridge. Must be initialized after soft reset. */
+ 	ret = pfe_platform_create_l2_bridge(&pfe, config);
+ 	if (EOK != ret)
+ 	{
+ 		goto exit;
+ 	}
++#ifdef PFE_CFG_FCI_ENABLE
+ #if defined(PFE_CFG_RTABLE_ENABLE)
+ 	/*	Routing Table */
+ 	ret = pfe_platform_create_rtable(&pfe, config);
+@@ -3790,7 +3786,6 @@ errno_t pfe_platform_init(const pfe_platform_config_t *config)
+ 		goto exit;
+ 	}
+ #endif /* PFE_CFG_RTABLE_ENABLE */
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
+ #endif /* PFE_CFG_FCI_ENABLE */
+ 
+ 	/*	HIF */
+@@ -3949,9 +3944,7 @@ static void pfe_platform_destroy_group1(void)
+ #if defined(PFE_CFG_RTABLE_ENABLE)
+ 	pfe_platform_destroy_rtable(&pfe);
+ #endif /* PFE_CFG_RTABLE_ENABLE */
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
+ 	pfe_platform_destroy_l2_bridge(&pfe);
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
+ }
+ 
+ static void pfe_platform_destroy_group2(void)
+diff --git a/sw/pfe_platform/hw/s32g/pfe_tmu_csr.c b/sw/pfe_platform/hw/s32g/pfe_tmu_csr.c
+index 435aa7b..f4880b7 100644
+--- a/sw/pfe_platform/hw/s32g/pfe_tmu_csr.c
++++ b/sw/pfe_platform/hw/s32g/pfe_tmu_csr.c
+@@ -14,6 +14,9 @@
+ #include "pfe_cbus.h"
+ #include "pfe_tmu_csr.h"
+ #include "pfe_feature_mgr.h"
++#ifdef PFE_CFG_TARGET_OS_LINUX
++#include <linux/iopoll.h>
++#endif
+ 
+ #ifndef PFE_CBUS_H_
+ #error Missing cbus.h
+@@ -66,6 +69,15 @@ static uint8_t pfe_tmu_hif_q_to_tmu_q(addr_t cbus_base_va, pfe_ct_phy_if_id_t ph
+ #include "Eth_43_PFE_MemMap.h"
+ #endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+ 
++#ifdef PFE_CFG_TARGET_OS_LINUX
++static DEFINE_SPINLOCK(tmu_lock);
++#define pfe_tmu_spinlock_lock() spin_lock_bh(&tmu_lock)
++#define pfe_tmu_spinlock_unlock() spin_unlock_bh(&tmu_lock)
++#else
++#define pfe_tmu_spinlock_lock()
++#define pfe_tmu_spinlock_unlock()
++#endif /* PFE_CFG_TARGET_OS_LINUX */
++
+ /* PHY lookup table */
+ static const pfe_ct_phy_if_id_t phy_if_id_temp[TLITE_PHYS_CNT] =
+ {
+@@ -445,6 +457,8 @@ static errno_t pfe_tmu_cntx_mem_write(addr_t cbus_base_va, pfe_ct_phy_if_id_t ph
+ 	pfe_ct_phy_if_id_t phy_temp = phy;
+ 	errno_t ret = EOK;
+ 
++	pfe_tmu_spinlock_lock();
++
+ 	hal_write32(0U, cbus_base_va + TMU_CNTX_ACCESS_CTRL);
+ 
+ 	switch (phy)
+@@ -486,6 +500,8 @@ static errno_t pfe_tmu_cntx_mem_write(addr_t cbus_base_va, pfe_ct_phy_if_id_t ph
+ 		}
+ 	}
+ 
++	pfe_tmu_spinlock_unlock();
++
+ 	return ret;
+ }
+ 
+@@ -504,6 +520,8 @@ static errno_t pfe_tmu_cntx_mem_read(addr_t cbus_base_va, pfe_ct_phy_if_id_t phy
+ 	pfe_ct_phy_if_id_t phy_temp = phy;
+ 	errno_t ret = EOK;
+ 
++	pfe_tmu_spinlock_lock();
++
+ 	hal_write32(0U, cbus_base_va + TMU_CNTX_ACCESS_CTRL);
+ 
+ 	switch (phy)
+@@ -538,6 +556,11 @@ static errno_t pfe_tmu_cntx_mem_read(addr_t cbus_base_va, pfe_ct_phy_if_id_t phy
+ 		hal_write32((((uint32_t)phy_temp & (uint32_t)0x1fU) << 16U) | (uint32_t)loc, cbus_base_va + TMU_CNTX_ADDR);
+ 		hal_write32(0x2U, cbus_base_va + TMU_CNTX_CMD);
+ 
++#ifdef PFE_CFG_TARGET_OS_LINUX
++		ret = readx_poll_timeout_atomic(hal_read32, cbus_base_va + TMU_CNTX_CMD, reg, (reg & 0x4U), 2, 2 * 5 * timeout);
++		*data = hal_read32(cbus_base_va + TMU_CNTX_DATA);
++		ret = -ret;
++#else
+ 		do
+ 		{
+ 			oal_time_usleep(10U);
+@@ -553,8 +576,11 @@ static errno_t pfe_tmu_cntx_mem_read(addr_t cbus_base_va, pfe_ct_phy_if_id_t phy
+ 		{
+ 			*data = hal_read32(cbus_base_va + TMU_CNTX_DATA);
+ 		}
++#endif
+ 	}
+ 
++	pfe_tmu_spinlock_unlock();
++
+ 	return ret;
+ }
+ 
+diff --git a/sw/pfe_platform/public/pfe_hif_chnl_linux.h b/sw/pfe_platform/public/pfe_hif_chnl_linux.h
+index 1d5d58e..5570469 100644
+--- a/sw/pfe_platform/public/pfe_hif_chnl_linux.h
++++ b/sw/pfe_platform/public/pfe_hif_chnl_linux.h
+@@ -219,7 +219,8 @@ errno_t pfe_hif_chnl_set_rx_irq_coalesce(pfe_hif_chnl_t *chnl, uint32_t frames,
+ bool_t pfe_hif_chnl_is_rx_dma_active(const pfe_hif_chnl_t *chnl) __attribute__((hot));
+ bool_t pfe_hif_chnl_is_tx_dma_active(const pfe_hif_chnl_t *chnl) __attribute__((hot));
+ uint32_t pfe_hif_chnl_get_id(const pfe_hif_chnl_t *chnl) __attribute__((pure, cold));
+-uint32_t pfe_hif_chnl_dump_ring(const pfe_hif_chnl_t *chnl, bool_t dump_rx, bool_t dump_tx, struct seq_file *seq, uint8_t verb_level) __attribute__((cold));
++void pfe_hif_chnl_dump_ring(const pfe_hif_chnl_t *chnl, bool_t dump_rx, bool_t dump_tx, struct seq_file *seq, uint8_t verb_level) __attribute__((cold));
++void pfe_hif_chnl_dump_tx_ring_to_ndev(const pfe_hif_chnl_t *chnl, struct net_device *ndev, void (*ndev_print)(void *ndev, const char *fmt, ...)) __attribute__((cold));
+ uint32_t pfe_hif_chnl_get_tx_cnt(const pfe_hif_chnl_t *chnl);
+ uint32_t pfe_hif_chnl_get_rx_cnt(const pfe_hif_chnl_t *chnl);
+ 
+diff --git a/sw/pfe_platform/public/pfe_hif_ring_linux.h b/sw/pfe_platform/public/pfe_hif_ring_linux.h
+index 98265e9..fbf40d8 100644
+--- a/sw/pfe_platform/public/pfe_hif_ring_linux.h
++++ b/sw/pfe_platform/public/pfe_hif_ring_linux.h
+@@ -27,6 +27,6 @@ void pfe_hif_ring_invalidate(const pfe_hif_ring_t *ring) __attribute__((cold));
+ uint32_t pfe_hif_ring_get_fill_level(const pfe_hif_ring_t *ring) __attribute__((pure, hot));
+ bool_t pfe_hif_ring_is_on_head(const pfe_hif_ring_t *ring) __attribute__((pure, hot));
+ 
+-uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *name, struct seq_file *seq, uint8_t verb_level);
++void pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *name, void *dev, void (*dev_print)(void *dev, const char *fmt, ...), uint8_t verb_level);
+ 
+ #endif /* PUBLIC_PFE_HIF_RING_H_ */
+diff --git a/sw/pfe_platform/public/pfe_platform.h b/sw/pfe_platform/public/pfe_platform.h
+index 455e3c2..1aafadd 100644
+--- a/sw/pfe_platform/public/pfe_platform.h
++++ b/sw/pfe_platform/public/pfe_platform.h
+@@ -25,10 +25,8 @@
+ #endif
+ #include "pfe_parity.h"
+ #include "pfe_emac.h"
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
+-	#include "pfe_l2br_table.h"
+-	#include "pfe_l2br.h"
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
++#include "pfe_l2br_table.h"
++#include "pfe_l2br.h"
+ #include "pfe_phy_if.h"
+ #include "pfe_log_if.h"
+ #include "pfe_if_db.h"
+@@ -96,6 +94,7 @@ typedef struct
+ 	bool_t g2_ordered_class_writes;	/* S32G2 ordered class writes switch */
+ 	bool_t g3_rtable_in_lmem;	/* allocate the routing table in LMEM for S32G3 */
+ 	uint8_t emac_ext_ts_mask;	/* The bitmap representing setting of external timestamping mode on EMACs */
++	u8 lltx_res_tmu_q_id;
+ } pfe_platform_config_t;
+ 
+ typedef struct
+@@ -131,11 +130,9 @@ typedef struct
+ #if defined(PFE_CFG_RTABLE_ENABLE)
+ 	pfe_rtable_t *rtable;
+ #endif /* PFE_CFG_RTABLE_ENABLE */
+-#if defined(PFE_CFG_L2BRIDGE_ENABLE)
+ 	pfe_l2br_table_t *mactab;
+ 	pfe_l2br_table_t *vlantab;
+ 	pfe_l2br_t *l2_bridge;
+-#endif /* PFE_CFG_L2BRIDGE_ENABLE */
+ 	pfe_class_t *classifier;
+ 	pfe_tmu_t *tmu;
+ 	pfe_util_t *util;
+diff --git a/sw/pfe_platform/public/pfe_rtable.h b/sw/pfe_platform/public/pfe_rtable.h
+index a2f8569..3510e41 100644
+--- a/sw/pfe_platform/public/pfe_rtable.h
++++ b/sw/pfe_platform/public/pfe_rtable.h
+@@ -96,7 +96,7 @@ typedef enum
+  * 			related event occur. This is prototype of the callback.
+  * @see		pfe_rtable_add_entry
+  */
+-typedef void (* pfe_rtable_callback_t)(void *arg, pfe_rtable_cbk_event_t event);
++typedef void (* pfe_rtable_callback_t)(pfe_rtable_entry_t *entry, pfe_rtable_cbk_event_t event);
+ 
+ #ifdef PFE_CFG_TARGET_OS_AUTOSAR
+ #define ETH_43_PFE_START_SEC_CODE
+diff --git a/sw/pfe_platform/src/pfe_hif_chnl_linux.c b/sw/pfe_platform/src/pfe_hif_chnl_linux.c
+index 3313d11..d5b4d60 100644
+--- a/sw/pfe_platform/src/pfe_hif_chnl_linux.c
++++ b/sw/pfe_platform/src/pfe_hif_chnl_linux.c
+@@ -1930,10 +1930,19 @@ __attribute__((cold)) void pfe_hif_chnl_destroy(pfe_hif_chnl_t *chnl)
+  * @param[in]	seq			Pointer to debugfs seq_file
+  * @param[in]	verb_level 	Verbosity level, number of data written to the buffer
+  */
+-__attribute__((cold)) uint32_t pfe_hif_chnl_dump_ring(const pfe_hif_chnl_t *chnl, bool_t dump_rx, bool_t dump_tx, struct seq_file *seq, uint8_t verb_level)
++
++static void pfe_seq_print(void *dev, const char *fmt, ...)
+ {
+-	uint32_t len = 0;
++	struct seq_file *seq = (struct seq_file*)dev;
++	va_list args;
++
++	va_start(args, fmt);
++	seq_vprintf(seq, fmt, args);
++	va_end(args);
++}
+ 
++__attribute__((cold)) void pfe_hif_chnl_dump_ring(const pfe_hif_chnl_t *chnl, bool_t dump_rx, bool_t dump_tx, struct seq_file *seq, uint8_t verb_level)
++{
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+ 	if (unlikely(NULL == chnl))
+ 	{
+@@ -1942,17 +1951,20 @@ __attribute__((cold)) uint32_t pfe_hif_chnl_dump_ring(const pfe_hif_chnl_t *chnl
+ 	}
+ #endif /* PFE_CFG_NULL_ARG_CHECK */
+ 
+-	if(dump_rx)
++	if (dump_rx)
+ 	{
+-		len += pfe_hif_ring_dump(chnl->rx_ring, "RX", seq, verb_level);
++		pfe_hif_ring_dump(chnl->rx_ring, "RX", seq, pfe_seq_print, verb_level);
+ 	}
+ 
+-	if(dump_tx)
++	if (dump_tx)
+ 	{
+-		len += pfe_hif_ring_dump(chnl->tx_ring, "TX", seq, verb_level);
++		pfe_hif_ring_dump(chnl->tx_ring, "TX", seq, pfe_seq_print, verb_level);
+ 	}
++}
+ 
+-	return len;
++__attribute__((cold)) void pfe_hif_chnl_dump_tx_ring_to_ndev(const pfe_hif_chnl_t *chnl, struct net_device *ndev, void (*ndev_print)(void *ndev, const char *fmt, ...))
++{
++	pfe_hif_ring_dump(chnl->tx_ring, "TX ndev", ndev, ndev_print, PFE_CFG_VERBOSITY_LEVEL);
+ }
+ 
+ /**
+@@ -2012,8 +2024,7 @@ __attribute__((cold)) uint32_t pfe_hif_chnl_get_text_statistics(const pfe_hif_ch
+ 	/*	HIF */
+ 	pfe_hif_chnl_cfg_get_text_stat(chnl->cbus_base_va, chnl->id, seq, verb_level);
+ 
+-	if (verb_level >= 9)
+-		pfe_hif_chnl_dump_ring(chnl, TRUE, TRUE, seq, verb_level);
++	pfe_hif_chnl_dump_ring(chnl, TRUE, TRUE, seq, verb_level);
+ 
+ 	return 0;
+ }
+diff --git a/sw/pfe_platform/src/pfe_hif_ring_linux.c b/sw/pfe_platform/src/pfe_hif_ring_linux.c
+index 37fa987..08092db 100644
+--- a/sw/pfe_platform/src/pfe_hif_ring_linux.c
++++ b/sw/pfe_platform/src/pfe_hif_ring_linux.c
+@@ -224,7 +224,7 @@ __attribute__((pure, hot)) uint32_t pfe_hif_ring_get_fill_level(const pfe_hif_ri
+ 	}
+ #endif /* PFE_CFG_NULL_ARG_CHECK */
+ 
+-	return ring->write_idx - ring->read_idx;
++	return (ring->write_idx - ring->read_idx) & RING_LEN_MASK;
+ }
+ 
+ /**
+@@ -694,17 +694,17 @@ __attribute__((cold)) static void pfe_hif_ring_invalidate_std(const pfe_hif_ring
+  * @details		Dumps particular ring
+  * @param[in]	ring The ring instance
+  * @param[in]	name The ring name
+- * @param[in]	seq			Pointer to debugfs seq_file
++ * @param[in]	dev Printing device instance
++ * @param[in]	dev_print Device dependent print method
+  * @param[in]	verb_level 	Verbosity level, number of data written to the buffer
+  * @return		Number of bytes written to the buffer
+  * @note		Must not be preempted by: pfe_hif_ring_enqueue_buf(), pfe_hif_ring_destroy()
+  */
+-__attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *name, struct seq_file *seq, uint8_t verb_level)
++__attribute__((cold)) void pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *name, void *dev, void (*dev_print)(void *dev, const char *fmt, ...), uint8_t verb_level)
+ {
+-	uint32_t ii;
+-	uint32_t len = 0U;
+ 	char_t *idx_str;
+ 	bool_t pr_out;
++	uint32_t ii;
+ 
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+ 	if (unlikely((NULL == ring) || (NULL == name)))
+@@ -714,11 +714,11 @@ __attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *n
+ 	}
+ #endif /* PFE_CFG_NULL_ARG_CHECK */
+ 
+-	seq_printf(seq, "Ring %s: len %d\n", name, RING_LEN);
+-	seq_printf(seq, "  Type: %s\n", ring->is_rx ? "RX" : "TX");
+-	seq_printf(seq, "  Index w/r: %d/%d (%d/%d)\n", ring->write_idx & RING_LEN_MASK, ring->read_idx & RING_LEN_MASK, ring->write_idx, ring->read_idx);
++	dev_print(dev, "Ring %s: len %d\n", name, RING_LEN);
++	dev_print(dev, "  Type: %s\n", ring->is_rx ? "RX" : "TX");
++	dev_print(dev, "  Index w/r: %d/%d (%d/%d)\n", ring->write_idx & RING_LEN_MASK, ring->read_idx & RING_LEN_MASK, ring->write_idx, ring->read_idx);
+ 
+-	if(verb_level >= 8) {
++	if (verb_level >= PFE_CFG_VERBOSITY_LEVEL) {
+ 		/* BD ring */
+ 		for (ii=0U; ii<RING_LEN; ii++)
+ 		{
+@@ -728,8 +728,8 @@ __attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *n
+ 
+ 			if (0 == ii)
+ 			{
+-				seq_printf(seq, "  BD va/pa v0x%px/p0x%px\n", ring->base_va, ring->base_pa);
+-				seq_printf(seq, "            pa           idx: bufl:ctrl:  data  :  next  :seqn\n");
++				dev_print(dev, "  BD va/pa v0x%px/p0x%px\n", ring->base_va, ring->base_pa);
++				dev_print(dev, "            pa           idx: bufl:ctrl:  data  :  next  :seqn\n");
+ 				pr_out = TRUE;
+ 			}
+ 
+@@ -757,7 +757,7 @@ __attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *n
+ 
+ 			if (TRUE == pr_out)
+ 			{
+-				seq_printf(seq, "    p0x%px%5d: %04x:%04x:%08x:%08x:%04x%s\n",(void *)&((pfe_hif_bd_t *)ring->base_pa)[ii], ii, HIF_RING_BD_W1_BD_BUFFLEN_GET(bd->rsvd_buflen_w1), HIF_RING_BD_W0_BD_CTRL_GET(bd->ctrl_seqnum_w0), bd->data, bd->next, HIF_RING_BD_W0_BD_SEQNUM_GET(bd->ctrl_seqnum_w0), idx_str);
++				dev_print(dev, "    p0x%px%5d: %04x:%04x:%08x:%08x:%04x%s\n",(void *)&((pfe_hif_bd_t *)ring->base_pa)[ii], ii, HIF_RING_BD_W1_BD_BUFFLEN_GET(bd->rsvd_buflen_w1), HIF_RING_BD_W0_BD_CTRL_GET(bd->ctrl_seqnum_w0), bd->data, bd->next, HIF_RING_BD_W0_BD_SEQNUM_GET(bd->ctrl_seqnum_w0), idx_str);
+ 			}
+ 		}
+ 
+@@ -771,8 +771,8 @@ __attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *n
+ 
+ 				if (0 == ii)
+ 				{
+-					seq_printf(seq, "  WB va/pa v0x%px/p0x%px\n", ring->wb_tbl_base_va, ring->wb_tbl_base_pa);
+-					seq_printf(seq, "            pa           idx:   ctl  : bufl :  seq\n");
++					dev_print(dev, "  WB va/pa v0x%px/p0x%px\n", ring->wb_tbl_base_va, ring->wb_tbl_base_pa);
++					dev_print(dev, "            pa           idx:ctrl: bufl :  seq\n");
+ 					pr_out = TRUE;
+ 				}
+ 
+@@ -795,13 +795,11 @@ __attribute__((cold)) uint32_t pfe_hif_ring_dump(pfe_hif_ring_t *ring, char_t *n
+ 
+ 				if (TRUE == pr_out)
+ 				{
+-					seq_printf(seq, "    p0x%px%5d: %04x:%06x:%04x:%s\n", (void *)&((pfe_hif_wb_bd_t *)ring->wb_tbl_base_pa)[ii], ii, HIF_RING_BD_W0_BD_CTRL(wb->rsvd_ctrl_w0), HIF_RING_WB_BD_W1_WB_BD_BUFFLEN(wb->seqnum_buflen_w1), HIF_RING_WB_BD_W1_WB_BD_SEQNUM(wb->seqnum_buflen_w1), idx_str);
++					dev_print(dev, "    p0x%px%5d: %04x:%06x:%04x:%s\n", (void *)&((pfe_hif_wb_bd_t *)ring->wb_tbl_base_pa)[ii], ii, wb->rsvd_ctrl_w0, HIF_RING_WB_BD_W1_WB_BD_BUFFLEN(wb->seqnum_buflen_w1), HIF_RING_WB_BD_W1_WB_BD_SEQNUM(wb->seqnum_buflen_w1), idx_str);
+ 				}
+ 			}
+ 		}
+ 	}
+-
+-	return len;
+ }
+ 
+ /**
+diff --git a/sw/pfe_platform/src/pfe_idex.c b/sw/pfe_platform/src/pfe_idex.c
+index 1c7d554..238e301 100644
+--- a/sw/pfe_platform/src/pfe_idex.c
++++ b/sw/pfe_platform/src/pfe_idex.c
+@@ -1,27 +1,19 @@
+ /* =========================================================================
+- *  Copyright 2019-2022 NXP
++ *  Copyright 2019-2023 NXP
+  *
+  *  SPDX-License-Identifier: GPL-2.0
+  *
+  * ========================================================================= */
+-
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ 
+-#ifdef PFE_CFG_MULTI_INSTANCE_SUPPORT
+ #include "linked_list.h"
+ #include "pfe_hif_drv.h"
+ #include "pfe_hif.h"
+ #include "pfe_idex.h"
+ #include "pfe_platform_cfg.h"
+ 
+-#if defined(PFE_CFG_TARGET_OS_LINUX)
+-    #define IDEX_IS_NOCPY FALSE
+-#elif defined(PFE_CFG_TARGET_OS_QNX)
+-    #define IDEX_IS_NOCPY (4 == PFE_CFG_LOCAL_IF)
+-#else
+-    #define IDEX_IS_NOCPY (4 == PFE_CFG_LOCAL_IF_VALUE)
+-#endif
++#define IDEX_IS_NOCPY FALSE
+ 
+ /**
+  * @brief	IDEX request timeout in seconds
+@@ -205,24 +197,9 @@ typedef struct
+ 	pfe_hif_t *hif;						/*	HIF module, for Master-up signaling */
+ } pfe_idex_t;
+ 
+-#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+-#define ETH_43_PFE_START_SEC_VAR_CLEARED_UNSPECIFIED
+-#include "Eth_43_PFE_MemMap.h"
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+-
+ /*	Local IDEX instance storage */
+ static pfe_idex_t pfe_idex = {0};
+ 
+-#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+-#define ETH_43_PFE_STOP_SEC_VAR_CLEARED_UNSPECIFIED
+-#include "Eth_43_PFE_MemMap.h"
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+-
+-#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+-#define ETH_43_PFE_START_SEC_CODE
+-#include "Eth_43_PFE_MemMap.h"
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+-
+ static void pfe_idex_do_rx(pfe_hif_drv_client_t *client, pfe_idex_t *idex);
+ static void pfe_idex_do_tx_conf(const pfe_hif_drv_client_t *client, const pfe_idex_t *idex);
+ static pfe_idex_request_t *pfe_idex_request_get_by_id(pfe_idex_seqnum_t seqnum);
+@@ -505,22 +482,6 @@ static void pfe_idex_do_tx_conf(const pfe_hif_drv_client_t *client, const pfe_id
+ 	}
+ }
+ 
+-#if (defined(PFE_CFG_TARGET_OS_AUTOSAR) && (FALSE == PFE_CFG_HIF_IRQ_ENABLED))
+-/**
+- * @brief		IHC client polling
+- * @details		Called by MainFunction when client-related event happens (packet received, packet
+- * 				transmitted).
+- */
+-void pfe_idex_ihc_poll(void)
+-{
+-	/*	Run TX routine */
+-    pfe_idex_do_tx_conf(pfe_idex.ihc_client, &pfe_idex);
+-	/*	Run RX routine */
+-    pfe_idex_do_rx(pfe_idex.ihc_client, &pfe_idex);
+-
+-}
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR && PFE_CFG_HIF_IRQ_ENABLED */
+-
+ /**
+  * @brief		Get request by sequence number
+  * @note		Every request can be identified by its unique sequence number.
+@@ -722,9 +683,6 @@ static errno_t pfe_idex_request_send(pfe_ct_phy_if_id_t dst_phy, pfe_idex_reques
+ 	uint32_t            timeout_us = 1500U * 1000U;
+ 	/*	Wait 1ms */
+ 	const uint32_t timeout_step = 1000U;
+-#if (defined(PFE_CFG_TARGET_OS_AUTOSAR) && (FALSE == PFE_CFG_HIF_IRQ_ENABLED))
+-	pfe_hif_drv_t *hif_drv;
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR && PFE_CFG_HIF_IRQ_ENABLED */
+ 
+ 	/*	1.) Create the request instance with room for request payload */
+ 	req = oal_mm_malloc_contig_aligned_nocache((addr_t)(sizeof(pfe_idex_request_t)) + (addr_t)data_len, 0U);
+@@ -795,16 +753,8 @@ static errno_t pfe_idex_request_send(pfe_ct_phy_if_id_t dst_phy, pfe_idex_reques
+ 			/*	4.) Block until response is received or timeout occurred. RX and
+ 		 	 	TX processing is expected to be done asynchronously in
+ 		 	 	pfe_idex_ihc_handler(). */
+-#if (defined(PFE_CFG_TARGET_OS_AUTOSAR) && (FALSE == PFE_CFG_HIF_IRQ_ENABLED))
+-			hif_drv = pfe_hif_drv_client_get_drv(idex->ihc_client);
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR && PFE_CFG_HIF_IRQ_ENABLED */
+ 			for (; timeout_us > 0U; timeout_us -= timeout_step)
+ 			{
+-#if (defined(PFE_CFG_TARGET_OS_AUTOSAR) && (FALSE == PFE_CFG_HIF_IRQ_ENABLED))
+-				pfe_hif_drv_tx_job(hif_drv);
+-				pfe_hif_drv_rx_job(hif_drv);
+-				pfe_idex_ihc_poll();
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR && PFE_CFG_HIF_IRQ_ENABLED */
+ 				if (IDEX_MASTER_DISCOVERY == type)
+ 				{
+ 					NXP_LOG_ERROR("Not implemented\n");
+@@ -1330,11 +1280,3 @@ errno_t pfe_idex_set_rpc_ret_val(errno_t retval, void *resp, uint16_t resp_len)
+ 	}
+ 	return ret;
+ }
+-
+-#ifdef PFE_CFG_TARGET_OS_AUTOSAR
+-#define ETH_43_PFE_STOP_SEC_CODE
+-#include "Eth_43_PFE_MemMap.h"
+-#endif /* PFE_CFG_TARGET_OS_AUTOSAR */
+-
+-#endif /* PFE_CFG_MULTI_INSTANCE_SUPPORT */
+-
+diff --git a/sw/pfe_platform/src/pfe_l2br.c b/sw/pfe_platform/src/pfe_l2br.c
+index 2106a90..74933eb 100644
+--- a/sw/pfe_platform/src/pfe_l2br.c
++++ b/sw/pfe_platform/src/pfe_l2br.c
+@@ -2109,7 +2109,7 @@ __attribute__((pure)) bool_t pfe_l2br_domain_is_fallback(const pfe_l2br_domain_t
+  */
+ static errno_t pfe_l2br_set_static_entry(const pfe_l2br_t *bridge, uint16_t vlan, const pfe_mac_addr_t mac, uint32_t new_fw_list, pfe_l2br_static_entry_t **static_entry)
+ {
+-	errno_t ret;
++	errno_t ret = EINVAL;
+ 
+ 	(*static_entry)->entry = pfe_l2br_table_entry_create(bridge->mac_table);
+ 
+@@ -2131,24 +2131,28 @@ static errno_t pfe_l2br_set_static_entry(const pfe_l2br_t *bridge, uint16_t vlan
+ 		if (EOK != pfe_l2br_table_entry_set_vlan((*static_entry)->entry, vlan))
+ 		{
+ 			NXP_LOG_ERROR("Couldn't set vlan\n");
++			pfe_l2br_table_entry_destroy((*static_entry)->entry);
+ 			oal_mm_free(*static_entry);
+ 			ret = EINVAL;
+ 		}
+ 		else if (EOK != pfe_l2br_table_entry_set_mac_addr((*static_entry)->entry, mac))
+ 		{
+ 			NXP_LOG_ERROR("Couldn't set mac address\n");
++			pfe_l2br_table_entry_destroy((*static_entry)->entry);
+ 			oal_mm_free(*static_entry);
+ 			ret = EINVAL;
+ 		}
+ 		else if (EOK != pfe_l2br_table_entry_set_action_data((*static_entry)->entry, (*static_entry)->u.action_data_u64val))
+ 		{
+ 			NXP_LOG_ERROR("Couldn't set action data\n");
++			pfe_l2br_table_entry_destroy((*static_entry)->entry);
+ 			oal_mm_free(*static_entry);
+ 			ret = EINVAL;
+ 		}
+ 		else if (EOK != pfe_l2br_table_add_entry(bridge->mac_table, (*static_entry)->entry))
+ 		{
+ 			NXP_LOG_ERROR("Couldn't set action data\n");
++			pfe_l2br_table_entry_destroy((*static_entry)->entry);
+ 			oal_mm_free(*static_entry);
+ 			ret	 = EINVAL;
+ 		}
+diff --git a/sw/pfe_platform/src/pfe_log_if_slave.c b/sw/pfe_platform/src/pfe_log_if_slave.c
+index c72e825..74a2aef 100644
+--- a/sw/pfe_platform/src/pfe_log_if_slave.c
++++ b/sw/pfe_platform/src/pfe_log_if_slave.c
+@@ -41,12 +41,33 @@ struct pfe_log_if_tag
+ 
+ static errno_t pfe_log_if_db_lock(void)
+ {
+-	errno_t ret;
++	/*	Wait 1ms */
++	const uint32_t timeout_step = 1000U;
++	/*	Timeout 1.5s */
++	uint32_t timeout_us = 1500U * 1000U;
++	errno_t ret = EINVAL;
++
++	/* Try to lock IF DB */
++	for (; timeout_us > 0U; timeout_us -= timeout_step)
++	{
++		ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_LOCK, NULL, 0, NULL, 0U);
++		if (EOK == ret)
++		{
++			/* Got lock */
++			break;
++		}
++		if (ENOLCK != ret)
++		{
++			/* Got real error */
++			break;
++		}
++
++		oal_time_usleep(timeout_step);
++	}
+ 
+-	ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_LOCK, NULL, 0, NULL, 0U);
+ 	if (EOK != ret)
+ 	{
+-		NXP_LOG_ERROR("Unable to lock interface DB: %d\n", ret);
++		NXP_LOG_WARNING("Unable to lock interface DB: %d\n", ret);
+ 	}
+ 
+ 	return ret;
+@@ -59,7 +80,7 @@ static errno_t pfe_log_if_db_unlock(void)
+ 	ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_UNLOCK, NULL, 0, NULL, 0U);
+ 	if (EOK != ret)
+ 	{
+-		NXP_LOG_ERROR("Unable to lock interface DB: %d\n", ret);
++		NXP_LOG_WARNING("Unable to unlock interface DB: %d\n", ret);
+ 	}
+ 
+ 	return ret;
+diff --git a/sw/pfe_platform/src/pfe_phy_if.c b/sw/pfe_platform/src/pfe_phy_if.c
+index 17ef5a5..c438f9a 100644
+--- a/sw/pfe_platform/src/pfe_phy_if.c
++++ b/sw/pfe_platform/src/pfe_phy_if.c
+@@ -38,7 +38,7 @@ struct pfe_phy_if_tag
+ 	pfe_ct_phy_if_t phy_if_class;
+ 	LLIST_t log_ifs;
+ 	oal_mutex_t lock;
+-	bool_t is_enabled;
++	uint32_t enable_cnt;
+ 	pfe_ct_block_state_t block_state; /* Copy of value in phy_if_class for faster access */
+ 	pfe_mac_db_t *mac_db; /* MAC database */
+ 	union
+@@ -201,7 +201,7 @@ pfe_phy_if_t *pfe_phy_if_create(pfe_class_t *class, pfe_ct_phy_if_id_t id, const
+ 		iface->type = PFE_PHY_IF_INVALID;
+ 		iface->id = id;
+ 		iface->class = class;
+-		iface->is_enabled = FALSE;
++		iface->enable_cnt = 0U;
+ 		LLIST_Init(&iface->log_ifs);
+ 
+ 		iface->mac_db = pfe_mac_db_create();
+@@ -301,6 +301,15 @@ void pfe_phy_if_destroy(pfe_phy_if_t *iface)
+ 		}
+ 		else
+ 		{
++			if (0U != iface->enable_cnt)
++			{
++				iface->enable_cnt = 0U;
++				ret = pfe_phy_if_disable_nolock(iface);
++				if (EOK != ret)
++				{
++					NXP_LOG_ERROR("%s can't be disabled: %d\n", iface->name, ret);
++				}
++			}
+ 			if (iface->mac_db != NULL)
+ 			{
+ 				ret = pfe_mac_db_destroy(iface->mac_db);
+@@ -1070,7 +1079,7 @@ errno_t pfe_phy_if_bind_emac(pfe_phy_if_t *iface, pfe_emac_t *emac)
+ 			iface->type = PFE_PHY_IF_EMAC;
+ 			iface->port.emac = emac;
+ 
+-			if (TRUE == iface->is_enabled)
++			if (0U != iface->enable_cnt)
+ 			{
+ 				if (EOK != oal_mutex_unlock(&iface->lock))
+ 				{
+@@ -1287,7 +1296,7 @@ bool_t pfe_phy_if_is_enabled(pfe_phy_if_t *iface)
+ 			NXP_LOG_ERROR("mutex lock failed\n");
+ 		}
+ 
+-		ret = iface->is_enabled;
++		ret = 0U != iface->enable_cnt;
+ 
+ 		if (EOK != oal_mutex_unlock(&iface->lock))
+ 		{
+@@ -1354,7 +1363,7 @@ static errno_t pfe_phy_if_enable_hw_block(const pfe_phy_if_t *iface)
+  */
+ errno_t pfe_phy_if_enable(pfe_phy_if_t *iface)
+ {
+-	errno_t ret;
++	errno_t ret = EOK;
+ 	pfe_ct_if_flags_t tmp;
+ 
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+@@ -1373,41 +1382,49 @@ errno_t pfe_phy_if_enable(pfe_phy_if_t *iface)
+ 
+ 		NXP_LOG_DEBUG("Enabling %s\n", iface->name);
+ 
+-		/* Enable HW bridge lookup if required */
+-		pfe_phy_if_update_op_mode_nolock(iface, iface->phy_if_class.mode);
+-
+-		/*	Enable interface instance. Backup flags and write the changes. */
+-		tmp = iface->phy_if_class.flags;
+-		iface->phy_if_class.flags |= oal_htonl(IF_FL_ENABLED);
+-		ret = pfe_phy_if_write_to_class_nostats(iface, &iface->phy_if_class);
+-		if (EOK != ret)
++		if (0U != iface->enable_cnt)
+ 		{
+-			/*	Failed. Revert flags. */
+-			NXP_LOG_ERROR("Phy IF configuration failed\n");
+-			iface->phy_if_class.flags = tmp;
++			iface->enable_cnt++;
++			NXP_LOG_DEBUG("Interface %s already enabled\n", iface->name);
+ 		}
+ 		else
+ 		{
+-			/*	Mark the interface as enabled */
+-			iface->is_enabled = TRUE;
+ 
+-			ret = pfe_phy_if_enable_hw_block(iface);
++			/* Enable HW bridge lookup if required */
++			pfe_phy_if_update_op_mode_nolock(iface, iface->phy_if_class.mode);
+ 
++			/*	Enable interface instance. Backup flags and write the changes. */
++			tmp = iface->phy_if_class.flags;
++			iface->phy_if_class.flags |= oal_htonl(IF_FL_ENABLED);
++			ret = pfe_phy_if_write_to_class_nostats(iface, &iface->phy_if_class);
+ 			if (EOK != ret)
+ 			{
+-				/*	HW configuration failure. Backup flags and disable the instance. */
+-				tmp = iface->phy_if_class.flags;
+-				iface->phy_if_class.flags &= (pfe_ct_if_flags_t)oal_htonl(~(uint32_t)IF_FL_ENABLED);
+-				ret = pfe_phy_if_write_to_class_nostats(iface, &iface->phy_if_class);
++				/*	Failed. Revert flags. */
++				NXP_LOG_ERROR("Phy IF configuration failed\n");
++				iface->phy_if_class.flags = tmp;
++			}
++			else
++			{
++				iface->enable_cnt++;
++
++				ret = pfe_phy_if_enable_hw_block(iface);
++
+ 				if (EOK != ret)
+ 				{
+-					/*	Failed. Revert flags. */
+-					NXP_LOG_ERROR("Phy IF configuration failed\n");
+-					iface->phy_if_class.flags = tmp;
+-				}
+-				else
+-				{
+-					iface->is_enabled = FALSE;
++					/*	HW configuration failure. Backup flags and disable the instance. */
++					tmp = iface->phy_if_class.flags;
++					iface->phy_if_class.flags &= (pfe_ct_if_flags_t)oal_htonl(~(uint32_t)IF_FL_ENABLED);
++					ret = pfe_phy_if_write_to_class_nostats(iface, &iface->phy_if_class);
++					if (EOK != ret)
++					{
++						/*	Failed. Revert flags. */
++						NXP_LOG_ERROR("Phy IF configuration failed\n");
++						iface->phy_if_class.flags = tmp;
++					}
++					else
++					{
++						iface->enable_cnt = 0U;
++					}
+ 				}
+ 			}
+ 		}
+@@ -1444,6 +1461,12 @@ static errno_t pfe_phy_if_disable_nolock(pfe_phy_if_t *iface)
+ 		{
+ 			ret = EOK;
+ 		}
++		else if (1U < iface->enable_cnt)
++		{
++			iface->enable_cnt--;
++			NXP_LOG_DEBUG("Interface %s is still in use, skipping\n", iface->name);
++			ret = EOK;
++		}
+ 		else
+ 		{
+ 			NXP_LOG_DEBUG("Disabling %s\n", iface->name);
+@@ -1460,8 +1483,7 @@ static errno_t pfe_phy_if_disable_nolock(pfe_phy_if_t *iface)
+ 			}
+ 			else
+ 			{
+-				/*	Mark the interface as disabled */
+-				iface->is_enabled = FALSE;
++				iface->enable_cnt = 0U;
+ 
+ 				/*	Disable also associated HW block */
+ 				if (NULL == iface->port.instance)
+diff --git a/sw/pfe_platform/src/pfe_phy_if_slave.c b/sw/pfe_platform/src/pfe_phy_if_slave.c
+index 5fbba2f..55cbabe 100644
+--- a/sw/pfe_platform/src/pfe_phy_if_slave.c
++++ b/sw/pfe_platform/src/pfe_phy_if_slave.c
+@@ -16,11 +16,9 @@
+  *				sends requests to master driver which performs the actual
+  *				requested operations.
+  */
+-
+ #include "pfe_cfg.h"
+ #include "oal.h"
+ 
+-#ifdef PFE_CFG_PFE_SLAVE
+ #include "hal.h"
+ #include "pfe_platform_cfg.h"
+ #include "pfe_ct.h"
+@@ -42,9 +40,30 @@ static bool_t pfe_phy_if_has_log_if_nolock(const pfe_phy_if_t *iface, const pfe_
+ 
+ static errno_t pfe_phy_if_db_lock(void)
+ {
+-	errno_t ret;
++	/*	Wait 1ms */
++	const uint32_t timeout_step = 1000U;
++	/*	Timeout 1.5s */
++	uint32_t timeout_us = 1500U * 1000U;
++	errno_t ret = EINVAL;
++
++	/* Try to lock IF DB */
++	for (; timeout_us > 0U; timeout_us -= timeout_step)
++	{
++		ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_LOCK, NULL, 0, NULL, 0U);
++		if (EOK == ret)
++		{
++			/* Got lock */
++			break;
++		}
++		if (ENOLCK != ret)
++		{
++			/* Got real error */
++			break;
++		}
++
++		oal_time_usleep(timeout_step);
++	}
+ 
+-	ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_LOCK, NULL, 0, NULL, 0U);
+ 	if (EOK != ret)
+ 	{
+ 		NXP_LOG_WARNING("Unable to lock interface DB: %d\n", ret);
+@@ -60,7 +79,7 @@ static errno_t pfe_phy_if_db_unlock(void)
+ 	ret = pfe_idex_master_rpc(PFE_PLATFORM_RPC_PFE_IF_UNLOCK, NULL, 0, NULL, 0U);
+ 	if (EOK != ret)
+ 	{
+-		NXP_LOG_WARNING("Unable to lock interface DB: %d\n", ret);
++		NXP_LOG_WARNING("Unable to unlock interface DB: %d\n", ret);
+ 	}
+ 
+ 	return ret;
+@@ -1875,6 +1894,3 @@ uint32_t pfe_phy_if_get_stat_value(pfe_phy_if_t *iface, uint32_t stat_id)
+ 
+ 	return stat_val;
+ }
+-
+-#endif /* PFE_CFG_PFE_SLAVE */
+-
+diff --git a/sw/pfe_platform/src/pfe_rtable.c b/sw/pfe_platform/src/pfe_rtable.c
+index dfabe91..d966e0b 100644
+--- a/sw/pfe_platform/src/pfe_rtable.c
++++ b/sw/pfe_platform/src/pfe_rtable.c
+@@ -2378,6 +2378,11 @@ errno_t pfe_rtable_del_entry(pfe_rtable_t *rtable, pfe_rtable_entry_t *entry)
+ 			NXP_LOG_ERROR("Mutex lock failed\n");
+ 		}
+ 
++		if (NULL != entry->callback)
++		{
++			entry->callback(entry, RTABLE_ENTRY_TIMEOUT);
++		}
++
+ 		ret = pfe_rtable_del_entry_nolock(rtable, entry);
+ 
+ 		if (0U == rtable->active_entries_count)
+@@ -2671,11 +2676,27 @@ void pfe_rtable_do_timeouts(pfe_rtable_t *rtable)
+ 					/*	Call user's callback if requested */
+ 					if (NULL != entry->callback)
+ 					{
+-						entry->callback(entry->callback_arg, RTABLE_ENTRY_TIMEOUT);
++						entry->callback(entry, RTABLE_ENTRY_TIMEOUT);
+ 					}
+ 
+ 					/*	Collect entries to be removed */
+ 					LLIST_AddAtEnd(&entry->list_to_remove_entry, &to_be_removed_list);
++
++					/* For entries which are part of a bidirectional pair, check the paired partner */
++					if (NULL != entry->child)
++					{
++						/* If paired partner is not yet marked as 'processed', then process it */
++						/* Magic number is a flag for timeout loop to skip this entry if it is later encountered. */
++						if (0xffffffffU != entry->child->timeout)
++						{
++							if (NULL != entry->child->callback)
++							{
++								entry->child->callback(entry->child, RTABLE_ENTRY_TIMEOUT);
++							}
++							LLIST_AddAtEnd(&entry->child->list_to_remove_entry, &to_be_removed_list);
++							entry->child->timeout = 0xffffffffU;  /* mark the paired partner as 'processed' */
++						}
++					}
+ 				}
+ 			}
+ 		}
+diff --git a/sw/xfci/libfci/public/libfci.h b/sw/xfci/libfci/public/libfci.h
+index 75de629..88adabe 100644
+--- a/sw/xfci/libfci/public/libfci.h
++++ b/sw/xfci/libfci/public/libfci.h
+@@ -1,7 +1,7 @@
+ /* =========================================================================
+  *  Copyright (C) 2007 Mindspeed Technologies, Inc.
+  *  Copyright 2015-2016 Freescale Semiconductor, Inc.
+- *  Copyright 2017-2022 NXP
++ *  Copyright 2017-2023 NXP
+  *
+  *  SPDX-License-Identifier: GPL-2.0
+  *
+@@ -1173,34 +1173,20 @@ traffic--+->| flow table +-->| queues +-->|   shapers   +--+-->processing
+ 
+ #if FALSE == FCI_CFG_FORCE_LEGACY_API
+     /**
+-	 * @if FCI_EVENTS_IMPLEMENTED
+      * @def         FPP_CMD_IPV4_CONNTRACK_CHANGE
+-     * @brief       Callback event value for IPv4 conntracks
+-     * @details     One of the values the callback registered by @ref fci_register_cb can get in @c fcode
+-     *              argument.
+      *
+-     *              This value indicates IPv4 conntrack event. The payload argument shall be cast to
+-     *              @ref fpp_ct_ex_cmd type. Then all addresses, all ports and protocol shall be used to
+-     *              identify connection while the @c action item indicates type of event:
+-     *              - @ref FPP_ACTION_KEEP_ALIVE: conntrack entry is still active
+-     *              - @ref FPP_ACTION_REMOVED: conntrack entry was removed
+-     *              - @ref FPP_ACTION_TCP_FIN: TCP FIN or TCP RST packet was received, conntrack was removed
+-     * @hideinitializer
+-	 * @endif
++     * @brief       FCI event: driver reports status change of some IPv4 conntrack.
++     *
++     * @details     Related data types: fpp_ct_cmd_t
+      */
+     #define FPP_CMD_IPV4_CONNTRACK_CHANGE   0x0315u
++
+     /**
+-	 * @if FCI_EVENTS_IMPLEMENTED
+      * @def         FPP_CMD_IPV6_CONNTRACK_CHANGE
+-     * @brief       Callback event value for IPv6 conntracks
+-     * @details     One of the values the callback registered by @ref fci_register_cb can get in @c fcode
+-     *              argument.
+      *
+-     *              This value indicates IPv6 conntrack event. The payload argument shall be cast to
+-     *              @ref fpp_ct6_ex_cmd type. Otherwise the event is same as
+-     *              @ref FPP_CMD_IPV4_CONNTRACK_CHANGE.
+-     * @hideinitializer
+-	 * @endif
++     * @brief       FCI event: driver reports status change of some IPv6 conntrack.
++     *
++     * @details     Related data types: fpp_ct6_cmd_t
+      */
+     #define FPP_CMD_IPV6_CONNTRACK_CHANGE   0x0415u
+ #endif /* FCI_CFG_FORCE_LEGACY_API */
+-- 
+2.25.1
+
