@@ -1,0 +1,56 @@
+From 6bbd669a317fdc1965f83c3f0b9b3acff2ffc21b Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Thu, 23 Mar 2023 19:42:10 +0200
+Subject: [PATCH 5/5] fdts: fix max frequency of macronix devices on
+ s32gxxxaevb
+
+The MX25UW51245G flash memory on s32r45-evb and s32gxxxaevb boards fit
+in the 'Q' automotive grade (MX25UW51245GXDQ00), as opposed to the other
+platforms which have an 'R' automotive grade memory (MX25UW51245GXDR00).
+Among others, a difference for these types is the maximum supported
+frequency:
+MX25UW51245GXDQ00 - 166 MHz
+MX25UW51245GXDR00 - 200 MHz
+Up until now, the s32gxxxaevb platforms were wrongly configured with
+the 200 MHz frequency.
+For the MX25UW51245GXDQ00 memory, the maximum supported frequency is 166
+MHz. However, getting this frequency would require further modifications
+in the clock tree configuration. For now, set the frequency to 133 MHz
+as a conservative approach, since this frequency can be obtained with
+the current clock configurations.
+
+Issue: ALB-9840
+Upstream-Status: Pending
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ fdts/s32gxxxa-evb.dtsi | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/fdts/s32gxxxa-evb.dtsi b/fdts/s32gxxxa-evb.dtsi
+index c71a2b062..72b59714e 100644
+--- a/fdts/s32gxxxa-evb.dtsi
++++ b/fdts/s32gxxxa-evb.dtsi
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+ /*
+- * Copyright 2019-2022 NXP
++ * Copyright 2019-2023 NXP
+  */
+ 
+ #include <dt-bindings/gpio/gpio.h>
+@@ -461,6 +461,10 @@
+ &qspi {
+ 	pinctrl-0 = <&qspi_pins>;
+ 	pinctrl-names = "default";
++
++	mx25uw51245g@0 {
++		spi-max-frequency = <133333333>;
++	};
+ };
+ 
+ &uart0 {
+-- 
+2.25.1
+

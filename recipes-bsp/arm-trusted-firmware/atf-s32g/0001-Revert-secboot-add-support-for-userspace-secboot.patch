@@ -1,4 +1,4 @@
-From 29e4124b0757e938e4fb1851756541054c95bb28 Mon Sep 17 00:00:00 2001
+From 4d75bf91e53cf0eb699ce8fe1c7d2f1628808514 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Wed, 28 Dec 2022 17:32:26 +0800
 Subject: [PATCH] Revert "secboot: add support for userspace secboot"
@@ -17,10 +17,10 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  2 files changed, 42 insertions(+)
 
 diff --git a/plat/nxp/s32/s32_bl2_el3.c b/plat/nxp/s32/s32_bl2_el3.c
-index 8e8896d85..f9915112e 100644
+index f80b199b0..ef4f03b8c 100644
 --- a/plat/nxp/s32/s32_bl2_el3.c
 +++ b/plat/nxp/s32/s32_bl2_el3.c
-@@ -357,6 +357,31 @@ static void get_fip_images_ranges(uintptr_t *images_base, size_t *images_size)
+@@ -392,6 +392,31 @@ static void get_fip_images_ranges(uintptr_t *images_base, size_t *images_size)
  	*images_size = MMU_ROUND_UP_TO_PAGE(fip_end - *images_base);
  }
  
@@ -49,10 +49,10 @@ index 8e8896d85..f9915112e 100644
 +}
 +#endif
 +
- int s32_el3_mmu_fixup(const uintptr_t *filters, size_t n_filters)
+ int s32_el3_mmu_fixup(const struct s32_mmu_filter *filters, size_t n_filters)
  {
  	const unsigned long code_start = BL_CODE_BASE;
-@@ -394,7 +419,11 @@ int s32_el3_mmu_fixup(const uintptr_t *filters, size_t n_filters)
+@@ -429,7 +454,11 @@ int s32_el3_mmu_fixup(const struct s32_mmu_filter *filters, size_t n_filters)
  		{
  			.base_pa = get_fip_hdr_page(),
  			.base_va = get_fip_hdr_page(),
@@ -65,10 +65,10 @@ index 8e8896d85..f9915112e 100644
  		},
  		/* Additional images in case the FIP is loaded into memory */
 diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
-index da071d666..c98cf759e 100644
+index e917f1bda..506ae8abf 100644
 --- a/plat/nxp/s32/s32_common.mk
 +++ b/plat/nxp/s32/s32_common.mk
-@@ -389,6 +389,13 @@ ${BL2_W_DTB}: bl2 dtbs ${DTB_SIZE_FILE} ${BL2_PADDING}
+@@ -400,6 +400,13 @@ ${BL2_W_DTB}: bl2 dtbs ${DTB_SIZE_FILE} ${BL2_PADDING}
  	@${DD} if=${BL2_BIN} of=$@ seek=$$(printf "%d" ${DTB_SIZE}) oflag=seek_bytes
  	@${DD} if=${BL2_PADDING} conv=notrunc >> $@
  
@@ -82,7 +82,7 @@ index da071d666..c98cf759e 100644
  ${BOOT_INFO_SRC}: ${FIP_MMC_OFFSET_FILE} ${FIP_EMMC_OFFSET_FILE} ${FIP_QSPI_OFFSET_FILE} ${FIP_MEMORY_OFFSET_FILE} ${FIP_HDR_SIZE_FILE} ${DTB_SIZE_FILE}
  	${ECHO} "  CREATE  $@"
  	${Q}echo "const unsigned long fip_mmc_offset = $$(cat ${FIP_MMC_OFFSET_FILE});" > ${BOOT_INFO_SRC}
-@@ -405,10 +412,16 @@ ${BL2_W_DTB_SIZE_FILE}: ${BL2_W_DTB}
+@@ -416,10 +423,16 @@ ${BL2_W_DTB_SIZE_FILE}: ${BL2_W_DTB}
  ${MKIMAGE_FIP_CONF_FILE}: ${BL2_W_DTB_SIZE_FILE} ${FIP_HDR_SIZE_FILE} add_to_fip FORCE
  	${ECHO} "  CREATE  $@"
  	${Q}cp -f ${MKIMAGE_CFG} $@

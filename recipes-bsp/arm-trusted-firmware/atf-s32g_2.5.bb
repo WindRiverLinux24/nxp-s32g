@@ -51,9 +51,18 @@ ATF_BSP36_RC5_PATCHES = " \
     file://bsp36/rc5/0054-plat-s32-Add-SCMI-platform-logger.patch \
 "
 
+ATF_BSP36_RC6_PATCHES = " \
+    file://bsp36/rc6/0001-s32g-bl31-Don-t-set-A53-clock-when-booting-with-SCP.patch \
+    file://bsp36/rc6/0002-s32cc-Move-DDR-clock-on-FIRC-before-DDR-deassert.patch \
+    file://bsp36/rc6/0003-s32r-fip_mem-Increase-MAX_XLAT_TABLES-and-MAX_MMAP_R.patch \
+    file://bsp36/rc6/0004-s32gen1-clock-freq-adjust-the-qspi-clock-frequency-b.patch \
+    file://bsp36/rc6/0005-fdts-fix-max-frequency-of-macronix-devices-on-s32gxx.patch \
+"
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
     ${ATF_BSP36_RC5_PATCHES} \
+    ${ATF_BSP36_RC6_PATCHES} \
     file://0001-fix-auth-forbid-junk-after-extensions.patch \
     file://0002-fix-auth-require-at-least-one-extension-to-be-presen.patch \
     file://0003-fix-auth-avoid-out-of-bounds-read-in-auth_nvctr.patch \

@@ -1,0 +1,54 @@
+From b4cf6796dd846332d6fe6a25b62d6fe18fbd849a Mon Sep 17 00:00:00 2001
+From: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Date: Tue, 7 Mar 2023 15:37:02 +0200
+Subject: [PATCH 1/5] s32g: bl31: Don't set A53 clock when booting with SCP
+
+The A53 clock shouldn't be set when booting with SCP during BL31 because
+it has already been initialized during BL2. This call was originally
+added to correctly initialize the A53 clock, regardless of derivative,
+since its frequency may differ depending on the SIUL2 MIDR registers
+
+Issue: ALB-9887
+Upstream-Status: Pending
+
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ plat/nxp/s32/s32g/s32g_bl31.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/plat/nxp/s32/s32g/s32g_bl31.c b/plat/nxp/s32/s32g/s32g_bl31.c
+index f2244ae42..f18eb4927 100644
+--- a/plat/nxp/s32/s32g/s32g_bl31.c
++++ b/plat/nxp/s32/s32g/s32g_bl31.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2019-2022 NXP
++ * Copyright 2019-2023 NXP
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -123,12 +123,17 @@ void bl31_platform_setup(void)
+ 	update_core_state(plat_my_core_pos(), CPU_ON, CPU_ON);
+ 	s32_gic_setup();
+ 
+-	s32_enable_a53_clock();
+-	dt_clk_init();
+-
+ 	if (is_scp_used()) {
+ 		core_addr = (uintptr_t)plat_secondary_cold_boot_setup;
+ 		scp_set_core_reset_addr(core_addr);
++	} else {
++		/* Call the new s32_enable_a53_clock() (which includes xbar_2x
++		 * enabling) on the BL31 cold boot path to set early A53 clock
++		 * frequency also during BL31. Otherwise, the clock driver will
++		 * enforce the frequencies from DT.
++		 */
++		s32_enable_a53_clock();
++		dt_clk_init();
+ 	}
+ }
+ 
+-- 
+2.25.1
+

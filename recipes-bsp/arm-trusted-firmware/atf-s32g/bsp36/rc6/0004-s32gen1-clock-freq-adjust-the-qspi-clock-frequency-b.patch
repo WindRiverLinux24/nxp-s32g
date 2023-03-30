@@ -1,0 +1,66 @@
+From 8d9b3d1727ce8e29d4dd260a306db5810e9982a2 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Thu, 23 Mar 2023 19:36:53 +0200
+Subject: [PATCH 4/5] s32gen1-clock-freq: adjust the qspi clock frequency based
+ on board
+
+EVB Boards have a flash memory which can operate at a frequency of
+maximum 166 MHz. However, getting this frequency would require further
+modifications in the clock tree configuration. For now, set the
+frequency to 133 MHz as a conservative approach, since this frequency
+can be obtained with the current clock configurations.
+
+The rest of the boards have flash memories which can operate at a
+frequency of 200 MHz.
+
+Issue: ALB-9840
+Upstream-Status: Pending
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ include/dt-bindings/clock/s32gen1-clock-freq.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/include/dt-bindings/clock/s32gen1-clock-freq.h b/include/dt-bindings/clock/s32gen1-clock-freq.h
+index 3228ef5ae..a4960dd39 100644
+--- a/include/dt-bindings/clock/s32gen1-clock-freq.h
++++ b/include/dt-bindings/clock/s32gen1-clock-freq.h
+@@ -29,7 +29,6 @@
+ #define S32GEN1_XBAR_2X_FREQ			(800 * MHZ)
+ #define S32GEN1_PERIPH_PLL_PHI0_MIN_FREQ	(100 * MHZ)
+ #define S32GEN1_PERIPH_PLL_PHI2_MIN_FREQ	(40 * MHZ)
+-#define S32GEN1_QSPI_CLK_FREQ			(200 * MHZ)
+ #elif defined(PLAT_s32g3)
+ #define S32GEN1_A53_MAX_FREQ			(1300 * MHZ)
+ #define S32GEN1_A53_MIN_FREQ			(48 * MHZ)
+@@ -41,7 +40,6 @@
+ #define S32GEN1_XBAR_2X_FREQ			(793236859UL)
+ #define S32GEN1_PERIPH_PLL_PHI0_MIN_FREQ	(100 * MHZ)
+ #define S32GEN1_PERIPH_PLL_PHI2_MIN_FREQ	(40 * MHZ)
+-#define S32GEN1_QSPI_CLK_FREQ			    (200 * MHZ)
+ 
+ #elif defined(PLAT_s32r)
+ #define S32GEN1_A53_MAX_FREQ			(800 * MHZ)
+@@ -54,11 +52,16 @@
+ #define S32GEN1_XBAR_2X_FREQ			(800 * MHZ)
+ #define S32GEN1_PERIPH_PLL_PHI0_MIN_FREQ	(0 * MHZ)
+ #define S32GEN1_PERIPH_PLL_PHI2_MIN_FREQ	(0 * MHZ)
+-#define S32GEN1_QSPI_CLK_FREQ			    (133333333)
+ #else
+ #error Undefined platform
+ #endif
+ 
+-#define S32GEN1_QSPI_2X_CLK_FREQ			    (2 * S32GEN1_QSPI_CLK_FREQ)
++#if defined(PLAT_s32g2xxaevb) || defined(PLAT_s32g3xxaevb) || defined(PLAT_s32r)
++#define S32GEN1_QSPI_CLK_FREQ		(133333333)
++#else
++#define S32GEN1_QSPI_CLK_FREQ		(200 * MHZ)
++#endif
++
++#define S32GEN1_QSPI_2X_CLK_FREQ	(2 * S32GEN1_QSPI_CLK_FREQ)
+ 
+ #endif
+-- 
+2.25.1
+
