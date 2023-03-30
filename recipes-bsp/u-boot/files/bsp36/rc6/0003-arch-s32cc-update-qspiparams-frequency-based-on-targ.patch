@@ -1,0 +1,153 @@
+From ec57ab5ab89c86df5749a67a3ef23e7fe28c87a5 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Thu, 23 Mar 2023 17:32:57 +0200
+Subject: [PATCH 3/3] arch: s32cc: update qspiparams frequency based on target
+ board
+
+The QSPI_1X frequency is 133 MHz for targets on EVB Boards and 200 MHz
+for the rest.
+
+Issue: ALB-9840
+Upstream-Status: Pending
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Makefile           | 11 +++++--
+ arch/arm/mach-s32/s32-cc/tools/qspiparams.c | 36 ++++++++++++++++++---
+ 2 files changed, 41 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Makefile b/arch/arm/mach-s32/s32-cc/Makefile
+index 9be8147a6c..71524335a6 100644
+--- a/arch/arm/mach-s32/s32-cc/Makefile
++++ b/arch/arm/mach-s32/s32-cc/Makefile
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier:	GPL-2.0+
+ #
+ # (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
+-# (C) Copyright 2016-2018, 2020-2022 NXP
++# (C) Copyright 2016-2018, 2020-2023 NXP
+ #
+ ccflags-y += -I./board/nxp/common/
+ ccflags-y += -I./board/nxp/s32-cc/include/
+@@ -28,6 +28,12 @@ obj-$(CONFIG_NETDEVICES)	+= eth.o
+ 
+ ifdef CONFIG_SPI_FLASH_MACRONIX
+ QSPI_MEMORY = MX25UW51245G
++
++ifeq ($(CONFIG_TARGET_S32G2XXAEVB)$(CONFIG_TARGET_S32G3XXAEVB)$(CONFIG_TARGET_S32R45EVB),)
++QSPI_FREQ_ARG = -f 200
++else
++QSPI_FREQ_ARG = -f 133
++endif
+ endif
+ 
+ ifdef CONFIG_SPI_FLASH_STMICRO
+@@ -54,7 +60,8 @@ ifdef CONFIG_QSPI_BOOT
+ $(QSPI_PARAMS_FILE): arch/arm/mach-s32/s32-cc/s32cc_qspiparams FORCE
+ 	$(Q)$(objtree)/arch/arm/mach-s32/s32-cc/s32cc_qspiparams \
+ 		-m $(QSPI_MEMORY) \
+-		-o $(QSPI_PARAMS_FILE)
++		-o $(QSPI_PARAMS_FILE) \
++		$(QSPI_FREQ_ARG)
+ else
+ $(QSPI_PARAMS_FILE):
+ endif
+diff --git a/arch/arm/mach-s32/s32-cc/tools/qspiparams.c b/arch/arm/mach-s32/s32-cc/tools/qspiparams.c
+index 170640e5bb..c62e1da3c9 100644
+--- a/arch/arm/mach-s32/s32-cc/tools/qspiparams.c
++++ b/arch/arm/mach-s32/s32-cc/tools/qspiparams.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0+
+-/* Copyright 2022 NXP */
++/* Copyright 2022-2023 NXP */
+ 
++#include <errno.h>
+ #include <s32cc_image_params.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -17,21 +18,25 @@ enum qspi_memory {
+ 	INVALID_QSPI_MEM,
+ };
+ 
+-const char *mem_names[] = {
++static const char * const mem_names[] = {
+ 	[MX25UW51245G] = str(MX25UW51245G),
+ 	[MT35XU512ABA] = str(MT35XU512ABA),
+ };
+ 
++static const unsigned int allowed_freqs[] = {133, 200};
++
+ static void show_usage(char *arg)
+ {
+ 	fprintf(stderr, "This tool is used to generate QSPI parameters ");
+ 	fprintf(stderr, "binary for S32CC platforms.\n");
+ 	fprintf(stderr,
+ 		"The resulted binary will be added to IVT by mkimage tool.\n\n");
+-	fprintf(stderr, "Usage: %s -m MEMORY -o FILE\n\n", arg);
++	fprintf(stderr, "Usage: %s -m MEMORY -f FREQUENCY -o FILE\n\n", arg);
+ 	fprintf(stderr, "\t-m\t\tSelects the QSPI memory. ");
+ 	fprintf(stderr,
+ 		"Available memories:\n\t\t\tMX25UW51245G and MT35XU512ABA\n");
++	fprintf(stderr,
++		"\t-f\t\t(Optional) Selects the frequency for MX25UW51245G\n");
+ }
+ 
+ static enum qspi_memory get_memory(const char *mem_name)
+@@ -46,15 +51,28 @@ static enum qspi_memory get_memory(const char *mem_name)
+ 	return INVALID_QSPI_MEM;
+ }
+ 
++static int check_freq(unsigned int freq)
++{
++	size_t i;
++
++	for (i = 0u; i < ARRAY_SIZE(allowed_freqs); i++)
++		if (freq == allowed_freqs[i])
++			return 0;
++
++	return -EINVAL;
++}
++
+ int main(int argc, char **argv)
+ {
+ 	int opt;
+ 	enum qspi_memory memory = INVALID_QSPI_MEM;
++	unsigned int freq = 0;
+ 	struct qspi_params *params;
+ 	char *output = NULL;
+ 	FILE *ofile;
++	errno = 0;
+ 
+-	while ((opt = getopt(argc, argv, "hm:o:")) > 0) {
++	while ((opt = getopt(argc, argv, "hm:o:f:")) > 0) {
+ 		switch (opt) {
+ 		case 'm':
+ 			memory = get_memory(optarg);
+@@ -64,6 +82,14 @@ int main(int argc, char **argv)
+ 				exit(EXIT_FAILURE);
+ 			}
+ 			break;
++		case 'f':
++			freq = strtoul(optarg, NULL, 0);
++			if (errno || check_freq(freq)) {
++				fprintf(stderr, "Invalid frequency: %s\n",
++					optarg);
++				exit(EXIT_FAILURE);
++			}
++			break;
+ 		case 'o':
+ 			output = optarg;
+ 			break;
+@@ -76,6 +102,8 @@ int main(int argc, char **argv)
+ 	switch (memory) {
+ 	case MX25UW51245G:
+ 		params = get_macronix_qspi_conf();
++		if (freq)
++			params->sflash_clk_freq = freq;
+ 		break;
+ 	case MT35XU512ABA:
+ 		params = get_micron_qspi_conf();
+-- 
+2.25.1
+

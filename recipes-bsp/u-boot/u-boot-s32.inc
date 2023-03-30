@@ -29,9 +29,16 @@ UBOOT_BSP36_RC5_PATCHES = " \
     file://bsp36/rc5/0011-tools-dtb_node-Add-parameters-for-each-SIUL2-fixup.patch \
 "
 
+UBOOT_BSP36_RC6_PATCHES = " \
+    file://bsp36/rc6/0001-s32g-hwconfig-fixup-Update-PFE-EMAC-property-name.patch \
+    file://bsp36/rc6/0002-drivers-s32cc_cmu-update-expected-qspi-frequency.patch \
+    file://bsp36/rc6/0003-arch-s32cc-update-qspiparams-frequency-based-on-targ.patch \
+"
+
 SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp36.0_cd-2020.04"
 SRC_URI += " \
     ${UBOOT_BSP36_RC5_PATCHES} \
+    ${UBOOT_BSP36_RC6_PATCHES} \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
