@@ -25,8 +25,23 @@ PKCS_BSP36_RC5_PATCHES = " \
     file://bsp36/rc5/0009-Add-Apache-v2.0-License-OpenSSL-Copyright-Notice.patch \
 "
 
+PKCS_BSP36_RC6_PATCHES = " \
+    file://bsp36/rc6/0001-examples-avoid-bus-errors-when-comiling-with-fstore-.patch \
+    file://bsp36/rc6/0002-examples-replace-openssl-v1.1.1-deprecated-functions.patch \
+    file://bsp36/rc6/0003-Add-support-of-AES-CBC-and-AES-CTR-for-encrypt-decry.patch \
+    file://bsp36/rc6/0004-Add-support-of-SHA2-SHA224-SHA256-SHA512-SHA512-224-.patch \
+    file://bsp36/rc6/0005-Add-support-of-RSA-Ciphering-PKCS1-V1.5-and-OAEP-for.patch \
+    file://bsp36/rc6/0006-Add-support-of-RSA-EC-mechanisms-for-sign-verify-fun.patch \
+    file://bsp36/rc6/0007-Add-support-of-CMAC-and-HMAC-for-sign-verify-functio.patch \
+    file://bsp36/rc6/0008-libhse-parallel-request-support.patch \
+    file://bsp36/rc6/0009-libhse-fix-channel-acquisition.patch \
+    file://bsp36/rc6/0010-libpkcs-multiple-sessions-support.patch \
+    file://bsp36/rc6/0011-libpkcs-fix-multiple-ram-key-copies.patch \
+"
+
 SRC_URI += " \
     ${PKCS_BSP36_RC5_PATCHES} \
+    ${PKCS_BSP36_RC6_PATCHES} \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0001-hse-initialize-used-field-of-struct-node_data.patch \
     file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \

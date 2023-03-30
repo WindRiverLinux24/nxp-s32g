@@ -1,0 +1,119 @@
+From 777950a786776dadded5e16dfd9380d7bdeaeca7 Mon Sep 17 00:00:00 2001
+From: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Date: Mon, 13 Mar 2023 15:33:29 +0200
+Subject: [PATCH 02/11] examples: replace openssl v1.1.1 deprecated functions
+
+Some functions from OpenSSL v.1.11 were deprecated in v3.0.5. Replace
+those functions so they would not trigger warnings.
+
+Issue: ALB-9892
+Upstream-Status: Pending
+
+Signed-off-by: Bogdan Roman <bogdan-gabriel.roman@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ examples/hse-secboot/hse-secboot.c            | 23 ++++++++-----------
+ .../pkcs-key-provision/pkcs-key-provision.c   | 23 ++++++++-----------
+ 2 files changed, 18 insertions(+), 28 deletions(-)
+
+diff --git a/examples/hse-secboot/hse-secboot.c b/examples/hse-secboot/hse-secboot.c
+index c0aa770..d8a729f 100644
+--- a/examples/hse-secboot/hse-secboot.c
++++ b/examples/hse-secboot/hse-secboot.c
+@@ -509,8 +509,8 @@ int hse_secboot_enable(const char *device, const char *keypath)
+ 	uint16_t hse_status;
+ 	int fd, bytes, ret = 0;
+ 	FILE *f;
+-	const BIGNUM *rsa_bn_modulus, *rsa_bn_pub_exponent;
+-	RSA *rsa;
++	EVP_PKEY *pkey;
++	BIGNUM *rsa_bn_modulus = NULL, *rsa_bn_pub_exponent = NULL;
+ 
+ 	ret = hse_dev_open();
+ 	if (ret) {
+@@ -565,26 +565,21 @@ int hse_secboot_enable(const char *device, const char *keypath)
+ 		goto err_close_fd;
+ 	}
+ 
+-	/* try reading in SubjectPublicKeyInfo format */
+-	rsa = PEM_read_RSA_PUBKEY(f, NULL, NULL, NULL);
+-	if (!rsa) {
+-		/* try reading in PKCS#1 RSAPublicKey format */
+-		rsa = PEM_read_RSAPublicKey(f, NULL, NULL, NULL);
+-		if (!rsa) {
+-			ERROR("Failed to read RSA Public Key from file %s\n", keypath);
+-			ret = -ENOKEY;
+-			goto err_close_keyfile;
+-		}
++	pkey = PEM_read_PUBKEY(f, NULL, NULL, NULL);
++	if (!pkey) {
++		ERROR("Failed to read RSA Public Key from file %s\n", keypath);
++		ret = -ENOKEY;
++		goto err_close_keyfile;
+ 	}
+ 
+-	rsa_bn_modulus = RSA_get0_n(rsa);
++	ret = EVP_PKEY_get_bn_param(pkey, "n", &rsa_bn_modulus);
+ 	if (!rsa_bn_modulus) {
+ 		ERROR("Failed to read RSA Public Key Modulus from file %s\n", keypath);
+ 		ret = -ENOKEY;
+ 		goto err_close_keyfile;
+ 	}
+ 
+-	rsa_bn_pub_exponent = RSA_get0_e(rsa);
++	ret = EVP_PKEY_get_bn_param(pkey, "e", &rsa_bn_pub_exponent);
+ 	if (!rsa_bn_pub_exponent) {
+ 		ERROR("Failed to read RSA Public Key Exponent from file %s\n", keypath);
+ 		ret = -ENOKEY;
+diff --git a/examples/pkcs-key-provision/pkcs-key-provision.c b/examples/pkcs-key-provision/pkcs-key-provision.c
+index 35317a5..8ccbaff 100644
+--- a/examples/pkcs-key-provision/pkcs-key-provision.c
++++ b/examples/pkcs-key-provision/pkcs-key-provision.c
+@@ -194,8 +194,8 @@ int main(int argc, char *argv[])
+ 	char *libpath, *keypath, *arg_help = "help";
+ 	int bytes, ret = 0;
+ 
+-	const BIGNUM *rsa_bn_modulus, *rsa_bn_pub_exponent;
+-	RSA *rsa;
++	BIGNUM *rsa_bn_modulus = NULL, *rsa_bn_pub_exponent = NULL;
++	EVP_PKEY *pkey;
+ 
+ 	CK_FUNCTION_LIST_PTR flist;
+ 	
+@@ -271,26 +271,21 @@ int main(int argc, char *argv[])
+ 
+ 	INFO("Reading and converting key...\n");
+ 
+-	/* try reading in SubjectPublicKeyInfo format */
+-	rsa = PEM_read_RSA_PUBKEY(f, NULL, NULL, NULL);
+-	if (!rsa) {
+-		/* try reading in PKCS#1 RSAPublicKey format */
+-		rsa = PEM_read_RSAPublicKey(f, NULL, NULL, NULL);
+-		if (!rsa) {
+-			ERROR("Failed to read RSA Public Key from file %s\n", keypath);
+-			ret = -ENOKEY;
+-			goto err_lib_finalize;
+-		}
++	pkey = PEM_read_PUBKEY(f, NULL, NULL, NULL);
++	if (!pkey) {
++		ERROR("Failed to read RSA Public Key from file %s\n", keypath);
++		ret = -ENOKEY;
++		goto err_lib_finalize;
+ 	}
+ 
+-	rsa_bn_modulus = RSA_get0_n(rsa);
++	ret = EVP_PKEY_get_bn_param(pkey, "n", &rsa_bn_modulus);
+ 	if (!rsa_bn_modulus) {
+ 		ERROR("Failed to read RSA Public Key Modulus from file %s\n", keypath);
+ 		ret = -ENOKEY;
+ 		goto err_lib_finalize;
+ 	}
+ 
+-	rsa_bn_pub_exponent = RSA_get0_e(rsa);
++	ret = EVP_PKEY_get_bn_param(pkey, "e", &rsa_bn_pub_exponent);
+ 	if (!rsa_bn_pub_exponent) {
+ 		ERROR("Failed to read RSA Public Key Exponent from file %s\n", keypath);
+ 		ret = -ENOKEY;
+-- 
+2.25.1
+

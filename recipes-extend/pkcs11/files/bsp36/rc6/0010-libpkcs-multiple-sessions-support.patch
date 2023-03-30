@@ -1,0 +1,1823 @@
+From 46e53873042156f9bb6e5443b4680e2f57b98362 Mon Sep 17 00:00:00 2001
+From: Vlad Pelin <vlad.pelin@nxp.com>
+Date: Tue, 21 Mar 2023 21:46:49 +0200
+Subject: [PATCH 10/11] libpkcs: multiple sessions support
+
+Issue: ALB-9737
+Upstream-Status: Pending
+
+Signed-off-by: Vlad Pelin <vlad.pelin@nxp.com>
+Signed-off-by: Bogdan Folea <bogdan.folea@nxp.com>
+Signed-off-by: Xuewei Wang <xuewei.wang@nxp.com>
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ Makefile                 |   2 +-
+ libpkcs/pkcs11.c         | 192 ++++++++++++++++++++------
+ libpkcs/pkcs11_context.h |  31 ++++-
+ libpkcs/pkcs11_crypt.c   | 284 ++++++++++++++++++++++-----------------
+ libpkcs/pkcs11_digest.c  | 162 +++++++++++-----------
+ libpkcs/pkcs11_object.c  |  64 ++++++---
+ libpkcs/pkcs11_random.c  |  13 +-
+ 7 files changed, 467 insertions(+), 281 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 9d69952..a2ee2da 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,7 +6,7 @@ PLATFORM ?= S32G2
+ FWTYPE ?= 0
+ FWMAJOR ?= 1
+ FWMINOR ?= 0
+-FWPATCH ?= 0
++FWPATCH ?= 9
+ 
+ # Skip prerequisites check when invoking make clean
+ ifeq ($(filter clean,$(MAKECMDGOALS)),$(strip $(MAKECMDGOALS)))
+diff --git a/libpkcs/pkcs11.c b/libpkcs/pkcs11.c
+index 99a3b7f..6024b72 100644
+--- a/libpkcs/pkcs11.c
++++ b/libpkcs/pkcs11.c
+@@ -6,19 +6,24 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <stdint.h>
+ #include <errno.h>
+ #include <time.h>
++#include <pthread.h>
+ 
++#include "libhse.h"
+ #include "pkcs11_context.h"
+ #include "hse-internal.h"
+ #include "simclist.h"
+ 
+ #define PKCS_HSE_FILE "/etc/pkcs-hse-objs"
+ 
+-struct globalCtx context = {
++static struct globalCtx globalContext = {
+ 	.cryptokiInit = CK_FALSE,
+ };
+ 
++static struct sessionCtx globalSessions[HSE_NUM_CHANNELS];
++
+ static const CK_MECHANISM_TYPE mechanismList[] = {
+ 	CKM_AES_ECB,
+ 	CKM_AES_GCM,
+@@ -183,7 +188,53 @@ static int object_list_comparator(const void *a, const void *b)
+ 
+ struct globalCtx *getCtx(void)
+ {
+-	return &context;
++	return &globalContext;
++}
++
++struct sessionCtx *getSessionCtx(CK_SESSION_HANDLE sID)
++{
++	if (sID < 1 || sID >= HSE_NUM_CHANNELS)
++		return NULL;
++	return &globalSessions[sID];
++}
++
++CK_RV createMutex(CK_VOID_PTR_PTR ppMutex)
++{
++	pthread_mutex_t *mutex;
++
++	mutex = malloc(sizeof(*mutex));
++	if (!mutex)
++		return CKR_HOST_MEMORY;
++
++	pthread_mutex_init(mutex, NULL);
++
++	*ppMutex = mutex;
++
++	return CKR_OK;
++}
++
++CK_RV destroyMutex(CK_VOID_PTR pMutex)
++{
++	if (pthread_mutex_destroy((pthread_mutex_t *)pMutex))
++		return CKR_MUTEX_BAD;
++
++	return CKR_OK;
++}
++
++CK_RV lockMutex(CK_VOID_PTR pMutex)
++{
++	if (pthread_mutex_lock((pthread_mutex_t *)pMutex))
++		return CKR_MUTEX_BAD;
++
++	return CKR_OK;
++}
++
++CK_RV unlockMutex(CK_VOID_PTR pMutex)
++{
++	if (pthread_mutex_unlock((pthread_mutex_t *)pMutex))
++		return CKR_MUTEX_BAD;
++
++	return CKR_OK;
+ }
+ 
+ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+@@ -194,10 +245,57 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+ 	struct hse_keyObject *mem_key;
+ 	CK_TOKEN_INFO_PTR pToken = &gCtx->token;
+ 	CK_SLOT_INFO_PTR pSlot = &gCtx->slot;
++	CK_C_INITIALIZE_ARGS_PTR initArgs = pInitArgs;
++	CK_RV rv;
+ 
+ 	if (gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_ALREADY_INITIALIZED;
+ 
++	if (initArgs) {
++		if (initArgs->CreateMutex && initArgs->DestroyMutex &&
++		    initArgs->LockMutex && initArgs->UnlockMutex) {
++			gCtx->mtxFns.create = initArgs->CreateMutex;
++			gCtx->mtxFns.destroy = initArgs->DestroyMutex;
++			gCtx->mtxFns.lock = initArgs->LockMutex;
++			gCtx->mtxFns.unlock = initArgs->UnlockMutex;
++
++			rv = gCtx->mtxFns.create(gCtx->keyMtx);
++			if (rv)
++				return rv;
++		} else if (!initArgs->CreateMutex && !initArgs->DestroyMutex &&
++			   !initArgs->LockMutex && !initArgs->UnlockMutex) {
++			if (initArgs->flags & CKF_OS_LOCKING_OK) {
++				gCtx->mtxFns.create = createMutex;
++				gCtx->mtxFns.destroy = destroyMutex;
++				gCtx->mtxFns.lock = lockMutex;
++				gCtx->mtxFns.unlock = unlockMutex;
++
++				rv = gCtx->mtxFns.create(&gCtx->keyMtx);
++				if (rv)
++					return rv;
++			} else {
++				gCtx->mtxFns.create = NULL;
++				gCtx->mtxFns.destroy = NULL;
++				gCtx->mtxFns.lock = NULL;
++				gCtx->mtxFns.unlock = NULL;
++			}
++		} else {
++			return CKR_ARGUMENTS_BAD;
++		}
++	} else {
++		/* only for testing */
++		/* Since our implementation doesn't accept NULL function, so by default
++		 *   below function pointers should be set */
++		gCtx->mtxFns.create = createMutex;
++		gCtx->mtxFns.destroy = destroyMutex;
++		gCtx->mtxFns.lock = lockMutex;
++		gCtx->mtxFns.unlock = unlockMutex;
++
++		rv = gCtx->mtxFns.create(&gCtx->keyMtx);
++		if (rv)
++			return rv;
++	}
++
+ 	strcpy_pkcs11_padding(pSlot->slotDescription, SLOT_DESC,
+ 			      sizeof(pSlot->slotDescription));
+ 	strcpy_pkcs11_padding(pSlot->manufacturerID, MANUFACTURER,
+@@ -207,14 +305,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+ 	/* rev2 */
+ 	pSlot->hardwareVersion.major = 2;
+ 	pSlot->hardwareVersion.minor = 0;
+-	/* hse fw 0.9.0 */
+-	pSlot->firmwareVersion.major = 0;
+-	pSlot->firmwareVersion.minor = 9;
++	/* libhse version 1.0 */
++	pSlot->firmwareVersion.major = 1;
++	pSlot->firmwareVersion.minor = 0;
+ 
+-	strcpy_pkcs11_padding(pToken->label, TOKEN_DESC,
+-			      sizeof(pToken->label));
+-	strcpy_pkcs11_padding(pToken->manufacturerID, MANUFACTURER,
+-			      sizeof(pToken->manufacturerID));
++	strcpy_pkcs11_padding(pToken->label, TOKEN_DESC, sizeof(pToken->label));
++	strcpy_pkcs11_padding(pToken->manufacturerID, MANUFACTURER, sizeof(pToken->manufacturerID));
+ 
+ 	strcpy_pkcs11_padding(pToken->model, "N/A", sizeof(pToken->model));
+ 	strcpy_pkcs11_padding(pToken->serialNumber, "N/A", sizeof(pToken->serialNumber));
+@@ -234,8 +330,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_Initialize) (
+ 	/* same as slot */
+ 	pToken->hardwareVersion.major = 2;
+ 	pToken->hardwareVersion.minor = 0;
+-	pToken->firmwareVersion.major = 0;
+-	pToken->firmwareVersion.minor = 9;
++	pToken->firmwareVersion.major = 1;
++	pToken->firmwareVersion.minor = 0;
+ 
+ 	if (list_init(&gCtx->object_list) != 0)
+ 		return CKR_HOST_MEMORY;
+@@ -273,6 +369,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Finalize)(
+ {
+ 	struct globalCtx *gCtx = getCtx();
+ 	int i;
++	CK_RV rv = CKR_OK;
+ 
+ 	if (!gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+@@ -289,7 +386,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Finalize)(
+ 
+ 	gCtx->cryptokiInit = CK_FALSE;
+ 
+-	return CKR_OK;
++	if (gCtx->keyMtx != NULL)
++		rv = gCtx->mtxFns.destroy(gCtx->keyMtx);
++
++	return rv;
+ }
+ 
+ CK_DEFINE_FUNCTION(CK_RV, C_GetInfo)(
+@@ -301,11 +401,9 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetInfo)(
+ 
+ 	pInfo->cryptokiVersion.major = CRYPTOKI_VERSION_MAJOR;
+ 	pInfo->cryptokiVersion.minor = CRYPTOKI_VERSION_MINOR;
+-	strcpy_pkcs11_padding(pInfo->manufacturerID, MANUFACTURER,
+-			      sizeof(pInfo->manufacturerID));
++	strcpy_pkcs11_padding(pInfo->manufacturerID, MANUFACTURER, sizeof(pInfo->manufacturerID));
+ 	pInfo->flags = 0;
+-	strcpy_pkcs11_padding(pInfo->libraryDescription, LIBRARY_DESC,
+-			      sizeof(pInfo->libraryDescription));
++	strcpy_pkcs11_padding(pInfo->libraryDescription, LIBRARY_DESC, sizeof(pInfo->libraryDescription));
+ 	pInfo->libraryVersion.major = LIBRARY_VERSION_MAJOR;
+ 	pInfo->libraryVersion.minor = LIBRARY_VERSION_MINOR;
+ 
+@@ -484,6 +582,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	struct hse_keyObject *pkey;
+ 	int i;
+ 
+@@ -493,10 +592,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetAttributeValue)(
+ 	if (pTemplate == NULL || ulCount == 0)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	gCtx->mtxFns.lock(gCtx->keyMtx);
+ 	pkey = (struct hse_keyObject *)list_seek(&gCtx->object_list, &hObject);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (pkey == NULL)
+ 		return CKR_OBJECT_HANDLE_INVALID;
+ 
+@@ -574,7 +675,9 @@ CK_DEFINE_FUNCTION(CK_RV, C_OpenSession)(
+ {
+ 	struct globalCtx *gCtx = getCtx();
+ 	CK_TOKEN_INFO_PTR pToken = &gCtx->token;
+-	CK_SESSION_INFO_PTR pSession = &gCtx->session;
++	unsigned char sID;
++	int err;
++	struct sessionCtx *sCtx;
+ 
+ 	if (!gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+@@ -595,23 +698,27 @@ CK_DEFINE_FUNCTION(CK_RV, C_OpenSession)(
+ 	if ((Notify && !pApplication) || (!Notify && pApplication))
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (flags & CKF_RW_SESSION) {
+-		if (pToken->ulRwSessionCount >= pToken->ulMaxRwSessionCount)
+-			return CKR_SESSION_COUNT;
++	if (pToken->flags & CKF_WRITE_PROTECTED)
++		return CKR_TOKEN_WRITE_PROTECTED;
+ 
+-		if (pToken->flags & CKF_WRITE_PROTECTED)
+-			return CKR_TOKEN_WRITE_PROTECTED;
++	err = hse_channel_acquire(&sID);
++	if (err)
++		return CKR_SESSION_COUNT;
+ 
+-		pToken->ulRwSessionCount++;
+-		pSession->state = CKS_RW_PUBLIC_SESSION;
+-	} else {
+-		pSession->state = CKS_RO_PUBLIC_SESSION;
++	sCtx = getSessionCtx(sID);
++	if (!sCtx) {
++		hse_channel_free(sID);
++		return CKR_SESSION_COUNT;
+ 	}
+ 
++	sCtx->sessionInfo.state = CKS_RW_PUBLIC_SESSION;
++	sCtx->sessionInfo.flags = flags | CKF_RW_SESSION;
++	sCtx->sessionInfo.slotID = slotID;
++	sCtx->sessionInit = CK_TRUE;
++	sCtx->sID = sID;
+ 	pToken->ulSessionCount++;
+-	pSession->flags = flags;
+-	pSession->slotID = slotID;
+-	*phSession = SESSION_ID;
++
++	*phSession = sID;
+ 
+ 	return CKR_OK;
+ }
+@@ -622,18 +729,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_CloseSession)(
+ {
+ 	struct globalCtx *gCtx = getCtx();
+ 	CK_TOKEN_INFO_PTR pToken = &gCtx->token;
+-	CK_SESSION_INFO_PTR pSession = &gCtx->session;
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (!gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (pToken->ulSessionCount == 0 || hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	sCtx->sessionInit = CK_FALSE;
+ 	pToken->ulSessionCount--;
+ 
+-	if (pSession->flags & CKF_RW_SESSION)
+-		pToken->ulRwSessionCount--;
++	hse_channel_free(sCtx->sID);
+ 
+ 	return CKR_OK;
+ }
+@@ -644,6 +751,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_CloseAllSessions)(
+ {
+ 	struct globalCtx *gCtx = getCtx();
+ 	CK_TOKEN_INFO_PTR pToken = &gCtx->token;
++	struct sessionCtx *sCtx;
++	int sessionIter;
+ 
+ 	if (!gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+@@ -652,7 +761,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_CloseAllSessions)(
+ 		return CKR_SLOT_ID_INVALID;
+ 
+ 	if (pToken->ulSessionCount > 0)
+-		return C_CloseSession(SESSION_ID);
++		for (sessionIter = 0; sessionIter < pToken->ulMaxSessionCount; sessionIter++) {
++			sCtx = getSessionCtx(sessionIter);
++			if (!sCtx)
++				continue;
++			if (sCtx->sessionInit == CK_TRUE)
++				C_CloseSession(sCtx->sID);
++		}
+ 
+ 	return CKR_OK;
+ }
+@@ -663,8 +778,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSessionInfo)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-	CK_TOKEN_INFO_PTR pToken = &gCtx->token;
+-	CK_SESSION_INFO_PTR pSession = &gCtx->session;
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (!gCtx->cryptokiInit)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+@@ -672,10 +786,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_GetSessionInfo)(
+ 	if (!pInfo)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (pToken->ulSessionCount == 0 || hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
+-	memcpy(pInfo, pSession, sizeof(CK_SESSION_INFO));
++	memcpy(pInfo, &sCtx->sessionInfo, sizeof(CK_SESSION_INFO));
+ 
+ 	return CKR_OK;
+ }
+diff --git a/libpkcs/pkcs11_context.h b/libpkcs/pkcs11_context.h
+index d4aeeb5..d161b8b 100644
+--- a/libpkcs/pkcs11_context.h
++++ b/libpkcs/pkcs11_context.h
+@@ -21,9 +21,8 @@
+ #define TOKEN_DESC      "NXP-HSE-Token"
+ 
+ #define SLOT_ID         0
+-#define SESSION_ID      0
+ 
+-#define MAX_SESSIONS    1
++#define MAX_SESSIONS    (HSE_NUM_CHANNELS - 1)
+ #define MAX_LABEL_LEN   32
+ 
+ /* add missing CKA_UNIQUE_ID from pkcs11.h */
+@@ -137,6 +136,17 @@ struct hse_keyObject {
+ 	CK_OBJECT_CLASS key_class;
+ };
+ 
++/* struct mutexFns - function pointers to mutex operations
++ *
++ *
++ */
++struct mutexFns {
++	CK_CREATEMUTEX create;
++	CK_DESTROYMUTEX destroy;
++	CK_LOCKMUTEX lock;
++	CK_UNLOCKMUTEX unlock;
++};
++
+ /*
+  * struct globalCtx - global context for PKCS11 operations
+  *
+@@ -151,16 +161,29 @@ struct hse_keyObject {
+  */
+ struct globalCtx {
+ 	CK_BBOOL cryptokiInit;
+-	CK_SESSION_INFO session;
+ 	CK_SLOT_INFO slot;
+ 	CK_TOKEN_INFO token;
++	struct mutexFns mtxFns;
++	CK_VOID_PTR keyMtx;
++	list_t object_list;
++};
++
++/*
++ * struct sessionCtx - session context; 1 session = 1 HSE channel
++ *
++ *
++ */
++struct sessionCtx {
++	CK_BBOOL sessionInit;
++	CK_SESSION_INFO sessionInfo;
++	CK_SESSION_HANDLE sID;
+ 	struct hse_findCtx findCtx;
+ 	struct hse_cryptCtx cryptCtx;
+ 	struct hse_digestCtx digestCtx;
+ 	struct hse_signCtx signCtx;
+-	list_t object_list;
+ };
+ 
+ struct globalCtx *getCtx(void);
++struct sessionCtx *getSessionCtx(CK_SESSION_HANDLE sID);
+ 
+ #endif /* ___PKCS11_CONTEXT_H___ */
+diff --git a/libpkcs/pkcs11_crypt.c b/libpkcs/pkcs11_crypt.c
+index 3bfcf8f..ee7536e 100644
+--- a/libpkcs/pkcs11_crypt.c
++++ b/libpkcs/pkcs11_crypt.c
+@@ -17,31 +17,36 @@ CK_DEFINE_FUNCTION(CK_RV, C_EncryptInit)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->cryptCtx.init == CK_TRUE)
+-		return CKR_OPERATION_ACTIVE;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->cryptCtx.init == CK_TRUE)
++		return CKR_OPERATION_ACTIVE;
++
+ 	if (pMechanism == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (list_seek(&gCtx->object_list, &hKey) == NULL)
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	if (list_seek(&gCtx->object_list, &hKey) == NULL) {
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 		return CKR_KEY_HANDLE_INVALID;
++	}
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+ 	/* IV is optional for AES-ECB */
+ 	if (pMechanism->pParameter == NULL)
+-	    if ((pMechanism->mechanism != CKM_AES_ECB) &&  
++	    if ((pMechanism->mechanism != CKM_AES_ECB) &&
+ 			(pMechanism->mechanism != CKM_RSA_PKCS))
+ 			return CKR_ARGUMENTS_BAD;
+ 
+-	gCtx->cryptCtx.init = CK_TRUE;
+-	gCtx->cryptCtx.mechanism = pMechanism;
+-	gCtx->cryptCtx.keyHandle = hKey;
++	sCtx->cryptCtx.init = CK_TRUE;
++	sCtx->cryptCtx.mechanism = pMechanism;
++	sCtx->cryptCtx.keyHandle = hKey;
+ 
+ 	return CKR_OK;
+ }
+@@ -55,6 +60,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSymCipherSrv_t *sym_cipher_srv;
+ 	hseRsaCipherSrv_t *rsa_cipher_srv;
+@@ -70,12 +76,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->cryptCtx.init == CK_FALSE)
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->cryptCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
+ 	if (pData == NULL || pEncryptedData == NULL || pulEncryptedDataLen == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+@@ -83,29 +89,31 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 	if (ulDataLen == 0)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ) {
+ 			if ((ulDataLen & (HSE_AES_BLOCK_LEN - 1)) != 0)
+ 				return CKR_ARGUMENTS_BAD;
+ 	}
+ 
+-	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &gCtx->cryptCtx.keyHandle);
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &sCtx->cryptCtx.keyHandle);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (key == NULL)
+ 		return CKR_KEY_HANDLE_INVALID;
+ 
+ 	/* check for input length for RSA ciphering */
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
+ 		key_bit_length = hse_get_key_bit_length(key);
+-		if (key_bit_length == 0) 
++		if (key_bit_length == 0)
+ 			return CKR_GENERAL_ERROR;
+ 
+-		if (rsa_ciphering_get_max_input_length(key_bit_length, gCtx->cryptCtx.mechanism) < ulDataLen)
++		if (rsa_ciphering_get_max_input_length(key_bit_length, sCtx->cryptCtx.mechanism) < ulDataLen)
+ 			return CKR_DATA_LEN_RANGE;
+ 	}
+ 
+ 	input = hse_mem_alloc(ulDataLen);
+-	if (input == NULL) 
++	if (input == NULL)
+ 		return CKR_HOST_MEMORY;
+ 	hse_memcpy(input, pData, ulDataLen);
+ 
+@@ -116,14 +124,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 	}
+ 
+ 	/* Check the output length */
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CTR) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM)) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CTR) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM)) {
+ 		/* For AES, the output length is equal to the input length  */
+ 		hse_memcpy(output_len, &ulDataLen, sizeof(uint32_t));
+-	} else if ((gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) || 
+-			   (gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
++	} else if ((sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) ||
++			   (sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
+ 		/* get the output length based on the RSA key length */
+ 		*(uint32_t *)output_len = rsa_ciphering_get_out_length(key_bit_length);
+ 	}
+@@ -135,27 +143,27 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 		rc = CKR_BUFFER_TOO_SMALL;
+ 		goto err_free_output_len;
+ 	}
+-	
++
+ 	output = hse_mem_alloc(*(uint32_t *)output_len);
+ 	if (output == NULL) {
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_free_output_len;
+ 	}
+ 
+-	if (gCtx->cryptCtx.mechanism->pParameter != NULL) {
+-		if (gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP) {
+-			oaep_params = (CK_RSA_PKCS_OAEP_PARAMS *)gCtx->cryptCtx.mechanism->pParameter;
++	if (sCtx->cryptCtx.mechanism->pParameter != NULL) {
++		if (sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP) {
++			oaep_params = (CK_RSA_PKCS_OAEP_PARAMS *)sCtx->cryptCtx.mechanism->pParameter;
+ 		} else {
+-			pIV = hse_mem_alloc(gCtx->cryptCtx.mechanism->ulParameterLen);
++			pIV = hse_mem_alloc(sCtx->cryptCtx.mechanism->ulParameterLen);
+ 			if (pIV == NULL) {
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_output;
+ 			}
+-			hse_memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
++			hse_memcpy(pIV, sCtx->cryptCtx.mechanism->pParameter, sCtx->cryptCtx.mechanism->ulParameterLen);
+ 		}
+ 	}
+ 
+-	if (gCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM) {
++	if (sCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM) {
+ 		/* HSE requires GCM valid Tag sizes 4, 8, 12, 13, 14, 15, 16 bytes. Can not be 0.
+ 		 * Use the length 16 for the tag here. */
+ 		gcm_tag = hse_mem_alloc(16u);
+@@ -165,7 +173,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 		}
+ 	}
+ 
+-	switch (gCtx->cryptCtx.mechanism->mechanism) {
++	switch (sCtx->cryptCtx.mechanism->mechanism) {
+ 		case CKM_AES_ECB:
+ 
+ 			sym_cipher_srv = &srv_desc.hseSrv.symCipherReq;
+@@ -179,7 +187,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 			sym_cipher_srv->sgtOption = HSE_SGT_OPTION_NONE;
+ 			sym_cipher_srv->keyHandle = key->key_handle;
+ 
+-			if (gCtx->cryptCtx.mechanism->pParameter != NULL) {
++			if (sCtx->cryptCtx.mechanism->pParameter != NULL) {
+ 				sym_cipher_srv->pIV = hse_virt_to_dma(pIV);
+ 			} else {
+ 				sym_cipher_srv->pIV = 0u; /* IV is not required for ecb */
+@@ -239,7 +247,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 			aead_srv->authCipherMode = HSE_AUTH_CIPHER_MODE_GCM;
+ 			aead_srv->cipherDir = HSE_CIPHER_DIR_ENCRYPT;
+ 			aead_srv->keyHandle = key->key_handle;
+-			aead_srv->ivLength = gCtx->cryptCtx.mechanism->ulParameterLen;
++			aead_srv->ivLength = sCtx->cryptCtx.mechanism->ulParameterLen;
+ 			aead_srv->pIV = hse_virt_to_dma(pIV);
+ 			aead_srv->aadLength = 0u;
+ 			aead_srv->pAAD = 0u;
+@@ -288,7 +296,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Encrypt)(
+ 			goto err_free_tag;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_tag;
+@@ -308,7 +316,7 @@ err_free_output_len:
+ err_free_input:
+ 	hse_mem_free(input);
+ 
+-	gCtx->cryptCtx.init = CK_FALSE;
++	sCtx->cryptCtx.init = CK_FALSE;
+ 
+ 	return rc;
+ }
+@@ -320,31 +328,36 @@ CK_DEFINE_FUNCTION(CK_RV, C_DecryptInit)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->cryptCtx.init == CK_TRUE)
+-		return CKR_OPERATION_ACTIVE;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->cryptCtx.init == CK_TRUE)
++		return CKR_OPERATION_ACTIVE;
++
+ 	if (pMechanism == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (list_seek(&gCtx->object_list, &hKey) == NULL)
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	if (list_seek(&gCtx->object_list, &hKey) == NULL) {
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 		return CKR_KEY_HANDLE_INVALID;
++	}
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+ 	/* IV is optional for AES-ECB */
+ 	if (pMechanism->pParameter == NULL)
+-	    if ((pMechanism->mechanism != CKM_AES_ECB) &&  
++	    if ((pMechanism->mechanism != CKM_AES_ECB) &&
+ 			(pMechanism->mechanism != CKM_RSA_PKCS))
+ 			return CKR_ARGUMENTS_BAD;
+ 
+-	gCtx->cryptCtx.init = CK_TRUE;
+-	gCtx->cryptCtx.mechanism = pMechanism;
+-	gCtx->cryptCtx.keyHandle = hKey;
++	sCtx->cryptCtx.init = CK_TRUE;
++	sCtx->cryptCtx.mechanism = pMechanism;
++	sCtx->cryptCtx.keyHandle = hKey;
+ 
+ 	return CKR_OK;
+ }
+@@ -358,6 +371,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSymCipherSrv_t *sym_cipher_srv;
+ 	hseRsaCipherSrv_t *rsa_cipher_srv;
+@@ -373,12 +387,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->cryptCtx.init == CK_FALSE)
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->cryptCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
+ 	if (pData == NULL || pEncryptedData == NULL || pulDataLen == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+@@ -386,18 +400,20 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 	if (ulEncryptedDataLen == 0)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ) {
+ 			if ((ulEncryptedDataLen & (HSE_AES_BLOCK_LEN - 1)) != 0)
+ 				return CKR_ARGUMENTS_BAD;
+ 	}
+ 
+-	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &gCtx->cryptCtx.keyHandle);
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &sCtx->cryptCtx.keyHandle);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (key == NULL)
+ 		return CKR_KEY_HANDLE_INVALID;
+ 
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
+ 		key_bit_length = hse_get_key_bit_length(key);
+ 		/* The input cipher text length should be equal to the key size */
+ 		if (ulEncryptedDataLen != (key_bit_length >> 3))
+@@ -415,10 +431,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 		goto err_free_input;
+ 	}
+ 
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_CTR) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM)) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_AES_ECB) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CBC) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_CTR) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM)) {
+ 		/* For AES, the output length is equal to the input length  */
+ 		hse_memcpy(output_len, &ulEncryptedDataLen, sizeof(uint32_t));
+ 		if (*(uint32_t *)output_len > *pulDataLen) {
+@@ -428,10 +444,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			rc = CKR_BUFFER_TOO_SMALL;
+ 			goto err_free_output_len;
+ 		}
+-	} else if ((gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) || 
+-				(gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
++	} else if ((sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) ||
++				(sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
+ 		/* to be safe, we allocate the max. length */
+-		*(uint32_t *)output_len = rsa_ciphering_get_max_input_length(key_bit_length, gCtx->cryptCtx.mechanism);
++		*(uint32_t *)output_len = rsa_ciphering_get_max_input_length(key_bit_length, sCtx->cryptCtx.mechanism);
+ 	}
+ 
+ 	output = hse_mem_alloc(*(uint32_t *)output_len);
+@@ -440,20 +456,20 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 		goto err_free_output_len;
+ 	}
+ 
+-	if (gCtx->cryptCtx.mechanism->pParameter != NULL) {
+-		if (gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP) {
+-			oaep_params = (CK_RSA_PKCS_OAEP_PARAMS *)gCtx->cryptCtx.mechanism->pParameter;
++	if (sCtx->cryptCtx.mechanism->pParameter != NULL) {
++		if (sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP) {
++			oaep_params = (CK_RSA_PKCS_OAEP_PARAMS *)sCtx->cryptCtx.mechanism->pParameter;
+ 		} else {
+-			pIV = hse_mem_alloc(gCtx->cryptCtx.mechanism->ulParameterLen);
++			pIV = hse_mem_alloc(sCtx->cryptCtx.mechanism->ulParameterLen);
+ 			if (pIV == NULL) {
+ 				rc = CKR_HOST_MEMORY;
+ 				goto err_free_output;
+ 			}
+-			hse_memcpy(pIV, gCtx->cryptCtx.mechanism->pParameter, gCtx->cryptCtx.mechanism->ulParameterLen);
++			hse_memcpy(pIV, sCtx->cryptCtx.mechanism->pParameter, sCtx->cryptCtx.mechanism->ulParameterLen);
+ 		}
+ 	}
+ 
+-	if (gCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM) {
++	if (sCtx->cryptCtx.mechanism->mechanism == CKM_AES_GCM) {
+ 		/* HSE requires GCM valid Tag sizes 4, 8, 12, 13, 14, 15, 16 bytes. Can not be 0.
+ 		 * Use the length 16 for the tag here. */
+ 		gcm_tag = hse_mem_alloc(16u);
+@@ -463,7 +479,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 		}
+ 	}
+ 
+-	switch (gCtx->cryptCtx.mechanism->mechanism) {
++	switch (sCtx->cryptCtx.mechanism->mechanism) {
+ 		case CKM_AES_ECB:
+ 
+ 			sym_cipher_srv = &srv_desc.hseSrv.symCipherReq;
+@@ -477,7 +493,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			sym_cipher_srv->sgtOption = HSE_SGT_OPTION_NONE;
+ 			sym_cipher_srv->keyHandle = key->key_handle;
+ 
+-			if (gCtx->cryptCtx.mechanism->pParameter != NULL) {
++			if (sCtx->cryptCtx.mechanism->pParameter != NULL) {
+ 				sym_cipher_srv->pIV = hse_virt_to_dma(pIV);
+ 			} else {
+ 				sym_cipher_srv->pIV = 0u; /* IV is not required for ecb */
+@@ -536,7 +552,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			aead_srv->authCipherMode = HSE_AUTH_CIPHER_MODE_GCM;
+ 			aead_srv->cipherDir = HSE_CIPHER_DIR_DECRYPT;
+ 			aead_srv->keyHandle = key->key_handle;
+-			aead_srv->ivLength = gCtx->cryptCtx.mechanism->ulParameterLen;
++			aead_srv->ivLength = sCtx->cryptCtx.mechanism->ulParameterLen;
+ 			aead_srv->pIV = hse_virt_to_dma(pIV);
+ 			aead_srv->aadLength = 0u;
+ 			aead_srv->pAAD = 0u;
+@@ -585,15 +601,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_Decrypt)(
+ 			goto err_free_tag;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_tag;
+ 	}
+ 
+ 	/* check for output buffer length */
+-	if ((gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) || 
+-		(gCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
++	if ((sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS) ||
++		(sCtx->cryptCtx.mechanism->mechanism == CKM_RSA_PKCS_OAEP)) {
+ 		if (*(uint32_t *)output_len > *pulDataLen) {
+ 			/* tell the required size */
+ 			*pulDataLen = *(uint32_t *)output_len;
+@@ -617,7 +633,7 @@ err_free_output_len:
+ err_free_input:
+ 	hse_mem_free(input);
+ 
+-	gCtx->cryptCtx.init = CK_FALSE;
++	sCtx->cryptCtx.init = CK_FALSE;
+ 
+ 	return rc;
+ }
+@@ -629,25 +645,30 @@ CK_DEFINE_FUNCTION(CK_RV, C_SignInit)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->signCtx.init == CK_TRUE)
++		return CKR_OPERATION_ACTIVE;
++
+ 	if (pMechanism == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (list_seek(&gCtx->object_list, &hKey) == NULL)
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	if (list_seek(&gCtx->object_list, &hKey) == NULL) {
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 		return CKR_KEY_HANDLE_INVALID;
++	}
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+-	if (gCtx->signCtx.init == CK_TRUE)
+-		return CKR_OPERATION_ACTIVE;
+-
+-	gCtx->signCtx.init = CK_TRUE;
+-	gCtx->signCtx.mechanism = pMechanism;
+-	gCtx->signCtx.keyHandle = hKey;
++	sCtx->signCtx.init = CK_TRUE;
++	sCtx->signCtx.mechanism = pMechanism;
++	sCtx->signCtx.keyHandle = hKey;
+ 
+ 	return CKR_OK;
+ }
+@@ -661,6 +682,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSignSrv_t *sign_srv;
+ 	hseSignScheme_t *sign_scheme;
+@@ -674,9 +696,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->signCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
+ 	if (pData == NULL)
+ 		return CKR_DATA_INVALID;
+ 
+@@ -689,11 +714,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	if (pulSignatureLen == NULL)
+ 		return CKR_SIGNATURE_LEN_RANGE;
+ 
+-	if (gCtx->signCtx.init == CK_FALSE)
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &gCtx->signCtx.keyHandle);
+-	if (key == NULL) 
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &sCtx->signCtx.keyHandle);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
++	if (key == NULL)
+ 		return CKR_KEY_HANDLE_INVALID;
+ 
+ 	input = hse_mem_alloc(ulDataLen);
+@@ -708,7 +732,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	}
+ 
+ 	/* check the output length */
+-	*(uint32_t *)output_len = sig_get_out_length(key, gCtx->signCtx.mechanism);
++	*(uint32_t *)output_len = sig_get_out_length(key, sCtx->signCtx.mechanism);
+ 	if (*(uint32_t *)output_len > *pulSignatureLen) {
+ 		*pulSignatureLen = *(uint32_t *)output_len;
+ 		rc = CKR_BUFFER_TOO_SMALL;
+@@ -725,19 +749,19 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 	sign_srv = &srv_desc.hseSrv.signReq;
+ 	sign_scheme = &sign_srv->signScheme;
+ 
+-	switch (gCtx->signCtx.mechanism->mechanism) {
++	switch (sCtx->signCtx.mechanism->mechanism) {
+ 		case CKM_RSA_PKCS:
+ 		case CKM_SHA1_RSA_PKCS:
+ 		case CKM_SHA256_RSA_PKCS:
+ 		case CKM_SHA384_RSA_PKCS:
+ 		case CKM_SHA512_RSA_PKCS:
+ 			sign_scheme->signSch = HSE_SIGN_RSASSA_PKCS1_V15;
+-			sign_scheme->sch.rsaPkcs1v15.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			sign_scheme->sch.rsaPkcs1v15.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 			sign_srv->pSignatureLength[0] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignatureLength[1] = 0u;
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0);
+ 			sign_srv->pSignature[1] = 0u;
+-			if (CKM_RSA_PKCS == gCtx->signCtx.mechanism->mechanism) {
++			if (CKM_RSA_PKCS == sCtx->signCtx.mechanism->mechanism) {
+ 				sign_srv->bInputIsHashed = 1u;
+ 				/* The hashing algorithm must still be provided as it is included in the signature for various schemes
+ 				 * But there is no input parameter for CKM_RSA_PKCS. Use the hardcode value (SHA512).  */
+@@ -751,7 +775,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 		case CKM_SHA256_RSA_PKCS_PSS:
+ 		case CKM_SHA384_RSA_PKCS_PSS:
+ 		case CKM_SHA512_RSA_PKCS_PSS:
+-			rsa_pss_param = (CK_RSA_PKCS_PSS_PARAMS *)gCtx->signCtx.mechanism->pParameter;
++			rsa_pss_param = (CK_RSA_PKCS_PSS_PARAMS *)sCtx->signCtx.mechanism->pParameter;
+ 			if (rsa_pss_param == NULL) {
+ 				rc = CKR_ARGUMENTS_BAD;
+ 				goto err_free_sign0;
+@@ -765,7 +789,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0);
+ 			sign_srv->pSignature[1] = 0u;
+ 
+-			if (CKM_RSA_PKCS_PSS == gCtx->signCtx.mechanism->mechanism)
++			if (CKM_RSA_PKCS_PSS == sCtx->signCtx.mechanism->mechanism)
+ 				sign_srv->bInputIsHashed = 1u;
+ 			else
+ 				sign_srv->bInputIsHashed = 0u;
+@@ -784,13 +808,13 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 			sign1 = (uint8_t *)sign0 + (*(uint32_t *)output_len);
+ 
+ 			sign_scheme->signSch = HSE_SIGN_ECDSA;
+-			sign_scheme->sch.ecdsa.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			sign_scheme->sch.ecdsa.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 			sign_srv->pSignatureLength[0] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignatureLength[1] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0);
+ 			sign_srv->pSignature[1] = hse_virt_to_dma(sign1);
+ 
+-			if (CKM_ECDSA == gCtx->signCtx.mechanism->mechanism)
++			if (CKM_ECDSA == sCtx->signCtx.mechanism->mechanism)
+ 				sign_srv->bInputIsHashed = 1u;
+ 			else
+ 				sign_srv->bInputIsHashed = 0u;
+@@ -807,7 +831,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 		case CKM_SHA512_HMAC:
+ 			mac_srv = &srv_desc.hseSrv.macReq;
+ 			mac_srv->macScheme.macAlgo = HSE_MAC_ALGO_HMAC;
+-			mac_srv->macScheme.sch.hmac.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			mac_srv->macScheme.sch.hmac.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 			break;
+ 		default:
+ 			rc = CKR_ARGUMENTS_BAD;
+@@ -842,7 +866,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Sign)(
+ 		goto err_free_sign0;
+ 	}
+ 
+-	switch (gCtx->signCtx.mechanism->mechanism) {
++	switch (sCtx->signCtx.mechanism->mechanism) {
+ 		case CKM_RSA_PKCS:
+ 		case CKM_SHA1_RSA_PKCS:
+ 		case CKM_SHA256_RSA_PKCS:
+@@ -890,7 +914,7 @@ err_free_output_len:
+ err_free_input:
+ 	hse_mem_free(input);
+ 
+-	gCtx->signCtx.init = CK_FALSE;
++	sCtx->signCtx.init = CK_FALSE;
+ 
+ 	return rc;
+ }
+@@ -902,25 +926,30 @@ CK_DEFINE_FUNCTION(CK_RV, C_VerifyInit)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->signCtx.init == CK_TRUE)
++		return CKR_OPERATION_ACTIVE;
++
+ 	if (pMechanism == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (list_seek(&gCtx->object_list, &hKey) == NULL)
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	if (list_seek(&gCtx->object_list, &hKey) == NULL) {
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 		return CKR_KEY_HANDLE_INVALID;
++	}
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+-	if (gCtx->signCtx.init == CK_TRUE)
+-		return CKR_OPERATION_ACTIVE;
+-
+-	gCtx->signCtx.init = CK_TRUE;
+-	gCtx->signCtx.mechanism = pMechanism;
+-	gCtx->signCtx.keyHandle = hKey;
++	sCtx->signCtx.init = CK_TRUE;
++	sCtx->signCtx.mechanism = pMechanism;
++	sCtx->signCtx.keyHandle = hKey;
+ 
+ 	return CKR_OK;
+ }
+@@ -934,6 +963,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseSignSrv_t *sign_srv;
+ 	hseSignScheme_t *sign_scheme;
+@@ -947,9 +977,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->signCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
+ 	if (pData == NULL)
+ 		return CKR_DATA_INVALID;
+ 
+@@ -962,11 +995,10 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 	if (ulSignatureLen == 0)
+ 		return CKR_SIGNATURE_LEN_RANGE;
+ 
+-	if (gCtx->signCtx.init == CK_FALSE) 
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &gCtx->signCtx.keyHandle);
+-	if (key == NULL) 
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	key = (struct hse_keyObject *)list_seek(&gCtx->object_list, &sCtx->signCtx.keyHandle);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
++	if (key == NULL)
+ 		return CKR_KEY_HANDLE_INVALID;
+ 
+ 	input = hse_mem_alloc(ulDataLen);
+@@ -991,20 +1023,20 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 	sign_srv = &srv_desc.hseSrv.signReq;
+ 	sign_scheme = &sign_srv->signScheme;
+ 
+-	switch (gCtx->signCtx.mechanism->mechanism) {
++	switch (sCtx->signCtx.mechanism->mechanism) {
+ 		case CKM_RSA_PKCS:
+ 		case CKM_SHA1_RSA_PKCS:
+ 		case CKM_SHA256_RSA_PKCS:
+ 		case CKM_SHA384_RSA_PKCS:
+ 		case CKM_SHA512_RSA_PKCS:
+ 			sign_scheme->signSch = HSE_SIGN_RSASSA_PKCS1_V15;
+-			sign_scheme->sch.rsaPkcs1v15.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			sign_scheme->sch.rsaPkcs1v15.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 			sign_srv->pSignatureLength[0] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignatureLength[1] = 0u;
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0); /* rsa */
+ 			sign_srv->pSignature[1] = 0u;
+ 
+-			if (CKM_RSA_PKCS == gCtx->signCtx.mechanism->mechanism) {
++			if (CKM_RSA_PKCS == sCtx->signCtx.mechanism->mechanism) {
+ 				sign_srv->bInputIsHashed = 1u;
+ 				/* The hashing algorithm must still be provided as it is included in the signature for various schemes
+ 				 * But there is no input parameter for CKM_RSA_PKCS. Use the hardcode value (SHA512).  */
+@@ -1018,7 +1050,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 		case CKM_SHA256_RSA_PKCS_PSS:
+ 		case CKM_SHA384_RSA_PKCS_PSS:
+ 		case CKM_SHA512_RSA_PKCS_PSS:
+-			rsa_pss_param = (CK_RSA_PKCS_PSS_PARAMS *)gCtx->signCtx.mechanism->pParameter;
++			rsa_pss_param = (CK_RSA_PKCS_PSS_PARAMS *)sCtx->signCtx.mechanism->pParameter;
+ 			if (rsa_pss_param == NULL) {
+ 				rc = CKR_ARGUMENTS_BAD;
+ 				goto err_free_sign0;
+@@ -1032,7 +1064,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0);
+ 			sign_srv->pSignature[1] = 0u;
+ 
+-			if (CKM_RSA_PKCS_PSS == gCtx->signCtx.mechanism->mechanism)
++			if (CKM_RSA_PKCS_PSS == sCtx->signCtx.mechanism->mechanism)
+ 				sign_srv->bInputIsHashed = 1u;
+ 			else
+ 				sign_srv->bInputIsHashed = 0u;
+@@ -1051,14 +1083,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 			sign1 = (uint8_t *)sign0 + (*(uint32_t *)output_len);
+ 
+ 			sign_scheme->signSch = HSE_SIGN_ECDSA;
+-			sign_scheme->sch.ecdsa.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			sign_scheme->sch.ecdsa.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 
+ 			sign_srv->pSignatureLength[0] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignatureLength[1] = hse_virt_to_dma(output_len);
+ 			sign_srv->pSignature[0] = hse_virt_to_dma(sign0);
+ 			sign_srv->pSignature[1] = hse_virt_to_dma(sign1);
+ 
+-			if (CKM_ECDSA == gCtx->signCtx.mechanism->mechanism)
++			if (CKM_ECDSA == sCtx->signCtx.mechanism->mechanism)
+ 				sign_srv->bInputIsHashed = 1u;
+ 			else
+ 				sign_srv->bInputIsHashed = 0u;
+@@ -1075,7 +1107,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 		case CKM_SHA512_HMAC:
+ 			mac_srv = &srv_desc.hseSrv.macReq;
+ 			mac_srv->macScheme.macAlgo = HSE_MAC_ALGO_HMAC;
+-			mac_srv->macScheme.sch.hmac.hashAlgo = hse_get_hash_alg(gCtx->signCtx.mechanism->mechanism);
++			mac_srv->macScheme.sch.hmac.hashAlgo = hse_get_hash_alg(sCtx->signCtx.mechanism->mechanism);
+ 			break;
+ 		default:
+ 			rc = CKR_ARGUMENTS_BAD;
+@@ -1104,7 +1136,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Verify)(
+ 		mac_srv->pTag = hse_virt_to_dma(sign0);
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (!err) {
+ 		rc = CKR_OK;
+ 	} else if (err == EBADMSG) {
+@@ -1120,7 +1152,7 @@ err_free_output_len:
+ err_free_input:
+ 	hse_mem_free(input);
+ 
+-	gCtx->signCtx.init = CK_FALSE;
++	sCtx->signCtx.init = CK_FALSE;
+ 
+ 	return rc;
+ }
+diff --git a/libpkcs/pkcs11_digest.c b/libpkcs/pkcs11_digest.c
+index d066849..c87c2b0 100644
+--- a/libpkcs/pkcs11_digest.c
++++ b/libpkcs/pkcs11_digest.c
+@@ -27,14 +27,15 @@
+ CK_RV check_init(CK_SESSION_HANDLE hSession, CK_BBOOL digestInit)
+ {
+ 	struct globalCtx *gCtx = getCtx();
+-
+-	if (hSession != SESSION_ID)
+-		return CKR_SESSION_HANDLE_INVALID;
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->digestCtx.init == digestInit) {
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
++		return CKR_SESSION_HANDLE_INVALID;
++
++	if (sCtx->digestCtx.init == digestInit) {
+ 		if (digestInit == CK_TRUE)
+ 			return CKR_OPERATION_ACTIVE;
+ 		else
+@@ -49,16 +50,16 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestInit)(
+ 		CK_MECHANISM_PTR pMechanism
+ )
+ {
+-	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	CK_RV rc = CKR_OK;
+ 
+ 	rc = check_init(hSession, CK_TRUE);
+ 	if (rc != CKR_OK) {
+ 		/* special case: cancels in progress operation */
+ 		if (rc == CKR_OPERATION_ACTIVE && pMechanism == NULL) {
+-			gCtx->digestCtx.init = CK_FALSE;
+-			free(gCtx->digestCtx.cache);
+-			gCtx->digestCtx.cache = NULL;
++			sCtx->digestCtx.init = CK_FALSE;
++			free(sCtx->digestCtx.cache);
++			sCtx->digestCtx.cache = NULL;
+ 			return CKR_OK;
+ 		}
+ 
+@@ -71,46 +72,46 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestInit)(
+ 
+ 	switch (pMechanism->mechanism) {
+ 		case CKM_SHA_1:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA_1;
+-			gCtx->digestCtx.blockSize = SHA1_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA1_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA_1;
++			sCtx->digestCtx.blockSize = SHA1_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA1_DIGEST_SIZE;
+ 			break;
+ 		case CKM_SHA224:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_224;
+-			gCtx->digestCtx.blockSize = SHA224_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA224_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_224;
++			sCtx->digestCtx.blockSize = SHA224_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA224_DIGEST_SIZE;
+ 			break;
+ 		case CKM_SHA256:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_256;
+-			gCtx->digestCtx.blockSize = SHA256_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA256_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_256;
++			sCtx->digestCtx.blockSize = SHA256_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA256_DIGEST_SIZE;
+ 			break;
+ 		case CKM_SHA512:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512;
+-			gCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA512_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512;
++			sCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA512_DIGEST_SIZE;
+ 			break;
+ 		case CKM_SHA512_224:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512_224;
+-			gCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA224_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512_224;
++			sCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA224_DIGEST_SIZE;
+ 			break;
+ 		case CKM_SHA512_256:
+-			gCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512_256;
+-			gCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
+-			gCtx->digestCtx.digestSize = SHA256_DIGEST_SIZE;
++			sCtx->digestCtx.mechanism = HSE_HASH_ALGO_SHA2_512_256;
++			sCtx->digestCtx.blockSize = SHA512_BLOCK_SIZE;
++			sCtx->digestCtx.digestSize = SHA256_DIGEST_SIZE;
+ 			break;
+ 		default:
+ 			return CKR_MECHANISM_INVALID;
+ 	}
+ 
+-	gCtx->digestCtx.cache = malloc(gCtx->digestCtx.blockSize);
+-	if (gCtx->digestCtx.cache == NULL)
++	sCtx->digestCtx.cache = malloc(sCtx->digestCtx.blockSize);
++	if (sCtx->digestCtx.cache == NULL)
+ 		return CKR_HOST_MEMORY;
+ 
+-	gCtx->digestCtx.init = CK_TRUE;
+-	gCtx->digestCtx.stream_start = CK_TRUE;
+-	gCtx->digestCtx.cache_idx = 0;
++	sCtx->digestCtx.init = CK_TRUE;
++	sCtx->digestCtx.stream_start = CK_TRUE;
++	sCtx->digestCtx.cache_idx = 0;
+ 
+ 	return CKR_OK;
+ }
+@@ -123,7 +124,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_Digest)(
+ 		CK_ULONG_PTR pulDigestLen
+ )
+ {
+-	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseHashSrv_t *hash_req;
+ 	void *output, *output_len, *input;
+@@ -155,17 +156,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_Digest)(
+ 
+ 	if (pDigest == NULL) {
+ 		/* if NULL, upper layer expects to receive size needed for digest */
+-		*pulDigestLen = gCtx->digestCtx.digestSize;
++		*pulDigestLen = sCtx->digestCtx.digestSize;
+ 		return CKR_OK;
+ 	}
+ 
+-	if (*pulDigestLen < gCtx->digestCtx.digestSize) {
+-		/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes 
+-		 * needed to hold the cryptographic output produced from the input to 
+-		 * the function.*/
+-		*pulDigestLen = gCtx->digestCtx.digestSize;
++	if (*pulDigestLen < sCtx->digestCtx.digestSize)
+ 		return CKR_BUFFER_TOO_SMALL;
+-	}
+ 
+ 	input = hse_mem_alloc(ulDataLen);
+ 	if (input == NULL) {
+@@ -192,14 +188,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_Digest)(
+ 	srv_desc.srvId = HSE_SRV_ID_HASH;
+ 	hash_req->accessMode = HSE_ACCESS_MODE_ONE_PASS;
+ 	hash_req->streamId = 0;
+-	hash_req->hashAlgo = gCtx->digestCtx.mechanism;
++	hash_req->hashAlgo = sCtx->digestCtx.mechanism;
+ 	hash_req->sgtOption = HSE_SGT_OPTION_NONE;
+ 	hash_req->inputLength = ulDataLen;
+ 	hash_req->pInput = hse_virt_to_dma(input);
+ 	hash_req->pHashLength = hse_virt_to_dma(output_len);
+ 	hash_req->pHash = hse_virt_to_dma(output);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_output;
+@@ -207,8 +203,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_Digest)(
+ 
+ 	hse_memcpy(pDigest, output, *(uint32_t *)output_len);
+ 
+-	/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes 
+-	* needed to hold the cryptographic output produced from the input to 
++	/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes
++	* needed to hold the cryptographic output produced from the input to
+ 	* the function.*/
+ 	*pulDigestLen = *(uint32_t *)output_len;
+ 
+@@ -219,10 +215,10 @@ err_free_output_len:
+ err_free_input:
+ 	hse_mem_free(input);
+ err_uninit:
+-	gCtx->digestCtx.init = CK_FALSE;
+-	if (gCtx->digestCtx.cache != NULL) {
+-		free(gCtx->digestCtx.cache);
+-		gCtx->digestCtx.cache = NULL;
++	sCtx->digestCtx.init = CK_FALSE;
++	if (sCtx->digestCtx.cache != NULL) {
++		free(sCtx->digestCtx.cache);
++		sCtx->digestCtx.cache = NULL;
+ 	}
+ 	return rc;
+ }
+@@ -233,7 +229,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestUpdate)(
+ 		CK_ULONG ulPartLen
+ )
+ {
+-	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseHashSrv_t *hash_req;
+ 	void *input;
+@@ -259,16 +255,16 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestUpdate)(
+ 		goto err_uninit;
+ 	}
+ 
+-	bytes_left = gCtx->digestCtx.cache_idx + ulPartLen;
+-	if (bytes_left < gCtx->digestCtx.blockSize) {
++	bytes_left = sCtx->digestCtx.cache_idx + ulPartLen;
++	if (bytes_left < sCtx->digestCtx.blockSize) {
+ 		/* cache data for next update and exit */
+-		memcpy(gCtx->digestCtx.cache + gCtx->digestCtx.cache_idx, pPart, ulPartLen);
+-		gCtx->digestCtx.cache_idx = bytes_left;
++		memcpy(sCtx->digestCtx.cache + sCtx->digestCtx.cache_idx, pPart, ulPartLen);
++		sCtx->digestCtx.cache_idx = bytes_left;
+ 		return CKR_OK;
+ 	}
+ 
+ 	/* round down to nearest multiple of block size */
+-	full_blocks = bytes_left - (bytes_left % gCtx->digestCtx.blockSize);
++	full_blocks = bytes_left - (bytes_left % sCtx->digestCtx.blockSize);
+ 
+ 	/* copy full_blocks to dynamic buffer */
+ 	input = hse_mem_alloc(full_blocks);
+@@ -276,46 +272,46 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestUpdate)(
+ 		rc = CKR_HOST_MEMORY;
+ 		goto err_uninit;
+ 	}
+-	hse_memcpy(input, gCtx->digestCtx.cache, gCtx->digestCtx.cache_idx);
+-	hse_memcpy(input + gCtx->digestCtx.cache_idx, pPart, full_blocks - gCtx->digestCtx.cache_idx);
++	hse_memcpy(input, sCtx->digestCtx.cache, sCtx->digestCtx.cache_idx);
++	hse_memcpy(input + sCtx->digestCtx.cache_idx, pPart, full_blocks - sCtx->digestCtx.cache_idx);
+ 	bytes_left -= full_blocks;
+ 
+ 	hash_req = &srv_desc.hseSrv.hashReq;
+ 	srv_desc.srvId = HSE_SRV_ID_HASH;
+ 
+-	if (gCtx->digestCtx.stream_start) {
++	if (sCtx->digestCtx.stream_start) {
+ 		hash_req->accessMode = HSE_ACCESS_MODE_START;
+-		gCtx->digestCtx.stream_start = CK_FALSE;
++		sCtx->digestCtx.stream_start = CK_FALSE;
+ 	} else {
+ 		hash_req->accessMode = HSE_ACCESS_MODE_UPDATE;
+ 	}
+ 
+ 	hash_req->streamId = 0;
+-	hash_req->hashAlgo = gCtx->digestCtx.mechanism;
++	hash_req->hashAlgo = sCtx->digestCtx.mechanism;
+ 	hash_req->sgtOption = HSE_SGT_OPTION_NONE;
+ 	hash_req->inputLength = full_blocks;
+ 	hash_req->pInput = hse_virt_to_dma(input);
+ 	hash_req->pHashLength = 0;
+ 	hash_req->pHash = 0;
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_input;
+ 	}
+ 
+ 	/* copy residue to block-sized cache */
+-	memcpy(gCtx->digestCtx.cache, pPart + (full_blocks - gCtx->digestCtx.cache_idx), bytes_left);
+-	gCtx->digestCtx.cache_idx = bytes_left;
++	memcpy(sCtx->digestCtx.cache, pPart + (full_blocks - sCtx->digestCtx.cache_idx), bytes_left);
++	sCtx->digestCtx.cache_idx = bytes_left;
+ 
+ err_free_input:
+ 	hse_mem_free(input);
+ err_uninit:
+ 	if (rc != CKR_OK) {
+-		gCtx->digestCtx.init = CK_FALSE;
+-		if (gCtx->digestCtx.cache != NULL) {
+-			free(gCtx->digestCtx.cache);
+-			gCtx->digestCtx.cache = NULL;
++		sCtx->digestCtx.init = CK_FALSE;
++		if (sCtx->digestCtx.cache != NULL) {
++			free(sCtx->digestCtx.cache);
++			sCtx->digestCtx.cache = NULL;
+ 		}
+ 	}
+ 	return rc;
+@@ -327,7 +323,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestFinal)(
+ 		CK_ULONG_PTR pulDigestLen
+ )
+ {
+-	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseHashSrv_t *hash_req;
+ 	void *input, *output, *output_len;
+@@ -349,15 +345,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestFinal)(
+ 
+ 	if (pDigest == NULL) {
+ 		/* if NULL, upper layer expects to receive needed size for digest */
+-		*pulDigestLen = gCtx->digestCtx.digestSize;
++		*pulDigestLen = sCtx->digestCtx.digestSize;
+ 		return CKR_OK;
+ 	}
+ 
+-	if (*pulDigestLen < gCtx->digestCtx.digestSize) {
+-		/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes 
+-		 * needed to hold the cryptographic output produced from the input to 
++	if (*pulDigestLen < sCtx->digestCtx.digestSize) {
++		/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes
++		 * needed to hold the cryptographic output produced from the input to
+ 		 * the function.*/
+-		*pulDigestLen = gCtx->digestCtx.digestSize;
++		*pulDigestLen = sCtx->digestCtx.digestSize;
+ 		return CKR_BUFFER_TOO_SMALL;
+ 	}
+ 
+@@ -374,15 +370,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestFinal)(
+ 		goto err_free_output_len;
+ 	}
+ 
+-	if (gCtx->digestCtx.cache_idx > 0) {
+-		input = hse_mem_alloc(gCtx->digestCtx.cache_idx);
++	if (sCtx->digestCtx.cache_idx > 0) {
++		input = hse_mem_alloc(sCtx->digestCtx.cache_idx);
+ 		if (input == NULL) {
+ 			rc = CKR_HOST_MEMORY;
+ 			goto err_free_output;
+ 		}
+ 
+ 		/* copy remaining data to buffer */
+-		hse_memcpy(input, gCtx->digestCtx.cache, gCtx->digestCtx.cache_idx);
++		hse_memcpy(input, sCtx->digestCtx.cache, sCtx->digestCtx.cache_idx);
+ 	}
+ 
+ 	hash_req = &srv_desc.hseSrv.hashReq;
+@@ -390,14 +386,14 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestFinal)(
+ 
+ 	hash_req->streamId = 0;
+ 	hash_req->accessMode = HSE_ACCESS_MODE_FINISH;
+-	hash_req->hashAlgo = gCtx->digestCtx.mechanism;
++	hash_req->hashAlgo = sCtx->digestCtx.mechanism;
+ 	hash_req->sgtOption = HSE_SGT_OPTION_NONE;
+-	hash_req->inputLength = gCtx->digestCtx.cache_idx;
++	hash_req->inputLength = sCtx->digestCtx.cache_idx;
+ 	hash_req->pInput = hse_virt_to_dma(input);
+ 	hash_req->pHashLength = hse_virt_to_dma(output_len);
+ 	hash_req->pHash = hse_virt_to_dma(output);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_input;
+@@ -406,8 +402,8 @@ CK_DEFINE_FUNCTION(CK_RV, C_DigestFinal)(
+ 	/* copy result back to pDigest */
+ 	hse_memcpy(pDigest, output, *(uint32_t *)output_len);
+ 
+-	/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes 
+-	* needed to hold the cryptographic output produced from the input to 
++	/* pkcs11-base-3.0: section 5.2: In either case, *pulBufLen is set to hold the exact number of bytes
++	* needed to hold the cryptographic output produced from the input to
+ 	* the function.*/
+ 	*pulDigestLen = *(uint32_t *)output_len;
+ 
+@@ -418,10 +414,10 @@ err_free_output:
+ err_free_output_len:
+ 	hse_mem_free(output_len);
+ err_uninit:
+-	gCtx->digestCtx.init = CK_FALSE;
+-	if (gCtx->digestCtx.cache != NULL) {
+-		free(gCtx->digestCtx.cache);
+-		gCtx->digestCtx.cache = NULL;
++	sCtx->digestCtx.init = CK_FALSE;
++	if (sCtx->digestCtx.cache != NULL) {
++		free(sCtx->digestCtx.cache);
++		sCtx->digestCtx.cache = NULL;
+ 	}
+ 	return rc;
+ }
+diff --git a/libpkcs/pkcs11_object.c b/libpkcs/pkcs11_object.c
+index 68d509e..789d59d 100644
+--- a/libpkcs/pkcs11_object.c
++++ b/libpkcs/pkcs11_object.c
+@@ -99,6 +99,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseImportKeySrv_t *import_key_req;
+ 	volatile hseKeyInfo_t *key_info;
+@@ -117,7 +118,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 	if (pTemplate == NULL || ulCount == 0)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
+ 	if (getattr_pval(pTemplate, CKA_UNIQUE_ID, ulCount))
+@@ -173,12 +174,15 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 
+ 	/* check if key is already in nvm catalog */
+ 	if (idtemp[2] == 1) {
++		gCtx->mtxFns.lock(gCtx->keyMtx);
+ 		if (list_seek(&gCtx->object_list, &key->key_handle) != NULL) {
++			gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 			printf("ERROR: NVM Slot is already occupied.");
+ 			printf(" The slot should be cleared, before a new key can be added\n");
+ 			rc = CKR_ARGUMENTS_BAD;
+ 			goto err_free_key_intl;
+ 		}
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	}
+ 
+ 	label = (char *)getattr_pval(pTemplate, CKA_LABEL, ulCount);
+@@ -365,14 +369,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_CreateObject)(
+ 			goto err_free_key_intl;
+ 	}
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_pkey2;
+ 	}
+ 
++	gCtx->mtxFns.lock(gCtx->keyMtx);
+ 	*phObject = key->key_handle;
+ 	list_append(&gCtx->object_list, key);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+ 	hse_mem_free(pkey2);
+ 	hse_mem_free(pkey1);
+@@ -400,6 +408,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	struct hse_keyObject *pkey;
+ 	int err;
+@@ -407,10 +416,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	gCtx->mtxFns.lock(gCtx->keyMtx);
+ 	pkey = (struct hse_keyObject *)list_seek(&gCtx->object_list, &hObject);
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (pkey == NULL)
+ 		return CKR_OBJECT_HANDLE_INVALID;
+ 
+@@ -418,12 +429,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_DestroyObject)(
+ 	srv_desc.hseSrv.eraseKeyReq.keyHandle = pkey->key_handle;
+ 	srv_desc.hseSrv.eraseKeyReq.eraseKeyOptions = 0u;
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 	if (err)
+ 		return CKR_FUNCTION_FAILED;
+ 
+-	if (list_delete(&gCtx->object_list, pkey) != 0)
++	gCtx->mtxFns.lock(gCtx->keyMtx);
++	if (list_delete(&gCtx->object_list, pkey) != 0) {
++		gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 		return CKR_FUNCTION_FAILED;
++	}
++	gCtx->mtxFns.unlock(gCtx->keyMtx);
+ 
+ 	hse_intl_mem_free(pkey);
+ 
+@@ -437,24 +454,25 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsInit)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->findCtx.init == CK_TRUE)
+-		return CKR_OPERATION_ACTIVE;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->findCtx.init == CK_TRUE)
++		return CKR_OPERATION_ACTIVE;
++
+ 	if (ulCount != 0) {
+ 		if (pTemplate != NULL)
+-			gCtx->findCtx.obj_class = (CK_OBJECT_CLASS *)getattr_pval(pTemplate, CKA_CLASS, ulCount);
++			sCtx->findCtx.obj_class = (CK_OBJECT_CLASS *)getattr_pval(pTemplate, CKA_CLASS, ulCount);
+ 		else
+-			gCtx->findCtx.obj_class = NULL;
++			sCtx->findCtx.obj_class = NULL;
+ 	}
+ 
+-	gCtx->findCtx.init = CK_TRUE;
++	sCtx->findCtx.init = CK_TRUE;
+ 	list_iterator_start(&gCtx->object_list);
+ 
+ 	return CKR_OK;
+@@ -468,6 +486,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	struct hse_keyObject *key;
+ 	struct hse_findCtx *finder;
+ 	int i;
+@@ -475,12 +494,12 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if (gCtx->findCtx.init == CK_FALSE)
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
++	if (sCtx->findCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
+ 	if (phObject == NULL || ulMaxObjectCount == 0 || pulObjectCount == NULL)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+@@ -489,7 +508,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjects)(
+ 		return CKR_OK;
+ 	}
+ 
+-	finder = &gCtx->findCtx;
++	finder = &sCtx->findCtx;
+ 	i = 0;
+ 	do {
+ 		key = (struct hse_keyObject *)list_iterator_next(&gCtx->object_list);
+@@ -513,17 +532,18 @@ CK_DEFINE_FUNCTION(CK_RV, C_FindObjectsFinal)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
+-	if(gCtx->findCtx.init == CK_FALSE)
+-		return CKR_OPERATION_NOT_INITIALIZED;
+-
+-	if (hSession != SESSION_ID)
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
+ 		return CKR_SESSION_HANDLE_INVALID;
+ 
+-	gCtx->findCtx.init = CK_FALSE;
++	if (sCtx->findCtx.init == CK_FALSE)
++		return CKR_OPERATION_NOT_INITIALIZED;
++
++	sCtx->findCtx.init = CK_FALSE;
+ 	list_iterator_stop(&gCtx->object_list);
+ 
+ 	return CKR_OK;
+diff --git a/libpkcs/pkcs11_random.c b/libpkcs/pkcs11_random.c
+index 35c4137..ccdc658 100644
+--- a/libpkcs/pkcs11_random.c
++++ b/libpkcs/pkcs11_random.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+ /*
+- * Copyright 2021 NXP
++ * Copyright 2021-2023 NXP
+  */
+ 
+ #include <stdio.h>
+@@ -26,6 +26,7 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)(
+ )
+ {
+ 	struct globalCtx *gCtx = getCtx();
++	struct sessionCtx *sCtx = getSessionCtx(hSession);
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	hseGetRandomNumSrv_t *rng_req;
+ 	void *rng_output;
+@@ -35,25 +36,25 @@ CK_DEFINE_FUNCTION(CK_RV, C_GenerateRandom)(
+ 	if (gCtx->cryptokiInit == CK_FALSE)
+ 		return CKR_CRYPTOKI_NOT_INITIALIZED;
+ 
++	if (!sCtx || sCtx->sessionInit == CK_FALSE)
++		return CKR_SESSION_HANDLE_INVALID;
++
+ 	if (pRandomData == NULL || ulRandomLen < 32 ||
+ 			ulRandomLen > 2048 || ulRandomLen % 4 != 0)
+ 		return CKR_ARGUMENTS_BAD;
+ 
+-	if (hSession != SESSION_ID)
+-		return CKR_SESSION_HANDLE_INVALID;
+-
+ 	rng_output = hse_mem_alloc(ulRandomLen);
+ 	if (rng_output == NULL)
+ 		return CKR_HOST_MEMORY;
+ 
+ 	rng_req = &srv_desc.hseSrv.getRandomNumReq;
+-	
++
+ 	srv_desc.srvId = HSE_SRV_ID_GET_RANDOM_NUM;
+ 	rng_req->rngClass = HSE_RNG_CLASS_PTG3;
+ 	rng_req->randomNumLength = ulRandomLen;
+ 	rng_req->pRandomNum = hse_virt_to_dma(rng_output);
+ 
+-	err = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	err = hse_srv_req_sync(sCtx->sID, &srv_desc, sizeof(srv_desc));
+ 	if (err) {
+ 		rc = CKR_FUNCTION_FAILED;
+ 		goto err_free_output;
+-- 
+2.25.1
+
