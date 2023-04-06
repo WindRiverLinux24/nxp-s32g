@@ -49,6 +49,7 @@ SRC_URI += " \
     ${@bb.utils.contains('HSE_SEC_ENABLED', '1', '${HSE_SUPPORT_PATCHES}', '', d)} \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
     file://0001-hse-enable-eFUSE-power-on-s32g399-RDB3-platform.patch \
+    file://0001-phy-s32cc-serdes-configure-REF_USE_PAD-bit-during-re.patch \
 "
 
 SRCREV = "79c77efeffb2dc5e4988c2d1390bd28ff2454129"
