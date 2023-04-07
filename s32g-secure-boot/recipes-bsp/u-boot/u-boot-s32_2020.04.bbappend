@@ -9,6 +9,7 @@ SRC_URI:append = " \
     file://0001-s32g-hse-support-NXP-parallel-secure-boot-feature.patch \
     file://0001-s32g-hse-support-Aptiv-autosar-secure-boot-feature.patch \
     file://0001-s32g-hse-support-Aptiv-parallel-secure-boot-feature.patch \
+    file://0001-s32g-hse-improve-the-code-of-enable-secure-boot-comm.patch \
 "
 
 python() {
