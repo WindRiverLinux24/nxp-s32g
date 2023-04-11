@@ -50,6 +50,7 @@ SRC_URI += " \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
     file://0001-hse-enable-eFUSE-power-on-s32g399-RDB3-platform.patch \
     file://0001-phy-s32cc-serdes-configure-REF_USE_PAD-bit-during-re.patch \
+    file://0001-s32-env-support-for-booting-up-fitImage.patch \
 "
 
 SRCREV = "79c77efeffb2dc5e4988c2d1390bd28ff2454129"
