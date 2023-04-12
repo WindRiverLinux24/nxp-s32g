@@ -112,7 +112,8 @@ nxp_parallel_secboot = "00000003"
 
 str2bin () {
 	# write binary as little endian
-	printf $(echo $1 | sed -E -e 's/(..)(..)(..)(..)/\4\3\2\1/' -e 's/../\\x&/g')
+	print_cmd=`which printf`
+	$print_cmd $(echo $1 | sed -E -e 's/(..)(..)(..)(..)/\4\3\2\1/' -e 's/../\\x&/g')
 }
 
 do_compile() {
