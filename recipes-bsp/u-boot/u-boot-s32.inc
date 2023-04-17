@@ -18,27 +18,8 @@ HSE_SUPPORT_PATCHES = " \
     file://0004-configs-s32g3xxaevb-add-NXP_HSE_SUPPORT-config.patch \
 "
 
-UBOOT_BSP36_RC5_PATCHES = " \
-    file://bsp36/rc5/0004-gpio-Allow-to-print-pin-s-label-even-for-pin-with-GP.patch \
-    file://bsp36/rc5/0005-pinctrl-Iterate-through-all-gpio-ranges.patch \
-    file://bsp36/rc5/0006-gpio-Add-GPIO-driver-for-SCMI-agents.patch \
-    file://bsp36/rc5/0007-s32cc-fdt-Enable-GPIO-SCMI-node-if-needed.patch \
-    file://bsp36/rc5/0008-clk-scmi-Make-CLOCK_RATE_SET-synchronous.patch \
-    file://bsp36/rc5/0009-tools-add-scmi_dtb_node_change.py.patch \
-    file://bsp36/rc5/0010-s32cc-Add-config-for-GPIO-SCMI-fixup.patch \
-    file://bsp36/rc5/0011-tools-dtb_node-Add-parameters-for-each-SIUL2-fixup.patch \
-"
-
-UBOOT_BSP36_RC6_PATCHES = " \
-    file://bsp36/rc6/0001-s32g-hwconfig-fixup-Update-PFE-EMAC-property-name.patch \
-    file://bsp36/rc6/0002-drivers-s32cc_cmu-update-expected-qspi-frequency.patch \
-    file://bsp36/rc6/0003-arch-s32cc-update-qspiparams-frequency-based-on-targ.patch \
-"
-
-SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp36.0_cd-2020.04"
+SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp36.0-2020.04"
 SRC_URI += " \
-    ${UBOOT_BSP36_RC5_PATCHES} \
-    ${UBOOT_BSP36_RC6_PATCHES} \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
@@ -53,7 +34,7 @@ SRC_URI += " \
     file://0001-s32-env-support-for-booting-up-fitImage.patch \
 "
 
-SRCREV = "79c77efeffb2dc5e4988c2d1390bd28ff2454129"
+SRCREV = "ec57ab5ab89c86df5749a67a3ef23e7fe28c87a5"
 
 SCMVERSION = "y"
 LOCALVERSION = ""
