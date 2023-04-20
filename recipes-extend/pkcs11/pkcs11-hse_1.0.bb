@@ -69,6 +69,14 @@ do_compile() {
     bins="pkcs-keyop hse-encrypt hse-sysimg pkcs-key-provision hse-secboot"
     for plat in $plats; do
 
+        mkdir -p ${S}/hse-fw/${plat}
+        if [ "$plat" = "s32g2" ]; then
+            fw_version="${HSE_FW_VERSION_S32G2}"
+        else
+            fw_version="${HSE_FW_VERSION_S32G3}"
+        fi
+
+        cp -r ${HSE_LOCAL_FIRMWARE_DIR}/${fw_version}/interface ${S}/hse-fw/${plat}/
         # compile share libraries(libhse and libpkcs) firstly, they are all same either S32G2 or S32G3
         oe_runmake HSE_FWDIR=${S}/hse-fw/${plat}  CFLAGS="${CFLAGS} -shared -fPIC -Wall -fno-builtin"
 

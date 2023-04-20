@@ -15,9 +15,9 @@ do_compile:append:nxp-s32g() {
             cfgout="${B}/${plat}_defconfig/u-boot-s32.cfgout"
             if [ -e $cfgout ]; then
                 if echo $plat | grep -q s32g2; then
-                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G2}|g' $cfgout
+                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_VERSION_S32G2}/${HSE_FW_NAME_S32G2}|g' $cfgout
                 else
-                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_NAME_S32G3}|g' $cfgout
+                    sed -i 's|${HSE_FW_DEFAULT_NAME}|${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_VERSION_S32G3}/${HSE_FW_NAME_S32G3}|g' $cfgout
                 fi
             fi
         done
