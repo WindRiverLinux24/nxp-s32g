@@ -8,40 +8,14 @@ LIC_FILES_CHKSUM = " \
 
 DEPENDS = "openssl libp11"
 
-SRC_URI = "https://bitbucket.sw.nxp.com/projects/ALBW/repos/pkcs11-hse/pkcs11-hse.tar.gz"
+URL ?= "git://github.com/nxp-auto-linux/pkcs11-hse.git;protocol=https"
+BRANCH ?= "release/bsp36.0"
+SRC_URI = "${URL};branch=${BRANCH}"
 
-SRCREV = "9acdc9238a248a0d2e4b3aa71d5b11149fef8f01"
+SRCREV = "f04e9e5a6c8ea3bf5962b5665b393fb89ebc31b8"
 SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
-PKCS_BSP36_RC5_PATCHES = " \
-    file://bsp36/rc5/0001-examples-refactor-examples-build-structure.patch \
-    file://bsp36/rc5/0002-pkcs11-hse-add-examples-target-in-top-directory-Make.patch \
-    file://bsp36/rc5/0003-pkcs11-hse-add-versioning-for-libpkcs-hse-library.patch \
-    file://bsp36/rc5/0004-pkcs11-hse-add-install-Makefile-rule.patch \
-    file://bsp36/rc5/0005-examples-add-TrustZone-Key-Provisioning-feature.patch \
-    file://bsp36/rc5/0006-examples-make-all-builds-only-default-examples.patch \
-    file://bsp36/rc5/0007-examples-add-userspace-key-provisioning-using-the-TE.patch \
-    file://bsp36/rc5/0008-examples-generate-kek-encrypted-keys-on-the-host-mac.patch \
-    file://bsp36/rc5/0009-Add-Apache-v2.0-License-OpenSSL-Copyright-Notice.patch \
-"
-
-PKCS_BSP36_RC6_PATCHES = " \
-    file://bsp36/rc6/0001-examples-avoid-bus-errors-when-comiling-with-fstore-.patch \
-    file://bsp36/rc6/0002-examples-replace-openssl-v1.1.1-deprecated-functions.patch \
-    file://bsp36/rc6/0003-Add-support-of-AES-CBC-and-AES-CTR-for-encrypt-decry.patch \
-    file://bsp36/rc6/0004-Add-support-of-SHA2-SHA224-SHA256-SHA512-SHA512-224-.patch \
-    file://bsp36/rc6/0005-Add-support-of-RSA-Ciphering-PKCS1-V1.5-and-OAEP-for.patch \
-    file://bsp36/rc6/0006-Add-support-of-RSA-EC-mechanisms-for-sign-verify-fun.patch \
-    file://bsp36/rc6/0007-Add-support-of-CMAC-and-HMAC-for-sign-verify-functio.patch \
-    file://bsp36/rc6/0008-libhse-parallel-request-support.patch \
-    file://bsp36/rc6/0009-libhse-fix-channel-acquisition.patch \
-    file://bsp36/rc6/0010-libpkcs-multiple-sessions-support.patch \
-    file://bsp36/rc6/0011-libpkcs-fix-multiple-ram-key-copies.patch \
-"
-
 SRC_URI += " \
-    ${PKCS_BSP36_RC5_PATCHES} \
-    ${PKCS_BSP36_RC6_PATCHES} \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0001-hse-initialize-used-field-of-struct-node_data.patch \
     file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \
@@ -51,7 +25,7 @@ SRC_URI += " \
 PATCHTOOL = "git"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-S = "${WORKDIR}/pkcs11-hse"
+S = "${WORKDIR}/git"
 
 # Disable -O2 optimization, since it seems to be exposing an alignment issue
 SELECTED_OPTIMIZATION:remove = "-O2"
