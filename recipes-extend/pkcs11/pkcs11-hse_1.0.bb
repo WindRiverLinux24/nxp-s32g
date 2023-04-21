@@ -118,4 +118,5 @@ rm -rf /usr/bin/s32g3
 
 PACKAGES =+ "${PN}-examples "
 FILES:${PN}-examples += "${bindir}"
+COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"

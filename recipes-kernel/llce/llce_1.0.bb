@@ -100,4 +100,5 @@ do_package_qa_setscene[noexec] = "1"
 
 FILES:${PN} += "/lib/firmware/*"
 
+COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
