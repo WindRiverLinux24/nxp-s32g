@@ -28,6 +28,7 @@ SRC_URI += " \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
     file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
     file://0001-s32_common.mk-Print-error-message-for-debugging.patch \
+    file://rwx-segments.patch \
 "
 
 PATCHTOOL = "git"
