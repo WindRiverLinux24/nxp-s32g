@@ -22,4 +22,4 @@ S = "${WORKDIR}/git"
 MDIR = "${S}/sw/linux-pfeng"
 INSTALL_DIR = "${D}/${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel/drivers/net/ethernet/nxp/pfe"
 
-EXTRA_OEMAKE:append = " KERNELDIR=${STAGING_KERNEL_DIR} MDIR=${MDIR} -C ${MDIR} V=1 drv-build PLATFORM=aarch64-wrs-linux"
+EXTRA_OEMAKE:append = " KERNELDIR=${STAGING_KERNEL_DIR} MDIR=${MDIR} -C ${MDIR} V=1 drv-build PLATFORM=${HOST_SYS}"
