@@ -104,6 +104,5 @@ python __anonymous () {
         atf_pn = 'atf-s32g'
         if d.getVar('INITRAMFS_IMAGE_BUNDLE') == "1":
             d.appendVarFlag('do_assemble_fitimage_initramfs', 'depends', ' %s:do_populate_sysroot' % atf_pn)
-        else:
-            d.appendVarFlag('do_assemble_fitimage', 'depends', ' %s:do_populate_sysroot' % atf_pn)
+        d.appendVarFlag('do_assemble_fitimage', 'depends', ' %s:do_populate_sysroot' % atf_pn)
 }
