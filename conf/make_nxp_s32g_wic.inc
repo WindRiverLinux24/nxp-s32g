@@ -57,13 +57,13 @@ BOOTFS_EXTRA_CMD ?= " \
         fi; \
         ofname="$plat.ustart.img"; \
         cp ustart.img $ofname; \
-        if [ "$plat" = "s32g2xxaevb" ] && [ "${HSE_SEC_ENABLED}" = "1" ]; then \
-            dd if=$atf_s32 of=$ofname bs=512 seek=1 skip=1 conv=notrunc,fsync; \
-            dd if=$atf_s32.signature of=$ofname  bs=512 seek=9 conv=notrunc,fsync; \
+        if [ "${HSE_SEC_ENABLED}" = "1" ]; then \
+            dd_offset=`cat ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset`; \
+            dd if=$atf_s32 of=$ofname seek=1 skip=1 conv=notrunc,fsync; \
+            dd if=$atf_s32.signature of=$ofname seek=`printf "%d" ${dd_offset}` oflag=seek_bytes conv=notrunc,fsync; \
         else \
-            dd if=$atf_s32 of=$ofname conv=notrunc bs=256 count=1 seek=0; \
-            dd if=$atf_s32 of=$ofname conv=notrunc bs=512 seek=1 skip=1; \
-        fi \
+            dd if=$atf_s32 of=$ofname conv=notrunc seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes; \
+        fi; \
     done; \
     rm -f ustart.img; \
     if [ $plat = "aptiv" ]; then \
