@@ -15,6 +15,7 @@ SRC_URI:append = " \
         file://0001-pfe-update-to-fix-the-possible-circular-locking.patch \
         file://0001-pfe-fix-the-kernel-calltrace-when-dhcp-for-pfe-ports.patch \
         file://0001-pfeng-fix-build-errors-to-compatible-with-v6.1-kerne.patch \
+        file://0001-pfe-phylink-fix-autoneg-issue.patch \
         file://${PFE_LOCAL_FIRMWARE_DIR}\
 "
 

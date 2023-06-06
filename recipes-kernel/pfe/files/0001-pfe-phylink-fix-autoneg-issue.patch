@@ -1,0 +1,35 @@
+From 6be0e3b330d3d00206795babb808eee7d9651b0f Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Tue, 6 Jun 2023 16:13:15 +0800
+Subject: [PATCH] pfe: phylink: fix autoneg issue
+
+For phylink, there is a commit 001f4261fe4d ("net: phylink: use
+legacy_pre_march2020") introduced a legacy flag: legacy_pre_march2020,
+to indicate whether the driver will use mac_config(), mac_an_restart(), etc.
+interfaces.
+
+For pfe drivers, it needs to call mac_config(), so set the legacy flag
+legacy_pre_march2020 to true to make the pfe drivers work normally.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/linux-pfeng/pfeng-phylink.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sw/linux-pfeng/pfeng-phylink.c b/sw/linux-pfeng/pfeng-phylink.c
+index 60731fd..3aca4b6 100644
+--- a/sw/linux-pfeng/pfeng-phylink.c
++++ b/sw/linux-pfeng/pfeng-phylink.c
+@@ -350,6 +350,7 @@ int pfeng_phylink_create(struct pfeng_netif *netif)
+ 
+ 	netif->phylink_cfg.dev = &netif->netdev->dev;
+ 	netif->phylink_cfg.type = PHYLINK_NETDEV;
++	netif->phylink_cfg.legacy_pre_march2020 = true;
+ 	phylink = phylink_create(&netif->phylink_cfg, of_fwnode_handle(netif->cfg->dn), emac->intf_mode, &pfeng_phylink_ops);
+ 	if (IS_ERR(phylink))
+ 		return PTR_ERR(phylink);
+-- 
+2.25.1
+
