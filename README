@@ -683,7 +683,7 @@ with version 1.0.6 to be downloaded from NXP Software.
 If users want to verify LLCE CAN feature, please add the following lines in
 <build-dir>/conf/local.conf of wrlinux project:
 
-	WRL_RECIPES:wr-nxp-s32g += "llce"
+	CUSTOMER_RECIPES:wr-nxp-s32g += "llce"
 	IMAGE_INSTALL:append:nxp-s32g = " llce"
 	LLCE_LOCAL_FIRMWARE_DIR = "<path-to-llce-firmwares-for-s32g2-boards>"
 	LLCE_LOCAL_FIRMWARE_DIR_S32G3 = "<path-to-llce-firmwares-for-s32g3-boards>"
