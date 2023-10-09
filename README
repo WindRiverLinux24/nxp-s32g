@@ -717,6 +717,19 @@ using llcecan0 and llcecan14 to verify. steps as following:
 	  llcecan0  15575555  [20]  00 11 22 33 44 55 66 77 88 99 AA BB CC EE DD 11 22 33 00 00
 	  llcecan14  15575555  [20]  00 11 22 33 44 55 66 77 88 99 AA BB CC EE DD 11 22 33 00 00
 
+6.4.3 Known issues
+------------------
+
+For llce, there is a known issue currently, as following:
+
+  1. llce logger feature unavialable
+     The llce logging capability is only available by using the advanced
+     version of the LLCE firmware. But the advanced firmware version
+     is not available publicly, if users want the logging capability,
+     please contact NXP for the firmware.
+
+This issue may be resolved in future.
+
 6.5 ATF
 -------
 
