@@ -1,4 +1,4 @@
-From 35760047e901dc70dde70f154307b699b74e3059 Mon Sep 17 00:00:00 2001
+From d1c4a06f6592d91e6462d6cb643728dc4502d471 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 11 Apr 2023 18:30:54 +0800
 Subject: [PATCH] s32: env: support for booting up fitImage
@@ -12,7 +12,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index f1cc6631ea..a37264d6dd 100644
+index 94594593e7..f5b795b17d 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
 @@ -47,6 +47,7 @@
@@ -31,7 +31,7 @@ index f1cc6631ea..a37264d6dd 100644
 +	"fitimage_addr=" __stringify(S32CC_FIT_ADDR) "\0" \
 +	"fit_config_header=conf-freescale_\0" \
  	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
- 	"ipaddr=" S32CC_DEFAULT_IP "\0"\
+ 	"ipaddr=" S32CC_IPADDR "\0"\
  	"jtagboot=echo Booting using jtag...; " \
 @@ -161,6 +165,7 @@
  	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
@@ -41,7 +41,7 @@ index f1cc6631ea..a37264d6dd 100644
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
  	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-@@ -256,7 +261,13 @@
+@@ -250,7 +255,13 @@
  		"then " \
  			"run mmcboot; " \
  		"else " \
@@ -57,5 +57,5 @@ index f1cc6631ea..a37264d6dd 100644
  	"else " \
  		"run netboot;" \
 -- 
-2.36.1
+2.25.1
 

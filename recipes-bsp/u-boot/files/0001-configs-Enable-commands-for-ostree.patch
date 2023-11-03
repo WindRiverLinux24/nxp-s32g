@@ -1,6 +1,6 @@
-From f6ae85073d31d8ad5aa3bde3af5fa089f79e47e0 Mon Sep 17 00:00:00 2001
-From: Robert Yang <liezhi.yang@windriver.com>
-Date: Wed, 8 Jun 2022 11:18:47 +0000
+From 309adaf10391ff41913a86331a294d894ec44090 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Mon, 4 Sep 2023 14:42:46 +0800
 Subject: [PATCH] configs: Enable commands for ostree
 
 Upstream-Status: Pending
@@ -36,13 +36,13 @@ index a48db2d8d4..c2ac1d22cb 100644
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
-index cfc3dd7d9f..0c744fda5d 100644
+index f040853791..5a953e786c 100644
 --- a/configs/s32g2xxaevb_defconfig
 +++ b/configs/s32g2xxaevb_defconfig
-@@ -4,3 +4,6 @@ CONFIG_ARCH_S32G2=y
- CONFIG_TARGET_S32G2XXAEVB=y
+@@ -5,3 +5,6 @@ CONFIG_TARGET_S32G2XXAEVB=y
  CONFIG_SD_BOOT=y
  CONFIG_USB_ULPI_VIEWPORT=y
+ CONFIG_S32CC_QSPI_FREQ=166
 +CONFIG_FAT_WRITE=y
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
@@ -58,21 +58,21 @@ index 9deb414090..5c121f049d 100644
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
-index c76cb29858..4f2c9df19c 100644
+index 8d64b7888b..648b3bc685 100644
 --- a/configs/s32g3xxaevb_defconfig
 +++ b/configs/s32g3xxaevb_defconfig
-@@ -4,3 +4,6 @@ CONFIG_ARCH_S32G3=y
- CONFIG_TARGET_S32G3XXAEVB=y
+@@ -5,3 +5,6 @@ CONFIG_TARGET_S32G3XXAEVB=y
  CONFIG_SD_BOOT=y
  CONFIG_USB_ULPI_VIEWPORT=y
+ CONFIG_S32CC_QSPI_FREQ=166
 +CONFIG_FAT_WRITE=y
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index a719b68646..4ffa79fc67 100644
+index 94594593e7..ebf7ebd023 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -276,6 +276,12 @@
+@@ -246,6 +246,12 @@
  	"mmc dev ${mmcdev}; " \
  	"if mmc rescan; " \
  	"then " \
@@ -86,5 +86,5 @@ index a719b68646..4ffa79fc67 100644
  		"then " \
  			"run mmcboot; " \
 -- 
-2.27.0
+2.25.1
 

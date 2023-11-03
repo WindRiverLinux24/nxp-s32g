@@ -18,7 +18,7 @@ HSE_SUPPORT_PATCHES = " \
     file://0004-configs-s32g3xxaevb-add-NXP_HSE_SUPPORT-config.patch \
 "
 
-SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp36.0-2020.04"
+SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp38.0_srm_0.9-2020.04"
 SRC_URI += " \
     file://0001-scripts-mailmapper-python2-python3.patch \
     file://0001-tools-s32gen1_secboot-replace-u-boot.s32-with-u-boot.patch \
@@ -33,9 +33,10 @@ SRC_URI += " \
     file://0001-phy-s32cc-serdes-configure-REF_USE_PAD-bit-during-re.patch \
     file://0001-s32-env-support-for-booting-up-fitImage.patch \
     file://0001-s32-env-Add-support-to-load-the-initrd-in-mmcboot.patch \
+    file://0001-arch-mach-s32-extend-the-DTB-size-for-BL33.patch \
 "
 
-SRCREV = "ec57ab5ab89c86df5749a67a3ef23e7fe28c87a5"
+SRCREV = "57741dd80eb814cfdf1e16b33773dac6507b2a51"
 
 SCMVERSION = "y"
 LOCALVERSION = ""
