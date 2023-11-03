@@ -11,9 +11,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec
 inherit module deploy
 
 URL ?= "git://github.com/nxp-auto-linux/ipc-shm.git;protocol=https"
-BRANCH ?= "release/bsp36.0"
+BRANCH ?= "release/bsp37.0_srm_0.4"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV = "0e37289cb8c62a6da7666842af2942a858e5c862"
+SRCREV = "841af092aa30b8660955cf99deeca2ddd7bc4fce"
 
 S = "${WORKDIR}/git"
 DESTDIR="${D}"
