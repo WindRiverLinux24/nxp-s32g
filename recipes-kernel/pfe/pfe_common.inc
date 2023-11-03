@@ -6,11 +6,11 @@ SUMMARY = "Linux driver for the Packet Forwarding Engine hardware"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://LICENSE-GPL2.txt;md5=5dcdfe25f21119aa5435eab9d0256af7"
 
-URL ?= "git://github.com/nxp-auto-linux/pfeng.git;protocol=https;branch=master"
+URL ?= "git://github.com/nxp-auto-linux/pfeng.git;protocol=https;branch=release/linux_1.5.0"
 SRC_URI = "${URL}"
 
 
-SRCREV = "9b1c721d40763b92e9010fc9567635f130ee5bc9"
+SRCREV = "078ca56adb708e71f855290a29208d9d7b87e66c"
 
 PATCHTOOL = "git"
 
