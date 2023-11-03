@@ -1,4 +1,4 @@
-From 6058a3f82fcdbe2f5a709655f06aafc20c57553f Mon Sep 17 00:00:00 2001
+From ce9828c98d7ca4a7b4fb491f0575ec7c05dadea7 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Thu, 2 Feb 2023 19:59:01 +0800
 Subject: [PATCH] hse: initialize used field of struct node_data
@@ -13,22 +13,22 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/libhse/hse-mem.c b/libhse/hse-mem.c
-index 3d5954a..abcc16d 100644
+index 0f252bc..fad84ea 100644
 --- a/libhse/hse-mem.c
 +++ b/libhse/hse-mem.c
-@@ -62,10 +62,12 @@ int hse_mem_init(void *base_addr, uint64_t mem_size, bool intl)
- 		intl_mem_start = (struct node_data *)base_addr;
- 		intl_mem_start->size = mem_size - HSE_NODE_SIZE;
- 		intl_mem_start->next = NULL;
-+		intl_mem_start->used = 0;
+@@ -105,10 +105,12 @@ int hse_mem_setup(const void *base_addr, const uint64_t mem_size, bool intl)
+ 		priv.intl_mem_start->size = mem_size - HSE_NODE_SIZE;
+ 		priv.intl_mem_start->intl = 1;
+ 		priv.intl_mem_start->next_offset = 0;
++		priv.intl_mem_start->used = 0;
  	} else {
- 		mem_start = (struct node_data *)base_addr;
- 		mem_start->size = mem_size - HSE_NODE_SIZE;
- 		mem_start->next = NULL;
-+		mem_start->used = 0;
+ 		priv.mem_start = (struct node_data *)base_addr;
+ 		priv.mem_start->size = mem_size - HSE_NODE_SIZE;
+ 		priv.mem_start->next_offset = 0;
++		priv.mem_start->used = 0;
  	}
  
- 	return 0;
+ 	priv.mem_lock = get_mem_lock();
 -- 
-2.36.1
+2.25.1
 

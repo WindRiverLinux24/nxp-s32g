@@ -10,17 +10,16 @@ DEPENDS = "openssl libp11"
 RDEPENDS:${PN} = "opensc pcsc-lite ccid"
 
 URL ?= "git://github.com/nxp-auto-linux/pkcs11-hse.git;protocol=https"
-BRANCH ?= "release/bsp36.0"
+BRANCH ?= "release/bsp38.0_srm_0.9"
 SRC_URI = "${URL};branch=${BRANCH}"
 
-SRCREV = "f04e9e5a6c8ea3bf5962b5665b393fb89ebc31b8"
+SRCREV = "9795b9d12ad0486f5b602d5040fb3378a9e74396"
 SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
 SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0001-hse-initialize-used-field-of-struct-node_data.patch \
     file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \
-    file://0001-Makefile-Make-examples-depend-on-libhse.so-to-fix-a-.patch \
     file://0001-libpkcs-Initialize-the-input-in-C_DigestFinal.patch \
 "
 
@@ -121,8 +120,8 @@ do_install() {
 
     install -d ${D}${libdir}
     install -m 0755 ${S}/libpkcs-hse.so.1.0 ${D}${libdir}/libpkcs-hse.so.1.0
-    install -m 0755 ${S}/libhse.so.1.0 ${D}${libdir}/libhse.so.1.0
-    ln -s libhse.so.1.0 ${D}${libdir}/libhse.so.1
+    install -m 0755 ${S}/libhse.so.2.1 ${D}${libdir}/libhse.so.2.1
+    ln -s libhse.so.2.1 ${D}${libdir}/libhse.so.2
 
     install -d ${D}${includedir}
     install -m 0644 ${S}/libhse/*.h ${D}${includedir}
