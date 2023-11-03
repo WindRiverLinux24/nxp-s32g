@@ -11,9 +11,9 @@ B = "${WORKDIR}/build"
 
 # ATF repository
 URL ?= "git://github.com/nxp-auto-linux/arm-trusted-firmware.git;protocol=https"
-BRANCH ?= "release/bsp36.0-2.5"
+BRANCH ?= "release/bsp38.0_srm_0.9-2.5"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "6bbd669a317fdc1965f83c3f0b9b3acff2ffc21b"
+SRCREV ?= "085be2b21edf47f75e813a5e8c22bd728a54ce4a"
 SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dddede07"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
@@ -29,6 +29,7 @@ SRC_URI += " \
     file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
     file://0001-s32_common.mk-Print-error-message-for-debugging.patch \
     file://rwx-segments.patch \
+    file://0001-s32-extend-the-DTB-size-for-BL33.patch \
 "
 
 PATCHTOOL = "git"

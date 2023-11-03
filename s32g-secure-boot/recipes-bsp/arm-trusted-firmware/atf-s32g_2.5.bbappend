@@ -2,7 +2,6 @@ PROVIDES = "atf-s32g"
 FILES:${PN} = "/boot ${datadir}"
 
 SRC_URI:append = " \
-    file://0001-s32-extend-the-DTB-size-for-BL33.patch \
     file://0001-secboot-move-bl2-base-address-to-0x34100000-when-sec.patch \
     file://0001-dts-s32-extend-the-hse-reserve-memory-to-8-MB.patch \
 "

@@ -1,8 +1,8 @@
-From 88faedb3ec97e0aeeb00fe1d17115e40b5902f0e Mon Sep 17 00:00:00 2001
+From cd14474e56f3e6dee5f6065adabd77a1d86cc276 Mon Sep 17 00:00:00 2001
 From: Kevin Hao <kexin.hao@windriver.com>
 Date: Sat, 17 Sep 2022 20:55:30 +0800
-Subject: [PATCH 1/2] s32: clk: Return the preset freq when we can't calculate
- the clock freq correctly
+Subject: [PATCH] s32: clk: Return the preset freq when we can't calculate the
+ clock freq correctly
 
 On s32g platform, the freq of some clocks (such as gmac_ts_clk) are
 initialized by using the info in dts (assigned-clocks). But due to the
@@ -19,23 +19,24 @@ error in u-boot and linux.
 
 Signed-off-by: Kevin Hao <kexin.hao@windriver.com>
 ---
- drivers/nxp/s32/clk/get_rate.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/nxp/s32/clk/get_rate.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/drivers/nxp/s32/clk/get_rate.c b/drivers/nxp/s32/clk/get_rate.c
-index 3cecc1ebf5d1..c2c7aea3967a 100644
+index 0b040594f..33295e428 100644
 --- a/drivers/nxp/s32/clk/get_rate.c
 +++ b/drivers/nxp/s32/clk/get_rate.c
-@@ -267,8 +267,7 @@ static unsigned long get_cgm_div_freq(struct s32gen1_clk_obj *module,
+@@ -586,9 +586,7 @@ static unsigned long get_cgm_div_freq(struct s32gen1_clk_obj *module,
  
  	pfreq = get_module_rate(div->parent, priv);
  	if (!pfreq) {
--		ERROR("Failed to get the frequency of CGM MUX\n");
+-		ERROR("Failed to get the frequency of CGM MUX %" PRIu8 "(CGM=%p)\n",
+-		      mux->index, cgm_addr);
 -		return 0;
 +		return div->freq;
  	}
  
- 	mux = get_cgm_div_mux(div);
+ 	return calc_cgm_div_freq(pfreq, cgm_addr, mux->index, div->index);
 -- 
-2.34.1
+2.25.1
 
