@@ -75,7 +75,11 @@ do_compile:append() {
 			# Moreover it also needs to get the stack as the part of signed data, because the stack also must be in secure memory region
 			m7_load_addr=$(get_u32 "${m7_ivt_file}" $(expr $app_header_off + ${m7_load_off}))
 			m7_entry_addr=$(get_u32 "${m7_ivt_file}" $(expr $app_header_off + ${m7_entry_off}))
-			addr_diff=$(expr $m7_entry_addr - $m7_load_addr)
+			if [ $m7_entry_addr = $m7_load_addr ]; then
+				addr_diff="0"
+			else
+				addr_diff=$(expr $m7_entry_addr - $m7_load_addr)
+			fi
 			m7_file_size=$(expr ${m7_boot_size} - $addr_diff - ${signature_size})
 			dd of="${m7_boot_file}" if="${m7_ivt_file}" conv=fsync skip=$(expr $m7_boot_off + $addr_diff) \
 			count=${m7_file_size} status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
