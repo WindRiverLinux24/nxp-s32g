@@ -1,4 +1,4 @@
-From 099143e662df5be7689fb3c1a884ef7b8a27e8b2 Mon Sep 17 00:00:00 2001
+From 291a095a4dafcf864b9ffd0b130b939f8f20a622 Mon Sep 17 00:00:00 2001
 From: Quanyang Wang <quanyang.wang@windriver.com>
 Date: Thu, 15 Jun 2023 13:34:46 +0800
 Subject: [PATCH] pfeng-slave: fix Unknown sysmbol do_exit error
@@ -16,14 +16,14 @@ Upstream-Status: Pending
 
 Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
 ---
- sw/linux-pfeng/pfeng-slave-drv.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ sw/linux-pfeng/pfeng-slave-drv.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/sw/linux-pfeng/pfeng-slave-drv.c b/sw/linux-pfeng/pfeng-slave-drv.c
-index 4a497ce..8a4e5c3 100644
+index 58750d8..3ae8c6c 100644
 --- a/sw/linux-pfeng/pfeng-slave-drv.c
 +++ b/sw/linux-pfeng/pfeng-slave-drv.c
-@@ -291,7 +291,7 @@ static int pfeng_drv_deferred_probe(void *arg)
+@@ -301,7 +301,7 @@ static int pfeng_drv_deferred_probe(void *arg)
  		while(1) {
  
  			if(kthread_should_stop())
@@ -32,7 +32,7 @@ index 4a497ce..8a4e5c3 100644
  
  			if (hal_ip_ready_get())
  				break;
-@@ -300,7 +300,7 @@ static int pfeng_drv_deferred_probe(void *arg)
+@@ -310,7 +310,7 @@ static int pfeng_drv_deferred_probe(void *arg)
  				/* Timed out */
  				HM_MSG_DEV_ERR(dev, "PFE controller UP timed out\n");
  				priv->deferred_probe_task = NULL;
@@ -41,7 +41,7 @@ index 4a497ce..8a4e5c3 100644
  			}
  
  			usleep_range(100, 500);
-@@ -403,7 +403,7 @@ static int pfeng_drv_deferred_probe(void *arg)
+@@ -429,7 +429,7 @@ static int pfeng_drv_deferred_probe(void *arg)
  
  	if (priv->deferred_probe_task) {
  		priv->deferred_probe_task = NULL;
@@ -50,7 +50,7 @@ index 4a497ce..8a4e5c3 100644
  	}
  
  	return 0;
-@@ -411,7 +411,7 @@ static int pfeng_drv_deferred_probe(void *arg)
+@@ -437,7 +437,7 @@ static int pfeng_drv_deferred_probe(void *arg)
  err_drv:
  	if (priv->deferred_probe_task) {
  		priv->deferred_probe_task = NULL;
@@ -59,6 +59,33 @@ index 4a497ce..8a4e5c3 100644
  	}
  
  	return ret;
+@@ -612,7 +612,7 @@ static int pfeng_drv_deferred_resume(void *arg)
+ 		while(1) {
+ 
+ 			if(kthread_should_stop())
+-				do_exit(0);
++				kthread_complete_and_exit(NULL, 0);
+ 
+ 			if (hal_ip_ready_get())
+ 				break;
+@@ -621,7 +621,7 @@ static int pfeng_drv_deferred_resume(void *arg)
+ 				/* Timed out */
+ 				HM_MSG_DEV_ERR(dev, "PFE controller UP timed out\n");
+ 				priv->deferred_probe_task = NULL;
+-				do_exit(0);
++				kthread_complete_and_exit(NULL, 0);
+ 			}
+ 
+ 			usleep_range(100, 500);
+@@ -668,7 +668,7 @@ err_pfe_init:
+ 
+ 	if (priv->deferred_probe_task) {
+ 		priv->deferred_probe_task = NULL;
+-		do_exit(0);
++		kthread_complete_and_exit(NULL, 0);
+ 	}
+ 
+ 	return 0;
 -- 
-2.40.0
+2.25.1
 
