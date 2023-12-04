@@ -905,47 +905,30 @@ should be built manually, as preparation, the following(all of them can be
 found on Flexera) shoul be setup in the following order on user's local host
 machine:
 
-	1. S32 Design Studio 3.4
-	2. SW32G_S32DS_3.4.3_D2112.zip
-	3. SW32_RTD_4.4_4.0.0_DS_updatesite_D2210.zip
-	4. SW32G_IPCF_4.8.0_D2212_updatesite.zip
+	1. S32 Design Studio 3.5
+	2. SW32G_S32DS_3.5.3_D2306.zip
+	3. SW32_RTD_4.4_4.0.2_DS_updatesite_D2308.zip
+	4. SW32G_IPCF_4.9.0_D2310_updatesite.zip
 
 For detail informations about the above packages setup, installation and
 build steps, please refer to the documents:
 
 	"S32DS_Installation_Guide_3.4.0.pdf"
-	"SW32_RTD_4.4_4.0.0_D2210_ReleaseNotes.pdf"
-	"SW32G_IPCF_4.8.0_D2212_ReleaseNotes.pdf"
+	"SW32_RTD_4.4_4.0.2_D2308_ReleaseNotes.pdf"
+	"SW32G_IPCF_4.9.0_D2310_ReleaseNotes.pdf"
 
 and etc., which can be found in related packages downloaded from flexra.
 
 And if the IPCF application on M7 side build successfully following the
 related documents, then users can find the binary files:
 
-	"IPCF_Example_S32G274.bin" and "IPCF_Example_S32G399_M7_0.bin"
+	"IPCF_Example_S32G274A.bin" and "IPCF_Example_S32G399A_M7_0.bin"
 
 from S32DS IPCF example project.
 
 NOTE:
 
-1. For S32G3 boards, before compile the M7 side application, there are some
-   modifications should be done as following:
-
-     a. In src/sample.c, remove the "+ 1" in line 333, 336 and 339
-     b. In generate/src/ipcf_Ip_Cfg.c, change
-            .local_shm_addr  = 0x34100000,
-            .remote_shm_addr = 0x34000000,
-        to
-            .local_shm_addr  = 0x34200000,
-            .remote_shm_addr = 0x34100000,
-        in line 91.
-
-   Then build the project and use the output M7 side application binary to
-   test. Or else, the test will fail, and there is a ticket to verdor to track
-   the status of this issue:
-    https://community.nxp.com/t5/S32G/IPCF-v4-8-single-instance-M7-codes-issue-for-S32G3-boards/m-p/1687224#M4119
-
-2. For IPCF v4.8 multi-instance M7 side applications, there are also known
+1. For IPCF v4.8 multi-instance M7 side applications, there are also known
    issues as following:
 
      a. it will cause boot failure on RDB2
@@ -974,8 +957,8 @@ the IPCF related drivers and M7 side app binaries(IPCF_Example_S32G274.bin and
 IPCF_Example_S32G399_M7_0.bin) will be built into WIC image.
 
 NOTICE:
-    The M7 side binary default names are IPCF_Example_S32G274.bin and
-IPCF_Example_S32G399_M7_0.bin, and they are defined by two variables
+    The M7 side binary default names are IPCF_Example_S32G274A.bin and
+IPCF_Example_S32G399A_M7_0.bin, and they are defined by two variables
 IPCF_M7_APP_BIN_NAME and IPCF_M7_APP_BIN_NAME_S32G3 respectively, users can
 use different binary names by modifying these variables, or set related
 variable(s) to empty if it is unneeded for users.
@@ -997,20 +980,17 @@ this feature:
 		a> disable Data Cache from uboot:
 			=>dcache off
 		b> zero-set SRAM shared memory used by both sample apps:
-			=>mw.q 0x34000000 0x0 0x100000
+			=>mw.q 0x34100000 0x0 0x40000
 		c> load IPCF binary in SRAM:
 		   for S32G2:
-			=>fatload mmc 0:1 0x80000000 IPCF_Example_S32G274_M7_0.bin
+			=>fatload mmc 0:1 0x80000000 IPCF_Example_S32G274A_M7_0.bin
 		   for S32G3:
-			=>fatload mmc 0:1 0x80000000 IPCF_Example_S32G399_M7_0.bin
+			=>fatload mmc 0:1 0x80000000 IPCF_Example_S32G399A_M7_0.bin
 		   then:
-			=>cp.q 0x80000000 0x34300000 0x30000
-			=>dcache on;
+			=>cp.b 0x80000000 0x34300000 0x300000
 		d> start M7 core (the argument is the address of the Interrupt Vector):
-		   for S32G2:
-			=>startm7 0x34401000;
-		   for S32G3:
-			=>startm7 0x34381000;
+		   for both S32G2 and S32G3:
+			=>startm7 0x34500400;
 		e> boot Linux:
 			=>boot
 
