@@ -922,7 +922,8 @@ and etc., which can be found in related packages downloaded from flexra.
 And if the IPCF application on M7 side build successfully following the
 related documents, then users can find the binary files:
 
-	"IPCF_Example_S32G274A.bin" and "IPCF_Example_S32G399A_M7_0.bin"
+    IPCF_Example_S32G274A_M7_0.bin
+    IPCF_Example_S32G399A_M7_0.bin
 
 from S32DS IPCF example project.
 
@@ -953,15 +954,19 @@ then build the project as normal:
 
 	bitbake wrlinux-image-std
 
-the IPCF related drivers and M7 side app binaries(IPCF_Example_S32G274.bin and
-IPCF_Example_S32G399_M7_0.bin) will be built into WIC image.
+the IPCF related drivers and M7 side app binaries will be built into WIC image.
 
 NOTICE:
-    The M7 side binary default names are IPCF_Example_S32G274A.bin and
-IPCF_Example_S32G399A_M7_0.bin, and they are defined by two variables
-IPCF_M7_APP_BIN_NAME and IPCF_M7_APP_BIN_NAME_S32G3 respectively, users can
-use different binary names by modifying these variables, or set related
-variable(s) to empty if it is unneeded for users.
+    The M7 side binary default names are:
+    IPCF_Example_S32G274A_M7_0.bin
+    IPCF_Example_S32G399A_M7_0.bin
+
+They are defined by the following variables:
+    IPCF_M7_APP_BIN_NAME
+    IPCF_M7_APP_BIN_NAME_S32G3
+
+respectively, users can use different binary names by modifying these
+variables, or set related variable(s) to empty if it is unneeded for users.
 
 
 6.6.3 IPCF verify steps
