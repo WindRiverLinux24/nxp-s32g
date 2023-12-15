@@ -22,7 +22,6 @@ SRC_URI += " \
     file://0002-fix-auth-require-at-least-one-extension-to-be-presen.patch \
     file://0003-fix-auth-avoid-out-of-bounds-read-in-auth_nvctr.patch \
     file://0004-fix-auth-properly-validate-X.509-extensions.patch \
-    file://0001-Revert-secboot-add-support-for-userspace-secboot.patch \
     file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
