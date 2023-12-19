@@ -1,4 +1,4 @@
-From 9dfe50473b6523d31e508c518554f417f1b53215 Mon Sep 17 00:00:00 2001
+From 899a3c9eabfb62f475fc26bcfde92d1ed579d11e Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 11 Apr 2023 18:30:54 +0800
 Subject: [PATCH] s32: env: support for booting up fitImage
@@ -6,13 +6,15 @@ Subject: [PATCH] s32: env: support for booting up fitImage
 Add environment variable to support for booting up fitImage
 by default.
 
+Upstream-Status: Inappropriate [WR Linux specific]
+
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- include/configs/s32-cc.h | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ include/configs/s32-cc.h | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 4ff3126922..530226f273 100644
+index 0ff0758a95..2c31faf4d1 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
 @@ -40,6 +40,7 @@
@@ -39,7 +41,7 @@ index 4ff3126922..530226f273 100644
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
  	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-@@ -185,7 +190,13 @@
+@@ -186,7 +191,13 @@
  		"then " \
  			"run mmcboot; " \
  		"else " \
@@ -54,6 +56,21 @@ index 4ff3126922..530226f273 100644
  		"fi; " \
  	"else " \
  		"run netboot;" \
+@@ -251,6 +262,14 @@
+ 		"if run loadimage; "\
+ 		"then " \
+ 			"run mmcboot; " \
++		"else " \
++			"if run loadfitimage; "\
++			"then " \
++				"run mmcargs; " \
++				"bootm ${fitimage_addr}#${fit_config_header}${fdt_file}; " \
++			"else " \
++				"run netboot; " \
++			"fi; " \
+ 		"fi; " \
+ 	"fi"
+ #    endif
 -- 
-2.25.1
+2.34.1
 
