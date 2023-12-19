@@ -1,29 +1,31 @@
-From 1ba76501506a4c1439bab94bc40a0d7ca0d58d15 Mon Sep 17 00:00:00 2001
+From f7411ba8b96ff1a2810285a7c1698c21d8bb68ec Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
-Date: Wed, 14 Dec 2022 14:25:58 +0800
+Date: Mon, 18 Dec 2023 17:36:09 +0800
 Subject: [PATCH] hse:pkcs:secboot: add code to support m7 secure boot
 
 Add code to verify m7 code image when secure boot feature
 is enabled.
 
+Upstream-Status: Inappropriate [WR Linux specific]
+
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- examples/hse-secboot.c | 120 +++++++++++++++++++++++++++++++++++++----
- 1 file changed, 110 insertions(+), 10 deletions(-)
+ examples/hse-secboot/hse-secboot.c | 260 +++++++++++++++++++++++++++--
+ 1 file changed, 249 insertions(+), 11 deletions(-)
 
-diff --git a/examples/hse-secboot.c b/examples/hse-secboot.c
-index 0901664..6edcade 100644
---- a/examples/hse-secboot.c
-+++ b/examples/hse-secboot.c
-@@ -29,6 +29,7 @@
- #define IVT_OFFSET 0x1000u
+diff --git a/examples/hse-secboot/hse-secboot.c b/examples/hse-secboot/hse-secboot.c
+index 29536a1..60104fa 100644
+--- a/examples/hse-secboot/hse-secboot.c
++++ b/examples/hse-secboot/hse-secboot.c
+@@ -32,6 +32,7 @@
+ #define IVT_OFFSET_SD 0x1000u
  #define HSE_BOOT_KEY_HANDLE 0x010700u
  #define HSE_SMR_ENTRY_1 BIT(1)
 +#define HSE_SMR_ENTRY_2 BIT(2)
  #define HSE_IVT_BOOTSEQ_BIT BIT(3)
  #define HSE_EXT_FLASH_SD 2u
- #define HSE_EXT_FLASH_PAGE 512u
-@@ -38,10 +39,14 @@
+ #define HSE_EXT_FLASH_QSPI 0u
+@@ -44,10 +45,22 @@
  #elif (HSE_PLATFORM == HSE_S32G3XX)
  #define HSE_APP_CORE_A53_0 HSE_APP_CORE4
  #endif
@@ -35,21 +37,31 @@ index 0901664..6edcade 100644
 +#define M7_BOOT_CODE_SIZE 0x2000
 +#define M7_SIGNATURE_SIZE 0x100
 +
++enum boot_type {
++	/* boot types defines */
++	NON_SEC_BOOT = 0,
++	NXP_SEC_BOOT,
++	NXP_M7_SEC_BOOT,
++	NXP_PARALLEL_SEC_BOOT,
++};
++
  struct ivt {
  	uint32_t ivt_header;
  	uint8_t reserved1[4];
-@@ -61,7 +66,9 @@ struct ivt {
- 	uint32_t sysimg_ext_flash_type;
- 	uint32_t sysimg_flash_page_size;
+@@ -69,6 +82,12 @@ struct ivt {
  	uint32_t app_bsb_ext_flash_type;
--	uint8_t reserved3[168];
-+	uint8_t hse_reserved[8];
-+	uint32_t m7_boot_size;
-+	uint8_t reserved3[156];
+ 	uint8_t reserved3[168];
  	uint32_t gmac[4];
++	/* pad to block size - 512 bytes */
++	uint32_t boot_type;
++	uint32_t m7_image_size;
++	uint32_t m7_image_entry_bak;
++	uint32_t fip_image_off;
++	uint8_t reserved4[240];
  } __attribute((packed));
  
-@@ -110,11 +117,16 @@ static inline int compare_uuids(const struct uuid *uuid1, const struct uuid *uui
+ struct app_boot_hdr {
+@@ -116,11 +135,31 @@ static inline int compare_uuids(const struct uuid *uuid1, const struct uuid *uui
  	return memcmp(uuid1, uuid2, sizeof(struct uuid));
  }
  
@@ -61,18 +73,33 @@ index 0901664..6edcade 100644
  
 +static uint32_t get_fip_start(struct ivt *ivt)
 +{
-+	return ivt->app_boot + APP_CODE_OFFSET + M7_BOOT_CODE_SIZE;
++	uint32_t fip_start = 0;
++
++	switch (ivt->boot_type) {
++		case NXP_SEC_BOOT:
++			fip_start = ivt->app_boot + APP_CODE_OFFSET;
++			break;
++		case NXP_M7_SEC_BOOT:
++		case NXP_PARALLEL_SEC_BOOT:
++			fip_start = ivt->app_boot + APP_CODE_OFFSET + M7_BOOT_CODE_SIZE;
++			break;
++		default:
++			printf("ERROR: invalid fip start offset!\n");
++			break;
++	}
++
++	return fip_start;
 +}
 +
  static int get_dev_offset(int fd, void *dest, off_t offset, size_t bytes)
  {
  	off_t seek_ret;
-@@ -275,7 +287,91 @@ int hse_key_import(uint8_t *rsa_modulus, int rsa_modulus_size, uint8_t *rsa_pub_
+@@ -281,7 +320,102 @@ int hse_key_import(uint8_t *rsa_modulus, int rsa_modulus_size, uint8_t *rsa_pub_
  	return ret;
  }
  
--int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
-+int hse_m7_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+-int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool qspi_boot)
++int hse_m7_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool qspi_boot)
 +{
 +	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
 +	hseSmrEntry_t smr_entry, *smr_entry_hse;
@@ -92,17 +119,20 @@ index 0901664..6edcade 100644
 +		goto err_free_m7_sign;
 +	}
 +
-+	m7_bin = hse_mem_alloc(ivt->m7_boot_size);
++	m7_bin = hse_mem_alloc(ivt->m7_image_size);
 +	if (!m7_bin) {
 +		ERROR("Failed to allocate space for M7 binary\n");
 +		ret = -ENOMEM;
 +		goto err_free_m7_sign;
 +	}
 +
-+	align_diff = app_boot->ram_entry - app_boot->ram_load;
++	if (ivt->boot_type == NXP_PARALLEL_SEC_BOOT)
++		align_diff = ivt->m7_image_entry_bak - app_boot->ram_load;
++	else
++		align_diff = app_boot->ram_entry - app_boot->ram_load;
 +
 +	/* entire m7 with header, except for signature */
-+	ret = get_dev_offset(fd, m7_bin, get_m7_start(ivt) + align_diff, ivt->m7_boot_size);
++	ret = get_dev_offset(fd, m7_bin, get_m7_start(ivt) + align_diff, ivt->m7_image_size);
 +	if (ret) {
 +		ERROR("Failed to retrieve M7 binary\n");
 +		goto err_free_m7_sign;
@@ -117,9 +147,19 @@ index 0901664..6edcade 100644
 +	hse_memset(smr_entry_hse, 0, sizeof(*smr_entry_hse));
 +
 +	smr_entry.pSmrSrc = get_m7_start(ivt) + align_diff;
-+	smr_entry.pSmrDest = app_boot->ram_entry;
-+	smr_entry.smrSize = ivt->m7_boot_size;
-+	smr_entry.configFlags = (HSE_SMR_CFG_FLAG_SD_FLASH | HSE_SMR_CFG_FLAG_INSTALL_AUTH);
++
++	if (ivt->boot_type == NXP_PARALLEL_SEC_BOOT)
++		smr_entry.pSmrDest = ivt->m7_image_entry_bak;
++	else
++		smr_entry.pSmrDest = app_boot->ram_entry;
++
++	smr_entry.smrSize = ivt->m7_image_size;
++
++	if (qspi_boot)
++		smr_entry.configFlags = (HSE_SMR_CFG_FLAG_QSPI_FLASH | HSE_SMR_CFG_FLAG_INSTALL_AUTH);
++	else
++		smr_entry.configFlags = (HSE_SMR_CFG_FLAG_SD_FLASH | HSE_SMR_CFG_FLAG_INSTALL_AUTH);
++
 +	smr_entry.checkPeriod = 0;
 +	smr_entry.authKeyHandle = HSE_BOOT_KEY_HANDLE;
 +	smr_entry.authScheme.sigScheme.signSch = HSE_SIGN_RSASSA_PKCS1_V15;
@@ -137,7 +177,7 @@ index 0901664..6edcade 100644
 +	srv_desc.hseSrv.smrEntryInstallReq.entryIndex = 1u;
 +	srv_desc.hseSrv.smrEntryInstallReq.pSmrEntry = hse_virt_to_dma(smr_entry_hse);
 +	srv_desc.hseSrv.smrEntryInstallReq.pSmrData = hse_virt_to_dma(m7_bin);
-+	srv_desc.hseSrv.smrEntryInstallReq.smrDataLength = ivt->m7_boot_size;
++	srv_desc.hseSrv.smrEntryInstallReq.smrDataLength = ivt->m7_image_size;
 +	srv_desc.hseSrv.smrEntryInstallReq.pAuthTag[0] = hse_virt_to_dma(m7_sign);
 +	srv_desc.hseSrv.smrEntryInstallReq.pAuthTag[1] = 0u;
 +	srv_desc.hseSrv.smrEntryInstallReq.authTagLength[0] = M7_SIGNATURE_SIZE;
@@ -148,37 +188,41 @@ index 0901664..6edcade 100644
 +		ERROR("Failed to install SMR Entry\n");
 +
 +	hse_mem_free(smr_entry_hse);
-+
-+err_free_m7_bin:
 +	hse_mem_free(m7_bin);
 +err_free_m7_sign:
 +	hse_mem_free(m7_sign);
 +	return ret;
 +}
 +
-+int hse_fip_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
++int hse_fip_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool qspi_boot)
  {
  	struct uuid uuid_bl2_sign = UUID_BL2_SIGN;
  	struct fip_toc_entry *toc_bl2_sign;
-@@ -339,7 +435,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+@@ -345,7 +479,10 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool
  	hse_memset(smr_entry_hse, 0, sizeof(*smr_entry_hse));
  
  	smr_entry.pSmrSrc = get_fip_start(ivt);
 -	smr_entry.pSmrDest = app_boot->ram_load;
-+	smr_entry.pSmrDest = app_boot->ram_load + M7_BOOT_CODE_SIZE;
++	if (ivt->boot_type < NXP_M7_SEC_BOOT)
++		smr_entry.pSmrDest = app_boot->ram_load;
++	else
++		smr_entry.pSmrDest = app_boot->ram_load + M7_BOOT_CODE_SIZE;
  	smr_entry.smrSize = toc_bl2_sign->offset;
- 	smr_entry.configFlags = (HSE_SMR_CFG_FLAG_SD_FLASH | HSE_SMR_CFG_FLAG_INSTALL_AUTH);
- 	smr_entry.checkPeriod = 0;
-@@ -356,7 +452,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+ 
+ 	if (qspi_boot)
+@@ -367,7 +504,10 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool
  
  	srv_desc.srvId = HSE_SRV_ID_SMR_ENTRY_INSTALL;
  	srv_desc.hseSrv.smrEntryInstallReq.accessMode = HSE_ACCESS_MODE_ONE_PASS;
 -	srv_desc.hseSrv.smrEntryInstallReq.entryIndex = 1u;
-+	srv_desc.hseSrv.smrEntryInstallReq.entryIndex = 2u;
++	if (ivt->boot_type < NXP_M7_SEC_BOOT)
++		srv_desc.hseSrv.smrEntryInstallReq.entryIndex = 1u;
++	else
++		srv_desc.hseSrv.smrEntryInstallReq.entryIndex = 2u;
  	srv_desc.hseSrv.smrEntryInstallReq.pSmrEntry = hse_virt_to_dma(smr_entry_hse);
  	srv_desc.hseSrv.smrEntryInstallReq.pSmrData = hse_virt_to_dma(fip_bin);
  	srv_desc.hseSrv.smrEntryInstallReq.smrDataLength = toc_bl2_sign->offset;
-@@ -370,10 +466,10 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+@@ -381,16 +521,81 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool
  		ERROR("Failed to install SMR Entry\n");
  
  	hse_mem_free(smr_entry_hse);
@@ -191,31 +235,152 @@ index 0901664..6edcade 100644
  err_free_fip_header:
  	free(fip_header);
  	return ret;
-@@ -392,9 +488,9 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
- 	}
- 	hse_memset(cr_entry, 0, sizeof(*cr_entry));
+ }
  
--	cr_entry->coreId = HSE_APP_CORE_A53_0;
+-int hse_cr_install(struct app_boot_hdr *app_boot)
++int hse_install_smr_entries(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool qspi_boot)
++{
++	int ret = 0;
++
++	ret = hse_fip_smr_install(fd, ivt, app_boot, qspi_boot);
++	if (ret) {
++		printf("ERROR: fip smr entry install failed!\n");
++		return ret;
++	}
++
++	if (ivt->boot_type > NXP_SEC_BOOT) {
++		ret = hse_m7_smr_install(fd, ivt, app_boot, qspi_boot);
++		if (ret) {
++			printf("ERROR: m7 smr entry install failed!\n");
++			return ret;
++		}
++	}
++
++	return ret;
++}
++
++int hse_m7_cr_install(struct app_boot_hdr *app_boot, struct ivt *ivt)
++{
++	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
++	volatile hseCrEntry_t *cr_entry;
++	int ret = 0;
++
++	cr_entry = hse_mem_alloc(sizeof(*cr_entry));
++	if (!cr_entry) {
++		ERROR("Failed to allocate space for core reset entry\n");
++		return -ENOMEM;
++	}
++	hse_memset((void *)cr_entry, 0, sizeof(*cr_entry));
++
++	if (ivt->boot_type == NXP_PARALLEL_SEC_BOOT) {
++		cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1;
++		cr_entry->pPassReset = ivt->m7_image_entry_bak;
++	} else if (ivt->boot_type == NXP_M7_SEC_BOOT) {
++		cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1 | HSE_SMR_ENTRY_2;
++		cr_entry->pPassReset = app_boot->ram_entry;
++	} else {
++		printf("ERROR: invalid secure boot type!\n");
++		hse_mem_free((void *)cr_entry);
++		return -ENOTSUP;
++	}
++
 +	cr_entry->coreId = HSE_APP_CORE_M7_0;
++	cr_entry->crSanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
++	cr_entry->altPreBootSmrMap = 0u;
++	cr_entry->pAltReset = 0u;
++	cr_entry->postBootSmrMap = 0u;
++	cr_entry->startOption = HSE_CR_AUTO_START;
++
++	srv_desc.srvId = HSE_SRV_ID_CORE_RESET_ENTRY_INSTALL;
++	srv_desc.hseSrv.crEntryInstallReq.crEntryIndex = 1u;
++	srv_desc.hseSrv.crEntryInstallReq.pCrEntry = hse_virt_to_dma((void *)cr_entry);
++
++	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
++	if (ret)
++		ERROR("Failed to install Core Reset Entry\n");
++
++	hse_mem_free((void *)cr_entry);
++	return ret;
++}
++
++int hse_fip_cr_install(struct app_boot_hdr *app_boot, struct ivt *ivt)
+ {
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+ 	volatile hseCrEntry_t *cr_entry;
+@@ -405,7 +610,17 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 
+ 	cr_entry->coreId = HSE_APP_CORE_A53_0;
  	cr_entry->crSanction = HSE_CR_SANCTION_KEEP_CORE_IN_RESET;
 -	cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1;
-+	cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1 | HSE_SMR_ENTRY_2;
++	if (ivt->boot_type == NXP_SEC_BOOT) {
++		cr_entry->preBootSmrMap = HSE_SMR_ENTRY_1;
++			srv_desc.hseSrv.crEntryInstallReq.crEntryIndex = 1u;
++	} else if (ivt->boot_type == NXP_PARALLEL_SEC_BOOT) {
++		cr_entry->preBootSmrMap = HSE_SMR_ENTRY_2;
++		srv_desc.hseSrv.crEntryInstallReq.crEntryIndex = 2u;
++	} else {
++		printf("ERROR: invalid secure boot type!\n");
++		hse_mem_free((void *)cr_entry);
++		return -ENOTSUP;
++	}
  	cr_entry->pPassReset = app_boot->ram_entry;
  	cr_entry->altPreBootSmrMap = 0u;
  	cr_entry->pAltReset = 0u;
-@@ -627,7 +723,11 @@ int hse_secboot_enable(const char *device, const char *keypath)
+@@ -413,7 +628,6 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 	cr_entry->startOption = HSE_CR_AUTO_START;
+ 
+ 	srv_desc.srvId = HSE_SRV_ID_CORE_RESET_ENTRY_INSTALL;
+-	srv_desc.hseSrv.crEntryInstallReq.crEntryIndex = 1u;
+ 	srv_desc.hseSrv.crEntryInstallReq.pCrEntry = hse_virt_to_dma((void *)cr_entry);
+ 
+ 	ret = hse_srv_req_sync(HSE_CHANNEL_ANY, &srv_desc, sizeof(srv_desc));
+@@ -424,6 +638,30 @@ int hse_cr_install(struct app_boot_hdr *app_boot)
+ 	return ret;
+ }
+ 
++int hse_install_cr_entries(struct app_boot_hdr *app_boot, struct ivt *ivt)
++{
++	int ret = 0;
++
++	if (ivt->boot_type == NXP_SEC_BOOT ||
++		ivt->boot_type == NXP_PARALLEL_SEC_BOOT) {
++		ret = hse_fip_cr_install(app_boot, ivt);
++		if (ret) {
++			printf("ERROR: fip core reset entry install failed!\n");
++			return ret;
++		}
++	}
++
++	if (ivt->boot_type > NXP_SEC_BOOT) {
++		ret = hse_m7_cr_install(app_boot, ivt);
++		if (ret) {
++			printf("ERROR: m7 core reset entry install failed!\n");
++			return ret;
++		}
++	}
++
++	return ret;
++}
++
+ int hse_sysimg_getsize(uint32_t *sysimg_size)
+ {
+ 	DECLARE_SET_ZERO(hseSrvDescriptor_t, srv_desc);
+@@ -694,13 +932,13 @@ int hse_secboot_enable(const char *device, const char *keypath, bool qspi_boot)
  
  	INFO("Generating Secure Memory Region entry\n");
  
--	ret = hse_smr_install(fd, &ivt, &app_boot);
-+	ret = hse_m7_smr_install(fd, &ivt, &app_boot);
-+	if (ret)
-+		goto err_free_rsa_pub_exponent;
-+
-+	ret = hse_fip_smr_install(fd, &ivt, &app_boot);
+-	ret = hse_smr_install(fd, &ivt, &app_boot, qspi_boot);
++	ret = hse_install_smr_entries(fd, &ivt, &app_boot, qspi_boot);
+ 	if (ret)
+ 		goto err_free_rsa_pub_exponent;
+ 
+ 	INFO("Generating Core Reset Entry\n");
+ 
+-	ret = hse_cr_install(&app_boot);
++	ret = hse_install_cr_entries(&app_boot, &ivt);
  	if (ret)
  		goto err_free_rsa_pub_exponent;
  
 -- 
-2.36.1
+2.34.1
 
