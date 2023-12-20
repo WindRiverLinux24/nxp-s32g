@@ -34,6 +34,9 @@ SRC_URI += " \
     file://0001-s32-env-support-for-booting-up-fitImage.patch \
     file://0001-s32-env-Add-support-to-load-the-initrd-in-mmcboot.patch \
     file://0001-arch-mach-s32-extend-the-DTB-size-for-BL33.patch \
+    file://0001-lib-kconfig-Add-option-to-set-BZIP2-compression-meth.patch \
+    file://0002-image-Add-a-common-compression-type-detection-functi.patch \
+    file://0003-image-Add-compressed-Image-parsing-support-in-booti.patch \
 "
 
 SRCREV = "57741dd80eb814cfdf1e16b33773dac6507b2a51"
