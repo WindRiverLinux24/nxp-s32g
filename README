@@ -1124,3 +1124,25 @@ can't be used. We must decide which specific SoC this rootfs will be used for an
 corresponding value to S32G_SOC_VARIANT in your conf/local.conf. So far, the supported
 values are "s32g2" and "s32g3".
 	S32G_SOC_VARIANT ?= "s32g2" or "s32g3"
+
+6.10 OP-TEE
+-----------
+
+There is a template used to enable OP-TEE feature on NXP s32g2/s32g3 platforms.
+
+6.10.1 Build project with OP-TEE
+--------------------------------
+
+Please add below parameter into setup command line:
+	--templates feature/s32g-optee
+
+6.10.2 Verify OP-TEE
+--------------------
+
+After system boots up normally, run below command to verify OP-TEE feature.
+	root@nxp-s32g:~# xtest -l 15
+
+Note: During building optee-os-tadevkit package, the trust application development kit for
+s32g2 platform is installed by default, but it should be compatible with s32g3 platform theoretically.
+In order to ensure that OP-TEE feature works fine on different platform, there is a variable
+DEFAULT_TADEVKIT_VARIANT used to install specific trust application development kit for different platform.
