@@ -89,20 +89,27 @@ do_compile() {
             bl33_bin="${bl33_dir}/${UBOOT_BINARY}"
             uboot_cfg="${bl33_dir}/${UBOOT_CFGOUT}"
 
+            if ${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'true', 'false', d)}; then
+                optee_plat="$(echo $plat | cut -c1-5)"
+                optee_arg="BL32=${DEPLOY_DIR_IMAGE}/optee/$optee_plat/tee-header_v2.bin \
+			BL32_EXTRA1=${DEPLOY_DIR_IMAGE}/optee/$optee_plat/tee-pager_v2.bin \
+			SPD=opteed"
+            fi
+
             if [ "$type" = "qspi" ]; then
                 #Now QSPI boot mode not support HSE secboot feature, so disgarding HSE enabled or not, just build it
-                oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
+                oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
             else
                 if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 all
+                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 $optee_arg all
                     #get layout of fip.s32
                     mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
                     #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
                     fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage \
-                               FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 all
+                               FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 $optee_arg all
                 else
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage all
+                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
                 fi
             fi
 
@@ -191,6 +198,7 @@ do_deploy() {
 addtask deploy after do_compile before do_build
 
 do_compile[depends] = "virtual/bootloader:do_deploy"
+do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-os:do_deploy', '', d)}"
 
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
