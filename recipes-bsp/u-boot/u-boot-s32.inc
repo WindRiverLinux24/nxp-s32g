@@ -37,6 +37,7 @@ SRC_URI += " \
     file://0001-lib-kconfig-Add-option-to-set-BZIP2-compression-meth.patch \
     file://0002-image-Add-a-common-compression-type-detection-functi.patch \
     file://0003-image-Add-compressed-Image-parsing-support-in-booti.patch \
+    file://0001-configs-s32g-enable-optee-related-configs.patch \
 "
 
 SRCREV = "57741dd80eb814cfdf1e16b33773dac6507b2a51"
