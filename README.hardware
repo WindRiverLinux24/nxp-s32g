@@ -73,7 +73,7 @@ The following BSP features are validated and supported.
 3.2 Unsupported Features
 ========================
 
-The following features are not supported or validated same as SDK.
+The following features are not supported and not validated same as SDK.
 
 	x USB OTG
 	x CPU Freq
