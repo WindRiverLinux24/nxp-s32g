@@ -1,6 +1,4 @@
 SRC_URI:append = " \
-    file://0001-configs-s32g2xx-enable-CONFIG_FIT_SIGNATURE-for-secu.patch \
-    file://0001-u-boot-32-Enable-support-for-the-legacy-image-format.patch \
     file://0001-Revert-hse-secboot-remove-unused-u-boot-secboot-code.patch \
     file://0002-u-boot-secboot-correct-the-secure-boot-config.patch \
     file://0003-s32-hse-support-secure-boot-feature-on-both-S32G2-an.patch \
