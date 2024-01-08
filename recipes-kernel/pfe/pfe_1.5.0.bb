@@ -18,7 +18,9 @@ INHIBIT_SYSROOT_STRIP = "1"
 
 
 # In case the pfe-slave is built, change to multi instance driver(allow override)
-PFE_MASTER_OPTIONS ?= "${@bb.utils.contains('IMAGE_INSTALL', 'pfe-slave', ' PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=1', '', d)}"
+PFE_MASTER_OPTIONS:append = "${@bb.utils.contains('IMAGE_INSTALL', 'pfe-slave', ' PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=1', '', d)}"
+PFE_MASTER_OPTIONS:append = "${@bb.utils.contains('PACKAGE_INSTALL', 'pfe-slave', ' PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=1', '', d)}"
+PFE_MASTER_OPTIONS:append = "${@bb.utils.contains('IMAGE_INSTALL_INITRAMFS', 'pfe-slave', ' PFE_CFG_MULTI_INSTANCE_SUPPORT=1 PFE_CFG_PFE_MASTER=1', '', d)}"
 EXTRA_OEMAKE:append = " ${PFE_MASTER_OPTIONS}"
 
 
