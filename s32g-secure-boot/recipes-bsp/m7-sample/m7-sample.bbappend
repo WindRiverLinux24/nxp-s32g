@@ -11,7 +11,7 @@ get_u32 () {
 	printf "%s" $(od --address-radix=n --format=u4 --skip-bytes="$offset" --read-bytes=4 "$file")
 }
 
-get_ivt_offset () {
+get_ivt_offset_sd () {
 	local file="$1"
 	# 0x600001d1 = 1610613201
 	local ivt_token="1610613201"
@@ -25,7 +25,24 @@ get_ivt_offset () {
 		return
 	fi
 
-	bbfatal "Failed to detect IVT offset"
+	bbfatal "Failed to detect SD IVT offset"
+}
+
+get_ivt_offset_qspi () {
+	local file="$1"
+	# 0x600001d1 = 1610613201
+	local ivt_token="1610613201"
+	# 0x0 = 0
+	local qspi_offset="0"
+	local qspi_ivt_token=$(get_u32 "$file" "$qspi_offset")
+
+	if [ "$qspi_ivt_token" = "$ivt_token" ]
+	then
+		echo "$qspi_offset"
+		return
+	fi
+
+	bbfatal "Failed to detect QSPI I VT offset"
 }
 
 str2bin () {
@@ -66,7 +83,11 @@ do_compile:append() {
 			m7_ivt_file="${ivt_file}.m7"
 			m7_ivt_file_secure="${ivt_file}-secure.m7"
 			m7_boot_signature="${ivt_file}-secure.m7.signature"
-			ivt_header_off=$(get_ivt_offset "${m7_ivt_file}")
+			if [ "$suffix" = "sd" ]; then
+				ivt_header_off=$(get_ivt_offset_sd "${m7_ivt_file}")
+			else
+				ivt_header_off=$(get_ivt_offset_qspi "${m7_ivt_file}")
+			fi
 			app_header_off=$(get_u32 "${m7_ivt_file}" $(expr $ivt_header_off + ${app_boot_header_off}))
 			m7_boot_off=$(expr $app_header_off + ${app_code_off})
 
