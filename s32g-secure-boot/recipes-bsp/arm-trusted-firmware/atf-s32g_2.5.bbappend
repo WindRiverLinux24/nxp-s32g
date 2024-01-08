@@ -16,7 +16,7 @@ do_install:append() {
                 j=$(expr $j + 1)
                 if  [ $j -eq $i ]; then
                     cd ${B}/${type}/${plat}/${BUILD_TYPE}/fdts
-                    install -Dm 0644 ${dtb} ${D}${datadir}/atf-${dtb}
+                    install -Dm 0644 ${dtb} ${D}${datadir}/atf-${type}-${dtb}
                 fi
             done
             unset j
@@ -57,14 +57,8 @@ do_deploy:prepend() {
             for dtb in ${ATF_DTB}; do
                 j=$(expr $j + 1)
                 if  [ $j -eq $i ]; then
-                    cp -f ${DEPLOY_DIR_IMAGE}/atf-${dtb} ${B}/${type}/${plat}/${BUILD_TYPE}/fdts/${dtb}
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 $optee_arg all
-                    #get layout of fip.s32
-                    mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
-                    #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
-                    fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage \
-                                FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 $optee_arg all
+                    cp -f ${DEPLOY_DIR_IMAGE}/atf-${type}-${dtb} ${B}/${type}/${plat}/${BUILD_TYPE}/fdts/${dtb}
+                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
                 fi
             done
             unset j
@@ -80,16 +74,6 @@ do_deploy:append() {
             hse_keys_dir="${B}/${HSE_SEC_KEYS}"
             cp -f ${hse_keys_dir}/${HSE_SEC_PRI_KEY} ${DEPLOY_DIR_IMAGE}/
         fi
-
-        # Write signed fip.bin into fip.s32
-        for type in ${BOOT_TYPE}; do
-            for plat in ${PLATFORM}; do
-                ATF_BINARIES="${B}/${type}/${plat}/${BUILD_TYPE}"
-                fip_dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
-                dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.s32 seek=`printf "%d" ${fip_dd_offset}` oflag=seek_bytes conv=notrunc,fsync
-                cp -f ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
-            done
-        done
     fi
 }
 

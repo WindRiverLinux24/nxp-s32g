@@ -74,7 +74,8 @@ EXTRA_OEMAKE += "${@['', '${SECBOOT_ARGS}']['s32g' in d.getVar('MACHINE') and d.
 # There are 256 bytes space following IVT, it is able to be used save BSP specific flags
 # Boot Types, offset is 0x1100 from the beginning of bootloader image
 # The default value 0 represents for Non-secboot, it doesn't need to set it explicitly.
-boot_type_off = "4352"
+boot_type_off_sd = "4352"
+boot_type_off_qspi = "256"
 non_secboot = "00000000"
 a53_secboot = "00000001"
 m7_secboot = "00000002"
@@ -98,9 +99,13 @@ generate_hse_keys () {
         install -d ${hse_keys_dir}
         if [ -z "${FIP_SIGN_KEYDIR}" ]; then
             openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
+        else
+            cp -v ${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY} ${hse_keys_dir}
         fi
         openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
         openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
+        cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
+        cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
     fi
 }
 
@@ -158,8 +163,7 @@ do_deploy() {
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
 
-            if [ "${HSE_SEC_ENABLED}" = "1" ] && [ "${type}" = "sd" ]; then
-
+            if [ "${HSE_SEC_ENABLED}" = "1" ]; then
                 # Set the boot type
                 secboot_type=${a53_secboot}
                 if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then
@@ -168,8 +172,15 @@ do_deploy() {
                         secboot_type=${nxp_parallel_secboot}
                     fi
                 fi
+
+                if [ "${type}" = "sd" ]; then
+                    boot_type_off=${boot_type_off_sd}
+                else
+                    boot_type_off=${boot_type_off_qspi}
+                fi
+
                 str2bin ${secboot_type} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
-                                  conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+                                      conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
             fi
 
             if [ "${type}" = "sd" ]; then

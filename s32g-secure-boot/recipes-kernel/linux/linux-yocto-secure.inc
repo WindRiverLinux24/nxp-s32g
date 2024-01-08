@@ -2,20 +2,22 @@
 fitimage_assemble:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 	if [ "${VAULT_ENABLE}" != "1" ]; then
-		for dtb in ${ATF_DTB}; do
-			${UBOOT_MKIMAGE_SIGN} \
-				${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-				-f $1 \
-				arch/${ARCH}/boot/$2
+		for type in ${BOOT_TYPE}; do
+			for dtb in ${ATF_DTB}; do
+				${UBOOT_MKIMAGE_SIGN} \
+					${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+					-f $1 \
+					arch/${ARCH}/boot/$2
 
-			cp -P ${STAGING_DATADIR}/atf-${dtb} ${B}
-			add_key_to_atf="-K ${B}/atf-${dtb}"
+				cp -P ${STAGING_DATADIR}/atf-${type}-${dtb} ${B}
+				add_key_to_atf="-K ${B}/atf-${type}-${dtb}"
 
-			${UBOOT_MKIMAGE_SIGN} \
-				${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-				-F -k "${UBOOT_SIGN_KEYDIR}" \
-				$add_key_to_atf \
-				-r arch/${ARCH}/boot/$2
+				${UBOOT_MKIMAGE_SIGN} \
+					${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+					-F -k "${UBOOT_SIGN_KEYDIR}" \
+					$add_key_to_atf \
+					-r arch/${ARCH}/boot/$2
+			done
 		done
 	fi
 }
@@ -25,9 +27,10 @@ do_deploy:append() {
 
 	cd ${B}
 	install -m 0644 ${KERNEL_OUTPUT_DIR}/fitImage $deployDir/
-
-	for dtb in ${ATF_DTB}; do
-		install -m 0644 ${B}/atf-${dtb} $deployDir/
+	for type in ${BOOT_TYPE}; do
+		for dtb in ${ATF_DTB}; do
+			install -m 0644 ${B}/atf-${type}-${dtb} $deployDir/
+		done
 	done
 
 	if [ "${OSTREE_USE_FIT}" = "1" ]; then
