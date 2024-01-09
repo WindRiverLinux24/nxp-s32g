@@ -4,7 +4,7 @@ Date: Mon, 4 Jul 2022 21:34:30 +0800
 Subject: [PATCH] arch: mach-s32: extend the DTB size for BL33
 
 The DTB size should be the same between atf and u-boot, so extend
-the DTB size of u-boot to 0xC000, too.
+the DTB size of u-boot to 0x13000, too.
 
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
@@ -20,7 +20,7 @@ index b5101167b3..c19dc4d854 100644
  config S32CC_MAX_DTB_SIZE
  	hex "Max size reserved for device tree in image layout"
 -	default 0xb000
-+	default 0xC000
++	default 0x13000
  
  config SYS_MALLOC_F_LEN
  	default 0x40000

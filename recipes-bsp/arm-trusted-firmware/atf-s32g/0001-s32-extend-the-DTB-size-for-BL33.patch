@@ -21,7 +21,7 @@ index 09a11bc4d..ee715fe29 100644
  						SIZE_1M + 1)
  /* U-Boot: CONFIG_S32GEN1_MAX_DTB_SIZE */
 -#define BL33_MAX_DTB_SIZE	    (0xb000)
-+#define BL33_MAX_DTB_SIZE	    (0xC000)
++#define BL33_MAX_DTB_SIZE	    (0x13000)
  /* U-Boot: CONFIG_SYS_TEXT_BASE  */
  #define BL33_ENTRYPOINT		    (BL33_BASE + 0xa0000)
  #define BL33_DTB		    (BL33_ENTRYPOINT - BL33_MAX_DTB_SIZE)
