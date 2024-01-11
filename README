@@ -1142,7 +1142,10 @@ Please add below parameter into setup command line:
 After system boots up normally, run below command to verify OP-TEE feature.
 	root@nxp-s32g:~# xtest -l 15
 
-Note: During building optee-os-tadevkit package, the trust application development kit for
+Note1: During building optee-os-tadevkit package, the trust application development kit for
 s32g2 platform is installed by default, but it should be compatible with s32g3 platform theoretically.
 In order to ensure that OP-TEE feature works fine on different platform, there is a variable
 DEFAULT_TADEVKIT_VARIANT used to install specific trust application development kit for different platform.
+
+Note2: Based on NXP SDK BSP38, OP-TEE HSE crypto driver doesn't work well with HSE hardware, so the combination
+use case of OP-TEE&HSE feature is not supported currently.
