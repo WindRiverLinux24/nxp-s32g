@@ -10,6 +10,7 @@ SRC_URI:append = " \
     file://0001-s32g-hse-improve-the-code-of-enable-secure-boot-comm.patch \
     file://0001-s32g-hse-improve-code-of-secure-boot-enable-command-.patch \
     file://0001-s32g-hse-get-the-reasonable-length-of-image-data.patch \
+    file://0001-s32g-hse-add-code-to-support-qspi-secure-boot-featur.patch \
     file://secure-boot.cfg \
 "
 
