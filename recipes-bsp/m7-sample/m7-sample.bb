@@ -78,4 +78,5 @@ DEPENDS += "cortex-m-toolchain-native"
 # hexdump native (used by append_m7.sh) dependency
 DEPENDS += "util-linux-native"
 
+COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
