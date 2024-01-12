@@ -47,21 +47,41 @@ Jumper/Switch configuration for SD boot:
 
 S32G2-EVB/S32G3-EVB:
 J50: Connect pin1 and pin2
-SW6: bit7 OFF, other bits ON
-SW7: All bits ON
-SW8: All bits ON
-SW9: All bits ON
-SW14: bit1 OFF, bit2 ON
-SW15: All bits ON
+SW6: bit7 ON
+SW7: All bits OFF
+SW8: All bits OFF
+SW9: All bits OFF
+SW14: bit1 ON, bit2 OFF
+SW15: All bits OFF
 
 S32G274A-RDB2/S32G399A-RDB3:
 SW3: OFF
-SW4: bit7 OFF, other bits ON
-SW5: All bits ON
-SW6: All bits ON
-SW7: All bits ON
-SW9: All bits ON
-SW10: bit1 OFF, bit2 ON
+SW4: bit7 ON
+SW5: All bits OFF
+SW6: All bits OFF
+SW7: All bits OFF
+SW9: All bits OFF
+SW10: bit1 ON, bit2 OFF
+
+Jumper/Switch configuration for QSPI boot:
+
+S32G2-EVB/S32G3-EVB:
+J50: Connect pin1 and pin2
+SW6: All bits OFF
+SW7: All bits OFF
+SW8: All bits OFF
+SW9: All bits OFF
+SW14: bit1 ON, bit2 OFF
+SW15: All bits OFF
+
+S32G274A-RDB2/S32G399A-RDB3:
+SW3: OFF
+SW4: All bits OFF
+SW5: All bits OFF
+SW6: All bits OFF
+SW7: All bits OFF
+SW9: All bits OFF
+SW10: bit1 ON, bit2 OFF
 
 Software Preparations:
  - Wrlinux product with nxp-s32g BSP
@@ -146,12 +166,21 @@ Because u-boot is one of the image component of bootloader, the package u-boot-s
 and generate the u-boot image u-boot-nodtb.bin. After atf-s32g is built completely, there will be a bootloader
 image named fip.s32 generated, and its layout as below.
 
-Image Layout
+SD Image Layout
         IVT:                    Offset: 0x1000          Size: 0x100
         HSE Firmware:           Offset: 0x1200
         HSE SYS Image:          Offset: 0x52400         Size: 0xc000
         AppBootCode Header:     Offset: 0x5e400         Size: 0x40
         Application:            Offset: 0x5e440         Size: 0x12e400
+
+QSPI Image Layout
+        IVT: 					Offset: 0x0 			Size: 0x100
+        QSPI Parameters: 		Offset: 0x200 			Size: 0x200
+        DCD: 					Offset: 0x800 			Size: 0x34
+        HSE Firmware: 			Offset: 0xc38
+        HSE SYS Image: 			Offset: 0x52a18 		Size: 0xc000
+        AppBootCode Header: 	Offset: 0x5ee18 		Size: 0x40
+        Application: 			Offset: 0x5ee58 		Size: 0x40000
 
 3.3.2 Bootloader components
 ---------------------------
@@ -244,7 +273,10 @@ Offset		Size(bytes)			Name
 ----------------------------------------------------------
 A below U-Boot command is provided to enable the target board enter secure boot mode.
 
-	=> hse_secboot_enable rsa2048_public.der
+SD boot mode:
+	=> hse_secboot_enable sd rsa2048_public.der
+QSPI boot mode:
+	=> hse_secboot_enable qspi rsa2048_public.der
 
 The steps taken by the command are the following:
 1. Check if HSE FW has been initialized;
@@ -267,7 +299,11 @@ After the command is finished, simply reset the board to boot in secure mode.
 To verify whether the board has booted in secure mode, check the BOOT_SEQ bit in the IVT at offset 0x28
 with below commands
 
+SD boot mode:
 	=> mmc read ${loadaddr} 8 1
+QSPI boot mode:
+	=> sf read ${loadaddr} 0 0x100
+
 	=> md.b ${loadaddr} 30
 	0 2 4 6 8 A C E
 	800000020 d101 0060 0000 0000 0000 0000 0000 0000
@@ -284,7 +320,10 @@ the first stage secure boot feature. Detailed steps as below:
 		# mount /dev/mmcblk0p1 /mnt/
 		# cp /mnt/rsa2048_public.pem ./
 		# umount /mnt
+SD boot mode:
 		# hse-secboot -s -k ./rsa2048_public.pem -d /dev/mmcblk0
+QSPI boot mode:
+		# hse-secboot -q -s -k ./rsa2048_public.pem -d /dev/mtd0
 	3. Power off board.
 	4. Power on board, now secure boot had been enabled.
 	   If bootloader image is verified successfully by HSE firmware, board will enter u-boot normally.
@@ -307,7 +346,7 @@ S32G3-EVB
 S32G399A-RDB3
 
 Load the fitImage with below command
-	=> fatload mmc 0:1 0xa0000000 fitImage
+	=> fatload mmc 0:1 0xc4000000 fitImage
 
 
 3.4.2 Set Environment Variables
@@ -319,9 +358,9 @@ Set proper bootargs for sd booting mode
 ------------------
 Run fitImage below command
 
-	=> bootm 0xa0000000#conf-freescale_<board name>.dtb
+	=> bootm 0xc4000000#conf-freescale_<board name>.dtb
 For example:
-	=> bootm 0xa0000000#conf-freescale_s32g2xxa-evb.dtb
+	=> bootm 0xc4000000#conf-freescale_s32g2xxa-evb.dtb
 
 Note: About other boot parameters setting, please refer to README in BSP layer directory.
 	
