@@ -1,4 +1,3 @@
-PROVIDES = "atf-s32g"
 FILES:${PN} = "/boot ${datadir}"
 
 SRC_URI:append = " \
