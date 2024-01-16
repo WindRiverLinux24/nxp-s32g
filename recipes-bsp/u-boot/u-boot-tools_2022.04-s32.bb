@@ -3,7 +3,7 @@ require u-boot-s32.inc
 
 DESCRIPTION = "U-Boot bootloader tools provided by NXP with focus on S32 chipsets"
 
-DEPENDS += "gnutls"
+DEPENDS += "gnutls util-linux"
 
 PROVIDES:class-native += "u-boot-tools-native"
 
