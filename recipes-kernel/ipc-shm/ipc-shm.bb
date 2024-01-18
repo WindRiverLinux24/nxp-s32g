@@ -15,6 +15,10 @@ BRANCH ?= "release/SW32G_IPCF_4.9.0_D2310"
 SRC_URI = "${URL};branch=${BRANCH}"
 SRCREV = "e90d0a18eb6d53f1faa09739f3d1c00f6f4eed8c"
 
+SRC_URI:append = " \
+	file://0001-shm-sample-use-strncpy-instead-of-strcpy.patch \
+"
+
 S = "${WORKDIR}/git"
 DESTDIR="${D}"
 IPCF_MDIR = "${S}"
