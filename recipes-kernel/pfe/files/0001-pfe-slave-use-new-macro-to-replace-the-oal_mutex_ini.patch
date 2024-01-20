@@ -1,0 +1,120 @@
+From 12897eb383316b1ca63fb5f9f741e6370d1bd941 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Sat, 20 Jan 2024 22:03:25 +0800
+Subject: [PATCH] pfe: slave: use new macro to replace the oal_mutex_init()
+ wrapper
+
+The original wrapper oal_mutex_init() just calls mutex_init(), but will
+confuse the kernel lockdep system, and make it emit false positive report,
+like following:
+
+ ============================================
+ WARNING: possible recursive locking detected
+ 5.15.146-yocto-standard #1 Tainted: G           O
+ --------------------------------------------
+ pfe-probe-task/1460 is trying to acquire lock:
+ ffffffc00130a130 (mutex#18){+.+.}-{3:3}, at: pfe_idex_request_send+0x70/0x30c [pfeng_slave]
+
+ but task is already holding lock:
+ ffffffc00130a1e0 (mutex#18){+.+.}-{3:3}, at: pfe_idex_rpc+0xb8/0x2c4 [pfeng_slave]
+
+ other info that might help us debug this:
+  Possible unsafe locking scenario:
+
+        CPU0
+        ----
+   lock(mutex#18);
+   lock(mutex#18);
+
+  *** DEADLOCK ***
+
+  May be due to missing lock nesting notation
+
+ 1 lock held by pfe-probe-task/1460:
+  #0: ffffffc00130a1e0 (mutex#18){+.+.}-{3:3}, at: pfe_idex_rpc+0xb8/0x2c4 [pfeng_slave]
+
+ stack backtrace:
+ CPU: 4 PID: 1460 Comm: pfe-probe-task Tainted: G           O      5.15.146-yocto-standard #1
+ Hardware name: NXP S32G399A-RDB3 (DT)
+ Call trace:
+  dump_backtrace+0x0/0x1a0
+  show_stack+0x20/0x30
+  dump_stack_lvl+0xb0/0xf4
+  dump_stack+0x18/0x34
+  validate_chain+0x488/0x4a0
+  __lock_acquire+0x4dc/0x91c
+  lock_acquire.part.0+0xe4/0x234
+  lock_acquire+0xb0/0x180
+  __mutex_lock+0xa8/0x98c
+  mutex_lock_nested+0x48/0x54
+  pfe_idex_request_send+0x70/0x30c [pfeng_slave]
+  pfe_idex_rpc+0x11c/0x2c4 [pfeng_slave]
+  pfe_idex_init+0x154/0x330 [pfeng_slave]
+  pfeng_hif_create+0xf0/0x1c4 [pfeng_slave]
+  pfeng_drv_deferred_probe+0x450/0x4ec [pfeng_slave]
+  kthread+0x148/0x154
+  ret_from_fork+0x10/0x20
+
+So define new macro of oal_mutex_init() to replace the wrapper, and fix the
+above issue.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/oal/public/oal_mutex_linux.h | 19 ++++++-------------
+ sw/oal/public/oal_sync.h        |  7 -------
+ 2 files changed, 6 insertions(+), 20 deletions(-)
+
+diff --git a/sw/oal/public/oal_mutex_linux.h b/sw/oal/public/oal_mutex_linux.h
+index f626711..c2ea616 100644
+--- a/sw/oal/public/oal_mutex_linux.h
++++ b/sw/oal/public/oal_mutex_linux.h
+@@ -29,20 +29,13 @@ typedef struct mutex oal_mutex_t;
+ /*	Implementation continues below to ensure Doxygen will put the API description
+  	from oal_sync.h at right place (related to oal_sync.h header). */
+ 
+-static inline errno_t oal_mutex_init(oal_mutex_t *mutex)
+-{
+ #if defined(PFE_CFG_NULL_ARG_CHECK)
+-	if (unlikely(NULL == mutex))
+-	{
+-		NXP_LOG_ERROR("NULL argument received\n");
+-		return EINVAL;
+-	}
+-#endif /* PFE_CFG_NULL_ARG_CHECK */
+-
+-	mutex_init(mutex);
+-
+-	return EOK;
+-}
++#define oal_mutex_init(mutex) (NULL == mutex ? \
++		({NXP_LOG_ERROR("NULL argument received\n"); EINVAL;}) : \
++		({mutex_init(mutex); EOK;}))
++#else
++#define oal_mutex_init(mutex) ({mutex_init(mutex); EOK;})
++#endif
+ 
+ static inline errno_t oal_mutex_destroy(oal_mutex_t *mutex)
+ {
+diff --git a/sw/oal/public/oal_sync.h b/sw/oal/public/oal_sync.h
+index b1b5474..129c2ef 100644
+--- a/sw/oal/public/oal_sync.h
++++ b/sw/oal/public/oal_sync.h
+@@ -114,13 +114,6 @@ static inline errno_t oal_spinlock_unlock(oal_spinlock_t *spinlock);
+  * @details	Each OS will provide its own definition
+  */
+ 
+-/**
+- * @brief		Initialize a mutex object
+- * @param[in]	mutex Mutex instance
+- * @return		EOK if success, error code otherwise
+- */
+-static inline errno_t oal_mutex_init(oal_mutex_t *mutex);
+-
+ /**
+  * @brief		Destroy a mutex object
+  * @param[in]	mutex Mutex instance
+-- 
+2.34.1
+
