@@ -7,7 +7,7 @@ make_m7_sample_wic() {
         plats="${UBOOT_CONFIG}"
     fi
     for plat in ${plats}; do
-        if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+        if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
 	        atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32-secure.m7"
         else
             atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32.m7"

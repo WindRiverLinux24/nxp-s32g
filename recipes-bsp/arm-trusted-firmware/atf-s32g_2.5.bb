@@ -162,7 +162,7 @@ do_deploy() {
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
 
-            if [ "${HSE_SEC_ENABLED}" = "1" ]; then
+            if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
                 # Set the boot type
                 secboot_type=${a53_secboot}
                 if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then
