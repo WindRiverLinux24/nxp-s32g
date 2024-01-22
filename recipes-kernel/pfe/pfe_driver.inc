@@ -20,6 +20,7 @@ SRC_URI:append = " \
         file://0001-pfe-slave-add-mutex_unlock-in-pfe_emac_destroy.patch \
         file://0001-pfe-net-if-replace-sa_data-with-latest-sa_data_min-t.patch \
 	file://0001-pfe-slave-use-new-macro-to-replace-the-oal_mutex_ini.patch \
+	file://0001-pfe-slave-extends-the-wait-time.patch \
         file://${PFE_LOCAL_FIRMWARE_DIR}\
 "
 

@@ -1,0 +1,33 @@
+From 36b9195609a6fb2d8e158bda5b39f8cd16cd2676 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Mon, 22 Jan 2024 16:37:35 +0800
+Subject: [PATCH] pfe: slave: extends the wait time
+
+In pfeng slave probing, the slave driver needs to wait pfe master driver up,
+the default max timeout loop is 10, but when more kernel configures or other
+configurations added, then the 10 loops may too small, so extend it to 50
+loops to make it more compatible.
+ 
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ sw/linux-pfeng/pfeng-slave-drv.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sw/linux-pfeng/pfeng-slave-drv.c b/sw/linux-pfeng/pfeng-slave-drv.c
+index f10757c..4784c84 100644
+--- a/sw/linux-pfeng/pfeng-slave-drv.c
++++ b/sw/linux-pfeng/pfeng-slave-drv.c
+@@ -227,7 +227,7 @@ static int pfeng_drv_deferred_probe(void *arg)
+ {
+ 	struct pfeng_priv *priv = (struct pfeng_priv *)arg;
+ 	struct device *dev = &priv->pdev->dev;
+-	int loops = ipready_tmout * 10; /* sleep is 100 usec */
++	int loops = ipready_tmout * 50; /* sleep is 500 usec */
+ 	bool ip_ready = false;
+ 	int ret;
+ 
+-- 
+2.25.1
+
