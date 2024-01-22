@@ -48,6 +48,32 @@ do_compile() {
 	done
 }
 
+do_install() {
+	install -d ${D}/boot
+
+	if echo ${UBOOT_CONFIG} | grep -q s32g; then
+		plats="$(echo ${UBOOT_CONFIG} | sed 's/_[^ ]*//g' | tr ' ' '\n' | sort -u)"
+	else
+		plats="${UBOOT_CONFIG}"
+	fi
+
+	for suffix in ${BOOT_TYPE}
+	do
+		for plat in ${plats}; do
+			if [ "$suffix" = "sd" ]; then
+				ivt_file="atf-${plat}.s32"
+			else
+				ivt_file="atf-${plat}_${suffix}.s32"
+			fi
+
+			cp -vf ${BUILD}/${ivt_file}.m7 ${D}/boot/
+			if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
+				cp -vf ${BUILD}/${ivt_file}-secure.m7 ${D}/boot/
+			fi
+		done
+	done
+}
+
 do_deploy() {
 	install -d ${DEPLOY_DIR_IMAGE}
 
@@ -80,3 +106,4 @@ DEPENDS += "util-linux-native"
 
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
+FILES:${PN} += "/boot/*"

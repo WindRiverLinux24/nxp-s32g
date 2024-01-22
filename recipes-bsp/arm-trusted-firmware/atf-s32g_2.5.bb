@@ -180,6 +180,12 @@ do_deploy() {
 
                 str2bin ${secboot_type} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
                                       conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
+
+                if [ "${type}" = "sd" ]; then
+                    cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+                else
+                    cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}_${type}.s32
+                fi
             fi
 
             if [ "${type}" = "sd" ]; then
@@ -191,7 +197,7 @@ do_deploy() {
     done
 }
 
-addtask deploy after do_compile before do_build
+addtask deploy after do_compile before do_package 
 
 do_compile[depends] = "virtual/bootloader:do_deploy"
 do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-os:do_deploy', '', d)}"
