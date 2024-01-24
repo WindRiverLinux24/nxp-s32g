@@ -588,8 +588,6 @@ NXP to get permission and download the PFE firmware.
 ------------------
 
 PFE is a firmware-based module. Load the firmware before using PFE.
-The firmwares name are "s32g_pfe_class.fw" and "s32g_pfe_util.fw" with
-version 1.6.0, which have to be downloaded from NXP Software.
 
 The default firmware names:
     s32g_pfe_class.fw
