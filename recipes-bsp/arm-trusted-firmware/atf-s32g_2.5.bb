@@ -70,22 +70,6 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
 EXTRA_OEMAKE += "${@['', '${HSE_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('HSE_SEC_ENABLED') == '1']}"
 EXTRA_OEMAKE += "${@['', '${SECBOOT_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('ATF_SIGN_ENABLE') == '1']}"
 
-# There are 256 bytes space following IVT, it is able to be used save BSP specific flags
-# Boot Types, offset is 0x1100 from the beginning of bootloader image
-# The default value 0 represents for Non-secboot, it doesn't need to set it explicitly.
-boot_type_off_sd = "4352"
-boot_type_off_qspi = "256"
-non_secboot = "00000000"
-a53_secboot = "00000001"
-m7_secboot = "00000002"
-nxp_parallel_secboot = "00000003"
-
-str2bin () {
-	# write binary as little endian
-	print_cmd=`which printf`
-	$print_cmd $(echo $1 | sed -E -e 's/(..)(..)(..)(..)/\4\3\2\1/' -e 's/../\\x&/g')
-}
-
 generate_hse_keys () {
     hse_keys_dir="${B}/${HSE_SEC_KEYS}"
     if [ -n "${FIP_SIGN_KEYDIR}" ]; then
@@ -162,32 +146,6 @@ do_deploy() {
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
 
-            if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
-                # Set the boot type
-                secboot_type=${a53_secboot}
-                if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then
-                    secboot_type=${m7_secboot}
-                    if ${@bb.utils.contains('MACHINE_FEATURES', 'secure_boot_parallel', 'true', 'false', d)}; then
-                        secboot_type=${nxp_parallel_secboot}
-                    fi
-                fi
-
-                if [ "${type}" = "sd" ]; then
-                    boot_type_off=${boot_type_off_sd}
-                else
-                    boot_type_off=${boot_type_off_qspi}
-                fi
-
-                str2bin ${secboot_type} | dd of="${ATF_BINARIES}/fip.s32" count=4 seek=${boot_type_off} \
-                                      conv=notrunc,fsync status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
-
-                if [ "${type}" = "sd" ]; then
-                    cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
-                else
-                    cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}_${type}.s32
-                fi
-            fi
-
             if [ "${type}" = "sd" ]; then
                 cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
             else
@@ -197,7 +155,7 @@ do_deploy() {
     done
 }
 
-addtask deploy after do_compile before do_package 
+addtask deploy after do_compile before do_build 
 
 do_compile[depends] = "virtual/bootloader:do_deploy"
 do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-os:do_deploy', '', d)}"

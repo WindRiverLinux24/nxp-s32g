@@ -2,23 +2,23 @@
 fitimage_assemble:append() {
 	[ "${ATF_SIGN_ENABLE}" = "1" ] || return
 	if [ "${VAULT_ENABLE}" != "1" ]; then
-		for type in ${BOOT_TYPE}; do
-			for dtb in ${ATF_DTB}; do
-				${UBOOT_MKIMAGE_SIGN} \
-					${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-					-f $1 \
-					arch/${ARCH}/boot/$2
+		${UBOOT_MKIMAGE_SIGN} \
+			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+			-f $1 \
+			arch/${ARCH}/boot/$2
 
-				cp -P ${STAGING_DATADIR}/atf-${type}-${dtb} ${B}
-				add_key_to_atf="-K ${B}/atf-${type}-${dtb}"
+		${UBOOT_MKIMAGE_SIGN} \
+			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
+			-F -k "${UBOOT_SIGN_KEYDIR}" \
+			-r arch/${ARCH}/boot/$2
+	fi
+}
 
-				${UBOOT_MKIMAGE_SIGN} \
-					${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
-					-F -k "${UBOOT_SIGN_KEYDIR}" \
-					$add_key_to_atf \
-					-r arch/${ARCH}/boot/$2
-			done
-		done
+SYSROOT_DIRS:append = " /sysroot-only"
+do_install:append() {
+	if echo ${KERNEL_IMAGETYPES} | grep -wq "fitImage" && \
+		[ "${ATF_SIGN_ENABLE}" = "1" ]; then
+		install -D ${B}/${KERNEL_OUTPUT_DIR}/fitImage ${D}/sysroot-only/fitImage
 	fi
 }
 
@@ -27,11 +27,6 @@ do_deploy:append() {
 
 	cd ${B}
 	install -m 0644 ${KERNEL_OUTPUT_DIR}/fitImage $deployDir/
-	for type in ${BOOT_TYPE}; do
-		for dtb in ${ATF_DTB}; do
-			install -m 0644 ${B}/atf-${type}-${dtb} $deployDir/
-		done
-	done
 
 	if [ "${OSTREE_USE_FIT}" = "1" ]; then
 		cp -af ${UBOOT_SIGN_KEYDIR}/${UBOOT_SIGN_KEYNAME}.key $deployDir/
@@ -100,12 +95,4 @@ fitimage_emit_section_config:prepend() {
 	if [ "${ATF_SIGN_ENABLE}" = "1" ] ; then
 		conf_sign_keyname="${UBOOT_SIGN_KEYNAME}"
 	fi
-}
-
-python __anonymous () {
-    if d.getVar('ATF_SIGN_ENABLE') == "1":
-        atf_pn = 'atf-s32g'
-        if d.getVar('INITRAMFS_IMAGE_BUNDLE') == "1":
-            d.appendVarFlag('do_assemble_fitimage_initramfs', 'depends', ' %s:do_populate_sysroot' % atf_pn)
-        d.appendVarFlag('do_assemble_fitimage', 'depends', ' %s:do_populate_sysroot' % atf_pn)
 }
