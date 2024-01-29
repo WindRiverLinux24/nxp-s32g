@@ -5,7 +5,7 @@ Subject: [PATCH] pfe: slave: extends the wait time
 
 In pfeng slave probing, the slave driver needs to wait pfe master driver up,
 the default max timeout loop is 10, but when more kernel configures or other
-configurations added, then the 10 loops may too small, so extend it to 50
+configurations added, then the 10 loops may too small, so extend it to 100
 loops to make it more compatible.
  
 Upstream-Status: Pending
@@ -24,7 +24,7 @@ index f10757c..4784c84 100644
  	struct pfeng_priv *priv = (struct pfeng_priv *)arg;
  	struct device *dev = &priv->pdev->dev;
 -	int loops = ipready_tmout * 10; /* sleep is 100 usec */
-+	int loops = ipready_tmout * 50; /* sleep is 500 usec */
++	int loops = ipready_tmout * 100; /* sleep is 1000 usec */
  	bool ip_ready = false;
  	int ret;
  
