@@ -572,6 +572,10 @@ NOTICE:
 
     The linux HSE & PKCS#11 demo supports all S32G274A and S32G399A boards now.
 
+    Besides, there are other HSE demos, like hse-encrypt, hse-sysimg,
+    pkcs-key-provision, hse-secboot, pkcs-cipher, pkcs-msg-digest, pkcs-sig,
+    for more info about these demos or other HSE related functionality, please
+    refer to the chapter "HSE Security Support" in SDK user manual.
 
 6.3 PFE
 -------
