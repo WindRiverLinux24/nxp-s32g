@@ -7,6 +7,8 @@ fitimage_assemble:append() {
 			-f $1 \
 			arch/${ARCH}/boot/$2
 
+		cp -f arch/${ARCH}/boot/$2 arch/${ARCH}/boot/$2-none
+
 		${UBOOT_MKIMAGE_SIGN} \
 			${@'-D "${UBOOT_MKIMAGE_DTCOPTS}"' if len('${UBOOT_MKIMAGE_DTCOPTS}') else ''} \
 			-F -k "${UBOOT_SIGN_KEYDIR}" \
@@ -18,7 +20,7 @@ SYSROOT_DIRS:append = " /sysroot-only"
 do_install:append() {
 	if echo ${KERNEL_IMAGETYPES} | grep -wq "fitImage" && \
 		[ "${ATF_SIGN_ENABLE}" = "1" ]; then
-		install -D ${B}/${KERNEL_OUTPUT_DIR}/fitImage ${D}/sysroot-only/fitImage
+		install -D ${B}/${KERNEL_OUTPUT_DIR}/fitImage-none ${D}/sysroot-only/fitImage
 	fi
 }
 
