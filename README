@@ -657,7 +657,7 @@ stable, so they maybe don't work sometimes.
 6.3.3 Known issue
 -----------------
 
-On S32G274A-EVB/S32G399A-EVB boards, there have an known issue that the pfe1
+1. On S32G274A-EVB/S32G399A-EVB boards, there have an known issue that the pfe1
 phy can't work. Because the NXP SDK changed the pfe1 to sgmii mode, then pfe1
 will use an AQR107 phy, but when the pfe1 up to work, the RX count of pfe1 is
 allways 0, so the pfe1 port can not get any packets from network. And this
@@ -668,6 +668,12 @@ is:
   https://community.nxp.com/t5/Wind-River-S32G-Support/PFE-driver-update-in-BSP33-RC8/m-p/1488518/highlight/false#M182
 
 This issue will be fixed later.
+
+2. When pfe feature is built with multi-instance mode, the suspend/resume
+functionality will be affected and can not work normally, because the
+suspend/resume support for multi-instance is not ready now, same as SDK,
+so users should note that please do not run suspend/resume operations if
+pfe is built with multi-instance mode.
 
 6.4 LLCE
 --------
