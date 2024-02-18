@@ -29,6 +29,7 @@ SRC_URI += " \
     file://0001-s32-env-support-for-booting-up-fitImage.patch \
     file://0001-s32-env-Add-support-to-load-the-initrd-in-mmcboot.patch \
     file://0001-arch-mach-s32-extend-the-DTB-size-for-BL33.patch \
+    file://0001-s32-env-update-fit_config_header-to-compatible-with-.patch \
     ${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'file://optee_config.cfg', '', d)} \
 "
 
