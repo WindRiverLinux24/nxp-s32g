@@ -5,6 +5,7 @@ LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://license.rst;md5=1dd070c98a281d18d9eefd938729b031"
 
 DEPENDS += "dtc-native xxd-native bc-native u-boot-tools-native openssl-native"
+DEPENDS += "${@ 'u-boot-tools-scmi-native' if d.getVar('SCMI_DTB_NODE_CHANGE') == 'true' else ''}"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -67,6 +68,20 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
+SCPRT_ARGS = " \
+    S32CC_USE_SCP=1 \
+    FIP_ALIGN=64 \
+"
+EXTRA_OEMAKE += "${@bb.utils.contains('MACHINE_FEATURES', 'srm', '${SCPRT_ARGS}', '', d)}"
+
+# Switch to SCMI versions for pinctrl and NVMEM if it's the case
+EXTRA_OEMAKE += "S32CC_USE_SCMI_PINCTRL=${SCMI_USE_SCMI_PINCTRL}"
+EXTRA_OEMAKE += "S32CC_USE_SCMI_NVMEM=${SCMI_USE_SCMI_NVMEM}"
+
+PINCTRL_OPT = "${@oe.utils.conditional('SCMI_USE_SCMI_PINCTRL', '1', '--pinctrl', '--no-pinctrl', d)}"
+GPIO_OPT = "${@oe.utils.conditional('SCMI_USE_SCMI_GPIO', '1', '--gpio', '--no-gpio', d)}"
+NVMEM_OPT = "${@oe.utils.conditional('SCMI_USE_SCMI_NVMEM', '1', '--nvmem', '--no-nvmem', d)}"
+
 EXTRA_OEMAKE += "${@['', '${HSE_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('HSE_SEC_ENABLED') == '1']}"
 EXTRA_OEMAKE += "${@['', '${SECBOOT_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('ATF_SIGN_ENABLE') == '1']}"
 
@@ -92,10 +107,31 @@ generate_hse_keys () {
     fi
 }
 
+# Fix the dtc compile issue if SRM enabled
+do_compile:prepend() {
+
+    if ${SCMI_DTB_NODE_CHANGE}; then
+        for hdr in ${STAGING_DIR_HOST}/sysroot-only/plat-hdrs/*; do
+            bname="$(basename ${hdr})"
+            lhdr=$(find "${S}/include" -name "${bname}")
+
+            if [ -z "${lhdr}" ]; then
+                bbfatal_log "Failed to locate ${bname} header file"
+            fi
+
+            if ! diff -NZbau "${hdr}" "${lhdr}"; then
+                bbfatal_log "There is a difference in the SCMI header content between TF-A and the Linux repository (${hdr} vs ${lhdr})."
+            fi
+        done
+    fi
+}
+
 do_compile() {
     unset LDFLAGS
     unset CFLAGS
     unset CPPFLAGS
+
+    oe_runmake -C "${S}" clean
 
     for type in ${BOOT_TYPE}; do
         for plat in ${PLATFORM}; do
@@ -121,6 +157,15 @@ do_compile() {
 
             oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
 
+            if ${SCMI_DTB_NODE_CHANGE}; then
+                oe_runmake -C "${S}" dtbs
+                dtb_name="$(ls ${ATF_BINARIES}/fdts/*.dtb)"
+                nativepython3 ${STAGING_BINDIR_NATIVE}/scmi_dtb_node_change.py \
+                    ${dtb_name} \
+                    ${GPIO_OPT} \
+                    ${PINCTRL_OPT} \
+                    ${NVMEM_OPT}
+            fi
         done
     done
 }
@@ -163,3 +208,9 @@ do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
 FILES:${PN} += "/boot/*"
+
+KERNEL_PN = "${@d.getVar('PREFERRED_PROVIDER_virtual/kernel')}"
+python () {
+    # Make "bitbake atf-s32g" depends linux kernel
+    d.appendVar('DEPENDS', " " + d.getVar('KERNEL_PN'))
+}

@@ -107,9 +107,3 @@ do_deploy:append() {
     fi
 }
 
-KERNEL_PN = "${@d.getVar('PREFERRED_PROVIDER_virtual/kernel')}"
-python () {
-    if d.getVar('ATF_SIGN_ENABLE') == "1":
-        # Make "bitbake atf-s32g" depends fitImage
-        d.appendVar('DEPENDS', " " + d.getVar('KERNEL_PN'))
-}
