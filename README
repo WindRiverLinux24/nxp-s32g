@@ -1142,6 +1142,44 @@ If users want to enable parallel secure boot mode, please add below contents in 
 Note:
 The parallel boot mode only can be supported under secure boot mode.
 
+6.8.4 SRM(Shared-Resource-Manager)
+----------------------------------
+
+The Shared Resource Manager (SRM) is a safety-critical software component
+that runs on the Cortex-M7 core. Its aim is to encapsulate the handling
+of the shared resources that other execution domains might request control
+of.
+
+SRM is similar to the System Control Processor (SCP), defined in the
+Arm Power Control System Architecture (PCSA) and the Arm SCMI specifications.
+Its primary role is to support system initialization and run-time power
+management tasks; it may also be involved in delivering system events.
+The SRM communicates with agents that request its services via the Arm SCMI
+interface.
+
+By taking ownership of a subset of system-level resources, which both
+Cortex-A and Cortex-M domains want to access, it provides safety, isolation
+and freedom from interference for the modules under its control. The
+Cortex-A domain should not be able to directly impact the Cortex-M domain
+by accessing different bits in the same registers for the system-level
+resources (such as Clock, Partition, Reset Management registers) or
+different 32-bit registers in the same peripheral, which would break the
+isolation.
+
+For more detail information about SRM feature, please contact vendor since
+SRM related documents are not public now.
+
+And please note that, currently, the Cortex-A side SRM support has been added
+for nxp-s32g bsp, but the M7 side support is out of scope, so if users want
+to use SRM, please contact vendor and make sure that the M7 side support has
+been done firstly, because M7 is the SRM master.
+
+For Cortex-A side, if users want to enable SRM feature, please add the
+following lines in conf/local.conf of the build project:
+    BB_NO_NETWORK = '0'
+    WRTEMPLATE:append = " feature/srm"
+    CUSTOMER_RECIPES:wr-nxp-s32g += 'python-fdt'
+
 6.9 dm-verity
 -------------
 In order to use the dm-verity feature, you should enable the dm-verity template first.
