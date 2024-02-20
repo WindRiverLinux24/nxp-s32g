@@ -1165,3 +1165,22 @@ DEFAULT_TADEVKIT_VARIANT used to install specific trust application development 
 
 Note2: Based on NXP SDK BSP38, OP-TEE HSE crypto driver doesn't work well with HSE hardware, so the combination
 use case of OP-TEE&HSE feature is not supported currently.
+
+6.11 cpu thermal
+----------------
+
+For S32G platforms, thermal monitoring for A53 cores has been supported,
+and for more information, please refer to the following yaml file in
+kernel source:
+	Documentation/devicetree/bindings/thermal/qoriq-thermal.yaml
+
+6.11.1 Known issue
+------------------
+
+For A53 thermal monitoring, same as latest SDK, the S32G3 boards may shutdown
+due to critical temperature reached, and there has been one ticket to vendor
+to track the progress of the issue:
+	https://community.nxp.com/t5/S32G/S32G3-V1-0-soc-board-shutdown-by-critical-temperature-reached/m-p/1810992#M5959
+
+And current workaround from vendor is to remove the cpu-crit node from dtb,
+then the board can work normally.
