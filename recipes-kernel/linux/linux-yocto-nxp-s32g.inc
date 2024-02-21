@@ -16,7 +16,7 @@ NVMEM_OPT = "${@oe.utils.conditional('SCMI_USE_SCMI_NVMEM', '1', '--nvmem', '--n
 PLAT_HEADERS_TAGS = " s32gen1 s32cc s32g"
 
 # Fix the dtc compile issue if SRM enabled
-do_compile:prepend() {
+do_compile:prepend:nxp-s32g() {
 
     if ${SCMI_DTB_NODE_CHANGE}; then
 
@@ -36,7 +36,7 @@ do_compile:prepend() {
 }
 
 # Switch from SIUL2 to SCMI drivers if needed
-do_compile:append() {
+do_compile:append:nxp-s32g() {
     for dtb_name in $dtb_names; do
         if ${SCMI_DTB_NODE_CHANGE}; then
             nativepython3 ${STAGING_BINDIR_NATIVE}/scmi_dtb_node_change.py \
@@ -49,7 +49,7 @@ do_compile:append() {
 }
 
 SYSROOT_DIRS:append = " /sysroot-only"
-do_install:append() {
+do_install:append:nxp-s32g() {
     if ${SCMI_DTB_NODE_CHANGE}; then
         install -d ${D}/sysroot-only/plat-hdrs
         for tag in ${PLAT_HEADERS_TAGS}; do
