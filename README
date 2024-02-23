@@ -1182,5 +1182,8 @@ due to critical temperature reached, and there has been one ticket to vendor
 to track the progress of the issue:
 	https://community.nxp.com/t5/S32G/S32G3-V1-0-soc-board-shutdown-by-critical-temperature-reached/m-p/1810992#M5959
 
-And current workaround from vendor is to remove the cpu-crit node from dtb,
+And current workaround from vendor is to remove the cpu-crit node from dtb.
+For example, users can use the following commands in u-boot stage to delete
+the node:
+    setenv fdt_fixups "fdt addr ${fdt_addr}; fdt rm /thermal-zones/a53_cores/trips/cpu-crit"
 then the board can work normally.
