@@ -386,69 +386,18 @@ NXP's Flexera, customers have to contact NXP to get the access to Flexera.
 Before to use the HSE, HSE firmware must be installed and the key catalogs must
 be formatted.
 
-Since HSE is a share resource for M7 and A53, so there are different binaries
-or firmwares for them.
-
-For M7 side, there are following two demos .exe files:
-    HSE_DEMOAPP_S32G2_0_1_0_5.exe        for S32G2
-    HSE-DEMOAPP_S32G3XX_0_2_22_0.exe     for S32G3
-
 For A53 cores, the related firmwares are included in the following packages:
     HSE_FW_S32G2_0_1_0_5.exe             for S32G2
     HSE-FW_S32G3XX_0_2_22_0.exe          for S32G3
 
 Users need to firstly install the above .exe files into windows system to get
-the demos for M7 or firmwares for A53.
+the firmwares for A53.
 
 Moreover, for HSE firmware, there will be pink images and related interface
 directory from the related HSE_FW_S32Gx_xxx.exe, and the interface directory
-is needed when compiling the HSE linux demos as "6.2.3 HSE linux" descriped.
+is needed when compiling the HSE linux demos as "6.2.2 HSE linux" descriped.
 
-6.2.2 HSE Demo for M7
----------------------
-
-The demo application is provided separately and contains details on how to
-provision HSE FW on virgin devices and demonstrates common use cases of its
-security features.
-
-The HSE Demo is from the package "HSE_DEMOAPP_S32Gx_xxx.exe" of NXP's
-official website.
-
-Frist step in installing the HSE FW on a device is to generate the blob image,
-the blob image is a binary image which defines the layout of external flash memory.
-Contains all images used by BootRom/HSE FW to boot and configure the system at start-up.
-
-Below steps is an example about how to verify the HSE function on M7 cores,
-detailed information can refer to the document of "HSE_DEMOAPP_S32Gx_xxx_ReadMe.pdf"
-
-In the following steps, take S32G274A SOC as example:
-1) Generate the blob image using scripts\blob.py script:
-
-%> set PLATFORM=s32g2xx
-%> cd demo_security_installer\scripts
-%> python3 blob.py -o new -j json/s32g2xx_new_blob.json -b images/blob_s32g2xx_sd.bin -i sd
-
-2) Flashing the blob image:
-
-%> dd if=blob_s32g2xx_sd.bin of=/dev/your_sd_dev
-
-3) Boot target from SD:
-
-There will be a display below on the serial to confirm HSE is up and running.
-
-	HSE FW Version: 0.1.0_1.0.5
-	HSE FW up and running! Status:
-	      HSE_STATUS_RNG_INIT_OK
-	      HSE_STATUS_INIT_OK
-	      HSE_STATUS_CUST_SUPER_USER
-
-NOTICE:
-	the script uses rev2 version HSE firmware to create the new blob
-	image by dedault, if user's board is rev1 version, please modify the
-		json/s32g2xx_new_blob.json
-	file to be compatible with the HSE version.
-
-6.2.3 HSE linux
+6.2.2 HSE linux
 ---------------
 
 For linux, which runs on A53 cores, there are demos providing PKCS#11
