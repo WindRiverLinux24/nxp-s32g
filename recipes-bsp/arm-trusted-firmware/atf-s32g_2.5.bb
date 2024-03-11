@@ -39,6 +39,16 @@ BUILD_TYPE = "release"
 ATF_S32G_ENABLE = "1"
 
 HSE_BUILD_OPT = "HSE_SUPPORT"
+RSA_PRIV_FIP ?= "${B}/${HSE_SEC_KEYS}/${HSE_SEC_PRI_KEY}"
+
+HSE_ARGS = " \
+              HSE_SUPPORT=1 \
+              "
+
+SECBOOT_ARGS = " \
+                 SECBOOT_SUPPORT=1 \
+                 RSA_PRIV_FIP=${RSA_PRIV_FIP} \
+                 "
 
 EXTRA_OEMAKE += " \
                 CROSS_COMPILE=${TARGET_PREFIX} \
@@ -58,6 +68,9 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
+EXTRA_OEMAKE += "${@['', '${HSE_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('HSE_SEC_ENABLED') == '1']}"
+EXTRA_OEMAKE += "${@['', '${SECBOOT_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('ATF_SIGN_ENABLE') == '1']}"
+
 # There are 256 bytes space following IVT, it is able to be used save BSP specific flags
 # Boot Types, offset is 0x1100 from the beginning of bootloader image
 # The default value 0 represents for Non-secboot, it doesn't need to set it explicitly.
@@ -71,6 +84,24 @@ str2bin () {
 	# write binary as little endian
 	print_cmd=`which printf`
 	$print_cmd $(echo $1 | sed -E -e 's/(..)(..)(..)(..)/\4\3\2\1/' -e 's/../\\x&/g')
+}
+
+generate_hse_keys () {
+    hse_keys_dir="${B}/${HSE_SEC_KEYS}"
+    if [ -n "${FIP_SIGN_KEYDIR}" ]; then
+        hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
+    else
+        hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
+    fi
+
+    if [ ! -d "${hse_keys_dir}" ]; then
+        install -d ${hse_keys_dir}
+        if [ -z "${FIP_SIGN_KEYDIR}" ]; then
+            openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
+        fi
+        openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
+        openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
+    fi
 }
 
 do_compile() {
@@ -96,18 +127,11 @@ do_compile() {
 			SPD=opteed"
             fi
 
-            if [ "$type" = "qspi" ]; then
-                #Now QSPI boot mode not support HSE secboot feature, so disgarding HSE enabled or not, just build it
-                oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
-            else
-                if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 $optee_arg all
-                    #get layout of fip.s32
-                    mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
-                else
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
-                fi
+            if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
+                generate_hse_keys
             fi
+
+            oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
 
         done
     done
@@ -133,43 +157,9 @@ do_deploy() {
     for type in ${BOOT_TYPE}; do
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
-            hse_keys_dir="${B}/${HSE_SEC_KEYS}"
 
             if [ "${HSE_SEC_ENABLED}" = "1" ] && [ "${type}" = "sd" ]; then
-                if [ -n "${FIP_SIGN_KEYDIR}" ]; then
-                    hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
-                else
-                    hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
-                fi
 
-                if [ ! -d "${hse_keys_dir}" ]; then
-                    install -d ${hse_keys_dir}
-                    if [ -z "${FIP_SIGN_KEYDIR}" ]; then
-                        openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
-                    fi
-                    openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
-                    openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
-                fi
-
-                #calc the offset of need-to-sign part for fip.bin, it is same as the offset of "Trusted Boot Firmware BL2 certificate"
-                bl2_cert_line=`${S}/tools/fiptool/fiptool info ${ATF_BINARIES}/fip.bin | grep "Trusted Boot Firmware BL2 certificate"`
-                sign_offset=`echo ${bl2_cert_line} | awk -F "," '{print $1}' | awk -F "=" '{print $2}'`
-
-                #take the need-to-sign part of fip.bin
-                dd if=${ATF_BINARIES}/fip.bin of=${ATF_BINARIES}/fip.bin.tmp bs=1 count=`printf "%d" ${sign_offset}` conv=notrunc
-
-                #sign the part
-                openssl dgst -sha1 -sign ${hse_pri_key} -out ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin.tmp
-                #put the signed part back into fip.bin
-                ${S}/tools/fiptool/fiptool update --align 16 --tb-fw-cert ${ATF_BINARIES}/${HSE_SEC_SIGN_DST} ${ATF_BINARIES}/fip.bin
-
-                #get offset of fip.bin, which will be used when dd the fip.bin to SD card
-                dd_offset=`cat ${ATF_BINARIES}/atf_layout | grep Application | awk -F ":" '{print $3}' | awk -F " " '{print $1}'`
-                echo $dd_offset > ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset
-                #copy pub key and signed fip.bin to DEPLOY_DIR_IMAGE
-                cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
-                cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
-                cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32.signature
                 # Set the boot type
                 secboot_type=${a53_secboot}
                 if ${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', 'true', 'false', d)}; then

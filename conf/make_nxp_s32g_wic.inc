@@ -11,14 +11,8 @@ make_nxp_s32g_wic() {
         atf_s32="${DEPLOY_DIR_IMAGE}/atf-$plat.s32"
         ofname="${IMAGE_BASENAME}-${MACHINE}-$plat${IMAGE_VERSION_SUFFIX}.rootfs.wic"
         cp ${IMAGE_NAME}.rootfs.wic $ofname
-        if [ "${HSE_SEC_ENABLED}" = "1" ]; then
-            dd_offset=`cat ${DEPLOY_DIR_IMAGE}/${plat}_dd_offset`
+        dd if=$atf_s32 of=$ofname conv=notrunc,fsync seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
 
-            dd if=$atf_s32 of=$ofname seek=1 skip=1 conv=notrunc,fsync
-            dd if=$atf_s32.signature of=$ofname seek=`printf "%d" ${dd_offset}` oflag=seek_bytes conv=notrunc,fsync
-        else
-            dd if=$atf_s32 of=$ofname conv=notrunc seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
-        fi
         if [ $plat = "aptiv_cvc_sousa" ] || [ $plat = "aptiv_cvc_fl"  ]; then
             mv -f $ofname ${IMAGE_NAME}.rootfs.wic
             break

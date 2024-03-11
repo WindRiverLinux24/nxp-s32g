@@ -11,11 +11,8 @@ LIC_FILES_CHKSUM = " \
     file://Licenses/lgpl-2.1.txt;md5=4fbd65380cdd255951079008b364516c \
 "
 
-HSE_SUPPORT_PATCHES = " \
-    file://0001-configs-s32g2xxaevb-add-NXP_HSE_SUPPORT-config.patch \
-    file://0002-configs-s32g274ardb2-add-NXP_HSE_SUPPORT-config.patch \
-    file://0003-configs-s32g399ardb3-add-NXP_HSE_SUPPORT-config.patch \
-    file://0004-configs-s32g3xxaevb-add-NXP_HSE_SUPPORT-config.patch \
+HSE_SUPPORT_CFG = " \
+    file://hse_support.cfg \
 "
 
 SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp40.0-2022.04"
@@ -25,7 +22,7 @@ SRC_URI += " \
     file://0001-configs-Enable-commands-for-ostree.patch \
     file://0001-include-config_distro_bootcmd.h-Check-go-before-boot.patch \
     file://0001-s32g-remove-SAF1508-phy-driver-and-use-common-ulpi-i.patch \
-    ${@bb.utils.contains('HSE_SEC_ENABLED', '1', '${HSE_SUPPORT_PATCHES}', '', d)} \
+    ${@bb.utils.contains('HSE_SEC_ENABLED', '1', '${HSE_SUPPORT_CFG}', '', d)} \
     file://0001-s32ccimage.c-Use-PATH_MAX-for-path-length.patch \
     file://0001-hse-enable-eFUSE-power-on-s32g399-RDB3-platform.patch \
     file://0001-phy-s32cc-serdes-configure-REF_USE_PAD-bit-during-re.patch \
