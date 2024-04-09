@@ -3,17 +3,17 @@ PROVIDES += "pkcs11-hse"
 
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = " \
-    file://README.md;md5=b451d36d865e4242aa2b944fb0370269 \
+    file://README.md;md5=baa031ec250d18077a8900486c104a74\
 "
 
 DEPENDS = "openssl libp11"
 RDEPENDS:${PN} = "opensc pcsc-lite ccid"
 
 URL ?= "git://github.com/nxp-auto-linux/pkcs11-hse.git;protocol=https"
-BRANCH ?= "release/bsp38.0_srm_0.9"
+BRANCH ?= "release/bsp40.0"
 SRC_URI = "${URL};branch=${BRANCH}"
 
-SRCREV = "9795b9d12ad0486f5b602d5040fb3378a9e74396"
+SRCREV = "8b74f76685547874ca6554afcbacbf4793a1db89"
 SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
 SRC_URI += " \
