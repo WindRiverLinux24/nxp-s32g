@@ -13,22 +13,22 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  2 files changed, 2 insertions(+)
 
 diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
-index 5c121f049d..50e0edb362 100644
+index 1edaca44cb..81e862d8f9 100644
 --- a/configs/s32g399ardb3_defconfig
 +++ b/configs/s32g399ardb3_defconfig
-@@ -5,3 +5,4 @@ CONFIG_SD_BOOT=y
+@@ -4,3 +4,4 @@ CONFIG_SD_BOOT=y
  CONFIG_FAT_WRITE=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
 +CONFIG_NXP_HSE_SUPPORT=y
 diff --git a/configs/s32g399ardb3_qspi_defconfig b/configs/s32g399ardb3_qspi_defconfig
-index 4a5e9ca6ff..4b2a80525b 100644
+index 522fca1c3d..2b79479c63 100644
 --- a/configs/s32g399ardb3_qspi_defconfig
 +++ b/configs/s32g399ardb3_qspi_defconfig
-@@ -3,3 +3,4 @@ CONFIG_ARCH_S32G3=y
- # CONFIG_SPI_FLASH_BAR is not set
+@@ -1,3 +1,4 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_S32G3=y
  CONFIG_QSPI_BOOT=y
- CONFIG_FSL_PFENG_FW_LOC_SDCARD=y
 +CONFIG_NXP_HSE_SUPPORT=y
 -- 
 2.25.1

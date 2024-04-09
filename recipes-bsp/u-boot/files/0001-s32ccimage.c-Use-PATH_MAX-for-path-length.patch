@@ -1,4 +1,4 @@
-From 6e792117cd98f8484f87a480f8a5b948fc64fdd5 Mon Sep 17 00:00:00 2001
+From c2901ce25e4f5134ce0b68c864e29a353912a1c1 Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
 Date: Wed, 26 Oct 2022 09:42:18 +0000
 Subject: [PATCH] s32ccimage.c: Use PATH_MAX for path length
@@ -14,10 +14,10 @@ Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/s32ccimage.c b/tools/s32ccimage.c
-index 854354cc2a..f77e07ea2c 100644
+index d4d867a083..b5b34ac94e 100644
 --- a/tools/s32ccimage.c
 +++ b/tools/s32ccimage.c
-@@ -902,7 +902,7 @@ static int parse_secboot_cmd(char *line)
+@@ -955,7 +955,7 @@ static int parse_hse_cmd(char *line)
  	int ret;
  	char *path;
  
@@ -26,7 +26,7 @@ index 854354cc2a..f77e07ea2c 100644
  	if (!path)
  		return -ENOMEM;
  
-@@ -1199,7 +1199,7 @@ static int build_conf(FILE *fconf)
+@@ -1287,7 +1287,7 @@ static int build_conf(FILE *fconf)
  {
  	int ret;
  	char *line;
@@ -36,5 +36,5 @@ index 854354cc2a..f77e07ea2c 100644
  
  	while (!feof(fconf)) {
 -- 
-2.32.0
+2.25.1
 

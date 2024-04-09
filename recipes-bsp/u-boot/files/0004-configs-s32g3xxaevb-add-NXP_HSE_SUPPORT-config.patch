@@ -1,4 +1,4 @@
-From a0535d6e4e922d5a4a410d4bb0ccca29946752b7 Mon Sep 17 00:00:00 2001
+From 7dd20461cd0052bb4d6eb0108a8857866eb72353 Mon Sep 17 00:00:00 2001
 From: Zhantao <zhantao.tang@windriver.com>
 Date: Tue, 24 May 2022 17:02:20 +0800
 Subject: [PATCH 4/4] configs: s32g3xxaevb: add NXP_HSE_SUPPORT config
@@ -12,19 +12,19 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  2 files changed, 2 insertions(+)
 
 diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
-index 648b3bc685..431117d670 100644
+index 09be8ad85f..ab9d2e6c8c 100644
 --- a/configs/s32g3xxaevb_defconfig
 +++ b/configs/s32g3xxaevb_defconfig
-@@ -8,3 +8,4 @@ CONFIG_S32CC_QSPI_FREQ=166
+@@ -7,3 +7,4 @@ CONFIG_S32CC_QSPI_FREQ=166
  CONFIG_FAT_WRITE=y
  CONFIG_MENU=y
  CONFIG_CMD_BOOTMENU=y
 +CONFIG_NXP_HSE_SUPPORT=y
 diff --git a/configs/s32g3xxaevb_qspi_defconfig b/configs/s32g3xxaevb_qspi_defconfig
-index 247693f8df..7f20dd07e9 100644
+index 8523fa1437..5576522b10 100644
 --- a/configs/s32g3xxaevb_qspi_defconfig
 +++ b/configs/s32g3xxaevb_qspi_defconfig
-@@ -5,3 +5,4 @@ CONFIG_TARGET_S32G3XXAEVB=y
+@@ -4,3 +4,4 @@ CONFIG_TARGET_S32G3XXAEVB=y
  CONFIG_QSPI_BOOT=y
  CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_S32CC_QSPI_FREQ=166

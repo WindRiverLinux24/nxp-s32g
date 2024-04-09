@@ -1,4 +1,4 @@
-From 309adaf10391ff41913a86331a294d894ec44090 Mon Sep 17 00:00:00 2001
+From ae13765a65be02a058c6b10d525911d34cc98116 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Mon, 4 Sep 2023 14:42:46 +0800
 Subject: [PATCH] configs: Enable commands for ostree
@@ -25,21 +25,21 @@ Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
  5 files changed, 18 insertions(+)
 
 diff --git a/configs/s32g274ardb2_defconfig b/configs/s32g274ardb2_defconfig
-index a48db2d8d4..c2ac1d22cb 100644
+index d6eeb24ace..4054136678 100644
 --- a/configs/s32g274ardb2_defconfig
 +++ b/configs/s32g274ardb2_defconfig
-@@ -2,3 +2,6 @@ CONFIG_ARM=y
+@@ -1,3 +1,6 @@
+ CONFIG_ARM=y
  CONFIG_ARCH_S32G2=y
- # CONFIG_SPI_FLASH_BAR is not set
  CONFIG_SD_BOOT=y
 +CONFIG_FAT_WRITE=y
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/configs/s32g2xxaevb_defconfig b/configs/s32g2xxaevb_defconfig
-index f040853791..5a953e786c 100644
+index 6d21f0176f..e507a56279 100644
 --- a/configs/s32g2xxaevb_defconfig
 +++ b/configs/s32g2xxaevb_defconfig
-@@ -5,3 +5,6 @@ CONFIG_TARGET_S32G2XXAEVB=y
+@@ -4,3 +4,6 @@ CONFIG_TARGET_S32G2XXAEVB=y
  CONFIG_SD_BOOT=y
  CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_S32CC_QSPI_FREQ=166
@@ -47,21 +47,21 @@ index f040853791..5a953e786c 100644
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/configs/s32g399ardb3_defconfig b/configs/s32g399ardb3_defconfig
-index 9deb414090..5c121f049d 100644
+index 38399e2a6e..1edaca44cb 100644
 --- a/configs/s32g399ardb3_defconfig
 +++ b/configs/s32g399ardb3_defconfig
-@@ -2,3 +2,6 @@ CONFIG_ARM=y
+@@ -1,3 +1,6 @@
+ CONFIG_ARM=y
  CONFIG_ARCH_S32G3=y
- # CONFIG_SPI_FLASH_BAR is not set
  CONFIG_SD_BOOT=y
 +CONFIG_FAT_WRITE=y
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/configs/s32g3xxaevb_defconfig b/configs/s32g3xxaevb_defconfig
-index 8d64b7888b..648b3bc685 100644
+index 269d9f66ea..09be8ad85f 100644
 --- a/configs/s32g3xxaevb_defconfig
 +++ b/configs/s32g3xxaevb_defconfig
-@@ -5,3 +5,6 @@ CONFIG_TARGET_S32G3XXAEVB=y
+@@ -4,3 +4,6 @@ CONFIG_TARGET_S32G3XXAEVB=y
  CONFIG_SD_BOOT=y
  CONFIG_USB_ULPI_VIEWPORT=y
  CONFIG_S32CC_QSPI_FREQ=166
@@ -69,10 +69,10 @@ index 8d64b7888b..648b3bc685 100644
 +CONFIG_MENU=y
 +CONFIG_CMD_BOOTMENU=y
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 94594593e7..ebf7ebd023 100644
+index 93865a324e..4ff3126922 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -246,6 +246,12 @@
+@@ -241,6 +241,12 @@
  	"mmc dev ${mmcdev}; " \
  	"if mmc rescan; " \
  	"then " \

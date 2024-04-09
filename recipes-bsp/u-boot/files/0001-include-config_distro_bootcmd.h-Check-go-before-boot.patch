@@ -1,4 +1,4 @@
-From 18fcfe332b993c7033d2f6c21e60b05a528c7dce Mon Sep 17 00:00:00 2001
+From 0b1a1d65b3f09927a96c83618f473d2e8a8b1048 Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
 Date: Thu, 20 May 2021 11:33:49 +0000
 Subject: [PATCH] include/config_distro_bootcmd.h: Check go before boot next
@@ -16,17 +16,17 @@ Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
-index c9862260a38..c01527f7466 100644
+index 2f90929178..40e7a66a65 100644
 --- a/include/config_distro_bootcmd.h
 +++ b/include/config_distro_bootcmd.h
-@@ -489,6 +489,7 @@
+@@ -496,6 +496,7 @@
  		BOOTENV_SET_VIRTIO_NEED_INIT                              \
  		"for target in ${boot_targets}; do "                      \
  			"run bootcmd_${target}; "                         \
 +			"if test \"${go}\" = 0; then exit; fi; "          \
  		"done\0"
  
- #ifndef CONFIG_BOOTCOMMAND
+ #endif  /* _CONFIG_CMD_DISTRO_BOOTCMD_H */
 -- 
-2.31.1
+2.25.1
 

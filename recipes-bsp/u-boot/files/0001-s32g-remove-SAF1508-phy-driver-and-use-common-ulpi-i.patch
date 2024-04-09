@@ -1,4 +1,4 @@
-From e2a68681abb5215f4129e7f7c47dd529b9a16ddb Mon Sep 17 00:00:00 2001
+From 113a28bd3174d3e0d4ad160f69fbd962e54072d6 Mon Sep 17 00:00:00 2001
 From: Quanyang Wang <quanyang.wang@windriver.com>
 Date: Mon, 4 Jul 2022 17:58:19 +0800
 Subject: [PATCH] s32g: use common ulpi interface to initialize usb phy
@@ -12,17 +12,17 @@ Upstream-Status: Pending
 
 Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
 ---
- arch/arm/mach-s32/s32g2/Kconfig     |  2 -
+ arch/arm/mach-s32/s32g2/Kconfig     |  1 -
  arch/arm/mach-s32/s32g3/Kconfig     |  1 -
- board/nxp/s32-cc/s32g/s32gxxxaevb.c | 47 ----------------------
+ board/nxp/s32-cc/s32g/s32gxxxaevb.c | 46 ----------------------
  drivers/usb/host/ehci-mx6.c         | 61 +++++++++++++++++++++++++++++
- 4 files changed, 61 insertions(+), 50 deletions(-)
+ 4 files changed, 61 insertions(+), 48 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32g2/Kconfig b/arch/arm/mach-s32/s32g2/Kconfig
-index e60bbe9732..b5bac9686d 100644
+index 049e2c1196..abacd75783 100644
 --- a/arch/arm/mach-s32/s32g2/Kconfig
 +++ b/arch/arm/mach-s32/s32g2/Kconfig
-@@ -38,7 +37,6 @@ config TARGET_S32G2XXAEVB
+@@ -22,7 +22,6 @@ config TARGET_S32G2XXAEVB
  	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
  	  I2C and DSPI.
  	imply DM_USB
@@ -31,10 +31,10 @@ index e60bbe9732..b5bac9686d 100644
  	imply USB_EHCI_HCD
  	imply USB_ULPI
 diff --git a/arch/arm/mach-s32/s32g3/Kconfig b/arch/arm/mach-s32/s32g3/Kconfig
-index fc0b6f2c5c..4fcf50d0c9 100644
+index 046c9a0dd4..f5a4e2cd55 100644
 --- a/arch/arm/mach-s32/s32g3/Kconfig
 +++ b/arch/arm/mach-s32/s32g3/Kconfig
-@@ -20,7 +20,6 @@ config TARGET_S32G3XXAEVB
+@@ -24,7 +24,6 @@ config TARGET_S32G3XXAEVB
  	  4 GB of RAM, 64MB of QSPI memory, PCIe slot, USB, serial port,
  	  I2C and DSPI.
  	imply DM_USB
@@ -43,12 +43,12 @@ index fc0b6f2c5c..4fcf50d0c9 100644
  	imply USB_EHCI_HCD
  	imply USB_ULPI
 diff --git a/board/nxp/s32-cc/s32g/s32gxxxaevb.c b/board/nxp/s32-cc/s32g/s32gxxxaevb.c
-index ba1cdb8b4e..730cc89ea8 100644
+index 4d7ca408c5..0e6b372303 100644
 --- a/board/nxp/s32-cc/s32g/s32gxxxaevb.c
 +++ b/board/nxp/s32-cc/s32g/s32gxxxaevb.c
-@@ -11,48 +11,6 @@
+@@ -10,47 +10,6 @@
  
- #define SJA1105_NAME	"ethernet-switch@0"
+ #define SJA1105_NAME   "ethernet-switch@0"
  
 -static int enable_saf1508bet(void)
 -{
@@ -91,14 +91,13 @@ index ba1cdb8b4e..730cc89ea8 100644
 -
 -	return ret;
 -}
--
+ 
  int misc_init_r(void)
  {
- #if CONFIG_IS_ENABLED(NET) && CONFIG_IS_ENABLED(FSL_PFENG) && \
-@@ -68,11 +26,6 @@ int misc_init_r(void)
- 	 */
- 	uclass_get_device_by_name(UCLASS_MISC, SJA1105_NAME, &dev);
- #endif
+@@ -66,11 +25,6 @@ int misc_init_r(void)
+ 		 */
+ 		uclass_get_device_by_name(UCLASS_MISC, SJA1105_NAME, &dev);
+ 	}
 -	/* The usb phy must be probed in u-boot in order to have a working USB
 -	 * interface in linux.
 -	 */
@@ -108,18 +107,18 @@ index ba1cdb8b4e..730cc89ea8 100644
  	return 0;
  }
 diff --git a/drivers/usb/host/ehci-mx6.c b/drivers/usb/host/ehci-mx6.c
-index 8afc2db210..2f55f87de8 100644
+index 13c1ca4366..0bba87a985 100644
 --- a/drivers/usb/host/ehci-mx6.c
 +++ b/drivers/usb/host/ehci-mx6.c
-@@ -22,6 +22,7 @@
- #include <asm/mach-types.h>
+@@ -29,6 +29,7 @@
  #include <power/regulator.h>
  #include <linux/usb/otg.h>
+ #include <linux/usb/phy.h>
 +#include <usb/ulpi.h>
  
  #include "ehci.h"
  
-@@ -605,6 +606,57 @@ static int ehci_usb_bind(struct udevice *dev)
+@@ -656,6 +657,57 @@ static int mx6_parse_dt_addrs(struct udevice *dev)
  	return 0;
  }
  
@@ -176,8 +175,8 @@ index 8afc2db210..2f55f87de8 100644
 +
  static int ehci_usb_probe(struct udevice *dev)
  {
- 	struct usb_platdata *plat = dev_get_platdata(dev);
-@@ -653,6 +705,15 @@ static int ehci_usb_probe(struct udevice *dev)
+ 	struct usb_plat *plat = dev_get_plat(dev);
+@@ -760,6 +812,15 @@ static int ehci_usb_probe(struct udevice *dev)
  	hcor = (struct ehci_hcor *)((uintptr_t)hccr +
  			HC_LENGTH(ehci_readl(&(hccr)->cr_capbase)));
  
@@ -190,9 +189,9 @@ index 8afc2db210..2f55f87de8 100644
 +	}
 +#endif
 +
- 	return ehci_register(dev, hccr, hcor, &mx6_ehci_ops, 0, priv->init_type);
- }
- 
+ 	ret = ehci_register(dev, hccr, hcor, &mx6_ehci_ops, 0, priv->init_type);
+ 	if (ret)
+ 		goto err_phy;
 -- 
-2.36.1
+2.25.1
 

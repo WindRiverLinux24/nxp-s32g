@@ -1,4 +1,4 @@
-From d1c4a06f6592d91e6462d6cb643728dc4502d471 Mon Sep 17 00:00:00 2001
+From 9dfe50473b6523d31e508c518554f417f1b53215 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 11 Apr 2023 18:30:54 +0800
 Subject: [PATCH] s32: env: support for booting up fitImage
@@ -12,10 +12,10 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 94594593e7..f5b795b17d 100644
+index 4ff3126922..530226f273 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -47,6 +47,7 @@
+@@ -40,6 +40,7 @@
  #define S32CC_BOOT_SCR_ADDR		0x82F00000
  #define S32CC_FDT_ADDR			0x83000000
  #define S32CC_RAMDISK_ADDR		0x90000000
@@ -23,7 +23,7 @@ index 94594593e7..f5b795b17d 100644
  
  /* Disable Ramdisk & FDT relocation*/
  #define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
-@@ -149,6 +150,9 @@
+@@ -116,11 +117,15 @@
  		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
  		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
  	"image=Image\0" \
@@ -32,8 +32,6 @@ index 94594593e7..f5b795b17d 100644
 +	"fit_config_header=conf-freescale_\0" \
  	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
  	"ipaddr=" S32CC_IPADDR "\0"\
- 	"jtagboot=echo Booting using jtag...; " \
-@@ -161,6 +165,7 @@
  	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
  		 "run fdt_override;\0" \
  	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
@@ -41,7 +39,7 @@ index 94594593e7..f5b795b17d 100644
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
  	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-@@ -250,7 +255,13 @@
+@@ -185,7 +190,13 @@
  		"then " \
  			"run mmcboot; " \
  		"else " \
