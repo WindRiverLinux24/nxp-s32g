@@ -11,9 +11,9 @@ B = "${WORKDIR}/build"
 
 # ATF repository
 URL ?= "git://github.com/nxp-auto-linux/arm-trusted-firmware.git;protocol=https"
-BRANCH ?= "release/bsp38.0_srm_0.9-2.5"
+BRANCH ?= "release/bsp40.0-2.5"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "085be2b21edf47f75e813a5e8c22bd728a54ce4a"
+SRCREV ?= "3109dc973f74c76094ac55d8e1356c5947a5caa7"
 SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dddede07"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
@@ -104,10 +104,6 @@ do_compile() {
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage ${HSE_BUILD_OPT}=1 $optee_arg all
                     #get layout of fip.s32
                     mkimage -l ${ATF_BINARIES}/fip.s32 > ${ATF_BINARIES}/atf_layout 2>&1
-                    #get "Load address" from fip layout, i.e. the FIP_MEMORY_OFFSET
-                    fip_offset=`cat ${ATF_BINARIES}/atf_layout | grep "Load address" | awk -F " " '{print $3}'`
-                    oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage \
-                               FIP_MEMORY_OFFSET=$fip_offset ${HSE_BUILD_OPT}=1 $optee_arg all
                 else
                     oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
                 fi
