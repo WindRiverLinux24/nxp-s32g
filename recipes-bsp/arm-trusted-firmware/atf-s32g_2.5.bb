@@ -200,7 +200,7 @@ do_deploy() {
     done
 }
 
-addtask deploy after do_compile before do_build 
+addtask deploy after do_install before do_build
 
 do_compile[depends] = "virtual/bootloader:do_deploy"
 do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-os:do_deploy', '', d)}"
