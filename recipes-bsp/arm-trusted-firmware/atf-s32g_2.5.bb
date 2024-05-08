@@ -30,6 +30,7 @@ SRC_URI += " \
     file://0001-s32_common.mk-Print-error-message-for-debugging.patch \
     file://rwx-segments.patch \
     file://0001-s32-extend-the-DTB-size-for-BL33.patch \
+    file://0001-Revert-include-dt-bindings-Sync-headers-with-Linux-K.patch \
 "
 
 PATCHTOOL = "git"
