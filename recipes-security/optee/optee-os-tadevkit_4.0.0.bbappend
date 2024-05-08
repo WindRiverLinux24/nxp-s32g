@@ -8,8 +8,8 @@ do_compile:nxp-s32g() {
             else
                 fw_version="${HSE_FW_VERSION_S32G3}"
             fi
-            oe_runmake -C ${S} PLATFORM_FLAVOR=$plat CFG_CRYPTO_DRIVER=y \
-                       HSE_FWDIR=${HSE_LOCAL_FIRMWARE_DIR}/${fw_version} \
+            oe_runmake -C ${S} PLATFORM_FLAVOR=$plat CFG_NXP_HSE=y \
+                       CFG_NXP_HSE_FWDIR=${HSE_LOCAL_FIRMWARE_DIR}/${fw_version} \
                        O=${B}/$plat all
         else
             oe_runmake -C ${S} PLATFORM_FLAVOR=$plat O=${B}/$plat all
