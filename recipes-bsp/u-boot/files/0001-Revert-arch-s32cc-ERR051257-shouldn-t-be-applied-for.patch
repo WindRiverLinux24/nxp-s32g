@@ -1,0 +1,31 @@
+From b8e19410e26632e6df045cfc2aa1a11c845a27b0 Mon Sep 17 00:00:00 2001
+From: Zhantao Tang <zhantao.tang@windriver.com>
+Date: Mon, 13 May 2024 11:48:11 +0000
+Subject: [PATCH] Revert "arch: s32cc: ERR051257 shouldn't be applied for
+ all boards"
+
+This reverts commit 9909bd1c18af9dbfb2c3d683fa01647e632b59c3.
+
+Upstream-Status: Pending
+
+Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
+---
+ arch/arm/mach-s32/s32-cc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
+index 9bb26bbdf9..73d2bdd3d6 100644
+--- a/arch/arm/mach-s32/s32-cc/Kconfig
++++ b/arch/arm/mach-s32/s32-cc/Kconfig
+@@ -155,7 +155,7 @@ config ENV_SIZE
+ 
+ config ERR051257_WORKAROUND
+ 	bool "ERR051257 erratum workaround"
+-	default y if ARCH_S32G2 && !TARGET_S32G2XXAEVB && !TARGET_S32G2XXAEVB3
++	default y
+ 	help
+ 	  Enable workaround for ERR051257 erratum.
+ 	  The QSPI boot flow will hang if the QSPI memory will rise any ECC
+-- 
+2.34.1
+

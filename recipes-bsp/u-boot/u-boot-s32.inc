@@ -17,6 +17,7 @@ HSE_SUPPORT_CFG = " \
 
 SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp40.0-2022.04"
 SRC_URI += " \
+    file://0001-Revert-arch-s32cc-ERR051257-shouldn-t-be-applied-for.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
     file://0001-u-boot-s32-Makefile-add-scripts_basic-dependency-to-.patch \
     file://0001-configs-Enable-commands-for-ostree.patch \
