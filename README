@@ -163,7 +163,7 @@ the GMAC driver. Run below commands in u-boot:
 
 Please note that there will be many references to the SDK user manual in the
 following paragraphs. Unless otherwise specified, the SDK user manual refers to:
-    S32G<x>_LinuxBSP_38.0_User_Manual.pdf
+    S32G<x>_LinuxBSP_40.0_User_Manual.pdf
 The x represents 2 for S32G2 and 3 for S32G3.
 
 For S32G platforms, there are 3 boot devices as following:
@@ -547,7 +547,7 @@ The default firmware names:
     s32g_pfe_util.fw
 
 The latest verified firmware version:
-    1.7.1
+    1.8.0
 
 For more detail info about the firmware, please refer to the document:
     PFE_Firmware_S32G_UserManual.pdf
@@ -650,7 +650,7 @@ There are 4 LLCE firmwares:
 	ppe_rx.bin
 
 The latest verified firmware version:
-    1.0.7
+    1.0.8
 
 For more detail info about the firmware, please refer to the document:
     LLCE_firmware_user_guide.pdf
@@ -1163,7 +1163,7 @@ s32g2 platform is installed by default, but it should be compatible with s32g3 p
 In order to ensure that OP-TEE feature works fine on different platform, there is a variable
 DEFAULT_TADEVKIT_VARIANT used to install specific trust application development kit for different platform.
 
-Note2: Based on NXP SDK BSP38, OP-TEE HSE crypto driver doesn't work well with HSE hardware, so the combination
+Note2: Based on NXP SDK BSP40, OP-TEE HSE crypto driver doesn't work well with HSE hardware, so the combination
 use case of OP-TEE&HSE feature is not supported currently.
 
 6.11 cpu thermal

@@ -20,11 +20,8 @@ This BSP supports the following boards:
                        CPU: NXP S32G274A rev. 2.1.0
    + NXP S32G274A-RDB2: Board: S32G274A-VNP-RDB2 (SCH-47440 REV C1, 700-47440 REV X2)
                        CPU: NXP S32G274A rev. 2.1.0
-   + NXP S32G399A-EVB: Board: S32GRV-PLATEVB (SCH-30081 REV B, 700-30081 REV B)
-                              S32G-PROCEVB-S
-                       CPU: NXP S32G399A rev. 1.0
-   + NXP S32G399A-RDB3: Board: S32G399A-VNP-RDB3 (SCH-53060 REV E1, 700-53060 REV X2)
-                       CPU: NXP S32G399A rev. 1.0
+   + NXP S32G399A-RDB3: Board: S32G399A-VNP-RDB3 (SCH-53060 REV F/F2, 700-53060 REV C/D)
+                       CPU: NXP S32G399A rev. 1.1
 
 2. Change History
 =================
@@ -33,6 +30,8 @@ This BSP supports the following boards:
                            SDK bsp36.0-5.15.85-rt.
   - 2023/12 (LINUXPG-1798): WindRiver Linux LTS23 RCPL5. Standard and preempt-rt support based on NXP
                            SDK bsp38.0-5.15.119-rt.
+  - 2024/05 (LINUXPG-2100): WindRiver Linux LTS23 RCPL10. Standard and preempt-rt support based on NXP
+                           SDK bsp40.0-5.15.145-rt.
 
 3. BSP Features
 ===============
@@ -92,7 +91,7 @@ S32G274A-EVB:
     CPU Revision:           rev. 2.1.0
     Board Serial:           NXP S32G27x
     BootLoader:             U-Boot
-    BootLoader Version:     U-Boot 2020.04+g57741dd80e (Sep 15 2023 - 15:06:56 +0000)
+    BootLoader Version:     U-Boot 2022.04+g1bfab44836 (Mar 21 2024 - 08:40:56 +0000)
 
 
 S32G274A-RDB2:
@@ -100,21 +99,13 @@ S32G274A-RDB2:
     CPU Revision:           rev. 2.1.0
     Board Serial:           NXP S32G27x
     BootLoader:             U-Boot
-    BootLoader Version:     U-Boot 2020.04+g57741dd80e (Sep 15 2023 - 15:06:56 +0000)
-
-
-S32G399A-EVB:
-    Processor::             NXP S32G399A
-    CPU Revision:           rev. 1.0
-    Board Serial:           NXP S32G3xx
-    BootLoader:             U-Boot
-    BootLoader Version:     U-Boot 2020.04+g57741dd80e (Sep 15 2023 - 15:06:56 +0000)
+    BootLoader Version:     U-Boot 2022.04+g1bfab44836 (Mar 21 2024 - 08:40:56 +0000)
 
 
 S32G399A-RDB3:
     Processor::             NXP S32G399A
-    CPU Revision:           rev. 1.0
+    CPU Revision:           rev. 1.1
     Board Serial:           NXP S32G3xx
     BootLoader:             U-Boot
-    BootLoader Version:     U-Boot 2020.04+g57741dd80e (Sep 15 2023 - 15:06:56 +0000)
+    BootLoader Version:     U-Boot 2022.04+g1bfab44836 (Mar 21 2024 - 08:40:56 +0000)
 
