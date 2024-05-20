@@ -145,18 +145,16 @@ baudrate=115200
 The fdt-file-name includes the following dtbs:
 	s32g2xxa-evb.dtb
 	s32g274a-rdb2.dtb
-	s32g3xxa-evb.dtb
 	s32g399a-rdb3.dtb
 Please use the right one for different board.
 
 Note:
-By default, in u-boot eth0 is occupied by PFE mode. When in non-PFE mode
-in order to switch eth0 to the GMAC by explicitly disabling and enabling
-the GMAC driver. Run below commands in u-boot:
+By default, in u-boot, the active port is eth0, which is occupied by GMAC.
+And If PFE enabled in u-boot, users can run below commands:
 
-# s32ccgmac disable
-# s32ccgmac enable
-# setenv ethact eth_eqos
+# setenv ethact pfe<x>
+
+to use pfe ports instead, where the x indicates 0, 1 or 2.
 
 4.2 Boot Devices
 ----------------
@@ -173,7 +171,7 @@ If users want to use these devices to boot, the DIP switches on S32G boards
 should be configured correctly. And the following are the DIP switches setting
 for these 3 boot devies:
 
-For S32G2 EVB/S32G3 EVB:
+For S32G2 EVB:
 
                 eMMC            SD              QSPI
     -------------------------------------------------------
@@ -275,13 +273,11 @@ Partitioned Images(WIC)", there are detail information about how to use
 or configure SD WIC images to boot.
 
 NOTICE:
-    Currently, QSPI flash boot is only supported by S32G platforms with
-    secure boot disabled, and due to the current QSPI flash size(64MB)
-    limitation on current S32G boards, there are only QSPI atf image built,
-    so users need to use NFS or other way to load kernel image/dtb, etc.
-    to fully boot up the board to use.
-    And for detail informations of the boot description, please refer to the
-    section:
+    Given the current QSPI flash size(64MB) limitation on current S32G
+    boards, there are only QSPI atf image built, so users need to use NFS
+    or other way to load kernel image/dtb, etc. to fully boot up the board
+    to use. And for detail informations of the boot description, please
+    refer to the section:
         "4 How to boot"
     in SDK user manual.
 
@@ -312,7 +308,6 @@ To burn WIC image to SD card, user only need to execute the below command:
 The above wic-image-name includes:
   wrlinux-image-std-nxp-s32g-evb.wic  for S32G274A-EVB
   wrlinux-image-std-nxp-s32g-rdb2.wic for S32G274A-RDB2
-  wrlinux-image-std-nxp-s32g-evb3.wic for S32G399A-EVB
   wrlinux-image-std-nxp-s32g-rdb3.wic for S32G399A-RDB3
 
 Please use the right one for different board.
@@ -331,8 +326,7 @@ Board can boot automatically by set the below uboot environment variables:
 => saveenv; run bootcmd;
 
 The above fdt-file-name includes s32g2xxa-evb.dtb, s32g274a-rdb2.dtb,
-s32g3xxa-evb.dtb and s32g399a-rdb3.dtb, please use the right fdt file for
-different board.
+and s32g399a-rdb3.dtb, please use the right fdt file for different board.
 
 
 NOTICE:
@@ -594,7 +588,7 @@ Note:
 feature, users should use GMAC interface in u-boot, and please refer to above
 chapter "4.1 NFS Root File System" to check related settings.
 
-2. For S32G274A-EVB/S32G399A-EVB boards, the connection over the SJA1105
+2. For S32G274A-EVB boards, the connection over the SJA1105
 automotive switch requires firmware to be preloaded to the switch on every
 reboot:
 	=> sja probe 5:0
@@ -606,7 +600,7 @@ stable, so they maybe don't work sometimes.
 6.3.3 Known issue
 -----------------
 
-1. On S32G274A-EVB/S32G399A-EVB boards, there have an known issue that the pfe1
+1. On S32G274A-EVB boards, there have an known issue that the pfe1
 phy can't work. Because the NXP SDK changed the pfe1 to sgmii mode, then pfe1
 will use an AQR107 phy, but when the pfe1 up to work, the RX count of pfe1 is
 allways 0, so the pfe1 port can not get any packets from network. And this
