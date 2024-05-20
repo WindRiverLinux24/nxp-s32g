@@ -1157,8 +1157,13 @@ s32g2 platform is installed by default, but it should be compatible with s32g3 p
 In order to ensure that OP-TEE feature works fine on different platform, there is a variable
 DEFAULT_TADEVKIT_VARIANT used to install specific trust application development kit for different platform.
 
-Note2: Based on NXP SDK BSP40, OP-TEE HSE crypto driver doesn't work well with HSE hardware, so the combination
-use case of OP-TEE&HSE feature is not supported currently.
+Note2: During building optee-os package, the trust application instance for s32g2 platform is installed by
+default, but it should be compatible with s32g3 platform theoretically. In order to ensure that OP-TEE feature
+works fine on different platform, there is a variable DEFAULT_ARMTZ_VARIANT used to install specific trust application
+instance for different platform.
+
+Note3: Based on NXP SDK BSP40, although OP-TEE HSE crypto driver can work with HSE hardware to a certain extent,
+it can't pass all the optee test cases.
 
 6.11 cpu thermal
 ----------------
