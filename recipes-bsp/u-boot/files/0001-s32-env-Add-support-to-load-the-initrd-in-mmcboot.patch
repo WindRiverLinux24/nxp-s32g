@@ -1,4 +1,4 @@
-From eafde95223524549cd163f28ce26c9de5544222e Mon Sep 17 00:00:00 2001
+From 826c7a98ccefe4f72af95c083b6ac83f5c01bca1 Mon Sep 17 00:00:00 2001
 From: Kevin Hao <kexin.hao@windriver.com>
 Date: Wed, 31 May 2023 13:54:25 +0800
 Subject: [PATCH] s32: env: Add support to load the initrd in mmcboot
@@ -14,16 +14,17 @@ Signed-off-by: Kevin Hao <kexin.hao@windriver.com>
  1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 10a27bde7d..0f908dbca2 100644
+index 94e0a6d9ac..49c991b92f 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -123,13 +123,22 @@
+@@ -158,14 +158,23 @@
  	"loadfitimage=fatload mmc ${mmcdev}:${mmcpart} ${fitimage_addr} ${fitimage}\0" \
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 +	"initrd_file=initramfs\0" \
  	"mmcargs=setenv bootargs console=${console},${baudrate}" \
- 		" root=${mmcroot} earlycon " EXTRA_BOOT_ARGS "\0" \
+ 		" root=${mmcroot} " LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
+ 		EXTRA_BOOT_ARGS "\0" \
 +	"loadinitrd=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${initrd_file};\0" \
 +	"check_initrd=if test -e mmc ${mmcdev}:${mmcpart} ${initrd_file}; then " \
 +	            "run loadinitrd; " \
@@ -42,5 +43,5 @@ index 10a27bde7d..0f908dbca2 100644
  			"echo WARN: Cannot load the DT; " \
  		"fi;\0" \
 -- 
-2.25.1
+2.35.5
 

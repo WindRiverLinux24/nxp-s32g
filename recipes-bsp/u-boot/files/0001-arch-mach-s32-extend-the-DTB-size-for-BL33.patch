@@ -1,4 +1,4 @@
-From 7c937f1dccbe67640bcd949162797bd321103adc Mon Sep 17 00:00:00 2001
+From bef1219c286b842e2b8adba96793e278c80c1bf7 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Mon, 4 Jul 2022 21:34:30 +0800
 Subject: [PATCH] arch: mach-s32: extend the DTB size for BL33
@@ -8,22 +8,22 @@ the DTB size of u-boot to 0x13000, too.
 
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- arch/arm/mach-s32/s32-cc/Kconfig | 2 +-
+ arch/arm/mach-s32/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-s32/s32-cc/Kconfig b/arch/arm/mach-s32/s32-cc/Kconfig
-index b5101167b3..c19dc4d854 100644
---- a/arch/arm/mach-s32/s32-cc/Kconfig
-+++ b/arch/arm/mach-s32/s32-cc/Kconfig
-@@ -38,7 +38,7 @@ config SYS_DATA_BASE
+diff --git a/arch/arm/mach-s32/Kconfig b/arch/arm/mach-s32/Kconfig
+index 51f716c16e..e10003b242 100644
+--- a/arch/arm/mach-s32/Kconfig
++++ b/arch/arm/mach-s32/Kconfig
+@@ -119,7 +119,7 @@ config SYS_DATA_BASE
  
- config S32CC_MAX_DTB_SIZE
+ config S32_MAX_DTB_SIZE
  	hex "Max size reserved for device tree in image layout"
--	default 0xb000
+-	default 0xf000
 +	default 0x13000
  
  config SYS_MALLOC_F_LEN
  	default 0x40000
 -- 
-2.25.1
+2.35.5
 

@@ -1,7 +1,8 @@
-From cfdfa51495554973c79655e6c2cf5b46692f46e8 Mon Sep 17 00:00:00 2001
+From d19fba8bb3c3e667271582cfe860eda0a37e9127 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Sun, 18 Feb 2024 10:33:22 +0000
-Subject: [PATCH] s32: env: update fit_config_header to compatible with oe-core
+Subject: [PATCH] s32: env: update fit_config_header to compatible with
+ oe-core
 
 Upstream-Status: Inappropriate [WR Linux specific]
 
@@ -11,10 +12,10 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 20a178e449..1ae20c3411 100644
+index 49c991b92f..2758ccd8f0 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -114,7 +114,7 @@
+@@ -149,7 +149,7 @@
  	"image=Image\0" \
  	"fitimage=fitImage\0" \
  	"fitimage_addr=" __stringify(S32CC_FIT_ADDR) "\0" \
@@ -24,5 +25,5 @@ index 20a178e449..1ae20c3411 100644
  	"ipaddr=" S32CC_IPADDR "\0"\
  	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
 -- 
-2.34.1
+2.35.5
 

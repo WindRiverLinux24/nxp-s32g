@@ -15,7 +15,7 @@ HSE_SUPPORT_CFG = " \
     file://hse_support.cfg \
 "
 
-SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp40.0-2022.04"
+SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp41.0-2022.04"
 SRC_URI += " \
     file://0001-Revert-arch-s32cc-ERR051257-shouldn-t-be-applied-for.patch \
     file://0001-Revert-s32cc-mmc-Enable-MMC_IO_VOLTAGE.patch \
@@ -35,7 +35,7 @@ SRC_URI += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'file://optee_config.cfg', '', d)} \
 "
 
-SRCREV = "d482def7e3930d24144125f50af61d79f3a3921d"
+SRCREV = "4744d0e2c8c7f7a60d36c761adbcc30e94d6fffb"
 
 PATCHTOOL = "git"
 SCMVERSION = "y"

@@ -1,4 +1,4 @@
-From 575daf158f942a5e7da78e18ee8ef565bc099d9f Mon Sep 17 00:00:00 2001
+From 3f504e2a3671d68047d49057de5b92ad2c69d9c6 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 11 Apr 2023 18:30:54 +0800
 Subject: [PATCH] s32: env: support for booting up fitImage
@@ -14,7 +14,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 37 insertions(+), 2 deletions(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 4941a905a9..cc124cd79d 100644
+index fd9670a1f8..94e0a6d9ac 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
 @@ -45,6 +45,7 @@
@@ -25,8 +25,8 @@ index 4941a905a9..cc124cd79d 100644
  
  /* Disable Ramdisk & FDT relocation*/
  #define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
-@@ -116,11 +117,15 @@
- 		" root=/dev/ram rw earlycon " EXTRA_BOOT_ARGS ";"\
+@@ -146,11 +147,15 @@
+ 		LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
  		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
  	"image=Image\0" \
 +	"fitimage=fitImage\0" \
@@ -41,7 +41,7 @@ index 4941a905a9..cc124cd79d 100644
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
  	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-@@ -191,7 +196,13 @@
+@@ -222,7 +227,13 @@
  		"then " \
  			"run mmcboot; " \
  		"else " \
@@ -56,7 +56,7 @@ index 4941a905a9..cc124cd79d 100644
  		"fi; " \
  	"else " \
  		"run netboot;" \
-@@ -249,7 +260,23 @@
+@@ -280,7 +291,23 @@
  #    endif
  #    define CONFIG_BOOTCOMMAND \
  	PRECONFIG_BOOTCOMMAND \
@@ -81,7 +81,7 @@ index 4941a905a9..cc124cd79d 100644
  #  elif defined(CONFIG_SD_BOOT)
  #    if defined(CONFIG_XEN_SUPPORT)
  #      define CONFIG_BOOTCOMMAND XEN_BOOTCMD
-@@ -276,6 +303,14 @@
+@@ -307,6 +334,14 @@
  		"if run loadimage; "\
  		"then " \
  			"run mmcboot; " \
@@ -97,5 +97,5 @@ index 4941a905a9..cc124cd79d 100644
  	"fi"
  #    endif
 -- 
-2.34.1
+2.35.5
 
