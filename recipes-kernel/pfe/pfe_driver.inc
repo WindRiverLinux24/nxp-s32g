@@ -14,11 +14,8 @@ SRC_URI:append = " \
         file://0001-pfe-fix-the-lock-inconsistent-warning-when-rmmod-the.patch \
         file://0001-pfe-update-to-fix-the-possible-circular-locking.patch \
         file://0001-pfe-fix-the-kernel-calltrace-when-dhcp-for-pfe-ports.patch \
-        file://0001-pfeng-fix-build-errors-to-compatible-with-v6.1-kerne.patch \
-        file://0001-pfe-phylink-fix-autoneg-issue.patch \
         file://0001-pfeng-slave-fix-Unknown-sysmbol-do_exit-error.patch \
         file://0001-pfe-slave-add-mutex_unlock-in-pfe_emac_destroy.patch \
-        file://0001-pfe-net-if-replace-sa_data-with-latest-sa_data_min-t.patch \
 	file://0001-pfe-slave-use-new-macro-to-replace-the-oal_mutex_ini.patch \
 	file://0001-pfe-slave-extends-the-wait-time.patch \
 	file://0001-pfe-phylink-set-phy-interface-mode-to-SGMII-when-in-.patch \

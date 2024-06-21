@@ -1,4 +1,4 @@
-From 12897eb383316b1ca63fb5f9f741e6370d1bd941 Mon Sep 17 00:00:00 2001
+From 663cdc2aac9c13a3bb5abb4b4966e11c79f5e8a1 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Sat, 20 Jan 2024 22:03:25 +0800
 Subject: [PATCH] pfe: slave: use new macro to replace the oal_mutex_init()
@@ -116,5 +116,5 @@ index b1b5474..129c2ef 100644
   * @brief		Destroy a mutex object
   * @param[in]	mutex Mutex instance
 -- 
-2.34.1
+2.35.5
 

@@ -1,4 +1,4 @@
-From 97417d8a9878fd993df8e7e31994cf89305ad812 Mon Sep 17 00:00:00 2001
+From dee2ef4f33a940ebb39a8fcaedbb20c4201f7892 Mon Sep 17 00:00:00 2001
 From: Quanyang Wang <quanyang.wang@windriver.com>
 Date: Mon, 26 Jun 2023 08:48:28 +0800
 Subject: [PATCH] pfe-slave: add mutex_unlock in pfe_emac_destroy
@@ -48,10 +48,10 @@ Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/sw/pfe_platform/src/pfe_emac_slave.c b/sw/pfe_platform/src/pfe_emac_slave.c
-index 4b71ebb..f9d1ce7 100644
+index ad8358f..e9a18c3 100644
 --- a/sw/pfe_platform/src/pfe_emac_slave.c
 +++ b/sw/pfe_platform/src/pfe_emac_slave.c
-@@ -148,6 +148,11 @@ void pfe_emac_destroy(pfe_emac_t *emac)
+@@ -152,6 +152,11 @@ void pfe_emac_destroy(pfe_emac_t *emac)
  			NXP_LOG_DEBUG("Mutex lock failed\n");
  		}
  
@@ -64,5 +64,5 @@ index 4b71ebb..f9d1ce7 100644
  		(void)oal_mutex_destroy(&emac->mutex);
  
 -- 
-2.40.0
+2.35.5
 
