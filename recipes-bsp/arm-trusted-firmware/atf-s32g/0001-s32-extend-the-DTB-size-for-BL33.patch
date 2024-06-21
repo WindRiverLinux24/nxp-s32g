@@ -1,4 +1,4 @@
-From 2cc2d7abcc095cbd3e50e11f1350f2a08d9a239e Mon Sep 17 00:00:00 2001
+From 2e71fc8015e55312569e1b253cb05261293c6351 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Mon, 4 Jul 2022 17:35:21 +0800
 Subject: [PATCH] s32: extend the DTB size for BL33
@@ -9,22 +9,22 @@ But the of dtb file with  public key exceeds the current max dtb file size
 
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- plat/nxp/s32/include/s32_platform_def.h | 2 +-
+ plat/nxp/s32/s32cc/include/s32cc_platform_def.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/plat/nxp/s32/include/s32_platform_def.h b/plat/nxp/s32/include/s32_platform_def.h
-index 09a11bc4d..ee715fe29 100644
---- a/plat/nxp/s32/include/s32_platform_def.h
-+++ b/plat/nxp/s32/include/s32_platform_def.h
-@@ -116,7 +116,7 @@
+diff --git a/plat/nxp/s32/s32cc/include/s32cc_platform_def.h b/plat/nxp/s32/s32cc/include/s32cc_platform_def.h
+index 0f5a18dc6..1ba03c448 100644
+--- a/plat/nxp/s32/s32cc/include/s32cc_platform_def.h
++++ b/plat/nxp/s32/s32cc/include/s32cc_platform_def.h
+@@ -112,7 +112,7 @@
  #define BL33_BASE		        (S32_DDR0_END - S32_BL33_IMAGE_SIZE - \
  						SIZE_1M + 1)
  /* U-Boot: CONFIG_S32GEN1_MAX_DTB_SIZE */
--#define BL33_MAX_DTB_SIZE	    (0xb000)
+-#define BL33_MAX_DTB_SIZE	    (0xf000)
 +#define BL33_MAX_DTB_SIZE	    (0x13000)
  /* U-Boot: CONFIG_SYS_TEXT_BASE  */
  #define BL33_ENTRYPOINT		    (BL33_BASE + 0xa0000)
  #define BL33_DTB		    (BL33_ENTRYPOINT - BL33_MAX_DTB_SIZE)
 -- 
-2.36.1
+2.35.5
 

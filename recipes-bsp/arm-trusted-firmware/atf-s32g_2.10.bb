@@ -12,25 +12,18 @@ B = "${WORKDIR}/build"
 
 # ATF repository
 URL ?= "git://github.com/nxp-auto-linux/arm-trusted-firmware.git;protocol=https"
-BRANCH ?= "release/bsp40.0-2.5"
+BRANCH ?= "release/bsp41.0-2.10"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "3109dc973f74c76094ac55d8e1356c5947a5caa7"
+SRCREV ?= "0cd12bb2630a23e760683bf3d911e3c1e282efd5"
 SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dddede07"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
-    file://0001-fix-auth-forbid-junk-after-extensions.patch \
-    file://0002-fix-auth-require-at-least-one-extension-to-be-presen.patch \
-    file://0003-fix-auth-avoid-out-of-bounds-read-in-auth_nvctr.patch \
-    file://0004-fix-auth-properly-validate-X.509-extensions.patch \
-    file://0001-s32_common.mk-Fix-DTC_VERSION.patch \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
     file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
     file://0001-s32_common.mk-Print-error-message-for-debugging.patch \
-    file://rwx-segments.patch \
     file://0001-s32-extend-the-DTB-size-for-BL33.patch \
-    file://0001-Revert-include-dt-bindings-Sync-headers-with-Linux-K.patch \
 "
 
 PATCHTOOL = "git"

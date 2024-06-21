@@ -1,4 +1,4 @@
-From 45fab5e01e6a606f7899efaeba799e38291274ef Mon Sep 17 00:00:00 2001
+From e678bb9cebde4b6b1be36fe75b24ddd2672d835c Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
 Date: Mon, 5 Sep 2022 06:54:42 +0000
 Subject: [PATCH] s32_common.mk: Print error message for debugging
@@ -12,14 +12,14 @@ Upstream-Status: Pending
 
 Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
 ---
- plat/nxp/s32/s32_common.mk | 2 +-
+ plat/nxp/s32/s32cc/s32_common.mk | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
-index d32e65b28..1e8e0564e 100644
---- a/plat/nxp/s32/s32_common.mk
-+++ b/plat/nxp/s32/s32_common.mk
-@@ -267,7 +267,7 @@ endif
+diff --git a/plat/nxp/s32/s32cc/s32_common.mk b/plat/nxp/s32/s32cc/s32_common.mk
+index d359070f4..1b0af2c94 100644
+--- a/plat/nxp/s32/s32cc/s32_common.mk
++++ b/plat/nxp/s32/s32cc/s32_common.mk
+@@ -367,7 +367,7 @@ endif
  
  ${DUMMY_FIP_S32}: ${DUMMY_FIP}
  	${ECHO} "  MKIMAGE $@"
@@ -28,3 +28,6 @@ index d32e65b28..1e8e0564e 100644
  
  ${IVT_LOCATION_FILE}: ${DUMMY_FIP_S32}
  	${ECHO} "  MKIMAGE $@"
+-- 
+2.35.5
+
