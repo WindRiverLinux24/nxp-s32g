@@ -10,10 +10,10 @@ DEPENDS = "openssl libp11"
 RDEPENDS:${PN} = "opensc pcsc-lite ccid"
 
 URL ?= "git://github.com/nxp-auto-linux/pkcs11-hse.git;protocol=https"
-BRANCH ?= "release/bsp40.0"
+BRANCH ?= "release/bsp41.0"
 SRC_URI = "${URL};branch=${BRANCH}"
 
-SRCREV = "8b74f76685547874ca6554afcbacbf4793a1db89"
+SRCREV = "e5842676f2666ea15175de3e4bed2ee5a2b552bb"
 SRC_URI[sha256sum] = "b529fcbbb8f4347310d433162b81291da5955f9916d5c6ad5f4dc316ef6aef14"
 
 SRC_URI += " \
