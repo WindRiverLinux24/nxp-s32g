@@ -9,12 +9,13 @@ make_nxp_s32g_wic() {
     for plat in ${plats}; do
 
         atf_s32="${DEPLOY_DIR_IMAGE}/atf-$plat.s32"
-        ofname="${IMAGE_BASENAME}-${MACHINE}-$plat${IMAGE_VERSION_SUFFIX}.rootfs.wic"
-        cp ${IMAGE_NAME}.rootfs.wic $ofname
+        imgname="${IMAGE_BASENAME}${IMAGE_MACHINE_SUFFIX}"
+        ofname="${imgname}-$plat${IMAGE_NAME_SUFFIX}${IMAGE_VERSION_SUFFIX}.wic"
+        cp ${IMAGE_NAME}.wic $ofname
         dd if=$atf_s32 of=$ofname conv=notrunc,fsync seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
 
         if [ $plat = "aptiv_cvc_sousa" ] || [ $plat = "aptiv_cvc_fl"  ]; then
-            mv -f $ofname ${IMAGE_NAME}.rootfs.wic
+            mv -f $ofname ${IMAGE_NAME}.wic
             break
         fi
         if [ $plat = "s32g3xxaevb" ]; then
@@ -24,13 +25,13 @@ make_nxp_s32g_wic() {
         else
             plat="$(echo $plat | grep -o '....$')"
         fi
-        linkname="${IMAGE_LINK_NAME}-$plat.wic"
+        linkname="$imgname-$plat${IMAGE_NAME_SUFFIX}.wic"
         ln -sf $ofname $linkname
     done
 
     if [ $plat != "aptiv_cvc_sousa" ] && [ $plat != "aptiv_cvc_fl" ]; then
         rm -f ${IMAGE_LINK_NAME}.wic
-        rm -f ${IMAGE_NAME}.rootfs.wic
+        rm -f ${IMAGE_NAME}.wic
     fi
 }
 
