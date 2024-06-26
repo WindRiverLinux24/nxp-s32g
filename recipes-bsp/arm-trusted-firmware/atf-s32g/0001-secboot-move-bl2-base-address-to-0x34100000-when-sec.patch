@@ -1,4 +1,4 @@
-From 68f59a1460f7a10671ddb8697a315fa1108cbc4a Mon Sep 17 00:00:00 2001
+From cad4ba548008e508bfb3a6fec0c5467f9d9fe576 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Mon, 29 Aug 2022 13:58:25 +0800
 Subject: [PATCH] secboot: move bl2 base address to 0x34100000 when secure boot
@@ -17,14 +17,14 @@ file is extended when secure boot feature is enabed.
 
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
- plat/nxp/s32/s32_common.mk | 2 +-
+ plat/nxp/s32/s32cc/s32_common.mk | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/plat/nxp/s32/s32_common.mk b/plat/nxp/s32/s32_common.mk
-index da63fa428..56dae8665 100644
---- a/plat/nxp/s32/s32_common.mk
-+++ b/plat/nxp/s32/s32_common.mk
-@@ -490,7 +490,7 @@ endif
+diff --git a/plat/nxp/s32/s32cc/s32_common.mk b/plat/nxp/s32/s32cc/s32_common.mk
+index 1b0af2c94..d5f3266e6 100644
+--- a/plat/nxp/s32/s32cc/s32_common.mk
++++ b/plat/nxp/s32/s32cc/s32_common.mk
+@@ -513,7 +513,7 @@ endif
  	fi
  
  ifneq (${HSE_SUPPORT},)
@@ -34,5 +34,5 @@ index da63fa428..56dae8665 100644
  BL2_BASE		?= 0x34302000
  endif
 -- 
-2.25.1
+2.34.1
 
