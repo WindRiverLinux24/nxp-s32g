@@ -2,7 +2,7 @@ require optee-nxp.inc
 
 MAJ_VER:nxp-s32g = "${@oe.utils.trim_version("${PV}", 2)}"
 
-SRCREV:nxp-s32g = "1ef6b4cf34e448bd1c134f30509ecf1f9b5d36bd"
+SRCREV:nxp-s32g = "5b73ca9035ce37f992bbd5f58ff7044eb49027cb"
 
 URL:nxp-s32g ?= "git://github.com/nxp-auto-linux/optee_os;protocol=https"
 BRANCH:nxp-s32g ?= "${RELEASE_BASE}-${MAJ_VER}"
