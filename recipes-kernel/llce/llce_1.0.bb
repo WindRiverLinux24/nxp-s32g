@@ -10,12 +10,15 @@ inherit deploy
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
-
 SRC_URI = " \
-	file://${LLCE_LOCAL_FIRMWARE_DIR} \
-	file://${LLCE_LOCAL_FIRMWARE_DIR_S32G3} \
 	file://LIENCES.txt \
 "
+
+python() {
+    for fd in (d.getVar('LLCE_LOCAL_FIRMWARE_DIR'), d.getVar('LLCE_LOCAL_FIRMWARE_DIR_S32G3')):
+        if fd:
+            d.appendVar('SRC_URI', ' file://%s' % fd)
+}
 
 # Tell yocto not to bother stripping our binaries, especially the firmware
 # since 'aarch64-fsl-linux-strip' fails with error code 1 when parsing the firmware
