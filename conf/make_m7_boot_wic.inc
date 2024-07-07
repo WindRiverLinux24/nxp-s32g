@@ -12,11 +12,12 @@ make_m7_sample_wic() {
         else
             atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32.m7"
         fi
-        m7_ofname="${IMAGE_BASENAME}-${MACHINE}-${plat}${IMAGE_VERSION_SUFFIX}-m7.rootfs.wic"
-        cp ${IMAGE_NAME}.rootfs.wic ${m7_ofname}
+        imgname="${IMAGE_BASENAME}${IMAGE_MACHINE_SUFFIX}"
+        m7_ofname="${imgname}-${plat}-m7${IMAGE_NAME_SUFFIX}${IMAGE_VERSION_SUFFIX}.wic"
+        cp ${IMAGE_NAME}.wic ${m7_ofname}
         dd if=$atf_s32_m7 of=$m7_ofname conv=notrunc seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
         if [ $plat = "aptiv_cvc_sousa" ] || [ $plat = "aptiv_cvc_fl" ]; then
-            mv -f $m7_ofname ${IMAGE_LINK_NAME}-m7.wic
+            mv -f $m7_ofname ${imgname}-m7${IMAGE_NAME_SUFFIX}.wic
             break
         fi
         if [ $plat = "s32g3xxaevb" ]; then
@@ -26,7 +27,7 @@ make_m7_sample_wic() {
         else
             plat="$(echo $plat | grep -o '....$')"
         fi
-        linkname="${IMAGE_LINK_NAME}-$plat-m7.wic"
+        linkname="${imgname}-$plat-m7${IMAGE_NAME_SUFFIX}.wic"
         ln -sf $m7_ofname $linkname
     done
 }
