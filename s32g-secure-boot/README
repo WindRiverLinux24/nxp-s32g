@@ -358,9 +358,9 @@ Set proper bootargs for sd booting mode
 ------------------
 Run fitImage below command
 
-	=> bootm 0xc4000000#conf-freescale_<board name>.dtb
+	=> bootm 0xc4000000#conf-<board name>.dtb
 For example:
-	=> bootm 0xc4000000#conf-freescale_s32g2xxa-evb.dtb
+	=> bootm 0xc4000000#conf-s32g2xxa-evb.dtb
 
 Note: About other boot parameters setting, please refer to README in BSP layer directory.
 	
