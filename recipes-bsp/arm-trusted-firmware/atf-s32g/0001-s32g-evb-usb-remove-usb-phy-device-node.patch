@@ -19,7 +19,7 @@ index 0fda509ef..2d23281ea 100644
 +++ b/fdts/s32gxxxa-evb.dtsi
 @@ -17,15 +17,9 @@
  			   <&clks S32G_SCMI_CLK_USB_LOW>;
- 		pinctrl-0 = <&pinctrl0_usb &pinctrl1_usb>;
+ 		pinctrl-0 = <&usb_pins>;
  		pinctrl-names = "default";
 -		phys = <&saf1508_phy>;
 +		phy_type = "ulpi";
