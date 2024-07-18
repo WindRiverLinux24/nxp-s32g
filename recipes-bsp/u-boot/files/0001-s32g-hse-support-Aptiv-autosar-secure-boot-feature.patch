@@ -1,4 +1,4 @@
-From e3ae76aae0c235cfa9e0850dba0537555832f40a Mon Sep 17 00:00:00 2001
+From ba3bee1177e411f1dbe52ba62e0364084ed0df30 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Thu, 30 Mar 2023 15:43:34 +0800
 Subject: [PATCH] s32g: hse: support Aptiv autosar secure boot feature
@@ -14,7 +14,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  2 files changed, 127 insertions(+), 24 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index 4a144d9dcd..0248337936 100644
+index 4a144d9d..02483379 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -96,6 +96,9 @@ static u32 get_fip_start(struct hse_private *priv)
@@ -309,7 +309,7 @@ index 4a144d9dcd..0248337936 100644
  				   HSE_SMR_CFG_FLAG_INSTALL_AUTH);
  	smr_entry->check_period = 0;
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index 6974379516..ba5f3af353 100644
+index 76850b0d..c7075694 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -201,7 +201,8 @@ struct ivt {
@@ -322,7 +322,7 @@ index 6974379516..ba5f3af353 100644
  } __packed;
  
  /**
-@@ -495,6 +496,7 @@ enum boot_type {
+@@ -496,6 +497,7 @@ enum boot_type {
  	NXP_SEC_BOOT,
  	NXP_M7_SEC_BOOT,
  	NXP_PARALLEL_SEC_BOOT,
@@ -331,5 +331,5 @@ index 6974379516..ba5f3af353 100644
  
  
 -- 
-2.36.1
+2.34.1
 

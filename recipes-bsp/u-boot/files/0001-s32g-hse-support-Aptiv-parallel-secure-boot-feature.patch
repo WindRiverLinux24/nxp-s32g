@@ -1,4 +1,4 @@
-From c5c5c218ed29feb37ff47f737750a18d6209f0e4 Mon Sep 17 00:00:00 2001
+From d8d71e0894bf2442e18f692a0fda8b6dd0cd5636 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Fri, 31 Mar 2023 21:24:21 +0800
 Subject: [PATCH] s32g: hse: support Aptiv parallel secure boot feature
@@ -14,7 +14,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  2 files changed, 66 insertions(+), 12 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index 0248337936..eaaa87a6ed 100644
+index 02483379..eaaa87a6 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -81,7 +81,11 @@ static inline int compare_uuids(const struct uuid *uuid1,
@@ -204,7 +204,7 @@ index 0248337936..eaaa87a6ed 100644
  	return ret;
  }
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index ba5f3af353..7c2dc55bbb 100644
+index c7075694..32b1b282 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -202,7 +202,8 @@ struct ivt {
@@ -217,7 +217,7 @@ index ba5f3af353..7c2dc55bbb 100644
  } __packed;
  
  /**
-@@ -497,6 +498,7 @@ enum boot_type {
+@@ -498,6 +499,7 @@ enum boot_type {
  	NXP_M7_SEC_BOOT,
  	NXP_PARALLEL_SEC_BOOT,
  	APTIV_AUTOSAR_SEC_BOOT,
@@ -226,5 +226,5 @@ index ba5f3af353..7c2dc55bbb 100644
  
  
 -- 
-2.36.1
+2.34.1
 

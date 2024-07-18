@@ -1,4 +1,4 @@
-From 03ebb78e3cf3833517e0e017ee389b634058bf98 Mon Sep 17 00:00:00 2001
+From a12dfafac4cdea2c4bcbd8d28a20090f6dba001f Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Wed, 29 Mar 2023 14:13:27 +0800
 Subject: [PATCH] s32g: hse: support M7 secure boot feature
@@ -14,7 +14,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  2 files changed, 226 insertions(+), 18 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index 9879b0170a..a79112060f 100644
+index 9879b017..a7911206 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -52,6 +52,8 @@ DECLARE_GLOBAL_DATA_PTR;
@@ -364,7 +364,7 @@ index 9879b0170a..a79112060f 100644
  }
  
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index 8eefc6114c..32591f6333 100644
+index 79616a53..cc5d1b7e 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -51,6 +51,7 @@
@@ -393,7 +393,7 @@ index 8eefc6114c..32591f6333 100644
  } __packed;
  
  /**
-@@ -476,6 +479,7 @@ struct hse_private {
+@@ -477,6 +480,7 @@ struct hse_private {
  	u8 rsa_exponent[3];
  	u8 reserved;
  	u8 fip_signature[256];
@@ -401,7 +401,7 @@ index 8eefc6114c..32591f6333 100644
  	u8 sys_img[HSE_SYS_IMG_MAX_SIZE];
  	u32 sys_img_len;
  	u32 publish_offset;
-@@ -488,6 +492,7 @@ enum boot_type {
+@@ -489,6 +493,7 @@ enum boot_type {
  	/* boot types defines */
  	NON_SEC_BOOT = 0,
  	NXP_SEC_BOOT,
@@ -410,5 +410,5 @@ index 8eefc6114c..32591f6333 100644
  
  
 -- 
-2.36.1
+2.34.1
 

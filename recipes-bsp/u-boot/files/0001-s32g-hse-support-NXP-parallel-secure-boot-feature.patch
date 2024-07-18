@@ -1,4 +1,4 @@
-From 21da540fbf652d09a7b9bbec5f7d2a7588e64c30 Mon Sep 17 00:00:00 2001
+From 15b10b8a1933d72351e2afaef346376959f152f0 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Wed, 29 Mar 2023 17:29:33 +0800
 Subject: [PATCH] s32g: hse: support NXP parallel secure boot feature
@@ -13,7 +13,7 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  2 files changed, 36 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index a79112060f..4a144d9dcd 100644
+index a7911206..4a144d9d 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -93,6 +93,7 @@ static u32 get_fip_start(struct hse_private *priv)
@@ -130,7 +130,7 @@ index a79112060f..4a144d9dcd 100644
  			smr_install_req->smr_data_len = m7_size;
  			break;
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index 32591f6333..6974379516 100644
+index cc5d1b7e..76850b0d 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -200,7 +200,8 @@ struct ivt {
@@ -143,7 +143,7 @@ index 32591f6333..6974379516 100644
  } __packed;
  
  /**
-@@ -493,6 +494,7 @@ enum boot_type {
+@@ -494,6 +495,7 @@ enum boot_type {
  	NON_SEC_BOOT = 0,
  	NXP_SEC_BOOT,
  	NXP_M7_SEC_BOOT,
@@ -152,5 +152,5 @@ index 32591f6333..6974379516 100644
  
  
 -- 
-2.36.1
+2.34.1
 
