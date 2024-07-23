@@ -15,37 +15,15 @@ Upstream-Status: Pending
 
 Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
 ---
- common.mk                            | 5 +----
- examples/hse-encrypt/Makefile        | 4 ++--
- examples/hse-secboot/Makefile        | 2 +-
- examples/hse-sysimg/Makefile         | 4 ++--
- examples/pkcs-key-provision/Makefile | 4 ++--
- examples/pkcs-keyop/Makefile         | 4 ++--
- 6 files changed, 10 insertions(+), 13 deletions(-)
+ examples/hse-encrypt/Makefile                    | 4 ++--
+ examples/hse-secboot/Makefile                    | 2 +-
+ examples/hse-secboot/hse-secboot.c               | 2 +-
+ examples/hse-sysimg/Makefile                     | 4 ++--
+ examples/pkcs-key-provision/Makefile             | 4 +---
+ examples/pkcs-keyop/Makefile                     | 4 ++--
+ examples/trustzone-key-provision/target/Makefile | 4 ++--
+ 7 files changed, 11 insertions(+), 13 deletions(-)
 
-diff --git a/common.mk b/common.mk
-index ddb7cad..d6b0293 100644
---- a/common.mk
-+++ b/common.mk
-@@ -7,7 +7,7 @@ ifeq ($(MAKECMDGOALS),clean)
- endif
- 
- ifeq (,$(CROSS_COMPILE))
--    $(error CROSS_COMPILE is not set)
-+    $(warning CROSS_COMPILE is not set)
- endif
- 
- ifeq (,$(OPENSSL_DIR))
-@@ -50,9 +50,6 @@ INSTALL_INCLUDEDIR := $(INSTALL_DIR)/include
- INSTALL_LIBDIR := $(INSTALL_DIR)/lib
- INSTALL_BINDIR := $(INSTALL_DIR)/bin
- 
--CC = $(CROSS_COMPILE)gcc
--LD = $(CROSS_COMPILE)ld
--
- PKCS11HSE_DIR ?= $(HOME)/pkcs11-hse
- 
- LIBHSE_SRCDIR ?= $(PKCS11HSE_DIR)/libhse
 diff --git a/examples/hse-encrypt/Makefile b/examples/hse-encrypt/Makefile
 index 30c413f..9dc0a84 100644
 --- a/examples/hse-encrypt/Makefile
@@ -96,23 +74,21 @@ index d06f9dc..d79b469 100644
 \ No newline at end of file
 +	install hse-sysimg $(EXAMPLES_INSTALLDIR)
 diff --git a/examples/pkcs-key-provision/Makefile b/examples/pkcs-key-provision/Makefile
-index aced478..13c693b 100644
+index b9c8270..7d2a57b 100644
 --- a/examples/pkcs-key-provision/Makefile
 +++ b/examples/pkcs-key-provision/Makefile
-@@ -7,10 +7,10 @@ include ../../common.mk
+@@ -7,10 +7,8 @@ include ../../common.mk
  all: pkcs-key-provision
  
  pkcs-key-provision: pkcs-key-provision.c
 -	$(CROSS_COMPILE)gcc $(LDFLAGS) $(INCLUDE_LIBPKCS) $(CFLAGS) $^ -o $@ $(LD_OPENSSL) -ldl
+-
 +	$(CC) $(LDFLAGS) $(INCLUDE_LIBPKCS) $(CFLAGS) $^ -o $@ $(LD_OPENSSL) -ldl
- 
  clean:
  	rm -f pkcs-key-provision
  
  install:
 -	install pkcs-key-provision $(EXAMPLES_INSTALLDIR)
-\ No newline at end of file
-+	install pkcs-key-provision $(EXAMPLES_INSTALLDIR)
 diff --git a/examples/pkcs-keyop/Makefile b/examples/pkcs-keyop/Makefile
 index ef3d44a..b672e03 100644
 --- a/examples/pkcs-keyop/Makefile
@@ -131,6 +107,20 @@ index ef3d44a..b672e03 100644
 -	install pkcs-keyop $(EXAMPLES_INSTALLDIR)
 \ No newline at end of file
 +	install pkcs-keyop $(EXAMPLES_INSTALLDIR)
--- 
-2.25.1
-
+diff --git a/examples/trustzone-key-provision/target/Makefile b/examples/trustzone-key-provision/target/Makefile
+index 950f847..48d0751 100644
+--- a/examples/trustzone-key-provision/target/Makefile
++++ b/examples/trustzone-key-provision/target/Makefile
+@@ -15,10 +15,10 @@ TEEC_INCLUDE := -I$(TEEC_EXPORT)/include
+ all: hse-kek-provision hse-symkey-provision
+ 
+ hse-kek-provision: hse-kek-provision.c
+-	$(CROSS_COMPILE)gcc $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
++	$(CC) $(LDFLAGS) -L$(LIBHSE_DIR) $(INCLUDE_LIBHSE) $(INCDIR) $(CFLAGS) $^ -o $@ -lhse
+ 
+ hse-symkey-provision: hse-symkey-provision.c
+-	$(CROSS_COMPILE)gcc $(LDFLAGS) $(INCLUDE_LIBHSE) $(INCDIR) $(TEEC_INCLUDE) \
++	$(CC) $(LDFLAGS) $(INCLUDE_LIBHSE) $(INCDIR) $(TEEC_INCLUDE) \
+ 	$(CFLAGS) $^ -o $@ $(TEEC_LIB)
+ 
+ clean:

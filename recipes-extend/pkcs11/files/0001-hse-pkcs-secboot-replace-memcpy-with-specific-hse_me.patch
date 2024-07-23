@@ -17,11 +17,11 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  examples/hse-secboot.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/examples/hse-secboot.c b/examples/hse-secboot.c
-index 0901664..7c8b7b7 100644
---- a/examples/hse-secboot.c
-+++ b/examples/hse-secboot.c
-@@ -352,7 +352,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot)
+diff --git a/examples/hse-secboot/hse-secboot.c b/examples/hse-secboot/hse-secboot.c
+index 6f54c5c..29536a1 100644
+--- a/examples/hse-secboot/hse-secboot.c
++++ b/examples/hse-secboot/hse-secboot.c
+@@ -363,7 +363,7 @@ int hse_smr_install(int fd, struct ivt *ivt, struct app_boot_hdr *app_boot, bool
  	smr_entry.versionOffset = 0;
  
  	/* workaround for bus error on writing to hse rmem */
@@ -30,6 +30,3 @@ index 0901664..7c8b7b7 100644
  
  	srv_desc.srvId = HSE_SRV_ID_SMR_ENTRY_INSTALL;
  	srv_desc.hseSrv.smrEntryInstallReq.accessMode = HSE_ACCESS_MODE_ONE_PASS;
--- 
-2.36.1
-
