@@ -618,6 +618,18 @@ suspend/resume support for multi-instance is not ready now, same as SDK,
 so users should note that please do not run suspend/resume operations if
 pfe is built with multi-instance mode.
 
+3. Please note that, when pfe master and slave drivers are both running
+on A53 Linux cores, the slave driver should be removed before master driver,
+when using reboot command to reset the board. Or else, the system may panic.
+
+The reason is that, pfe slave driver depends on master driver, but when they
+are all running on A53 cores, there is no guaranteed removal sequence, so that
+the master driver may be removed before slave driver. If this happens, the
+slave driver may attempt to access resources that have been removed by the
+master driver, leading to a kernel panic.
+
+And this is, same as SDK, a known issue.
+
 6.4 LLCE
 --------
 
