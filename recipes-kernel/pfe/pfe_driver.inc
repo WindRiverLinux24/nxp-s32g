@@ -19,7 +19,6 @@ SRC_URI:append = " \
 	file://0001-pfe-slave-use-new-macro-to-replace-the-oal_mutex_ini.patch \
 	file://0001-pfe-slave-extends-the-wait-time.patch \
 	file://0001-pfe-phylink-set-phy-interface-mode-to-SGMII-when-in-.patch \
-        file://${PFE_LOCAL_FIRMWARE_DIR}\
 "
 
 S = "${WORKDIR}/git"
