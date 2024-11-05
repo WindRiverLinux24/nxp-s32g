@@ -16,7 +16,6 @@ UBOOT_LOADADDRESS = "0xa4000000"
 UBOOT_DTB_LOADADDRESS = "0xb4000000"
 
 UBOOT_SUFFIX = "img"
-PREFERRED_PROVIDER_u-boot = "u-boot-s32"
 
 # NXPS32G secure boot feature supports rsa2048.
 # Set KERNEL_RAS_TYPE as the expected value. The default one is rsa2048.
