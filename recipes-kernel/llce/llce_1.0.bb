@@ -14,12 +14,6 @@ SRC_URI = " \
 	file://LIENCES.txt \
 "
 
-python() {
-    for fd in (d.getVar('LLCE_LOCAL_FIRMWARE_DIR'), d.getVar('LLCE_LOCAL_FIRMWARE_DIR_S32G3')):
-        if fd:
-            d.appendVar('SRC_URI', ' file://%s' % fd)
-}
-
 # Tell yocto not to bother stripping our binaries, especially the firmware
 # since 'aarch64-fsl-linux-strip' fails with error code 1 when parsing the firmware
 # ("Unable to recognise the format of the input file")
