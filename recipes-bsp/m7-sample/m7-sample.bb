@@ -5,13 +5,13 @@ LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE.BSD;md5=0f00d99239d922ffd13cabef83b33444"
 
 URL ?= "git://github.com/nxp-auto-linux/m7-sample;protocol=https"
-RELEASE_BASE ?= "release/bsp33.0"
 BRANCH ?= "${RELEASE_BASE}"
 SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "39104f1b57cc40cb1e21042cfab01d25fde638ee"
+SRCREV ?= "84cf69931d26e950d39ed8c01704275a7736effd"
 
 S = "${WORKDIR}/git"
 BUILD = "${WORKDIR}/build"
+IVT_FILE_BASE = "bl2_w_dtb"
 
 do_compile() {
 	mkdir -p "${BUILD}"
@@ -26,9 +26,9 @@ do_compile() {
 	do
 		for plat in ${plats}; do
 			if [ "$suffix" = "sd" ]; then
-				ivt_file="atf-${plat}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}.s32"
 			else
-				ivt_file="atf-${plat}_${suffix}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}_${suffix}.s32"
 			fi
 
 			BDIR="${BUILD}-${suffix}-${plat}"
@@ -61,9 +61,9 @@ do_install() {
 	do
 		for plat in ${plats}; do
 			if [ "$suffix" = "sd" ]; then
-				ivt_file="atf-${plat}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}.s32"
 			else
-				ivt_file="atf-${plat}_${suffix}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}_${suffix}.s32"
 			fi
 
 			cp -vf ${BUILD}/${ivt_file}.m7 ${D}/boot/
@@ -87,9 +87,9 @@ do_deploy() {
 	do
 		for plat in ${plats}; do
 			if [ "$suffix" = "sd" ]; then
-				ivt_file="atf-${plat}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}.s32"
 			else
-				ivt_file="atf-${plat}_${suffix}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}_${suffix}.s32"
 			fi
 
 			cp -vf "${BUILD}/${ivt_file}.m7" "${DEPLOY_DIR_IMAGE}/"
