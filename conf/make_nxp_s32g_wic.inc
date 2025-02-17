@@ -8,11 +8,13 @@ make_nxp_s32g_wic() {
     fi
     for plat in ${plats}; do
 
-        atf_s32="${DEPLOY_DIR_IMAGE}/atf-$plat.s32"
+        bl2_s32="${DEPLOY_DIR_IMAGE}/bl2_w_dtb-$plat.s32"
+        fip_bin="${DEPLOY_DIR_IMAGE}/fip-$plat.bin"
         imgname="${IMAGE_BASENAME}${IMAGE_MACHINE_SUFFIX}"
         ofname="${imgname}-$plat${IMAGE_NAME_SUFFIX}${IMAGE_VERSION_SUFFIX}.wic"
         cp ${IMAGE_NAME}.wic $ofname
-        dd if=$atf_s32 of=$ofname conv=notrunc,fsync seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
+        dd if=$bl2_s32 of=$ofname conv=notrunc,fsync seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
+        dd if=$fip_bin of=$ofname conv=notrunc,fsync seek=8192
 
         if [ $plat = "aptiv_cvc_sousa" ] || [ $plat = "aptiv_cvc_fl"  ]; then
             mv -f $ofname ${IMAGE_NAME}.wic

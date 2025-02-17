@@ -8,14 +8,16 @@ make_m7_sample_wic() {
     fi
     for plat in ${plats}; do
         if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
-	        atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32-secure.m7"
+	        bl2_s32_m7="${DEPLOY_DIR_IMAGE}/bl2_w_dtb-$plat.s32-secure.m7"
         else
-            atf_s32_m7="${DEPLOY_DIR_IMAGE}/atf-$plat.s32.m7"
+            bl2_s32_m7="${DEPLOY_DIR_IMAGE}/bl2_w_dtb-$plat.s32.m7"
         fi
+	fip_bin="${DEPLOY_DIR_IMAGE}/fip-$plat.bin"
         imgname="${IMAGE_BASENAME}${IMAGE_MACHINE_SUFFIX}"
         m7_ofname="${imgname}-${plat}-m7${IMAGE_NAME_SUFFIX}${IMAGE_VERSION_SUFFIX}.wic"
         cp ${IMAGE_NAME}.wic ${m7_ofname}
-        dd if=$atf_s32_m7 of=$m7_ofname conv=notrunc seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
+        dd if=$bl2_s32_m7 of=$m7_ofname conv=notrunc,fsync seek=512 skip=512 oflag=seek_bytes iflag=skip_bytes
+        dd if=$fip_bin of=$m7_ofname conv=notrunc,fsync seek=8192
         if [ $plat = "aptiv_cvc_sousa" ] || [ $plat = "aptiv_cvc_fl" ]; then
             mv -f $m7_ofname ${imgname}-m7${IMAGE_NAME_SUFFIX}.wic
             break
