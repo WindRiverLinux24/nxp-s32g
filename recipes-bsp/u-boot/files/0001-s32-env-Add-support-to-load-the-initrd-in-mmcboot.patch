@@ -1,4 +1,4 @@
-From 826c7a98ccefe4f72af95c083b6ac83f5c01bca1 Mon Sep 17 00:00:00 2001
+From c5821f2ef52bab9490666cce3f977e00c8106702 Mon Sep 17 00:00:00 2001
 From: Kevin Hao <kexin.hao@windriver.com>
 Date: Wed, 31 May 2023 13:54:25 +0800
 Subject: [PATCH] s32: env: Add support to load the initrd in mmcboot
@@ -10,28 +10,35 @@ Upstream-Status: Pending
 
 Signed-off-by: Kevin Hao <kexin.hao@windriver.com>
 ---
- include/configs/s32-cc.h | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ include/configs/s32-cc.h | 8 ++++++++
+ include/configs/s32.h    | 3 ++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index 94e0a6d9ac..49c991b92f 100644
+index c405a2ced4..c372f3f935 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -158,14 +158,23 @@
- 	"loadfitimage=fatload mmc ${mmcdev}:${mmcpart} ${fitimage_addr} ${fitimage}\0" \
+@@ -134,6 +134,14 @@
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
+ 	"loadfitimage=fatload mmc ${mmcdev}:${mmcpart} ${fitimage_addr} ${fitimage}\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
 +	"initrd_file=initramfs\0" \
- 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
- 		" root=${mmcroot} " LINUX_EARLY_CONSOLE LINUX_LOG_DISABLE \
- 		EXTRA_BOOT_ARGS "\0" \
 +	"loadinitrd=fatload mmc ${mmcdev}:${mmcpart} ${ramdisk_addr} ${initrd_file};\0" \
 +	"check_initrd=if test -e mmc ${mmcdev}:${mmcpart} ${initrd_file}; then " \
-+	            "run loadinitrd; " \
-+	            "setenv initrd_addr ${ramdisk_addr}; " \
-+	        "else " \
-+	            "setenv initrd_addr - ; " \
-+	        "fi;\0" \
++			"run loadinitrd; " \
++			"setenv initrd_addr ${ramdisk_addr}; " \
++		"else " \
++			"setenv initrd_addr - ; " \
++		"fi;\0" \
+ 	"netargs=setenv bootargs console=${console},${baudrate} " \
+ 		"root=/dev/nfs " \
+ 		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
+diff --git a/include/configs/s32.h b/include/configs/s32.h
+index 22192c027c..c91844ae87 100644
+--- a/include/configs/s32.h
++++ b/include/configs/s32.h
+@@ -56,9 +56,10 @@
+ 		EXTRA_BOOT_ARGS "\0" \
  	"mmcboot=echo Booting from mmc ...; " \
  		"run mmcargs; " \
 +		"run check_initrd; " \
@@ -39,9 +46,9 @@ index 94e0a6d9ac..49c991b92f 100644
  			"run fdt_fixups; " \
 -			"${boot_mtd} ${loadaddr} - ${fdt_addr}; " \
 +			"${boot_mtd} ${loadaddr} ${initrd_addr} ${fdt_addr}; " \
- 		"else " \
- 			"echo WARN: Cannot load the DT; " \
  		"fi;\0" \
+ 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
+ 	"mmcpart=" __stringify(MMC_PART_FAT) "\0" \
 -- 
-2.35.5
+2.34.1
 

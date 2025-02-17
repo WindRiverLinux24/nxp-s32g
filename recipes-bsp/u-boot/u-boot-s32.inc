@@ -15,7 +15,7 @@ HSE_SUPPORT_CFG = " \
     file://hse_support.cfg \
 "
 
-SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp41.0-2022.04"
+SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp43.0-2022.04"
 SRC_URI += " \
     file://0001-Revert-arch-s32cc-ERR051257-shouldn-t-be-applied-for.patch \
     file://0001-Revert-s32cc-mmc-Enable-MMC_IO_VOLTAGE.patch \
@@ -30,11 +30,10 @@ SRC_URI += " \
     file://0001-phy-s32cc-serdes-configure-REF_USE_PAD-bit-during-re.patch \
     file://0001-s32-env-support-for-booting-up-fitImage.patch \
     file://0001-s32-env-Add-support-to-load-the-initrd-in-mmcboot.patch \
-    file://0001-arch-mach-s32-extend-the-DTB-size-for-BL33.patch \
     ${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'file://optee_config.cfg', '', d)} \
 "
 
-SRCREV = "4744d0e2c8c7f7a60d36c761adbcc30e94d6fffb"
+SRCREV = "c01b3bf7b109d2833c61dbce74d53769be605d97"
 
 PATCHTOOL = "git"
 SCMVERSION = "y"

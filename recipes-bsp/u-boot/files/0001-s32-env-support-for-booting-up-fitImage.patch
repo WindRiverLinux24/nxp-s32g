@@ -1,4 +1,4 @@
-From 3f504e2a3671d68047d49057de5b92ad2c69d9c6 Mon Sep 17 00:00:00 2001
+From 5881ad19bedd8522dc86795902b081aa4ed2c3a1 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Tue, 11 Apr 2023 18:30:54 +0800
 Subject: [PATCH] s32: env: support for booting up fitImage
@@ -14,34 +14,31 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 37 insertions(+), 2 deletions(-)
 
 diff --git a/include/configs/s32-cc.h b/include/configs/s32-cc.h
-index fd9670a1f8..94e0a6d9ac 100644
+index 107988609e..c405a2ced4 100644
 --- a/include/configs/s32-cc.h
 +++ b/include/configs/s32-cc.h
-@@ -45,6 +45,7 @@
+@@ -44,6 +44,7 @@
  #define S32CC_BOOT_SCR_ADDR		0x82F00000
  #define S32CC_FDT_ADDR			0x83000000
  #define S32CC_RAMDISK_ADDR		0x90000000
-+#define S32CC_FIT_ADDR			0xC4000000
++#define S32CC_FIT_ADDR                  0xC4000000
  
- /* Disable Ramdisk & FDT relocation*/
- #define S32CC_INITRD_HIGH_ADDR		0xffffffffffffffff
-@@ -146,11 +147,15 @@
+ #define MMC_PART_FAT			2
+ #define MMC_PART_EXT			3
+@@ -126,8 +127,12 @@
+ 		" root=/dev/ram rw" LINUX_EARLY_CONSOLE \
  		LINUX_LOG_DISABLE EXTRA_BOOT_ARGS ";"\
  		"setenv flashsize " __stringify(FSL_QSPI_FLASH_SIZE) ";\0" \
- 	"image=Image\0" \
 +	"fitimage=fitImage\0" \
 +	"fitimage_addr=" __stringify(S32CC_FIT_ADDR) "\0" \
 +	"fit_config_header=conf-\0" \
- 	"initrd_high=" __stringify(S32CC_INITRD_HIGH_ADDR) "\0" \
  	"ipaddr=" S32CC_IPADDR "\0"\
- 	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}; " \
- 		 "run fdt_override;\0" \
- 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
-+	"loadfitimage=fatload mmc ${mmcdev}:${mmcpart} ${fitimage_addr} ${fitimage}\0" \
  	"loadtftpfdt=tftp ${fdt_addr} ${fdt_file};\0" \
++	"loadfitimage=fatload mmc ${mmcdev}:${mmcpart} ${fitimage_addr} ${fitimage}\0" \
  	"loadtftpimage=tftp ${loadaddr} ${image};\0" \
- 	"mmcargs=setenv bootargs console=${console},${baudrate}" \
-@@ -222,7 +227,13 @@
+ 	"netargs=setenv bootargs console=${console},${baudrate} " \
+ 		"root=/dev/nfs " \
+@@ -183,7 +188,13 @@
  		"then " \
  			"run mmcboot; " \
  		"else " \
@@ -56,7 +53,7 @@ index fd9670a1f8..94e0a6d9ac 100644
  		"fi; " \
  	"else " \
  		"run netboot;" \
-@@ -280,7 +291,23 @@
+@@ -238,7 +249,23 @@
  #    endif
  #    define CONFIG_BOOTCOMMAND \
  	PRECONFIG_BOOTCOMMAND \
@@ -81,7 +78,7 @@ index fd9670a1f8..94e0a6d9ac 100644
  #  elif defined(CONFIG_SD_BOOT)
  #    if defined(CONFIG_XEN_SUPPORT)
  #      define CONFIG_BOOTCOMMAND XEN_BOOTCMD
-@@ -307,6 +334,14 @@
+@@ -266,6 +293,14 @@
  		"if run loadimage; "\
  		"then " \
  			"run mmcboot; " \
@@ -97,5 +94,5 @@ index fd9670a1f8..94e0a6d9ac 100644
  	"fi"
  #    endif
 -- 
-2.35.5
+2.34.1
 

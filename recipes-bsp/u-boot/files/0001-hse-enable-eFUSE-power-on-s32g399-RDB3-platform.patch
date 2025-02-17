@@ -1,4 +1,4 @@
-From fbd408b2e99826e826b9cd4baa615b0b58280860 Mon Sep 17 00:00:00 2001
+From dfb1926d11ddb9c8c9e2c4ef5bd024ef5c64d549 Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Thu, 16 Mar 2023 10:37:01 +0800
 Subject: [PATCH] hse:  enable eFUSE power on s32g399-RDB3 platform
@@ -13,11 +13,11 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/mach-s32/s32-cc/s32cc.cfg b/arch/arm/mach-s32/s32-cc/s32cc.cfg
-index b41e0270b5..8306d268b0 100644
+index 8f573f0d..a29ac405 100644
 --- a/arch/arm/mach-s32/s32-cc/s32cc.cfg
 +++ b/arch/arm/mach-s32/s32-cc/s32cc.cfg
-@@ -86,6 +86,15 @@ DCD WRITE 0x4 0x4009c2a4 0x21c000
- DCD WRITE 0x1 0x4009d31a 0x1
+@@ -98,6 +98,15 @@ DCD WRITE 0x4 0x4009c29c 0x21c000
+ DCD WRITE 0x1 0x4009d314 0x1
  #endif
  
 +#ifdef CONFIG_TARGET_S32G399ARDB3
@@ -33,5 +33,5 @@ index b41e0270b5..8306d268b0 100644
  /**
   * ERR051257 workaround.
 -- 
-2.36.1
+2.34.1
 
