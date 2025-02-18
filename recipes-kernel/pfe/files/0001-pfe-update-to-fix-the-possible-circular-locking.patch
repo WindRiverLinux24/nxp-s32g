@@ -1,4 +1,4 @@
-From 6ca7f891a31eb67c1184a04e13b0234d6f66dbeb Mon Sep 17 00:00:00 2001
+From 6b2af243743394fdba22e2d6af4c5086a44349c1 Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Thu, 27 Oct 2022 20:03:09 +0800
 Subject: [PATCH] pfe: update to fix the possible circular locking
@@ -44,10 +44,10 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/sw/oal/src/oal_mbox_linux.c b/sw/oal/src/oal_mbox_linux.c
-index 72680aa..a256fc5 100644
+index 4895764..a60ca9d 100644
 --- a/sw/oal/src/oal_mbox_linux.c
 +++ b/sw/oal/src/oal_mbox_linux.c
-@@ -423,18 +423,18 @@ void oal_mbox_destroy(oal_mbox_t *mbox)
+@@ -424,12 +424,6 @@ void oal_mbox_destroy(oal_mbox_t *mbox)
  		(void)oal_mbox_detach_timer(mbox);
  	}
  
@@ -59,7 +59,8 @@ index 72680aa..a256fc5 100644
 -
  	if (mbox->intr.queue)
  	{
- 		drain_workqueue(mbox->intr.queue);
+ 		cancel_work_sync(&mbox->intr.update);
+@@ -437,6 +431,12 @@ void oal_mbox_destroy(oal_mbox_t *mbox)
  		destroy_workqueue(mbox->intr.queue);
  	}
  
@@ -73,5 +74,5 @@ index 72680aa..a256fc5 100644
  	{
  		fifo_destroy(mbox->intr.fifo);
 -- 
-2.25.1
+2.34.1
 
