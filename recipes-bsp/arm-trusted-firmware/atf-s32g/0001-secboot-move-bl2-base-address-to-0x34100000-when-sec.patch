@@ -1,4 +1,4 @@
-From cad4ba548008e508bfb3a6fec0c5467f9d9fe576 Mon Sep 17 00:00:00 2001
+From 603633fbeed3bb97740c7410c671eddc06b5713e Mon Sep 17 00:00:00 2001
 From: Meng Li <Meng.Li@windriver.com>
 Date: Mon, 29 Aug 2022 13:58:25 +0800
 Subject: [PATCH] secboot: move bl2 base address to 0x34100000 when secure boot
@@ -21,11 +21,11 @@ Signed-off-by: Meng Li <Meng.Li@windriver.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/plat/nxp/s32/s32cc/s32_common.mk b/plat/nxp/s32/s32cc/s32_common.mk
-index 1b0af2c94..d5f3266e6 100644
+index b43571240..adef884fa 100644
 --- a/plat/nxp/s32/s32cc/s32_common.mk
 +++ b/plat/nxp/s32/s32cc/s32_common.mk
-@@ -513,7 +513,7 @@ endif
- 	fi
+@@ -430,7 +430,7 @@ ${MKIMAGE_FIP_CONF_FILE}: ${BL2_W_DTB_SIZE_FILE} FORCE
+	echo "DATA_FILE SIZE $$BL2_W_DTB_SIZE" >> $@
  
  ifneq (${HSE_SUPPORT},)
 -BL2_BASE		?= 0x34085000

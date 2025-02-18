@@ -6,24 +6,18 @@ LIC_FILES_CHKSUM = "file://license.rst;md5=1dd070c98a281d18d9eefd938729b031"
 
 DEPENDS += "dtc-native xxd-native bc-native u-boot-tools-native openssl-native"
 DEPENDS += "${@ 'u-boot-tools-scmi-native' if d.getVar('SCMI_DTB_NODE_CHANGE') == 'true' else ''}"
+DEPENDS += "${@bb.utils.contains('ATF_SIGN_ENABLE', '1', 'mbedtls', '', d)}"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
 
-# ATF repository
-URL ?= "git://github.com/nxp-auto-linux/arm-trusted-firmware.git;protocol=https"
-BRANCH ?= "release/bsp41.0-2.10"
-SRC_URI = "${URL};branch=${BRANCH}"
-SRCREV ?= "0cd12bb2630a23e760683bf3d911e3c1e282efd5"
-SRC_URI[sha256sum] = "15d263b62089b46375effede12a1917cd7b267b93dd97c68fd5ddbd1dddede07"
+include atf-s32g_2.10.inc
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:" 
 SRC_URI += " \
     file://0001-Makefile-Add-BUILD_PLAT-to-FORCE-s-order-only-prereq.patch \
     file://0001-s32g-evb-usb-remove-usb-phy-device-node.patch \
     file://0001-s32-clk-Return-the-preset-freq-when-we-can-t-calcula.patch \
-    file://0001-s32_common.mk-Print-error-message-for-debugging.patch \
-    file://0001-s32-extend-the-DTB-size-for-BL33.patch \
 "
 
 PATCHTOOL = "git"
@@ -35,13 +29,29 @@ ATF_S32G_ENABLE = "1"
 HSE_BUILD_OPT = "HSE_SUPPORT"
 RSA_PRIV_FIP ?= "${B}/${HSE_SEC_KEYS}/${HSE_SEC_PRI_KEY}"
 
+RSA_PRIV_BL2 ??= ""
+RSA_PRIV_BL31 ??= ""
+RSA_PRIV_BL32 ??= ""
+RSA_PRIV_BL33 ??= ""
+BL2_HANDLE ??= ""
+BL31_HANDLE ??= ""
+BL32_HANDLE ??= ""
+BL33_HANDLE ??= ""
+
 HSE_ARGS = " \
               HSE_SUPPORT=1 \
               "
 
 SECBOOT_ARGS = " \
                  SECBOOT_SUPPORT=1 \
-                 RSA_PRIV_FIP=${RSA_PRIV_FIP} \
+                 BL2_KEY=${RSA_PRIV_BL2} \
+                 BL31_KEY=${RSA_PRIV_BL31} \
+                 BL32_KEY=${RSA_PRIV_BL32} \
+                 BL33_KEY=${RSA_PRIV_BL33} \
+                 BL31_HSE_KEYHANDLE=${BL31_HANDLE} \
+                 BL32_HSE_KEYHANDLE=${BL32_HANDLE} \
+                 BL33_HSE_KEYHANDLE=${BL33_HANDLE} \
+                 MBEDTLS_DIR=${RECIPE_SYSROOT}/usr/share/mbedtls-source \
                  "
 
 EXTRA_OEMAKE += " \
@@ -132,11 +142,26 @@ do_compile() {
             build_base="${B}/$type/"
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
             bl33_dir="${DEPLOY_DIR_IMAGE}/${plat}_${type}"
+            fip_location="FIP_LOCATION=$type"
+            for tmp in ${DTB_FILES}; do
+                name=`echo $tmp | sed 's/-//' | cut -d . -f1`
+                if [ "$name" = "$plat" ]; then
+                   dtb=$tmp
+                   break
+                fi
+            done
             if [ "$type" = "sd" ]; then
                 bl33_dir="${DEPLOY_DIR_IMAGE}/${plat}"
+                fip_location="FIP_LOCATION=mmc"
             fi
             bl33_bin="${bl33_dir}/${UBOOT_BINARY}"
             uboot_cfg="${bl33_dir}/${UBOOT_CFGOUT}"
+            if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
+                hse_fw_dir="NXP_HSE_FWDIR=${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_VERSION_S32G3}"
+                if echo $plat | grep -q s32g2; then
+                    hse_fw_dir="NXP_HSE_FWDIR=${HSE_LOCAL_FIRMWARE_DIR}/${HSE_FW_VERSION_S32G2}"
+                fi
+            fi
 
             if ${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'true', 'false', d)}; then
                 optee_plat="$(echo $plat | cut -c1-5)"
@@ -149,7 +174,7 @@ do_compile() {
                 generate_hse_keys
             fi
 
-            oe_runmake -C ${S} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg all
+            oe_runmake -C ${S} DTB_FILE_NAME=${dtb} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg $hse_fw_dir $fip_location all
 
             if ${SCMI_DTB_NODE_CHANGE}; then
                 oe_runmake -C "${S}" dtbs
@@ -170,9 +195,13 @@ do_install() {
         for plat in ${PLATFORM}; do
             ATF_BINARIES="${B}/${type}/${plat}/${BUILD_TYPE}"
             if [ "${type}" = "sd" ]; then
-                cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}.s32
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.bin ${D}/boot/bl2_w_dtb-${plat}.bin
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.s32 ${D}/boot/bl2_w_dtb-${plat}.s32
+                cp -v ${ATF_BINARIES}/fip.bin ${D}/boot/fip-${plat}.bin
             else
-                cp -v ${ATF_BINARIES}/fip.s32 ${D}/boot/atf-${plat}_${type}.s32
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.bin ${D}/boot/bl2_w_dtb-${plat}_${type}.bin
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.s32 ${D}/boot/bl2_w_dtb-${plat}_${type}.s32
+                cp -v ${ATF_BINARIES}/fip.bin ${D}/boot/fip-${plat}_${type}.bin
             fi
         done
     done
@@ -186,9 +215,11 @@ do_deploy() {
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
 
             if [ "${type}" = "sd" ]; then
-                cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}.s32
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.s32 ${DEPLOY_DIR_IMAGE}/bl2_w_dtb-${plat}.s32
+                cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/fip-${plat}.bin
             else
-                cp -v ${ATF_BINARIES}/fip.s32 ${DEPLOY_DIR_IMAGE}/atf-${plat}_${type}.s32
+                cp -v ${ATF_BINARIES}/bl2_w_dtb.s32 ${DEPLOY_DIR_IMAGE}/bl2_w_dtb-${plat}_${type}.s32
+                cp -v ${ATF_BINARIES}/fip.bin ${DEPLOY_DIR_IMAGE}/fip-${plat}_${type}.bin
             fi
         done
     done
