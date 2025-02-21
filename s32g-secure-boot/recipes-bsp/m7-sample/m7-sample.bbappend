@@ -5,6 +5,9 @@ SRC_URI:append = " \
 
 DEPENDS += "openssl-native"
 
+SYSROOT_DIRS:append  = " \
+                           ${SECBOOT_KEYS_INSTALL_PATH} \
+                       "
 get_u32 () {
 	local file="$1"
 	local offset="$2"
@@ -75,14 +78,14 @@ do_compile:append() {
 	for suffix in ${BOOT_TYPE}; do
 		for plat in ${plats}; do
 			m7_boot_file="m7-${plat}-${suffix}.bin"
+			m7_boot_signature="${m7_boot_file}.sign"
 			if [ "$suffix" = "sd" ]; then
-				ivt_file="atf-${plat}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}.s32"
 			else
-				ivt_file="atf-${plat}_${suffix}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}_${suffix}.s32"
 			fi
 			m7_ivt_file="${ivt_file}.m7"
 			m7_ivt_file_secure="${ivt_file}-secure.m7"
-			m7_boot_signature="${ivt_file}-secure.m7.signature"
 			if [ "$suffix" = "sd" ]; then
 				ivt_header_off=$(get_ivt_offset_sd "${m7_ivt_file}")
 			else
@@ -106,11 +109,7 @@ do_compile:append() {
 			count=${m7_file_size} status=none iflag=skip_bytes,count_bytes oflag=seek_bytes
 
 			# Sign m7_boot code with pre-padding that is from m7_boot_off to the start postion of m7 code
-			if [ -n "${FIP_SIGN_KEYDIR}" ]; then
-				openssl dgst -sha1 -sign ${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY} -out ${m7_boot_signature} ${m7_boot_file}
-			else
-				openssl dgst -sha1 -sign ${DEPLOY_DIR_IMAGE}/${HSE_SEC_PRI_KEY} -out ${m7_boot_signature} ${m7_boot_file}
-			fi
+			openssl dgst -sha1 -sign ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_M7} -out ${m7_boot_signature} ${m7_boot_file}
 
 			# Write signature
 			cp $m7_ivt_file $m7_ivt_file_secure
@@ -150,16 +149,37 @@ do_compile:append() {
 	done
 }
 
+do_install:append() {
+
+	install -d ${D}${SECBOOT_KEYS_INSTALL_PATH}
+
+	cd "${BUILD}"
+
+	# put the m7 bin files and sign files to specific location
+	# for run time verification
+	for suffix in ${BOOT_TYPE}; do
+		for plat in ${plats}; do
+			m7_boot_file="m7-${plat}-${suffix}.bin"
+			m7_boot_signature="${m7_boot_file}.sign"
+
+			install -m 0666 "${m7_boot_file}" ${D}${SECBOOT_KEYS_INSTALL_PATH}
+			install -m 0666 "${m7_boot_signature}" ${D}${SECBOOT_KEYS_INSTALL_PATH}
+		done
+	done
+}
+
 do_deploy:append() {
 	for suffix in ${BOOT_TYPE}; do
 		for plat in ${plats}; do
 			if [ "$suffix" = "sd" ]; then
-				ivt_file="atf-${plat}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}.s32"
 			else
-				ivt_file="atf-${plat}_${suffix}.s32"
+				ivt_file="${IVT_FILE_BASE}-${plat}_${suffix}.s32"
 			fi
 
 			cp -vf "${BUILD}/${ivt_file}-secure.m7" "${DEPLOY_DIR_IMAGE}/"
 		done
 	done
 }
+
+FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}*"
