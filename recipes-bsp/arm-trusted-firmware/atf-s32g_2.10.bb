@@ -44,10 +44,6 @@ HSE_ARGS = " \
 
 SECBOOT_ARGS = " \
                  SECBOOT_SUPPORT=1 \
-                 BL2_KEY=${RSA_PRIV_BL2} \
-                 BL31_KEY=${RSA_PRIV_BL31} \
-                 BL32_KEY=${RSA_PRIV_BL32} \
-                 BL33_KEY=${RSA_PRIV_BL33} \
                  BL31_HSE_KEYHANDLE=${BL31_HANDLE} \
                  BL32_HSE_KEYHANDLE=${BL32_HANDLE} \
                  BL33_HSE_KEYHANDLE=${BL33_HANDLE} \
@@ -88,28 +84,6 @@ NVMEM_OPT = "${@oe.utils.conditional('SCMI_USE_SCMI_NVMEM', '1', '--nvmem', '--n
 
 EXTRA_OEMAKE += "${@['', '${HSE_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('HSE_SEC_ENABLED') == '1']}"
 EXTRA_OEMAKE += "${@['', '${SECBOOT_ARGS}']['s32g' in d.getVar('MACHINE') and d.getVar('ATF_SIGN_ENABLE') == '1']}"
-
-generate_hse_keys () {
-    hse_keys_dir="${B}/${HSE_SEC_KEYS}"
-    if [ -n "${FIP_SIGN_KEYDIR}" ]; then
-        hse_pri_key="${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY}"
-    else
-        hse_pri_key="${hse_keys_dir}/${HSE_SEC_PRI_KEY}"
-    fi
-
-    if [ ! -d "${hse_keys_dir}" ]; then
-        install -d ${hse_keys_dir}
-        if [ -z "${FIP_SIGN_KEYDIR}" ]; then
-            openssl genrsa -out ${hse_keys_dir}/${HSE_SEC_PRI_KEY}
-        else
-            cp -v ${FIP_SIGN_KEYDIR}/${HSE_SEC_PRI_KEY} ${hse_keys_dir}
-        fi
-        openssl rsa -in ${hse_pri_key} -outform DER -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY}
-        openssl rsa -in ${hse_pri_key} -outform PEM -pubout -out ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM}
-        cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY} ${DEPLOY_DIR_IMAGE}/
-        cp -v ${hse_keys_dir}/${HSE_SEC_PUB_KEY_PEM} ${DEPLOY_DIR_IMAGE}/
-    fi
-}
 
 # Fix the dtc compile issue if SRM enabled
 do_compile:prepend() {
@@ -170,11 +144,16 @@ do_compile() {
 			SPD=opteed"
             fi
 
+            bl_keys=""
             if [ "${ATF_SIGN_ENABLE}" = "1" ]; then
-                generate_hse_keys
+                bl_keys=" BL2_KEY=${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL2} \
+                          BL31_KEY=${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL31} \
+                          BL32_KEY=${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL32} \
+                          BL33_KEY=${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL33} \
+                         "
             fi
 
-            oe_runmake -C ${S} DTB_FILE_NAME=${dtb} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg $hse_fw_dir $fip_location all
+            oe_runmake -C ${S} DTB_FILE_NAME=${dtb} BUILD_BASE=$build_base PLAT=${plat} BL33=$bl33_bin BL33DIR=$bl33_dir MKIMAGE_CFG=$uboot_cfg MKIMAGE=mkimage $optee_arg $hse_fw_dir $fip_location $bl_keys all
 
             if ${SCMI_DTB_NODE_CHANGE}; then
                 oe_runmake -C "${S}" dtbs
