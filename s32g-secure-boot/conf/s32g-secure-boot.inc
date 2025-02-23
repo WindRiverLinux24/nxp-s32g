@@ -29,4 +29,4 @@ ATF_DTB:nxp-s32g = "s32g2xxa-evb.dtb s32g274a-rdb2.dtb s32g399a-rdb3.dtb s32g3xx
 ATF_DTB:aptiv_cvc_sousa = "aptiv-cvc-sousa.dtb"
 ATF_DTB:aptiv-cvc-fl = "aptiv_cvc_fl.dtb"
 
-FIP_SIGN_KEYDIR ?= "${LAYER_PATH_s32g-secure-layer}/s32g-sample-key/fip-rsa2048-keys"
+SECBOOT_SIGN_KEYDIR ?= "${LAYER_PATH_s32g-secure-layer}/s32g-sample-key/secboot-rsa2048-keys"
