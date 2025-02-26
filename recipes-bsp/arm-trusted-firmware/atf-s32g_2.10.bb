@@ -117,6 +117,7 @@ do_compile() {
             ATF_BINARIES="${B}/$type/${plat}/${BUILD_TYPE}"
             bl33_dir="${DEPLOY_DIR_IMAGE}/${plat}_${type}"
             fip_location="FIP_LOCATION=$type"
+            dtb=""
             for tmp in ${DTB_FILES}; do
                 name=`echo $tmp | sed 's/-//' | cut -d . -f1`
                 if [ "$name" = "$plat" ]; then
@@ -124,6 +125,7 @@ do_compile() {
                    break
                 fi
             done
+            [ -z "$dtb" ] && dtb="$plat.dtb"
             if [ "$type" = "sd" ]; then
                 bl33_dir="${DEPLOY_DIR_IMAGE}/${plat}"
                 fip_location="FIP_LOCATION=mmc"
