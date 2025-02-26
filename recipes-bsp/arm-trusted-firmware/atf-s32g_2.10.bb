@@ -209,8 +209,6 @@ addtask deploy after do_install before do_build
 do_compile[depends] = "virtual/bootloader:do_deploy"
 do_compile[depends] += "${@bb.utils.contains('DISTRO_FEATURES', 'optee', 'optee-os:do_deploy', '', d)}"
 
-COMPATIBLE_MACHINE = "^$"
-COMPATIBLE_MACHINE:nxp-s32g = "nxp-s32g"
 FILES:${PN} += "/boot/*"
 
 KERNEL_PN = "${@d.getVar('PREFERRED_PROVIDER_virtual/kernel')}"
