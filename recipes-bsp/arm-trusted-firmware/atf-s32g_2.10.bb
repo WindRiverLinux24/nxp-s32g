@@ -64,7 +64,7 @@ EXTRA_OEMAKE += "${@bb.utils.contains('MACHINE_FEATURES', 'm7_boot', '${M7BOOT_A
 #        during the build process.
 EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS} ${BUILD_LDFLAGS}" \
                  HOSTLD="${BUILD_LD}" \
-                 OPENSSL_DIR="${STAGING_DIR_NATIVE}" \
+                 OPENSSL_DIR="${STAGING_DIR_NATIVE}/${prefix_native}" \
                  LIBPATH="${STAGING_LIBDIR_NATIVE}" \
                  HOSTSTRIP=true'
 
