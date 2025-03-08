@@ -16,5 +16,11 @@ RSA_PUB_BL32 ?= "bl32_rsa2048_public.pem"
 RSA_PUB_BL33 ?= "bl33_rsa2048_public.pem"
 RSA_PUB_M7 ?= "m7_rsa2048_public.pem"
 
+RSA_PUB_BL2_DER ?= "bl2_rsa2048_public.der"
+RSA_PUB_BL31_DER ?= "bl31_rsa2048_public.der"
+RSA_PUB_BL32_DER ?= "bl32_rsa2048_public.der"
+RSA_PUB_BL33_DER ?= "bl33_rsa2048_public.der"
+RSA_PUB_M7_DER ?= "m7_rsa2048_public.der"
+
 SECBOOT_KEYS_INSTALL_PATH ?= "/boot/secboot/"
 

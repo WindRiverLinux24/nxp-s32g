@@ -18,6 +18,9 @@ RSA_PUB_KEYS ?= "\
                 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL2} \
                 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL31} \
                 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL33} \
+                ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL2_DER} \
+                ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL31_DER} \
+                ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL33_DER} \
                "
 
 SYSROOT_DIRS:append  = " \
@@ -27,13 +30,18 @@ SYSROOT_DIRS:append  = " \
 do_generate_bl_public_keys () {
 
     openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL2} -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL2}
+    openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL2} -outform DER -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL2_DER}
     openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL31} -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL31}
+    openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL31} -outform DER -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL31_DER}
     if [ ${OP_TEE} -eq 1 ]; then
         openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL32} -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL32}
+        openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL32} -outform DER -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL32_DER}
     fi
     openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL33} -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL33}
+    openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_BL33} -outform DER -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL33_DER}
     if [ ${M7_SEC} -eq 1 ]; then
         openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_M7} -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_M7}
+        openssl rsa -in ${SECBOOT_SIGN_KEYDIR}/${RSA_PRIV_M7} -outform DER -pubout -out ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_M7_DER}
     fi
 }
 
@@ -107,9 +115,11 @@ do_install:append() {
 	install -m 0666 ${RSA_PUB_KEYS} ${D}${SECBOOT_KEYS_INSTALL_PATH}
 	if [ ${OP_TEE} -eq 1 ]; then
 		install -m 0666 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL32} ${D}${SECBOOT_KEYS_INSTALL_PATH}
+		install -m 0666 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_BL32_DER} ${D}${SECBOOT_KEYS_INSTALL_PATH}
 	fi
 	if [ ${M7_SEC} -eq 1 ]; then
 		install -m 0666 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_M7} ${D}${SECBOOT_KEYS_INSTALL_PATH}
+		install -m 0666 ${SECBOOT_PUBKEYS_DIR}/${RSA_PUB_M7_DER} ${D}${SECBOOT_KEYS_INSTALL_PATH}
         fi
 
 	install -m 0777 ${SECBOOT_SCRIPT} ${D}${SECBOOT_KEYS_INSTALL_PATH}
@@ -123,3 +133,8 @@ FILES:${PN} += "${@ "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL32}" if "${OP_TEE}"
 FILES:${PN} += "${@ "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_M7}" if "${M7_SEC}" == '1' else ''}"
 FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL33}"
 FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${SECBOOT_SCRIPT_FILE}"
+FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL2_DER}"
+FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL31_DER}"
+FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL33_DER}"
+FILES:${PN} += "${@ "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL32_DER}" if "${OP_TEE}" == '1' else ''}"
+FILES:${PN} += "${@ "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_M7_DER}" if "${M7_SEC}" == '1' else ''}"
