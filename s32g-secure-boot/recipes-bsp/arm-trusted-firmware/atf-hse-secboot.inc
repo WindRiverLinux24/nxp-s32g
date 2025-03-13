@@ -44,7 +44,7 @@ do_generate_bl_public_keys () {
 }
 
 do_generate_bl_public_keys[depends] += "openssl-native:do_populate_sysroot"
-addtask do_generate_bl_public_keys after do_compile before do_deploy
+addtask do_generate_bl_public_keys after do_compile before do_install
 
 do_compile:prepend () {
 	mkdir -p ${SECBOOT_PUBKEYS_DIR}
