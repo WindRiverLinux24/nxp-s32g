@@ -163,7 +163,7 @@ to use pfe ports instead, where the x indicates 0, 1 or 2.
 
 Please note that there will be many references to the SDK user manual in the
 following paragraphs. Unless otherwise specified, the SDK user manual refers to:
-    S32G<x>_LinuxBSP_41.0_User_Manual.pdf
+    S32G<x>_LinuxBSP_43.0_User_Manual.pdf
 The x represents 2 for S32G2 and 3 for S32G3.
 
 For S32G platforms, there are 3 boot devices as following:
@@ -543,7 +543,7 @@ The default firmware names:
     s32g_pfe_util.fw
 
 The latest verified firmware version:
-    1.8.0
+    1.10.0
 
 For more detail info about the firmware, please refer to the document:
     PFE_Firmware_S32G_UserManual.pdf
@@ -658,7 +658,7 @@ There are 4 LLCE firmwares:
 	ppe_rx.bin
 
 The latest verified firmware version:
-    1.0.8
+    1.0.9
 
 For more detail info about the firmware, please refer to the document:
     LLCE_firmware_user_guide.pdf
