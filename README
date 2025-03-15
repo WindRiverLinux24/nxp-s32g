@@ -321,9 +321,9 @@ Board can boot automatically by set the below uboot environment variables:
 
 => setenv bootfile Image; setenv fdtfile <fdt-file-name>; setenv loadaddr 0x8A080000; setenv fdtaddr 0x8FE00000;
 
-=> setenv bootargs console=ttyLF0,115200n8 root=/dev/mmcblk0p2 rw
+=> setenv bootargs console=ttyLF0,115200n8 root=/dev/mmcblk0p3 rw
 
-=> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr'
+=> setenv bootcmd 'fatload mmc 0:2 $loadaddr $bootfile; fatload mmc 0:2 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr'
 
 => saveenv; run bootcmd;
 
@@ -337,8 +337,8 @@ NOTICE:
         "4 How to boot"
     in SDK user manuals to get the detail boot device information.
 
-    And please refer to section "4.1 NFS Root File System" in this file for
-    network interface settings.
+    And please refer to section "4.2.4 Booting from NFS (root filesystem)" in
+    this file for network interface settings.
 
 6. Features
 ===========
@@ -974,9 +974,9 @@ this feature:
 			=>mw.q 0x34100000 0x0 0x40000
 		c> load IPCF binary in SRAM:
 		   for S32G2:
-			=>fatload mmc 0:1 0x80000000 <IPCF-binary-name-for-S32G2>
+			=>fatload mmc 0:2 0x80000000 <IPCF-binary-name-for-S32G2>
 		   for S32G3:
-			=>fatload mmc 0:1 0x80000000 <IPCF-binary-name-for-S32G3>
+			=>fatload mmc 0:2 0x80000000 <IPCF-binary-name-for-S32G3>
 		   then:
 			=>cp.b 0x80000000 0x34300000 0x300000
 		d> start M7 core (the argument is the address of the Interrupt Vector):
