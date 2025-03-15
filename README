@@ -221,28 +221,35 @@ to boot the board using QSPI atf image:
      images(with a _qspi suffix), will be built and deployed along
      with SD WIC images
   1. boot the board with SD WIC image as normal
-  2. copy the required QSPI atf image to a proper location of the
+  2. copy the required QSPI bl2 and fip images to a proper location of the
      running system by network or other way
-  3. burn the QSPI atf image into QSPI flash
+  3. burn the QSPI bl2 and fip images into QSPI flash
 
      firstly, get the flash partitions like:
         root@nxp-s32g:~# cat /proc/mtd
         dev:    size   erasesize  name
-        mtd0: 04000000 00010000 "Flash-Image"
-        mtd1: 001e0000 00010000 "FIP"
-        mtd2: 00010000 00010000 "U-Boot-Env"
-        mtd3: 00e00000 00010000 "Kernel"
-        mtd4: 00100000 00010000 "DTB"
-        mtd5: 01f10000 00010000 "Rootfs"
-        mtd6: 01000000 00010000 "PFE-Firmware"
-     and the mtd1 is the location for atf image. So using command:
-        flashcp -v atf-s32g399ardb3_qspi.s32 /dev/mtd1
-     to burn the QSPI atf image into the mtd1 partition of the flash. The
-     output messages should like:
-        root@nxp-s32g:~# flashcp -v atf-s32g399ardb3_qspi.s32 /dev/mtd1
-        Erasing blocks: 23/23 (100%)
-        Writing data: 1452k/1452k (100%)
-        Verifying data: 1452k/1452k (100%)
+        mtd0: 04000000 00001000 "Flash-Image"
+        mtd1: 000d0000 00001000 "BL2"
+        mtd2: 001d0000 00001000 "FIP"
+        mtd3: 00010000 00001000 "U-Boot-Env"
+        mtd4: 010d0000 00001000 "Kernel"
+        mtd5: 00030000 00001000 "DTB"
+        mtd6: 01f10000 00001000 "Rootfs"
+        mtd7: 00d40000 00001000 "PFE-Firmware"
+
+     and the mtd1, mtd2 are for bl2 and fip images. So using commands:
+        flashcp -v bl2_w_dtb-s32g399ardb3_qspi.s32 /dev/mtd1
+        flashcp -v fip-s32g399ardb3_qspi.bin /dev/mtd2
+     to burn the related images into the specific partitions of the flash. The
+     output messages should be like:
+        root@nxp-s32g:~# flashcp -v bl2_w_dtb-s32g399ardb3_qspi.s32 /dev/mtd1
+        Erasing blocks: 11/11 (100%)
+        Writing data: 682k/682k (100%)
+        Verifying data: 682k/682k (100%)
+        root@nxp-s32g:~# flashcp -v fip-s32g399ardb3_qspi.bin /dev/mtd2
+        Erasing blocks: 16/16 (100%)
+        Writing data: 970k/970k (100%)
+        Verifying data: 970k/970k (100%)
   4. power down the board and change the related DIP switches to QSPI boot:
         SW3: off
         SW4: all off
