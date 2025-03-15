@@ -28,6 +28,8 @@ This BSP supports the following boards:
 
   - 2024/07 (LINUXPG-2285): WindRiver Linux LTS24 RCPL1. Standard and preempt-rt support based on NXP
                            SDK bsp41.0-6.6.25-rt.
+  - 2025/04 (LINUXPG-2531): WindRiver Linux LTS24 RCPL8. Standard and preempt-rt support based on NXP
+                           SDK bsp43.0-6.6.52-rt.
 
 3. BSP Features
 ===============
