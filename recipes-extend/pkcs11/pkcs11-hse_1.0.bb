@@ -20,6 +20,7 @@ SRC_URI += " \
     file://0001-pkcs11-hse-Makefile-using-internal-compile-variables.patch \
     file://0001-hse-pkcs-secboot-replace-memcpy-with-specific-hse_me.patch \
     file://0001-hse-pkcs-secboot-add-code-to-support-m7-secure-boot.patch \
+    file://0001-examples-hse-secboot-update-usage-messages.patch \
 "
 
 PATCHTOOL = "git"
