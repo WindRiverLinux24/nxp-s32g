@@ -1,4 +1,4 @@
-From 279bfbba83370183e00b19a2006a63e535c72c0e Mon Sep 17 00:00:00 2001
+From b08dd1100f9255a61d6005a2d0312a80773a82ed Mon Sep 17 00:00:00 2001
 From: Zhantao Tang <zhantao.tang@windriver.com>
 Date: Sat, 8 Mar 2025 02:25:03 +0000
 Subject: [PATCH] uboot: secure: update secboot codes to compatible with SDK
@@ -29,11 +29,11 @@ Signed-off-by: Zhantao Tang <zhantao.tang@windriver.com>
  include/configs/s32g2xxaevb.h              |   2 +
  include/configs/s32g399ardb3.h             |   2 +
  include/configs/s32g3xxaevb.h              |   2 +
- include/hse/hse_abi.h                      |  66 ++-
- 7 files changed, 457 insertions(+), 175 deletions(-)
+ include/hse/hse_abi.h                      |  67 ++-
+ 7 files changed, 458 insertions(+), 175 deletions(-)
 
 diff --git a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
-index 1e0483ff..8169252b 100644
+index 1e0483ff..f4de2277 100644
 --- a/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 +++ b/arch/arm/mach-s32/s32-cc/hse_adv_secboot.c
 @@ -25,41 +25,41 @@ DECLARE_GLOBAL_DATA_PTR;
@@ -284,7 +284,7 @@ index 1e0483ff..8169252b 100644
 +	int ret = 0;
 +	char file_name[256];
 +	char *tmp = NULL;
-+	char *file_dir = SECBOOT_RESOURCE_DIR;
++	char *file_dir = SECBOOT_BINS_DIR;
 +	char *value = NULL;
 +
 +	for (int i = BL2_BIN; i < MAX_BIN_INDEX; i++) {
@@ -862,7 +862,7 @@ index 1e0483ff..8169252b 100644
 -	char mmcdevpart[4];
 +	char devpart[4];
  	long long len_read;
-+	char *file_dir = SECBOOT_RESOURCE_DIR;
++	char *file_dir = SECBOOT_KEYS_DIR;
 +	char file_name[256];
  	int ret = 0;
  
@@ -1200,7 +1200,7 @@ index 3e7717d5..7c306b03 100644
  #if defined(CONFIG_USB)
  #	define CONFIG_MXC_USB_PORTSC	PORT_PTS_ULPI
 diff --git a/include/hse/hse_abi.h b/include/hse/hse_abi.h
-index bed0987a..9b4eefef 100644
+index bed0987a..92cc8319 100644
 --- a/include/hse/hse_abi.h
 +++ b/include/hse/hse_abi.h
 @@ -28,7 +28,7 @@
@@ -1294,7 +1294,7 @@ index bed0987a..9b4eefef 100644
  };
  
  enum boot_type {
-@@ -511,6 +532,43 @@ enum boot_type {
+@@ -511,6 +532,44 @@ enum boot_type {
  	APTIV_PARALLEL_SEC_BOOT,
  };
  
@@ -1315,7 +1315,8 @@ index bed0987a..9b4eefef 100644
 +#define BL33_DEFAULT_KEY_HANDLE 0x010700
 +#define M7_DEFAULT_KEY_HANDLE 0x010700
 +#define MMC_ROOT_PARTITION		3	/* now the root part of mmc device is 3 */
-+#define SECBOOT_RESOURCE_DIR	"boot/secboot"
++#define SECBOOT_BINS_DIR	"boot/secboot"
++#define SECBOOT_KEYS_DIR	"etc/keys/secboot"
 +
 +enum image_key_type {
 +	INVALID_KEY = -1,

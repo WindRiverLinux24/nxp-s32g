@@ -6,7 +6,7 @@ SRC_URI:append = " \
 DEPENDS += "openssl-native"
 
 SYSROOT_DIRS:append  = " \
-                           ${SECBOOT_KEYS_INSTALL_PATH} \
+                           ${SECBOOT_BINS_INSTALL_PATH} \
                        "
 get_u32 () {
 	local file="$1"
@@ -151,7 +151,7 @@ do_compile:append() {
 
 do_install:append() {
 
-	install -d ${D}${SECBOOT_KEYS_INSTALL_PATH}
+	install -d ${D}${SECBOOT_BINS_INSTALL_PATH}
 
 	cd "${BUILD}"
 
@@ -162,8 +162,8 @@ do_install:append() {
 			m7_boot_file="m7-${plat}-${suffix}.bin"
 			m7_boot_signature="${m7_boot_file}.sign"
 
-			install -m 0666 "${m7_boot_file}" ${D}${SECBOOT_KEYS_INSTALL_PATH}
-			install -m 0666 "${m7_boot_signature}" ${D}${SECBOOT_KEYS_INSTALL_PATH}
+			install -m 0666 "${m7_boot_file}" ${D}${SECBOOT_BINS_INSTALL_PATH}
+			install -m 0666 "${m7_boot_signature}" ${D}${SECBOOT_BINS_INSTALL_PATH}
 		done
 	done
 }
@@ -182,4 +182,4 @@ do_deploy:append() {
 	done
 }
 
-FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}*"
+FILES:${PN} += "${SECBOOT_BINS_INSTALL_PATH}*"

@@ -22,5 +22,6 @@ RSA_PUB_BL32_DER ?= "bl32_rsa2048_public.der"
 RSA_PUB_BL33_DER ?= "bl33_rsa2048_public.der"
 RSA_PUB_M7_DER ?= "m7_rsa2048_public.der"
 
-SECBOOT_KEYS_INSTALL_PATH ?= "/boot/secboot/"
+SECBOOT_KEYS_INSTALL_PATH ?= "/etc/keys/secboot/"
+SECBOOT_BINS_INSTALL_PATH ?= "/boot/secboot/"
 

@@ -23,6 +23,7 @@ RSA_PUB_KEYS ?= "\
 
 SYSROOT_DIRS:append  = " \
                            ${SECBOOT_KEYS_INSTALL_PATH} \
+                           ${SECBOOT_BINS_INSTALL_PATH} \
                        "
 
 do_generate_bl_public_keys () {
@@ -78,16 +79,17 @@ do_deploy:append() {
 
 do_install:append() {
 	install -d ${D}${SECBOOT_KEYS_INSTALL_PATH}
+	install -d ${D}${SECBOOT_BINS_INSTALL_PATH}
 
         for type in ${BOOT_TYPE}; do
             for plat in ${PLATFORM}; do
                 ATF_BINARIES="${B}/${type}/${plat}/${BUILD_TYPE}"
                 if [ "${type}" = "sd" ]; then
-                    cp -vf ${ATF_BINARIES}/${BL2_NAME}.bin ${D}${SECBOOT_KEYS_INSTALL_PATH}/${BL2_NAME}-${plat}.bin
-                    cp -vf ${ATF_BINARIES}/${BL2_SIGN_NAME}.bin ${D}${SECBOOT_KEYS_INSTALL_PATH}/${BL2_NAME}-${plat}.bin.sign
+                    cp -vf ${ATF_BINARIES}/${BL2_NAME}.bin ${D}${SECBOOT_BINS_INSTALL_PATH}/${BL2_NAME}-${plat}.bin
+                    cp -vf ${ATF_BINARIES}/${BL2_SIGN_NAME}.bin ${D}${SECBOOT_BINS_INSTALL_PATH}/${BL2_NAME}-${plat}.bin.sign
                 else
-                    cp -vf ${ATF_BINARIES}/${BL2_NAME}.bin ${D}${SECBOOT_KEYS_INSTALL_PATH}/${BL2_NAME}-${plat}_${type}.bin
-                    cp -vf ${ATF_BINARIES}/${BL2_SIGN_NAME}.bin ${D}${SECBOOT_KEYS_INSTALL_PATH}/${BL2_NAME}-${plat}_${type}.bin.sign
+                    cp -vf ${ATF_BINARIES}/${BL2_NAME}.bin ${D}${SECBOOT_BINS_INSTALL_PATH}/${BL2_NAME}-${plat}_${type}.bin
+                    cp -vf ${ATF_BINARIES}/${BL2_SIGN_NAME}.bin ${D}${SECBOOT_BINS_INSTALL_PATH}/${BL2_NAME}-${plat}_${type}.bin.sign
                 fi
             done
         done
@@ -103,8 +105,8 @@ do_install:append() {
         fi
 }
 
-FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${BL2_SIGN_NAME}-*"
-FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${BL2_NAME}-*"
+FILES:${PN} += "${SECBOOT_BINS_INSTALL_PATH}${BL2_SIGN_NAME}-*"
+FILES:${PN} += "${SECBOOT_BINS_INSTALL_PATH}${BL2_NAME}-*"
 FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL2}"
 FILES:${PN} += "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL31}"
 FILES:${PN} += "${@ "${SECBOOT_KEYS_INSTALL_PATH}${RSA_PUB_BL32}" if "${OP_TEE}" == '1' else ''}"
