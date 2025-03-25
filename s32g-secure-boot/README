@@ -3,7 +3,7 @@
 1. About this document
 ======================
 This document provides detail description about how to enable secure
-boot on S32G2-EVB, S32G274A-RDB2, S32G3-EVB and S32G399A-RDB3 boards.
+boot on S32G2-EVB, S32G274A-RDB2 and S32G399A-RDB3 boards.
 It includes the implementation principles of secure boot, implementation
 example step by step and so on.
 
@@ -40,12 +40,12 @@ To use secure boot feature, assume that you are:
 
 Hardware Preparations:
  - A host machine installed with wrlinux product.
- - S32G2-EVB, S32G274A-RDB2, S32G3-EVB and S32G399A-RDB3 development boards.
+ - S32G2-EVB, S32G274A-RDB2 and S32G399A-RDB3 development boards.
  - An SD Card.
 
 Jumper/Switch configuration for SD boot:
 
-S32G2-EVB/S32G3-EVB:
+S32G2-EVB:
 J50: Connect pin1 and pin2
 SW6: bit7 ON
 SW7: All bits OFF
@@ -55,8 +55,28 @@ SW14: bit1 ON, bit2 OFF
 SW15: All bits OFF
 
 S32G274A-RDB2/S32G399A-RDB3:
-SW3: OFF
+SW3: ON
 SW4: bit7 ON
+SW5: All bits OFF
+SW6: All bits OFF
+SW7: All bits OFF
+SW9: All bits OFF
+SW10: bit1 ON, bit2 OFF
+
+Jumper/Switch configuration for EMMC boot:
+
+S32G2-EVB:
+J50: Connect pin2 and pin3
+SW6: bit6 bit7 ON
+SW7: All bits OFF
+SW8: All bits OFF
+SW9: All bits OFF
+SW14: bit1 ON, bit2 OFF
+SW15: All bits OFF
+
+S32G274A-RDB2/S32G399A-RDB3:
+SW3: OFF
+SW4: bit6 bit7 ON
 SW5: All bits OFF
 SW6: All bits OFF
 SW7: All bits OFF
@@ -65,7 +85,7 @@ SW10: bit1 ON, bit2 OFF
 
 Jumper/Switch configuration for QSPI boot:
 
-S32G2-EVB/S32G3-EVB:
+S32G2-EVB:
 J50: Connect pin1 and pin2
 SW6: All bits OFF
 SW7: All bits OFF
@@ -96,7 +116,10 @@ by the preceding step. Thus, the secure boot flow is the following:
 
  - BootROM passes control over to HSE FW.
 
- - HSE FW authenticates the fip.bin image.
+ - HSE FW authenticates TF-A’s Boot Loader Stage 2 (BL2).
+
+ - BL2 authenticates the other BL3x components: BL31 (Secure Monitor),
+   BL32 (Trusted OS) and BL33 (U-Boot).
 
  - U-Boot authenticates the fitImage that includes kernel and dtb images.
 
@@ -105,11 +128,11 @@ by the preceding step. Thus, the secure boot flow is the following:
 Apply for assess right with NXP and then download HSE firmware from below link
 https://nxp.flexnetoperations.com/control/frse/product?child_plneID=820667
 
-S32G2 HSE FW Standard 0.1.0.5 is for S32G274A plarform 
-The HSE firmware file is s32g2xx_hse_fw_0.1.0_1.0.5_pb220413.bin.pink
+S32G2 HSE FW Standard 0.1.0.14 is for S32G274A plarform
+The HSE firmware file is rev2.0_s32g2xx_hse_fw_0.1.0_1.0.14_pb240319.bin.pink
 
-HSE FW 0.0.21.0 BETA Release is for S32G399A plarform
-The HSE firmware file is s32g3xx_hse_fw_0.20.0_0.21.0_pb220520.bin.pink
+HSE FW 0.2.51.0 Release is for S32G399A plarform
+The HSE firmware file is rev1.1_s32g3xx_hse_fw_0.20.0_2.51.0_pb240404.bin.pink
 
 3.2 Build nxp-s32g BSP With Secure Boot Feature
 -----------------------------------------------
@@ -126,8 +149,10 @@ Detail steps as below:
 	$ source ./oe-init-build-env
 	open the conf/local.conf file, and set the HSE firmware file path like below
 	HSE_LOCAL_FIRMWARE_DIR = "<path of including HSE firmware files>"
-	HSE_FW_NAME_S32G2 = "s32g2xx_hse_fw_0.1.0_1.0.5_pb220413.bin.pink"
-	HSE_FW_NAME_S32G3 = "s32g3xx_hse_fw_0.20.0_0.21.0_pb220520.bin.pink"
+	HSE_FW_VERSION_S32G2 = "0.1.0.14"
+	HSE_FW_VERSION_S32G3 = "0.2.51.0"
+	HSE_FW_NAME_S32G2 = "rev2.0_s32g2xx_hse_fw_0.1.0_1.0.14_pb240319.bin.pink"
+	HSE_FW_NAME_S32G3 = "rev1.1_s32g3xx_hse_fw_0.20.0_2.51.0_pb240404.bin.pink"
 	below setting for RSA private key is optional
 	FIP_SIGN_KEYDIR = "<path of customer own RSA private key>"
 	HSE_SEC_PRI_KEY = "<name of customer own RSA private key>"
@@ -140,16 +165,17 @@ includes dtb and kernel image. They are all signed by the private key of a RSA-2
 <path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/fitImage-rsa2048-keys.
 
 Note2:
-When building nxp-s32g BSP project with secure boot layer, the atf+u-boot is signed by the private key
-that is in <path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/fip-rsa2048-keys.
+When building nxp-s32g BSP project with secure boot layer, the BLx is signed by the private key
+that is in <path_to_project>/layers/nxp-s32g/s32g-secure-boot/s32g-sample-key/secboot-rsa2048-keys.
 If customers want to use their own RSA key, they could generate it with below command:
 	# openssl genrsa -out <rsa-key-name>
 Customers have 2 methods to ingegrate their own RSA key into building project.
- - Replace the sample key with their own RSA key in directory <path_to_project>/layers/nxp-s32g/
-   s32g-secure-boot/s32g-sample-key/fip-rsa2048-keys directly.
+ - Replace the sample key with their own RSA keys in directory <path_to_project>/layers/nxp-s32g/
+   s32g-secure-boot/s32g-sample-key/secboot-rsa2048-keys directly.
  - Set the path and name of their own RSA key with below 2 variables in local.conf file
-	FIP_SIGN_KEYDIR = "<path of customer own RSA private key>"
-	HSE_SEC_PRI_KEY = "<name of customer own RSA private key>"
+	SECBOOT_SIGN_KEYDIR = "<path of customer own RSA private key>"
+	RSA_PRIV_BLx = "<name of customer own RSA private key for BLx>"
+   the BLx indicates BL2, BL31, BL32 or BL33.
 
 The secure boot layer is an internal layer only for BSP nxp-s32g, it doesn't support to add
 this layer with --layer option during setup project.
@@ -166,12 +192,13 @@ Because u-boot is one of the image component of bootloader, the package u-boot-s
 and generate the u-boot image u-boot-nodtb.bin. After atf-s32g is built completely, there will be a bootloader
 image named fip.s32 generated, and its layout as below.
 
-SD Image Layout
+SD/EMMC Image Layout
         IVT:                    Offset: 0x1000          Size: 0x100
-        HSE Firmware:           Offset: 0x1200
-        HSE SYS Image:          Offset: 0x52400         Size: 0xc000
-        AppBootCode Header:     Offset: 0x5e400         Size: 0x40
-        Application:            Offset: 0x5e440         Size: 0x12e400
+        DCD:                    Offset: 0x1200          Size: 0x2000 (optional)
+        HSE Reserved:           Offset: 0x1400
+        HSE SYS Image:          Offset: 0x52600         Size: 0xc000
+        AppBootCode Header:     Offset: 0x5e600         Size: 0x40
+        Application:            Offset: 0x5e640         Size: 0x150400
 
 QSPI Image Layout
         IVT: 					Offset: 0x0 			Size: 0x100
@@ -253,17 +280,19 @@ Ch		4				Code length			Length of code section of the image.
 It is the most important component of the bootloader. Actually, it is the fip.bin, its layout as below:
 
 ---------------------------------------------------------------------------------
-Offset		Size(bytes)			Name
+Offset      Size(bytes)         Name
 ---------------------------------------------------------------------------------
-0x100		0x5A364				Trusted Boot Firmware BL2
+0x130       0x20185             EL3 Runtime Firmware BL31
 ---------------------------------------------------------------------------------
-0x5A470		0x17F51				EL3 Runtime Firmware BL31
+0x202C0     0xD2BA0             Non-Trusted Firmware BL33
 ---------------------------------------------------------------------------------
-0x723D0		0xB3AD8				Non-Trusted Firmware BL33(u-boot)
+0xF2E60     0x4E2               SoC Firmware key certificate
 ---------------------------------------------------------------------------------
-0x125EB0	0x83B8				Firmware Configuration(DTB)
+0xF3350     0x4F2               Non-Trusted Firmware key certificate
 ---------------------------------------------------------------------------------
-0x12E270	0x100				Certification of above 4 parts
+0xF3850     0x438               SoC Firmware content certificate
+---------------------------------------------------------------------------------
+0xF3C90     0x448               Non-Trusted Firmware content certificate
 ---------------------------------------------------------------------------------
 
 3.3.3 Target Configuration
@@ -274,9 +303,11 @@ Offset		Size(bytes)			Name
 A below U-Boot command is provided to enable the target board enter secure boot mode.
 
 SD boot mode:
-	=> hse_secboot_enable sd rsa2048_public.der
+	=> hse_secboot_enable sd
+EMMC boot mode:
+	=> hse_secboot_enable emmc
 QSPI boot mode:
-	=> hse_secboot_enable qspi rsa2048_public.der
+	=> hse_secboot_enable qspi
 
 The steps taken by the command are the following:
 1. Check if HSE FW has been initialized;
@@ -292,14 +323,22 @@ The steps taken by the command are the following:
 10. Set the BOOT_SEQ bit;
 11. Write the IVT back onto the boot media;
 
-The <public_key_file>.der refers to the public RSA key on the SD Card boot partition.
-It is generated during build BSP project in section 3.2.
+The required BL2 binary and public RSA keys are configured by the following
+environment variables:
+    bl2_bin
+    bl2_pubkey
+    bl31_pubkey
+    bl33_pubkey
+users could set these variables to customize the binary or keys for their
+own usage. For BL2 binary and its signature file, they are put in the
+boot/secboot directory of SD Card root partition. For public keys, their
+location is the /etc/keys/secboot directory of SD Card root partition.
 
 After the command is finished, simply reset the board to boot in secure mode.
 To verify whether the board has booted in secure mode, check the BOOT_SEQ bit in the IVT at offset 0x28
 with below commands
 
-SD boot mode:
+SD/EMMC boot mode:
 	=> mmc read ${loadaddr} 8 1
 QSPI boot mode:
 	=> sf read ${loadaddr} 0 0x100
@@ -317,19 +356,27 @@ the first stage secure boot feature. Detailed steps as below:
 
 	1. Booting up system normally as usual.
 	2. Log in system with "root" as the account name, and then run below commands.
-		# mount /dev/mmcblk0p1 /mnt/
-		# cp /mnt/rsa2048_public.pem ./
-		# umount /mnt
-SD boot mode:
-		# hse-secboot -s -k ./rsa2048_public.pem -d /dev/mmcblk0
+		# umount /boot
+SD(EMMC) boot mode:
+		# hse-secboot -s -b sd(mmc) -d /dev/mmcblk0 \
+		  --bl2_key /etc/keys/secboot/bl2_rsa2048_public.pem:0x010700 \
+		  --bl31_key -:0x010700 \
+		  --bl33_key -:0x010700 \
+		  --bl2_bin /boot/secboot/<bl2-name>.bin \
+		  --bl2_sign /boot/secboot/<bl2-name>.bin.sign \
 QSPI boot mode:
-		# hse-secboot -q -s -k ./rsa2048_public.pem -d /dev/mtd0
+		# hse-secboot -s -b qspi -d /dev/mtd0
+		  --bl2_key /etc/keys/secboot/bl2_rsa2048_public.pem:0x010700 \
+		  --bl31_key -:0x010700 \
+		  --bl33_key -:0x010700 \
+		  --bl2_bin /boot/secboot/<qspi-bl2-name>.bin \
+		  --bl2_sign /boot/secboot/<qspi-bl2-name>.bin.sign \
 	3. Power off board.
 	4. Power on board, now secure boot had been enabled.
 	   If bootloader image is verified successfully by HSE firmware, board will enter u-boot normally.
 
 Note:
-The above 2 solutions of enabling secure boot exclude from each other, user should only use one of them to
+The above 3 solutions of enabling secure boot exclude from each other, user should only use one of them to
 enable secure boot feature. If user enable secure boot with one solution and then run another one again,
 this may cause uncertain issues to secure boot feature. So please aovid enabling secure boot repeatedly.
 
@@ -338,15 +385,14 @@ this may cause uncertain issues to secure boot feature. So please aovid enabling
 
 3.4.1 Load fitImage
 -------------------
-There is a fitImage in boot partition, it can support below 4 boards.
+There is a fitImage in boot partition, it can support below 3 boards.
 
 S32G2-EVB
 S32G274A-RDB2
-S32G3-EVB
 S32G399A-RDB3
 
 Load the fitImage with below command
-	=> fatload mmc 0:1 0xc4000000 fitImage
+	=> fatload mmc 0:2 0xc4000000 fitImage
 
 
 3.4.2 Set Environment Variables
@@ -406,8 +452,8 @@ The detailed signature and verification process as follows:
 
 [1] S32G274A Reference Manual
 [2] HSE Firmware Product Brief.pdf
-[3] S32G2_LinuxBSP_33.0_User_Manual.pdf
-[4] S32G3_LinuxBSP_33.0_User_Manual.pdf
+[3] S32G2_LinuxBSP_43.0_User_Manual.pdf
+[4] S32G3_LinuxBSP_43.0_User_Manual.pdf
 [5] S32G2 Boot Process.pdf
 [6] HSE_secure_boot.pdf
 [7] S32G2XX_HSE_Service_API_Reference_Manual.pdf
@@ -417,5 +463,7 @@ The detailed signature and verification process as follows:
 6. Known issue
 ==============
 
-1. So far, secure boot image only is able to be deployed in SD card,
-   deployment in eMMC is not supported.
+1. For qspi secure boot on RDB3, the board boot will fail after executing
+   secure boot command. The SDK has the same issue, and there is a ticket
+   to vendor to track the status:
+        https://community.nxp.com/t5/S32G/QSPI-secboot-failed-with-SDK-BSP43-secboot-image-on-RDB3/m-p/2067085#M13051
