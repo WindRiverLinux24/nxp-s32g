@@ -15,6 +15,7 @@ FILESEXTRAPATHS:prepend := "${COREBASE}/meta/recipes-bsp/u-boot/files:"
 CVE_PATCHES = " \
     file://CVE-2024-57254.patch \
     file://CVE-2024-57255.patch \
+    file://CVE-2024-57256.patch \    
 "
 
 HSE_SUPPORT_CFG = " \
