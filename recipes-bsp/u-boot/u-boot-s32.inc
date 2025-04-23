@@ -11,12 +11,18 @@ LIC_FILES_CHKSUM = " \
     file://Licenses/lgpl-2.1.txt;md5=4fbd65380cdd255951079008b364516c \
 "
 
+FILESEXTRAPATHS:prepend := "${COREBASE}/meta/recipes-bsp/u-boot/files:"
+CVE_PATCHES = " \
+    file://CVE-2024-57254.patch \
+"
+
 HSE_SUPPORT_CFG = " \
     file://hse_support.cfg \
 "
 
 SRC_URI = "git://github.com/nxp-auto-linux/u-boot.git;protocol=https;branch=release/bsp43.0-2022.04"
 SRC_URI += " \
+    ${CVE_PATCHES} \
     file://0001-Revert-arch-s32cc-ERR051257-shouldn-t-be-applied-for.patch \
     file://0001-Revert-s32cc-mmc-Enable-MMC_IO_VOLTAGE.patch \
     file://0001-tools-s32ccimage-add-reserved-member-for-struct-prog.patch \
