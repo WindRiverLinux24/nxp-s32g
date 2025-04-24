@@ -7,6 +7,8 @@ Enable eFUSE power with DCD(device configuration work) before running
 any software, so that HSE firmware can read SYS_IMG configuration data
 normally.
 
+Upstream-Status: Pending
+
 Signed-off-by: Meng Li <Meng.Li@windriver.com>
 ---
  arch/arm/mach-s32/s32-cc/s32cc.cfg | 9 +++++++++
