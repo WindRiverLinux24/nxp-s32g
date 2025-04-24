@@ -1,8 +1,8 @@
-From 0b1a1d65b3f09927a96c83618f473d2e8a8b1048 Mon Sep 17 00:00:00 2001
+From 03f62fbc4dd929f4594c7af9744369131d6238a3 Mon Sep 17 00:00:00 2001
 From: Robert Yang <liezhi.yang@windriver.com>
 Date: Thu, 20 May 2021 11:33:49 +0000
-Subject: [PATCH] include/config_distro_bootcmd.h: Check go before boot next
- target
+Subject: [PATCH] nxp-s32g: include/config_distro_bootcmd.h: Check go before
+ boot next target
 
 The go is set by ostree's boot.scr, this can make "U-Boot console" menu stop
 immediately and go into the u-boot shell, otherwise, it will try other boot
@@ -16,7 +16,7 @@ Signed-off-by: Robert Yang <liezhi.yang@windriver.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
-index 2f90929178..40e7a66a65 100644
+index 2f909291..40e7a66a 100644
 --- a/include/config_distro_bootcmd.h
 +++ b/include/config_distro_bootcmd.h
 @@ -496,6 +496,7 @@
@@ -28,5 +28,5 @@ index 2f90929178..40e7a66a65 100644
  
  #endif  /* _CONFIG_CMD_DISTRO_BOOTCMD_H */
 -- 
-2.25.1
+2.34.1
 
