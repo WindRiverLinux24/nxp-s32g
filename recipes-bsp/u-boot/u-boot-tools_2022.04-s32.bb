@@ -28,3 +28,11 @@ do_compile () {
     oe_runmake -C ${S} tools-only_defconfig O=${B}
     oe_runmake -C ${S} cross_tools NO_SDL=1 O=${B}
 }
+
+#compile this recipe only when MACHINE is S32G platform
+python () {
+    target_machines = ['nxp-s32g', 'aptiv-cvc-131']
+    current_machine = d.getVar('MACHINE', True)
+    if current_machine not in target_machines:
+        raise bb.parse.SkipRecipe("This recipe is only for S32G platform ，current machine is: %s, so skip it!" % (current_machine))
+}
